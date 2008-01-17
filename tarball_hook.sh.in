@@ -17,6 +17,8 @@ echo "Running tarball_hook.sh to tweak installation at @CMAKE_INSTALL_PREFIX@"
 uname -a > @CMAKE_INSTALL_PREFIX@/uname.txt
 
 cp -r @I3_PORTS@/lib/python2.3/site-packages @CMAKE_INSTALL_PREFIX@/lib/python/site-packages
+cp @ROOTSYS@/lib/*.so @CMAKE_INSTALL_PREFIX@/lib/tools
+
 cp @CMAKE_SOURCE_DIR@/env-shell.sh @CMAKE_INSTALL_PREFIX@/
 
 
