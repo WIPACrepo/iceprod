@@ -1,170 +1,284 @@
 #
-# $Id$
+#  $Id$
+#  
+#  Copyright (C) 2007   Troy D. Straszheim  <troy@icecube.umd.edu>
+#  and the IceCube Collaboration <http://www.icecube.wisc.edu>
+#  
+#  This file is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#  
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>
+#  
+cmake_minimum_required(VERSION 2.4.5 FATAL_ERROR)
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+  message(FATAL_ERROR "
+***************************************************************************
+***      In place build is a bad idea. Please build out-of-place.       ***
+***   Run cmake /path/to/source from a directory != /path/to/source.    ***
+***                                                                     ***
+*** DON'T FORGET TO REMOVE THE CMakeCache.txt IN YOUR SOURCE DIRECTORY  ***
+***                  THAT WAS JUST CREATED.                             ***
+***************************************************************************
+")
+endif("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4.5 FATAL_ERROR)
+#  testing.  If you make the default 'off', be sure it is on when UNSUPERVISED_BUILD (dart)
+#
+option(BUILD_TESTING "Enable testing overall" ON)
 
-INCLUDE(${CMAKE_SOURCE_DIR}/CMakeCache.optional.txt OPTIONAL)
+#
+#  This is nice and all, but causes intermittent hangs on the mac
+#  due to an extremely old bash.  And in some places your path gets automagically
+#  prepended with /usr/kerberos/bin.
+#
+# execute_process(
+#   COMMAND ${CMAKE_SOURCE_DIR}/cmake/envtest/parent.sh ${CMAKE_SOURCE_DIR}/cmake/envtest/child.sh
+#   RESULT_VARIABLE ENVTEST_RESULT
+#   ERROR_QUIET
+#   )
+# 
+# if(ENVTEST_RESULT)
+#   message(FATAL_ERROR 
+#     "Problem with your shell initialization scripts.  Cannot continue,\n"
+#     "as this would just result in very irritating errors later.\n"
+#     "Fix your shell initialization scripts and retry.\n")
+# endif(ENVTEST_RESULT)
+# 
 
-SET(CMAKE_MODULE_PATH 
+include(${CMAKE_SOURCE_DIR}/CMakeCache.optional.txt OPTIONAL)
+
+set(CMAKE_MODULE_PATH
+  ${EXTRA_CMAKE_MODULE_PATH} 
   ${CMAKE_SOURCE_DIR}/cmake 
   ${CMAKE_SOURCE_DIR}/cmake/tools 
   ${CMAKE_SOURCE_DIR}/cmake/utility)
 
-INCLUDE(unique)
-INCLUDE(config)
-INCLUDE(tools)
+include(utility)
 
-INCLUDE(project)
+include(config)
+include(tools)
+include(project)
 
-ENABLE_TESTING()
-INCLUDE(Dart)
+if(BUILD_TESTING)
+  enable_testing()
+  include(Dart)
+  message(STATUS "Configuring ctest custom settings")
+  configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/CTestCustom.cmake.in
+    ${CMAKE_BINARY_DIR}/CTestCustom.cmake
+    )
+endif(BUILD_TESTING)
 
-EXECUTE_PROCESS(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/docs/.tagfiles 
+# this is outside because it contains the test macros, which 
+# might be noops
+include(testing)
+
+#
+#  Environment checking targets
+#
+configure_file(${CMAKE_SOURCE_DIR}/cmake/env-check.sh.in
+  ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/env-check.sh)
+
+add_custom_target(env-check ALL 
+  COMMAND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/env-check.sh
+  COMMENT "Checking build against environment")
+
+#
+#  Temp directory for documentation
+#
+execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/docs/.tagfiles 
   OUTPUT_VARIABLE DEV_NULL)
 
 #
 #  Glob together a list of subdirectories containing a CMakeLists.txt
 #
-FILE(GLOB cmake_projects RELATIVE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/*/CMakeLists.txt)
-FILE(GLOB hidden_projects RELATIVE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/.*/CMakeLists.txt)
+file(GLOB cmake_projects RELATIVE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/*/CMakeLists.txt)
+file(GLOB hidden_projects RELATIVE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/.*/CMakeLists.txt)
 
-IF(hidden_projects)
-  LIST(REMOVE_ITEM cmake_projects ${hidden_projects})
-ENDIF(hidden_projects)
+if(hidden_projects)
+  list(REMOVE_ITEM cmake_projects ${hidden_projects})
+endif(hidden_projects)
 
-FOREACH(d ${cmake_projects})
-  GET_FILENAME_COMPONENT(proj ${d} PATH)
-  SET(SUBDIRS ${SUBDIRS} ${proj})
-ENDFOREACH(d ${cmake_projects})
+foreach(d ${cmake_projects})
+  get_filename_component(proj ${d} PATH)
+  set(SUBDIRS ${SUBDIRS} ${proj})
+endforeach(d ${cmake_projects})
 
-FOREACH(subdir ${SUBDIRS})
-  GET_FILENAME_COMPONENT(pname ${subdir} NAME_WE)
-  ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/${pname})
-  EXEC_PROGRAM(test ARGS -h ${CMAKE_BINARY_DIR}/${pname}/resources || ln -s ${CMAKE_SOURCE_DIR}/${pname}/resources ${CMAKE_BINARY_DIR}/${pname}/resources 
+message(STATUS "Configuring projects:")
+foreach(subdir ${SUBDIRS})
+  get_filename_component(pname ${subdir} NAME_WE)
+  set(I3_PROJECTS "${I3_PROJECTS}" ${pname})
+  message(STATUS "  ${pname}")
+  add_subdirectory(${CMAKE_SOURCE_DIR}/${pname})
+  exec_program(test ARGS -h ${CMAKE_BINARY_DIR}/${pname}/resources || ln -s ${CMAKE_SOURCE_DIR}/${pname}/resources ${CMAKE_BINARY_DIR}/${pname}/resources 
     OUTPUT_VARIABLE DEV_NULL)
   #
   # setup tagfiles for doxygen
   #
-  EXEC_PROGRAM(touch ARGS ${CMAKE_BINARY_DIR}/docs/.tagfiles/${pname}.tag OUTPUT_VARIABLE DEV_NULL)
-  FILE(WRITE ${CMAKE_BINARY_DIR}/docs/.tagfiles/${pname}.include "# autogenerated doxy include file\n")
-  MESSAGE(STATUS "Configured project ${pname}.")
-ENDFOREACH(subdir ${SUBDIRS})
+  exec_program(touch ARGS ${CMAKE_BINARY_DIR}/docs/.tagfiles/${pname}.tag OUTPUT_VARIABLE DEV_NULL)
+  file(WRITE ${CMAKE_BINARY_DIR}/docs/.tagfiles/${pname}.include "# autogenerated doxy include file\n")
+endforeach(subdir ${SUBDIRS})
 
 #
-# configure environment files, etc.
+# env-shell.sh
 #
-FOREACH (file make_tarball.sh env-shell.sh)
-  MESSAGE(STATUS "Generating ${file}")
-  CONFIGURE_FILE(
+foreach (file env-shell.sh)
+  message(STATUS "Generating ${file}")
+  configure_file(
     ${CMAKE_SOURCE_DIR}/cmake/${file}.in
     ${CMAKE_CURRENT_BINARY_DIR}/${file}
     @ONLY
     )
-  EXECUTE_PROCESS(COMMAND chmod 755 ${CMAKE_BINARY_DIR}/${file})
-  EXEC_PROGRAM(cp ARGS ${CMAKE_BINARY_DIR}/${file} ${NOTES_DIR} OUTPUT_VARIABLE DEVNULL)
-ENDFOREACH (file make_tarball.sh env-shell.sh)
-EXEC_PROGRAM(${CMAKE_BINARY_DIR}/env-shell.sh ARGS /usr/bin/env > ${NOTES_DIR}/env-post_shell.txt OUTPUT_VARIABLE DEV_NULL)
+  execute_process(COMMAND chmod 755 ${CMAKE_BINARY_DIR}/${file})
+  exec_program(cp ARGS ${CMAKE_BINARY_DIR}/${file} ${NOTES_DIR} OUTPUT_VARIABLE DEVNULL)
+endforeach (file env-shell.sh)
+if(BUILD_TESTING)
+  exec_program(${CMAKE_BINARY_DIR}/env-shell.sh ARGS /usr/bin/env > ${NOTES_DIR}/env-post_shell.txt OUTPUT_VARIABLE DEV_NULL)
+endif(BUILD_TESTING)
+#
+# make_tarball.sh
+#
+set(MAKE_TARBALL_SH ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/make_tarball.sh)
+configure_file(
+  ${CMAKE_SOURCE_DIR}/cmake/make_tarball.sh.in
+  ${MAKE_TARBALL_SH}
+  @ONLY
+  )
+execute_process(COMMAND chmod 755 ${MAKE_TARBALL_SH})
 
-IF(EXISTS ${CMAKE_SOURCE_DIR}/tarball_hook.sh.in) 
-  MESSAGE(STATUS "Generating tarball_hook.sh")
-  CONFIGURE_FILE(
+if(EXISTS ${CMAKE_SOURCE_DIR}/tarball_hook.sh.in) 
+  message(STATUS "Generating tarball_hook.sh")
+  configure_file(
     ${CMAKE_SOURCE_DIR}/tarball_hook.sh.in
     ${CMAKE_BINARY_DIR}/tarball_hook.sh
     @ONLY
     )
-  EXECUTE_PROCESS(COMMAND chmod 755 ${CMAKE_BINARY_DIR}/tarball_hook.sh)
-ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/tarball_hook.sh.in) 
+  execute_process(COMMAND chmod 755 ${CMAKE_BINARY_DIR}/tarball_hook.sh)
+endif(EXISTS ${CMAKE_SOURCE_DIR}/tarball_hook.sh.in) 
 
-IF(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
-  CONFIGURE_FILE(
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
+  configure_file(
     ${CMAKE_SOURCE_DIR}/cmake/log4cplus.conf.in
     ${CMAKE_BINARY_DIR}/log4cplus.conf
     )
-ELSE(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
-  MESSAGE(STATUS "Not configuring log4cplus.conf in ${CMAKE_BINARY_DIR} because the file already exists.")
-ENDIF(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
+else(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
+  message(STATUS "Not configuring log4cplus.conf in ${CMAKE_BINARY_DIR} because the file already exists.")
+endif(NOT EXISTS ${CMAKE_BINARY_DIR}/log4cplus.conf)
 
-MESSAGE(STATUS "Configuring 'gfilt' STL decryptor")
-CONFIGURE_FILE(
+message(STATUS "Configuring 'gfilt' STL decryptor")
+configure_file(
   ${CMAKE_SOURCE_DIR}/cmake/gfilt.in
   ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/gfilt
   @ONLY
   )
-SET(GFILT_PROGRAM 
+set(GFILT_PROGRAM 
   ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/gfilt
   CACHE FILEPATH "Gfilt error filter path")
 
   
-FIND_PROGRAM(GFILT_PROGRAM gfilt PATHS ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY} NO_DEFAULT_PATH)
-
-
-MESSAGE(STATUS "Configuring ctest custom settings")
-CONFIGURE_FILE(
-  ${CMAKE_SOURCE_DIR}/cmake/CTestCustom.cmake.in
-  ${CMAKE_BINARY_DIR}/CTestCustom.cmake
-  )
+find_program(GFILT_PROGRAM gfilt PATHS ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY} NO_DEFAULT_PATH)
 
 #
 # Tarball target
 #
-ADD_CUSTOM_TARGET(tarball
+find_program(MD5SUM_PROGRAM md5sum)
+if(MD5SUM_PROGRAM)
+  set(MD5SUM_TARBALL_COMMAND md5sum ${CMAKE_INSTALL_PREFIX}.tar.gz > ${CMAKE_INSTALL_PREFIX}.md5sum)
+else(MD5SUM_PROGRAM)
+  set(MD5SUM_TARBALL_COMMAND /bin/echo Skipping md5sum, as md5sum command was not found.)
+endif(MD5SUM_PROGRAM)
+
+add_custom_target(tarball
   COMMAND /bin/echo Building installation directory ${CMAKE_INSTALL_PREFIX}...
   COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/projects
   COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/etc
+  COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/lib
+  COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/lib/python
+  COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/bin
   COMMAND ${CMAKE_MAKE_PROGRAM} install
   COMMAND ${CMAKE_MAKE_PROGRAM} install_tool_libs
-  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/make_tarball.sh
-  COMMAND /bin/echo tarring... 
+  COMMAND ${MAKE_TARBALL_SH}
+  COMMAND echo Creating ${CMAKE_INSTALL_PREFIX}.tar.gz
   COMMAND tar czf ${CMAKE_INSTALL_PREFIX}.tar.gz ${CMAKE_INSTALL_PREFIX}
-  COMMAND echo "${CMAKE_INSTALL_PREFIX}.tar.gz created"
-  COMMAND md5sum ${CMAKE_INSTALL_PREFIX}.tar.gz > ${CMAKE_INSTALL_PREFIX}.md5sum
-  COMMAND echo "${CMAKE_INSTALL_PREFIX}.md5sum created"
+  COMMAND echo Checksumming ${CMAKE_INSTALL_PREFIX}.tar.gz
+  COMMAND ${MD5SUM_TARBALL_COMMAND}
+  COMMENT "Tarballing ${CMAKE_INSTALL_PREFIX}"
   )
 
-ADD_CUSTOM_TARGET(retarball
+add_custom_target(retarball
   COMMAND ${CMAKE_MAKE_PROGRAM} wipe-tarball
   COMMAND ${CMAKE_MAKE_PROGRAM} tarball
+  COMMENT "Re-Tarballing ${CMAKE_INSTALL_PREFIX}"
   )
 
-ADD_CUSTOM_TARGET(wipe-tarball
+add_custom_target(wipe-tarball
   COMMAND /bin/echo Wiping old tarball and installation directory ${CMAKE_INSTALL_PREFIX}...
   COMMAND rm -rf ${CMAKE_INSTALL_PREFIX}
   COMMAND rm -f ${CMAKE_INSTALL_PREFIX}.tar.gz
+  COMMENT "Wiping old tarball ${CMAKE_INSTALL_PREFIX}"
   )
 
-ADD_CUSTOM_TARGET(rsync
+add_custom_target(rsync
   COMMAND mkdir -p ${I3_PORTS}
   COMMAND rsync -vrlpt --delete code.icecube.wisc.edu::Offline/test-data ${I3_PORTS}/
+  COMMENT "Rsyncing test-data to I3_PORTS"
   )
 
-IF(NOT UNSUPERVISED_BUILD)
+if(NOT UNSUPERVISED_BUILD)
 
-  OPTION(USE_GFILT "Use gfilt STL message decryptor" ON)
-  IF(USE_GFILT)
-    SET(CMAKE_CXX_COMPILE_OBJECT "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/gfilt ${CMAKE_CXX_COMPILE_OBJECT}")
-  ENDIF(USE_GFILT)
+  option(USE_GFILT "Use gfilt STL message decryptor" ON)
+  if(USE_GFILT)
+    set(CMAKE_CXX_COMPILE_OBJECT "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/gfilt ${CMAKE_CXX_COMPILE_OBJECT}")
+  endif(USE_GFILT)
 
-  ADD_CUSTOM_TARGET(all-tests) 
-  
-  UNIQUE(UNIQUE_TEST_BINS "${ALL_TEST_BINS}")
-  ADD_DEPENDENCIES(all-tests ${UNIQUE_TEST_BINS})
+  i3_add_testing_targets()
 
-  #
-  #  protect targets in project directories that would cause 
-  #
-  ADD_CUSTOM_TARGET(tests
-    COMMAND /bin/echo 
-    COMMAND /bin/echo "  tests: project-only target.  At the top level use target all-tests"
-    COMMAND /bin/echo 
-    COMMAND /bin/false)
+endif(NOT UNSUPERVISED_BUILD)
 
-  ADD_CUSTOM_TARGET(tests-run
-    COMMAND /bin/echo
-    COMMAND /bin/echo "  tests-run: project-only target.  At the top level, use target all-tests-run"
-    COMMAND /bin/echo 
-    COMMAND /bin/false)
+execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/docs/inspect
+  OUTPUT_VARIABLE DEV_NULL)
 
-  ADD_CUSTOM_TARGET(all-tests-run
-    ${CMAKE_CTEST_COMMAND} -V test)
-  ADD_DEPENDENCIES(all-tests-run all-tests)
-ENDIF(NOT UNSUPERVISED_BUILD)
+#
+#  extra icetray-inspect docs goodness.
+#
+find_program(XSLTPROC_BIN xsltproc)
+
+add_custom_target(inspect-docs)
+
+foreach (project ${I3_PROJECTS})
+  get_target_property(${project}_INSPECTABLE ${project} INSPECTABLE)
+  if(${project}_INSPECTABLE)
+    set(XML_TMP ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${project}-inspection.xml )
+    set(HTML_OUTPUT ${CMAKE_BINARY_DIR}/docs/inspect/${project}.html)
+    add_custom_target(inspect-docs-${project}
+      COMMAND ${CMAKE_BINARY_DIR}/env-shell.sh ${EXECUTABLE_OUTPUT_PATH}/icetray-inspect -p ${project} --xml > ${XML_TMP}
+      COMMAND ${XSLTPROC_BIN} ${CMAKE_SOURCE_DIR}/icetray/resources/inspect2html.xsl ${XML_TMP} > ${HTML_OUTPUT}
+      COMMENT "Generating html from icetray-inspect of ${project}"
+      )
+    add_dependencies(inspect-docs-${project} ${project} icetray-inspect)
+    add_dependencies(inspect-docs inspect-docs-${project})
+  endif(${project}_INSPECTABLE)
+endforeach (project ${I3_PROJECTS})
+
+set(INSPECT_ALL_HTML ${CMAKE_BINARY_DIR}/docs/inspect/index.html)
+
+add_custom_target(inspect-docs-all
+  COMMAND ${CMAKE_BINARY_DIR}/env-shell.sh ${EXECUTABLE_OUTPUT_PATH}/icetray-inspect --xml -a ${LIBRARY_OUTPUT_PATH} > ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/index.xml
+  COMMAND ${XSLTPROC_BIN} ${CMAKE_SOURCE_DIR}/icetray/resources/inspect2html.xsl ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/index.xml > ${INSPECT_ALL_HTML}
+  COMMENT "Generating html from icetray-inspect of entire metaproject"
+  )
+add_dependencies(inspect-docs inspect-docs-all)
+add_custom_target(doxygen)
+add_dependencies(doxygen inspect-docs)
+
+
+
