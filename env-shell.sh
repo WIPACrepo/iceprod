@@ -60,10 +60,10 @@ _I3_BUILD=$I3PROD
 _I3_SRC=$I3_BUILD/projects
 _I3_WORK=$I3_BUILD/projects
 
-_LD_LIBRARY_PATH=$I3_BUILD/lib:$I3_BUILD/lib/tools:$I3_PORTS/lib:$I3_PORTS/root-v5.10.00/lib:$LD_LIBRARY_PATH
+_LD_LIBRARY_PATH=$I3_BUILD/lib:$I3_BUILD/lib/tools:$I3_PORTS/lib:$I3_PORTS/root-v5.18.00/lib:$LD_LIBRARY_PATH
 _DYLD_LIBRARY_PATH==$I3_BUILD/lib:$I3_BUILD/lib/tools:$I3_PORTS/lib:$DYLD_LIBRARY_PATH
-_PYTHONPATH=$I3_BUILD/lib:$I3_BUILD/lib/tools:$I3_BUILD/lib/python:$I3_BUILD/lib/python/site-packages:$I3_PORTS/root-v5.10.00/lib:$PYTHONPATH
-_PATH=/home/juancarlos/icecube/icetray/iceprod/trunk/build/bin:$_I3_PORTS/bin:/opt/icecube/tools/i3ports/RHEL4-x86_64/root-v5.10.00/bin:$PATH
+_PYTHONPATH=$I3_BUILD/lib:$I3_BUILD/lib/tools:$I3_BUILD/lib/python:$I3_BUILD/lib/python/site-packages:$I3_PORTS/root-v5.18.00/lib:$PYTHONPATH
+_PATH=$_I3_BUILD/bin:$_I3_PORTS/bin:$I3_PORTS/root-v5.18.00/bin:$PATH
 
 TOPBAR="************************************************************************"
 WIDTH=`echo "$TOPBAR" | wc -c`
@@ -86,7 +86,7 @@ if [[ -z "$ARGV" ]]
     printctr ""
     printctr "W E L C O M E  to  I C E T R A Y"
     printctr ""
-    printctr "Version @META_PROJECT@     r@SVN_REVISION@"
+    printctr "Version IceProd   r@SVN_REVISION@"
     printctr ""
     printctr "You are welcome to visit our Web site"
     printctr "http://icecube.umd.edu"
@@ -113,7 +113,7 @@ if [[ -z "$I3_SHELL" ]] # a clean, first invocation
 	I3_BUILD=$_I3_BUILD \
 	I3_PORTS=$_I3_PORTS \
 	I3_TOOLS=$I3_PORTS \
-	ROOTSYS=$I3_PORTS/root-v5.10.00 \
+	ROOTSYS=$I3_PORTS/root-v5.18.00 \
 	I3_SHELL=$_I3_SHELL \
 	$NEW_SHELL $ARGV
 
