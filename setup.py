@@ -26,7 +26,6 @@ def write(str,fill=''):
 def hello(): 
 	return "world"
 
-
 src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 build_path = os.getcwd()
 
