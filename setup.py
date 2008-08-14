@@ -160,7 +160,7 @@ for l in libraries:
    cmd  = "setup.py install" 
    cmd += " --install-lib %s" % os.path.join(build_path,'lib')
    cmd += " --install-scripts %s" % os.path.join(build_path,'bin')
-   cmd += " --install-data %s" % os.path.join(build_path,l)
+   cmd += " --install-data %s" % build_path
    cmd += " -O2"
    os.system("python " + cmd)
 
