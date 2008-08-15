@@ -32,7 +32,7 @@ if [[ -z "$1" ]]
     then # user did not specify a shell
     NEW_SHELL=$SHELL 
     # only exit if no shell specified on command line *and* env already loaded 
-    if [[ -n "$I3_SHELL" ]] 
+    if [[ -n "$IP_SHELL" ]] 
 	then  
 	echo "****************************************************************"
 	echo "You are currently in a shell with an IceProd environment loaded."
@@ -48,7 +48,7 @@ else
 fi
 
 _I3PROD=@I3PRODPATH@
-_I3_SHELL=$NEW_SHELL
+_IP_SHELL=$NEW_SHELL
 _LD_LIBRARY_PATH=$_I3PROD/lib:$LD_LIBRARY_PATH
 _DYLD_LIBRARY_PATH=$_I3PROD/lib:$DYLD_LIBRARY_PATH
 _PYTHONPATH=$_I3PROD/lib:$PYTHONPATH
@@ -84,7 +84,7 @@ if [[ -z "$ARGV" ]]
     printf "   PYTHONPATH   = %s\n" $_PYTHONPATH
 fi
 
-if [[ -z "$I3_SHELL" ]] # a clean, first invocation
+if [[ -z "$IP_SHELL" ]] # a clean, first invocation
     then
 
     PATH=$_PATH \
@@ -92,7 +92,7 @@ if [[ -z "$I3_SHELL" ]] # a clean, first invocation
 	DYLD_LIBRARY_PATH=$_DYLD_LIBRARY_PATH \
 	PYTHONPATH=$_PYTHONPATH \
 	I3PROD=$_I3PROD \
-	I3_SHELL=$_I3_SHELL \
+	IP_SHELL=$_IP_SHELL \
 	$NEW_SHELL $ARGV
 
 else  # not clean, use previous environment
