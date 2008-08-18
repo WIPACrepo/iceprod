@@ -6,7 +6,7 @@
 #   @version $Revision: $
 #   @date $Date: $
 #   @author Juan Carlos Diaz Velez <juancarlos@icecube.wisc.edu>
-#	@brief simple test for functionality of Python modules
+#	@brief Setup script for installation of iceprod modules
 #########################################################################
 import sys,os
 import os.path
@@ -26,21 +26,12 @@ def write(str,fill=''):
 def hello(): 
 	return "world"
 
-src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-build_path = os.getcwd()
 
-# Retrieve arguments
-usage = "usage: %prog [options]"
-parser = OptionParser(usage)
-parser.add_option("-c", "--checkmodules", default=False, dest="checklibs", help="Run checks of python dependencies")
-parser.add_option("", "--install-base", default=build_path, dest="installbase", help="base installation directory")
+def checklibs():
+   """
+   Check for presence and functionality of python module dependencies
 
-(options,args) = parser.parse_args()
-
-build_path = options.installbase
-
-if options.checklibs:
-
+   """
    _xml     = False
    _mysql   = False
    _ssl     = False
@@ -131,12 +122,7 @@ if options.checklibs:
 
    write("\n\n\n")
    # end test ########################################
-
-if _xml and _mysql and _soapy:
-   write("Preparing IceProd installation\n")
-else:
-   write("Skipping IceProd installation\n")
-   os._exit(1)
+   return _xml and _mysql and _soapy
 
 
 libraries = [
@@ -149,43 +135,78 @@ dirs = [
    "log",
    "doc",
 ]
+# Determine path to source directory based on path to this script
+src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+build_path = os.getcwd()
+
+if __name__ == '__main__':
+   # Retrieve arguments
+   usage = "usage: %prog [options]"
+   parser = OptionParser(usage)
+   parser.add_option("-c", "--checkmodules", action="store_false", default=False, dest="checklibs", help="Run checks of python dependencies")
+   parser.add_option("-b", "--install-base", default=build_path, dest="installbase", help="Base installation directory")
+   parser.add_option("-i", "--install", default=True,action="store_true", dest="install", help="Install IceProd packages")
+   parser.add_option("-n", "--no-install", action="store_false", dest="install", help="Install IceProd packages")
+   parser.add_option("-O", "--optimize", default=2, dest="optimize", help="bytecode optimization level (0,1,2)")
+   parser.add_option("-d", "--epydoc", action="store_true", default=False, dest="epydoc", help="Generate epydoc HTML documentation")
+
+   (options,args) = parser.parse_args()
+   build_path = options.installbase
+
+   if options.checklibs:
+      if checklibs():
+         write("Preparing IceProd installation\n")
+      else:
+         write("Skipping IceProd installation\n")
+         os._exit(1)
+   else:
+      write("Preparing IceProd installation\n")
+
+   
+   # Create target directories
+   for d in dirs:
+       d = os.path.join(build_path,d)
+       if not os.path.exists(d): os.makedirs(d)
+
+   # Run setup for each package
+   if options.install:
+     for l in libraries:
+       os.chdir(os.path.join(src_path,l))
+       cmd  = "setup.py install" 
+       cmd += " --install-lib %s" % os.path.join(build_path,'lib')
+       cmd += " --install-scripts %s" % os.path.join(build_path,'bin')
+       cmd += " --install-data %s" % build_path
+       cmd += " -O%s" % options.optimize
+       os.system("python " + cmd)
 
 
-for d in dirs:
-   d = os.path.join(build_path,d)
-   if not os.path.exists(d): os.makedirs(d)
+   meta = '???'
+   version = '???'
+   handle = os.popen("svn info " + src_path)
+   for line in handle.readlines():
+       if line.strip().startswith("URL"):
+          url = line.replace('URL:','').strip()
+          meta = url.split('/')[5]
+          version = '.'.join(url.split('/')[6:])
+   handle.close()
 
-for l in libraries:
-   os.chdir(os.path.join(src_path,l))
-   cmd  = "setup.py install" 
-   cmd += " --install-lib %s" % os.path.join(build_path,'lib')
-   cmd += " --install-scripts %s" % os.path.join(build_path,'bin')
-   cmd += " --install-data %s" % build_path
-   cmd += " -O2"
-   os.system("python " + cmd)
+   envsh_template = open(os.path.join(src_path,'env-shell.sh'),'r')
+   envsh          = open(os.path.join(build_path,'env-shell.sh'),'w')
+   for line in envsh_template:
+       line = line.replace('@I3PRODPATH@',build_path)
+       line = line.replace('@META_PROJECT@',meta.upper())
+       line = line.replace('@VERSION@',version)
+       envsh.write(line)
+   envsh_template.close()
+   envsh.close()
+   os.chmod(os.path.join(build_path,'env-shell.sh'),0755)
 
+   if not _ssl:
+      write('Server will not support SSL encrypted connections\n')
 
-meta = '???'
-version = '???'
-handle = os.popen("svn info " + src_path)
-for line in handle.readlines():
-   	if line.strip().startswith("URL"):
-   	   url = line.replace('URL:','').strip()
-   	   meta = url.split('/')[5]
-   	   version = '.'.join(url.split('/')[6:])
-handle.close()
+   if options.epydoc:
+      cmd = "epydoc --html -o %s/doc %s/lib/iceprod" % (build_path,build_path)
+      print cmd
+      os.system(cmd)
 
-envsh_template = open(os.path.join(src_path,'env-shell.sh'),'r')
-envsh          = open(os.path.join(build_path,'env-shell.sh'),'w')
-for line in envsh_template:
-    line = line.replace('@I3PRODPATH@',build_path)
-    line = line.replace('@META_PROJECT@',meta.upper())
-    line = line.replace('@VERSION@',version)
-    envsh.write(line)
-envsh_template.close()
-envsh.close()
-os.chmod(os.path.join(build_path,'env-shell.sh'),0755)
-
-if not _ssl:
-   write('Server will not support SSL encrypted connections\n')
-   write('Done.\n')
+write('Done.\n')
