@@ -14,6 +14,7 @@ import getpass
 import getopt
 import cPickle
 from optparse import OptionParser
+from os.path import abspath,join
 
 _xml     = True
 _mysql   = True
@@ -178,6 +179,13 @@ if __name__ == '__main__':
        cmd += " --install-data %s" % build_path
        cmd += " -O%s" % options.optimize
        os.system("python " + cmd)
+
+     sys.path.append(os.path.join(build_path,'lib'))
+     import iceprod
+     ziplibdir  = abspath(join(src_path,'iceprod-core','lib','iceprod'))
+     zipoutpath = abspath(join(build_path,"shared",iceprod.zipfile()))
+     iceprod.mktar(ziplibdir,zipoutpath)
+
 
 
    meta = '???'
