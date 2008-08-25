@@ -184,6 +184,7 @@ if __name__ == '__main__':
      import iceprod
      ziplibdir  = abspath(join(src_path,'iceprod-core','lib','iceprod'))
      zipoutpath = abspath(join(build_path,"shared",iceprod.zipfile()))
+     print "generating zipfile %s.zip" % zipoutpath 
      iceprod.mktar(ziplibdir,zipoutpath)
 
 
