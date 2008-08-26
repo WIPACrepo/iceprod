@@ -127,9 +127,11 @@ def checklibs():
 
 
 libraries = [
+   "iceprod",
    "iceprod-core",
    "iceprod-client",
    "iceprod-server",
+   "iceprod-modules",
 ]
 dirs = [
    "etc",
@@ -182,10 +184,12 @@ if __name__ == '__main__':
 
      sys.path.append(os.path.join(build_path,'lib'))
      import iceprod
-     ziplibdir  = abspath(join(src_path,'iceprod-core','lib','iceprod'))
      zipoutpath = abspath(join(build_path,"shared",iceprod.zipfile()))
+     libdir  = abspath(join(build_path,'lib'))
      print "generating zipfile %s.zip" % zipoutpath 
-     iceprod.mktar(ziplibdir,zipoutpath)
+     iceprod.mktar(libdir,'iceprod/__init__.py',zipoutpath)
+     iceprod.mktar(libdir,'iceprod/core',zipoutpath,'a')
+     iceprod.mktar(libdir,'iceprod/modules',zipoutpath,'a')
 
 
 
