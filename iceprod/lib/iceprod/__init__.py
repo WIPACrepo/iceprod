@@ -2,12 +2,9 @@
   Collection of python modules for scheduling and running Grid IceTray based jobs in 
   a grid environment
 
-  @version: $Id$
-  @date: $Date: $
+  @version: trunk
+  @date: mar ago 26 16:16:30 CDT 2008
   @author: Juan Carlos Diaz Velez <juancarlos@icecube.wisc.edu>
-
-  U{Userguide and other documentation <http://www.icecube.wisc.edu/~juancarlos/software/sim-prod>}
-
 """
 import os
 import os.path 
