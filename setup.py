@@ -133,6 +133,12 @@ libraries = [
    "iceprod-server",
    "iceprod-modules",
 ]
+cgilibs= [
+   "iceprod",
+   "iceprod-core",
+   "iceprod-server",
+   "iceprod-modules",
+]
 dirs = [
    "etc",
    "log",
@@ -152,9 +158,12 @@ if __name__ == '__main__':
    parser.add_option("-n", "--no-install", action="store_false", dest="install", help="Install IceProd packages")
    parser.add_option("-O", "--optimize", default=2, dest="optimize", help="bytecode optimization level (0,1,2)")
    parser.add_option("-d", "--epydoc", action="store_true", default=False, dest="epydoc", help="Generate epydoc HTML documentation")
+   parser.add_option("-g", "--cgi", action="store_true", default=False, dest="cgi", help="install cgi scripts")
 
    (options,args) = parser.parse_args()
    build_path = options.installbase
+   if not args:
+      args.append('install')
 
    if options.checklibs:
       if checklibs():
@@ -172,15 +181,32 @@ if __name__ == '__main__':
        if not os.path.exists(d): os.makedirs(d)
 
    # Run setup for each package
+   if options.cgi:
+     for l in cgilibs:
+       os.chdir(os.path.join(src_path,l))
+       cmd  = "setup.py install_lib" 
+       cmd += " -d %s" % os.path.join(build_path,'lib')
+       os.system("python " + cmd)
+       cmd  = "setup.py install_data" 
+       cmd += " -d %s" % os.path.join(build_path)
+       os.system(sys.executable + " " + cmd)
+     os._exit(0)
    if options.install:
      for l in libraries:
        os.chdir(os.path.join(src_path,l))
-       cmd  = "setup.py install" 
-       cmd += " --install-lib %s" % os.path.join(build_path,'lib')
-       cmd += " --install-scripts %s" % os.path.join(build_path,'bin')
-       cmd += " --install-data %s" % build_path
-       cmd += " -O%s" % options.optimize
-       os.system("python " + cmd)
+       cmd  = "setup.py %s" % " ".join(args)
+       if 'install' in args:
+           cmd += " --install-lib %s" % os.path.join(build_path,'lib')
+           cmd += " --install-scripts %s" % os.path.join(build_path,'bin')
+           cmd += " --install-data %s" % build_path
+           cmd += " -O%s" % options.optimize
+       if 'install_lib' in args:
+           cmd += " -d %s" % os.path.join(build_path,'lib')
+       if 'install_bin' in args:
+           cmd += " -d %s" % os.path.join(build_path,'bin')
+       if 'install_data' in args:
+           cmd += " -d %s" % build_path
+       os.system(sys.executable + " " + cmd)
 
      sys.path.append(os.path.join(build_path,'lib'))
      import iceprod
