@@ -212,6 +212,11 @@ if __name__ == '__main__':
      import iceprod
      zipoutpath = abspath(join(build_path,"shared",iceprod.zipfile()))
      libdir  = abspath(join(build_path,'lib'))
+
+     print "removing zipfile %s.zip" % zipoutpath 
+     if os.path.exists("%s.zip"%zipoutpath):
+        os.remove("%s.zip"%zipoutpath)
+
      print "generating zipfile %s.zip" % zipoutpath 
      iceprod.mktar(libdir,'iceprod/__init__.py',zipoutpath)
      iceprod.mktar(libdir,'iceprod/core',zipoutpath,'a')
