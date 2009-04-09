@@ -152,7 +152,7 @@ if __name__ == '__main__':
    # Retrieve arguments
    usage = "usage: %prog [options]"
    parser = OptionParser(usage)
-   parser.add_option("-c", "--checkmodules", action="store_false", default=False, dest="checklibs", help="Run checks of python dependencies")
+   parser.add_option("-c", "--checkmodules", action="store_true", default=False, dest="checklibs", help="Run checks of python dependencies")
    parser.add_option("-b", "--install-base", default=build_path, dest="installbase", help="Base installation directory")
    parser.add_option("-i", "--install", default=True,action="store_true", dest="install", help="Install IceProd packages")
    parser.add_option("-n", "--no-install", action="store_false", dest="install", help="Install IceProd packages")
