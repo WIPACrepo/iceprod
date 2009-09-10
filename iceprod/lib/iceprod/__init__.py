@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
   Collection of python modules for scheduling and running Grid IceTray based jobs in 
   a grid environment
