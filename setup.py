@@ -218,15 +218,19 @@ if __name__ == '__main__':
         os.remove("%s.zip"%zipoutpath)
 
      print "generating zipfile %s.zip" % zipoutpath 
-     import zipfile
-     zf = zipfile.PyZipFile('%s.zip' % zipoutpath,mode='w')
-     zf.writepy(os.path.join(build_path,'lib','iceprod'))
-     zf.printdir()
-     zf.close()
+     iceprod.mktar(libdir,'iceprod/__init__.py',zipoutpath)
+     iceprod.mktar(libdir,'iceprod/core',zipoutpath,'a')
+     iceprod.mktar(libdir,'iceprod/modules',zipoutpath,'a')
 
-     zr = zipfile.PyZipFile('%s.zip' % zipoutpath,mode='r')
-     zr.testzip()
-     zr.close()
+     #import zipfile
+     #zf = zipfile.PyZipFile('%s.zip' % zipoutpath,mode='w')
+     #zf.writepy(os.path.join(build_path,'lib','iceprod'))
+     #zf.printdir()
+     #zf.close()
+
+     #zr = zipfile.PyZipFile('%s.zip' % zipoutpath,mode='r')
+     #zr.testzip()
+     #zr.close()
 
 
 
