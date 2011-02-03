@@ -182,15 +182,18 @@ if __name__ == '__main__':
 
    # Run setup for each package
    if options.cgi:
+     ret = 0
      for l in cgilibs:
        os.chdir(os.path.join(src_path,l))
        cmd  = "setup.py install_lib" 
        cmd += " -d %s" % os.path.join(build_path,'lib')
-       os.system("python " + cmd)
+       ret = os.system("python " + cmd)
+       if ret: break
        cmd  = "setup.py install_data" 
        cmd += " -d %s" % os.path.join(build_path)
-       os.system(sys.executable + " " + cmd)
-     os._exit(0)
+       ret = os.system(sys.executable + " " + cmd)
+       if ret: break
+     os._exit(ret)
    if options.install:
      for l in libraries:
        os.chdir(os.path.join(src_path,l))
@@ -206,7 +209,8 @@ if __name__ == '__main__':
            cmd += " -d %s" % os.path.join(build_path,'bin')
        if 'install_data' in args:
            cmd += " -d %s" % build_path
-       os.system(sys.executable + " " + cmd)
+       ret = os.system(sys.executable + " " + cmd)
+       if ret: break
 
      sys.path.append(os.path.join(build_path,'lib'))
      import iceprod
