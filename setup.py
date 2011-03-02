@@ -10,6 +10,7 @@
 #########################################################################
 import sys,os
 import os.path
+import commands
 import getpass
 import getopt
 import cPickle
@@ -126,6 +127,52 @@ def checklibs():
    return _xml and _mysql and _soapy
 
 
+def checkGlobus(build_dir):
+    """
+    Check for globus bin, libs, and certs
+    """
+    if os.path.isdir(os.path.join(build_dir,'globus')):
+        return os.path.join(build_dir,'globus')
+    
+    binary_path = commands.getoutput('which grid-proxy-init')
+    if not binary_path or binary_path.startswith('/usr/bin/which'):
+        return False
+        
+    binary_path = os.path.dirname(binary_path)
+    globus_path = os.path.dirname(binary_path)
+    
+    if (not os.path.isdir(os.path.join(globus_path,'lib')) or 
+        not os.path.isdir(os.path.join(globus_path,'certificates'))):
+        return False
+    else:
+        return globus_path
+        
+def downloadGlobus(dest):
+    """
+    Download the globus libraries locally
+    """
+    url = "http://x2100.icecube.wisc.edu/downloads/globus.tar.gz"
+    dest = os.path.join(dest,'globus.tar.gz')
+    cmd = 'wget -nv --tries=4 --http-user=icecube --http-password=skua --output-document=%s %s'%(dest,url)
+    if os.system(cmd):
+        return False
+    else:
+        return dest
+        
+def tarballGlobus(src):
+    """
+    Make a tarball of the globus libraries
+    """
+    dest = os.path.join(os.path.dirname(src),'globus.tar.gz')
+    if os.path.isfile(dest):
+        return True
+    cmd = 'cd %s;tar -zcf %s %s'%(os.path.dirname(src),dest,os.path.basename(src))
+    if os.system(cmd):
+        return False
+    else:
+        return True
+
+
 libraries = [
    "iceprod",
    "iceprod-core",
@@ -155,10 +202,11 @@ if __name__ == '__main__':
    parser.add_option("-c", "--checkmodules", action="store_true", default=False, dest="checklibs", help="Run checks of python dependencies")
    parser.add_option("-b", "--install-base", default=build_path, dest="installbase", help="Base installation directory")
    parser.add_option("-i", "--install", default=True,action="store_true", dest="install", help="Install IceProd packages")
-   parser.add_option("-n", "--no-install", action="store_false", dest="install", help="Install IceProd packages")
+   parser.add_option("-n", "--no-install", action="store_false", dest="install", help="Don't Install IceProd packages")
    parser.add_option("-O", "--optimize", default=2, dest="optimize", help="bytecode optimization level (0,1,2)")
    parser.add_option("-d", "--epydoc", action="store_true", default=False, dest="epydoc", help="Generate epydoc HTML documentation")
    parser.add_option("-g", "--cgi", action="store_true", default=False, dest="cgi", help="install cgi scripts")
+   parser.add_option("--globus", action="store_true", default=False, dest="globus", help="check for globus, and install if not present")
 
    (options,args) = parser.parse_args()
    build_path = options.installbase
@@ -174,6 +222,33 @@ if __name__ == '__main__':
    else:
       write("Preparing IceProd installation\n")
 
+   # check for globus
+   globus_path = ''
+   globus_libs = ''
+   if options.globus:
+      try:
+         globus_dir = checkGlobus(build_path)
+      
+         if globus_dir is False:
+            write("Globus not installed globally, so install it\n")
+            globus_tar = downloadGlobus(build_path)
+            if globus_tar:
+               if os.system('tar -zxf '+globus_tar):
+                  raise "Can't untar globus"
+               globus_dir = os.path.join(os.path.dirname(globus_tar),'globus')
+            else:
+               raise "Can't download globus"
+         else:
+            write("Globus installed globally, generating client tarball\n")
+            globus_tar = tarballGlobus(globus_dir)
+            if not globus_tar:
+               write("WARNING: Can't make tarball of globus directory")
+            
+         globus_path = globus_dir
+         globus_libs = os.path.join(build_path,'globus.tar.gz')
+      except Exception, e:
+         write('ERROR: '+str(e))
+         pass
    
    # Create target directories
    for d in dirs:
@@ -245,6 +320,8 @@ if __name__ == '__main__':
    envsh_template = open(os.path.join(src_path,'env-shell.sh'),'r')
    envsh          = open(os.path.join(build_path,'env-shell.sh'),'w')
    for line in envsh_template:
+       line = line.replace('@GLOBUS@',globus_path)
+       line = line.replace('@GLOBUS_LIBS@',globus_libs)
        line = line.replace('@I3PRODPATH@',build_path)
        line = line.replace('@META_PROJECT@',meta.upper())
        line = line.replace('@VERSION@',version)
