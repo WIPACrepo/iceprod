@@ -4,6 +4,9 @@ echo " "
 
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_AWK
+AC_PROG_SED
+AC_PROG_GREP
 
 AC_CHECK_TOOLS(www,curl wget fetch,no)
 if test $www == curl; then
@@ -20,6 +23,7 @@ else
     fi
 fi
 
+AC_PREFIX_DEFAULT("$HOME/iceprod")
 
-AC_OUTPUT(Makefile)
-AC_OUTPUT(env-shell.sh)
+AC_CONFIG_FILES([Makefile env-shell.sh],[chmod +x env-shell.sh])
+AC_OUTPUT()

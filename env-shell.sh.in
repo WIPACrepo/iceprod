@@ -27,6 +27,11 @@ if [[ "$1" = "help" ]]
     exit 1
 fi
 
+if [[ -z $SHELL ]]
+    then
+    SHELL=@SHELL@
+fi
+
 if [[ -z "$1" ]]
     then # user did not specify a shell
     NEW_SHELL=$SHELL 
