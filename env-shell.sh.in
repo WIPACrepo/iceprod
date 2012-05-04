@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
-# $Id$
+# @configure_input@
 #
 # IceProd environment script.
 #

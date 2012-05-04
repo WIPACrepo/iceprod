@@ -1,4 +1,6 @@
+# @configure_input@
 
+# some default variables
 PREFIX=@prefix@
 CC=@CC@
 CFLAGS=@CFLAGS@
@@ -8,6 +10,106 @@ CXXFLAGS=@CXXFLAGS@
 AWK=@AWK@
 SED=@SED@
 GREP=@GREP@
+SHELL=@SHELL@
+srcdir=@srcdir@
+VPATH=@srcdir@
 
+# custom variables
+PLATFORM=@platform@
 WWW=@www@
 WWWFLAGS=@wwwflags@
+TARBALL_NAME=@tarball_name@
+
+# build packages
+CONF_DEPS_URLS=http://www.openssl.org/source/openssl-1.0.1b.tar.gz \
+http://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
+http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz \
+ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz \
+ftp://xmlsoft.org/libxml2/libxslt-1.1.26.tar.gz \
+ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.30.tar.gz \
+http://nginx.org/download/nginx-1.2.0.tar.gz \
+http://curl.haxx.se/download/curl-7.25.0.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/p7zip_9.20.1.tar.gz
+
+PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc coverage
+ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
+
+# decide to do prebuilt binary or src build
+.PHONY : all install build
+ifeq (@prebuilt@,prebuilt)
+# prebuilt binary should be available
+all : 
+ifeq ($(wildcard $TARBALL_NAME),)
+	echo "binary tarball not found"
+	exit 1
+else
+	echo "nothing to do"
+endif
+install : 
+ifeq ($(wildcard $TARBALL_NAME),)
+	echo "binary tarball not found"
+	exit 1
+else
+	mkdir -p $PREFIX
+	tar -zx -C $PREFIX -f $TARBALL_NAME
+endif
+
+else
+# build from sources
+all : build
+
+install : build install_build
+
+endif
+
+
+
+build : $(CONF_DEPS) $(PYTHON_DEPS)
+
+$(CONF_DEPS) : $@_configure
+
+$(PYTHON_DEPS) : $@_download
+
+install_build : 
+
+
+
+
+
+
+
+
+
+.PHONY : clean
+clean :
+	
+
+.PHONY : distclean
+distclean : clean
+	rm -rf Makefile env-shell.sh 
+
+
+# now list the build instructions for each dependency
+
+openssl_download : 
+	$(WWW) $(WWWFLAGS) openssl.tar.gz http://www.openssl.org/source/openssl-1.0.1b.tar.gz
+	tar -zxf openssl.tar.gz
+openssl_configure : openssl_download
+	cd openssl-1.0.1b;./configure --prefix=$PREFIX -fPIC
+readline_download :
+	$(WWW) $(WWWFLAGS) readline.tar.gz http://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz
+	tar -zxf readline.tar.gz
+readline_configure : readline_download
+	cd readline-6.2;./configure --prefix=$PREFIX
+python_download : 
+	$(WWW) $(WWWFLAGS) Python.tgz http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
+	tar -zxf Python.tgz
+python_configure : python_download
+	cd Python-2.7.3;./configure --prefix=$PREFIX --enable-shared
+
+
+
+
+CONF_DEPS=openssl readline python libxml libxslt pcre nginx curl p7zip
+PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc coverage
+ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
