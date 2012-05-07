@@ -27,12 +27,39 @@ http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz \
 ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz \
 ftp://xmlsoft.org/libxml2/libxslt-1.1.26.tar.gz \
 ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.30.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxuploadmodule-2.2.0.tar.gz \
 http://nginx.org/download/nginx-1.2.0.tar.gz \
 http://curl.haxx.se/download/curl-7.25.0.tar.gz \
-http://x2100.icecube.wisc.edu/downloads/p7zip_9.20.1.tar.gz
+http://x2100.icecube.wisc.edu/downloads/iceprod2/libuv-0.7.8.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz
 
-PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc coverage
+CONF_DEPS=$(foreach confdeps,$(notdir $(CONF_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(confdeps))))
+
+PYTHON_DEPS_URLS=https://launchpad.net/pyopenssl/main/0.11/+download/pyOpenSSL-0.11.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/apsw-3.7.11.tar.gz \
+http://pypi.python.org/packages/source/l/lxml/lxml-2.3.4.tar.gz \
+http://pycurl.sourceforge.net/download/pycurl-7.19.0.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/tornado-2.2.tar.gz \
+http://pypi.python.org/packages/source/j/jsonrpclib/jsonrpclib-0.1.3.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/tornadorpc-2.0.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.6.1.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
+http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
+
+PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
+#PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc pyuv pyuv-tornado coverage
+
+DEPS_URLS=$(CONF_DEPS_URLS) $(PYTHON_DEPS_URLS)
+
 ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
+
+
+# echo vars
+echo :
+	echo $(CONF_DEPS)
+	echo $(PYTHON_DEPS)
+
+
 
 # decide to do prebuilt binary or src build
 .PHONY : all install build
@@ -66,15 +93,12 @@ endif
 
 build : $(CONF_DEPS) $(PYTHON_DEPS)
 
-$(CONF_DEPS) : $@_configure
+$(CONF_DEPS) : % : %_configure
 
-$(PYTHON_DEPS) : $@_download
+$(PYTHON_DEPS) : % : %_download
+
 
 install_build : 
-
-
-
-
 
 
 
@@ -89,27 +113,91 @@ distclean : clean
 	rm -rf Makefile env-shell.sh 
 
 
+eq=$(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+getdirname=$(if $(findstring .tgz,$(1)),$(basename $(1)),$(basename $(basename $(1))))
+getdepname=$(firstword $(subst -, ,$(1)))
+geturi=$(foreach var,$(DEPS_URLS),$(if $(call eq,$(1),$(call getdepname,$(call getdirname,$(notdir $(var))))),$(var),))
+getconfdir=$(call getdirname,$(notdir $(call geturi,$(1))))
+
+
+# general download
+%_download :
+	$(eval url:=$(call geturi,$(firstword $(subst _, ,$@))))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(call getdirname,$(filename)))
+	$(if $(wildcard $(filename)),,$(WWW) $(WWWFLAGS) $(filename) $(url))
+	$(if $(wildcard $(dirname)),,tar -zxf $(filename))
+
+
 # now list the build instructions for each dependency
 
-openssl_download : 
-	$(WWW) $(WWWFLAGS) openssl.tar.gz http://www.openssl.org/source/openssl-1.0.1b.tar.gz
-	tar -zxf openssl.tar.gz
 openssl_configure : openssl_download
-	cd openssl-1.0.1b;./configure --prefix=$PREFIX -fPIC
-readline_download :
-	$(WWW) $(WWWFLAGS) readline.tar.gz http://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz
-	tar -zxf readline.tar.gz
+#	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+#	$(eval filename:=$(notdir $(url)))
+#	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./config --prefix=$PREFIX -fPIC
+
 readline_configure : readline_download
-	cd readline-6.2;./configure --prefix=$PREFIX
-python_download : 
-	$(WWW) $(WWWFLAGS) Python.tgz http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-	tar -zxf Python.tgz
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX
+
 python_configure : python_download
-	cd Python-2.7.3;./configure --prefix=$PREFIX --enable-shared
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX --enable-shared
 
+libxml_configure : libxml_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX LDFLAGS=-L$PREFIX/lib/
 
+libxslt_configure : libxslt_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX LDFLAGS=-L$PREFIX/lib/
 
+pcre_configure : pcre_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX
 
-CONF_DEPS=openssl readline python libxml libxslt pcre nginx curl p7zip
-PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc coverage
-ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
+nginx_configure : nginx_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	$(eval pcreurl:=$(foreach var,$(DEPS_URLS),$(if $(findstring pcre,$(var)),$(var),)))
+	$(eval pcrefilename:=$(notdir $(pcreurl)))
+	$(eval pcredirname:=$(if $(findstring .tgz,$(pcrefilename)),$(basename $(pcrefilename)),$(basename $(basename $(pcrefilename)))))
+	$(eval uploadmodurl:=$(foreach var,$(DEPS_URLS),$(if $(findstring nginxuploadmodule,$(var)),$(var),)))
+	$(eval uploadmodfilename:=$(notdir $(uploadmodurl)))
+	$(eval uploadmoddirname:=$(if $(findstring .tgz,$(uploadmodfilename)),$(basename $(uploadmodfilename)),$(basename $(basename $(uploadmodfilename)))))
+	cd $(dirname);./configure --prefix=$PREFIX --with-ipv6 --with-http_ssl_module --without-http_geo_module \
+--without-http_map_module --without-http_fastcgi_module --without-http_memcached_module --without-mail_pop3_module \
+--without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
+--without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname)
+
+curl_configure : curl_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX
+
+libuv_configure : libuv_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX
+
+p7zip_configure : p7zip_download
+	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
+	$(eval filename:=$(notdir $(url)))
+	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
+	cd $(dirname);./configure --prefix=$PREFIX
+
