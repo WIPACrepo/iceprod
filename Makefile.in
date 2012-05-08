@@ -14,6 +14,13 @@ SHELL=@SHELL@
 srcdir=@srcdir@
 VPATH=@srcdir@
 
+PATH:=$(PREFIX)/bin:$(PATH)
+export PATH
+LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(LD_LIBRARY_PATH)
+export LD_LIBRARY_PATH
+GLOBUS_LOCATION:=$(PREFIX)/etc
+export GLOBUS_LOCATION
+
 # custom variables
 PLATFORM=@platform@
 WWW=@www@
@@ -30,12 +37,13 @@ ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.30.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxuploadmodule-2.2.0.tar.gz \
 http://nginx.org/download/nginx-1.2.0.tar.gz \
 http://curl.haxx.se/download/curl-7.25.0.tar.gz \
-http://x2100.icecube.wisc.edu/downloads/iceprod2/libuv-0.7.8.tar.gz \
-http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz
+http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/globus-5.2.1.tar.gz
+
 
 CONF_DEPS=$(foreach confdeps,$(notdir $(CONF_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(confdeps))))
 
-PYTHON_DEPS_URLS=https://launchpad.net/pyopenssl/main/0.11/+download/pyOpenSSL-0.11.tar.gz \
+PYTHON_DEPS_URLS=http://x2100.icecube.wisc.edu/downloads/iceprod2/pyOpenSSL-0.11.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/apsw-3.7.11.tar.gz \
 http://pypi.python.org/packages/source/l/lxml/lxml-2.3.4.tar.gz \
 http://pycurl.sourceforge.net/download/pycurl-7.19.0.tar.gz \
@@ -44,6 +52,7 @@ http://pypi.python.org/packages/source/j/jsonrpclib/jsonrpclib-0.1.3.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/tornadorpc-2.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.6.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.3.2.tar.gz \
 http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
@@ -52,13 +61,6 @@ PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.ta
 DEPS_URLS=$(CONF_DEPS_URLS) $(PYTHON_DEPS_URLS)
 
 ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
-
-
-# echo vars
-echo :
-	echo $(CONF_DEPS)
-	echo $(PYTHON_DEPS)
-
 
 
 # decide to do prebuilt binary or src build
@@ -72,45 +74,29 @@ ifeq ($(wildcard $TARBALL_NAME),)
 else
 	echo "nothing to do"
 endif
-install : 
+install : makeprefixdir
 ifeq ($(wildcard $TARBALL_NAME),)
 	echo "binary tarball not found"
 	exit 1
 else
-	mkdir -p $PREFIX
-	tar -zx -C $PREFIX -f $TARBALL_NAME
+	tar -zx -C $(PREFIX) -f $(TARBALL_NAME)
 endif
 
 else
 # build from sources
 all : build
 
-install : build install_build
+install : build makeprefixdir install_build
+
+
+build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
+
+install_build : $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_configure
 
 endif
 
-
-
-build : $(CONF_DEPS) $(PYTHON_DEPS)
-
-$(CONF_DEPS) : % : %_configure
-
-$(PYTHON_DEPS) : % : %_download
-
-
-install_build : 
-
-
-
-
-
-.PHONY : clean
-clean :
-	
-
-.PHONY : distclean
-distclean : clean
-	rm -rf Makefile env-shell.sh 
+makeprefixdir :
+	mkdir -p $(PREFIX)
 
 
 eq=$(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
@@ -118,6 +104,17 @@ getdirname=$(if $(findstring .tgz,$(1)),$(basename $(1)),$(basename $(basename $
 getdepname=$(firstword $(subst -, ,$(1)))
 geturi=$(foreach var,$(DEPS_URLS),$(if $(call eq,$(1),$(call getdepname,$(call getdirname,$(notdir $(var))))),$(var),))
 getconfdir=$(call getdirname,$(notdir $(call geturi,$(1))))
+
+
+.PHONY : clean
+clean : $(addsuffix _clean,$(CONF_DEPS))
+	
+
+.PHONY : distclean
+distclean :
+	rm -rf Makefile env-shell.sh 
+	$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),rm -rf $(call getconfdir,$(var)) $(notdir $(call geturi,$(var)));)
+
 
 
 # general download
@@ -128,76 +125,111 @@ getconfdir=$(call getdirname,$(notdir $(call geturi,$(1))))
 	$(if $(wildcard $(filename)),,$(WWW) $(WWWFLAGS) $(filename) $(url))
 	$(if $(wildcard $(dirname)),,tar -zxf $(filename))
 
+# general clean
+%_clean :
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	$(if $(wildcard $(dirname)/Makefile),cd $(dirname);$(MAKE) clean,)
+
 
 # now list the build instructions for each dependency
 
 openssl_configure : openssl_download
-#	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-#	$(eval filename:=$(notdir $(url)))
-#	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
-	cd $(dirname);./config --prefix=$PREFIX -fPIC
+	cd $(dirname);./config --prefix=$(PREFIX) -fPIC;make;make install
 
 readline_configure : readline_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-python_configure : python_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX --enable-shared
+Python_configure : Python_download
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX) --enable-shared;make;make install
 
-libxml_configure : libxml_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX LDFLAGS=-L$PREFIX/lib/
+libxml2_configure : libxml2_download
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/;make;make install
 
 libxslt_configure : libxslt_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX LDFLAGS=-L$PREFIX/lib/
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/;make;make install
 
 pcre_configure : pcre_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
+
+nginxuploadmodule_configure : nginxuploadmodule_download
 
 nginx_configure : nginx_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	$(eval pcreurl:=$(foreach var,$(DEPS_URLS),$(if $(findstring pcre,$(var)),$(var),)))
-	$(eval pcrefilename:=$(notdir $(pcreurl)))
-	$(eval pcredirname:=$(if $(findstring .tgz,$(pcrefilename)),$(basename $(pcrefilename)),$(basename $(basename $(pcrefilename)))))
-	$(eval uploadmodurl:=$(foreach var,$(DEPS_URLS),$(if $(findstring nginxuploadmodule,$(var)),$(var),)))
-	$(eval uploadmodfilename:=$(notdir $(uploadmodurl)))
-	$(eval uploadmoddirname:=$(if $(findstring .tgz,$(uploadmodfilename)),$(basename $(uploadmodfilename)),$(basename $(basename $(uploadmodfilename)))))
-	cd $(dirname);./configure --prefix=$PREFIX --with-ipv6 --with-http_ssl_module --without-http_geo_module \
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	$(eval pcredirname:=$(call getconfdir,pcre))
+	$(eval uploadmoddirname:=$(call getconfdir,nginxuploadmodule))
+	cd $(dirname);./configure --prefix=$(PREFIX) --with-ipv6 --with-http_ssl_module --without-http_geo_module \
 --without-http_map_module --without-http_fastcgi_module --without-http_memcached_module --without-mail_pop3_module \
 --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
---without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname)
+--without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname);make;make install
 
 curl_configure : curl_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX
-
-libuv_configure : libuv_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
 p7zip_configure : p7zip_download
-	$(eval url:=$(foreach var,$(DEPS_URLS),$(if $(findstring $(firstword $(subst _, ,$@)),$(var)),$(var),)))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(if $(findstring .tgz,$(filename)),$(basename $(filename)),$(basename $(basename $(filename)))))
-	cd $(dirname);./configure --prefix=$PREFIX
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
+
+globus_configure : globus_download
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	$(if $(wildcard $(PREFIX)/etc),,mkdir $(PREFIX)/etc)
+	cd $(dirname);./configure --prefix=$(PREFIX);make globus-data-management-client;make install
+
+
+pyconfig=cd $(call getconfdir,$(firstword $(subst _, ,$(1))));python setup.py build;python setup.py install
+
+pyOpenSSL_configure : 
+	$(call pyconfig,$@)
+
+apsw_configure :
+	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
+	cd $(dirname);python setup.py fetch --sqlite;python setup.py build;python setup.py install
+
+lxml_configure :
+	$(call pyconfig,$@)
+
+pycurl_configure :
+	$(call pyconfig,$@)
+
+tornado_configure :
+	$(call pyconfig,$@)
+
+jsonrpclib_configure :
+	$(call pyconfig,$@)
+
+tornadorpc_configure :
+	$(call pyconfig,$@)
+
+pyuv_configure :
+	$(call pyconfig,$@)
+
+pyuvtornado_configure :
+	$(call pyconfig,$@)
+
+pygridftp_configure :
+	$(call pyconfig,$@)
+
+coverage_configure :
+	$(call pyconfig,$@)
+
+
+iceprod_configure : 
+
+
+
+
+
+# echo vars
+echo :
+	echo $(CONF_DEPS)
+	echo $(PYTHON_DEPS)
+	echo $(PATH)
+	echo $(LD_LIBRARY_PATH)
+
 
