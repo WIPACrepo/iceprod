@@ -594,7 +594,6 @@ platform
 wwwflags
 ac_ct_www
 www
-PERL
 GREP
 SED
 AWK
@@ -3010,64 +3009,6 @@ $as_echo "$ac_cv_path_GREP" >&6; }
 
 
 
-
-
-	# Extract the first word of "perl", so it can be a program name with args.
-set dummy perl; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_PERL+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $PERL in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PERL="$PERL" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_PERL="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  test -z "$ac_cv_path_PERL" && ac_cv_path_PERL="no"
-  ;;
-esac
-fi
-PERL=$ac_cv_path_PERL
-if test -n "$PERL"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PERL" >&5
-$as_echo "$PERL" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-
-	if test "$PERL" = no; then
-		as_fn_error $? "perl is not found" "$LINENO" 5
-	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for perl version >= 5.8.0" >&5
-$as_echo_n "checking for perl version >= 5.8.0... " >&6; }
-	if `$PERL -e 'require 5.8.0;' >> /dev/null 2>&1` ; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	else
-		as_fn_error $? "Perl 5.8.0 or better is required" "$LINENO" 5
-	fi
-
-
-
 if test -n "$ac_tool_prefix"; then
   for ac_prog in curl wget fetch
   do
@@ -3169,15 +3110,15 @@ esac
 fi
 
 if test $www == curl; then
-    wwwflags="--retry 5 --max-time 30 -f --silent -o"
+    wwwflags="--retry 5 --max-time 300 -f --silent -o"
 
 else
     if test $www == wget; then
-        wwwflags="-r --tries=5 --timeout=30 --quiet -O"
+        wwwflags="-r --tries=5 --timeout=300 --quiet -O"
 
     else
         if test $www == fetch; then
-            wwwflags="-a -T 30 -q -o"
+            wwwflags="-a -T 300 -q -o"
 
         else
             as_fn_error wget "\"curl" "$LINENO" 5

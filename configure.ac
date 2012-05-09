@@ -9,33 +9,15 @@ AC_PROG_SED
 AC_PROG_GREP
 
 
-dnl We use a path for perl so the #! line in autoscan will work.	
-AC_DEFUN([AX_PROG_PERL],[
-	AC_PATH_PROG([PERL], perl, no)
-	AC_SUBST([PERL])dnl
-
-	if test "$PERL" = no; then
-		AC_MSG_ERROR([perl is not found])
-	fi
-	AC_MSG_CHECKING(for perl version >= $1)
-	if `$PERL -e 'require $1;' >> /dev/null 2>&1` ; then
-		AC_MSG_RESULT(yes)
-	else
-		AC_MSG_ERROR([Perl $1 or better is required])
-	fi
-	AC_PROVIDE([$0])
-])
-AX_PROG_PERL([5.8.0])
-
 AC_CHECK_TOOLS(www,curl wget fetch,no)
 if test $www == curl; then
-    AC_SUBST(wwwflags,"--retry 5 --max-time 30 -f --silent -o")
+    AC_SUBST(wwwflags,"--retry 5 --max-time 300 -f --silent -o")
 else
     if test $www == wget; then
-        AC_SUBST(wwwflags,"-r --tries=5 --timeout=30 --quiet -O")
+        AC_SUBST(wwwflags,"-r --tries=5 --timeout=300 --quiet -O")
     else
         if test $www == fetch; then
-            AC_SUBST(wwwflags,"-a -T 30 -q -o")
+            AC_SUBST(wwwflags,"-a -T 300 -q -o")
         else
             AC_MSG_ERROR("curl, wget, or fetch required for downloading packages")
         fi
