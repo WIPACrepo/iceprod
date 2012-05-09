@@ -15,6 +15,9 @@ SHELL=@SHELL@
 srcdir=@srcdir@
 VPATH=@srcdir@
 
+NULL:=
+SPACE:= $(NULL) 
+
 PATH:=$(PREFIX)/bin:$(PATH)
 export PATH
 LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(LD_LIBRARY_PATH)
@@ -33,6 +36,7 @@ PLATFORM=@platform@
 WWW=@www@
 WWWFLAGS=@wwwflags@
 TARBALL_NAME=@tarball_name@
+CORE_TARBALL_NAME=core_@tarball_name@
 
 # build packages
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
@@ -66,11 +70,14 @@ http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.3.2.tar.gz \
 http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
-#PYTHON_DEPS=pyopenssl apsw lxml pycurl tornado jsonrpclib tornadorpc pyuv pyuv-tornado coverage
 
 DEPS_URLS=$(CONF_DEPS_URLS) $(PYTHON_DEPS_URLS)
 
 ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
+
+# list only those that are needed for the iceprod core to run on remote nodes
+CORE_DEPS=libtool readline openssl libxml2 libxslt pcre curl expat perl Python p7zip globus pyOpenSSL apsw lxml pycurl jsonrpclib
+ICEPROD_CORE=iceprod-core iceprod-modules
 
 
 # decide to do prebuilt binary or src build
@@ -78,19 +85,28 @@ ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
 ifeq (@prebuilt@,prebuilt)
 # prebuilt binary should be available
 all : 
-ifeq ($(wildcard $TARBALL_NAME),)
+ifeq ($(wildcard $(TARBALL_NAME)),)
 	echo "binary tarball not found"
 	exit 1
 else
 	echo "nothing to do"
 endif
 install : makeprefixdir
-ifeq ($(wildcard $TARBALL_NAME),)
+ifeq ($(wildcard $(TARBALL_NAME)),)
 	echo "binary tarball not found"
 	exit 1
 else
 	tar -zx -C $(PREFIX) -f $(TARBALL_NAME)
 endif
+
+core : 
+ifeq ($(wildcard $(CORE_TARBALL_NAME),)
+	echo "binary core_tarball not found"
+	exit 1
+else
+	cp $(CORE_TARBALL_NAME) $(PREFIX)/$(CORE_TARBALL_NAME)
+endif
+
 
 else
 # build from sources
@@ -103,10 +119,46 @@ build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
 
 install_build : $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_configure
 
+core : $(addsuffix _download,$(CORE_DEPS)) modifyprefix $(addsuffix _configure,$(CORE_DEPS)) iceprod_configure_core core_tarball restoreprefix
+
 endif
 
-makeprefixdir :
+makeprefixdir : 
 	mkdir -p $(PREFIX)
+
+modifyprefix :
+	$(eval OLD_PREFIX:=$(PREFIX))
+	$(eval PREFIX:=$(PREFIX)_core)
+	mkdir -p $(PREFIX)
+	$(eval PATH:=$(PREFIX)/bin:$(PATH))
+	export PATH
+	$(eval LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(LD_LIBRARY_PATH))
+	export LD_LIBRARY_PATH
+	$(eval GLOBUS_LOCATION:=$(PREFIX))
+	export GLOBUS_LOCATION
+	$(eval C_INCLUDE_PATH:=$(PREFIX)/include:$(C_INCLUDE_PATH))
+	$(eval LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64:$(LIBRARY_PATH))
+	$(eval PERL5LIB:=$(PREFIX)/lib/perl5:$(PREFIX)/lib/per5/site_perl:$(PERL5LIB))
+	export PERL5LIB
+
+restoreprefix :
+	rm -rf $(PREFIX)
+	$(eval PATH:=$(substr $(SPACE),:,$(filter-out $(PREFIX),$(subst :,$(SPACE),$(PATH)))))
+	export PATH
+	$(eval LD_LIBRARY_PATH:=$(substr $(SPACE),:,$(filter-out $(PREFIX),$(subst :,$(SPACE),$(LD_LIBRARY_PATH)))))
+	export LD_LIBRARY_PATH
+	$(eval GLOBUS_LOCATION:=$(OLD_PREFIX))
+	export GLOBUS_LOCATION
+	$(eval C_INCLUDE_PATH:=$(substr $(SPACE),:,$(filter-out $(PREFIX),$(subst :,$(SPACE),$(C_INCLUDE_PATH)))))
+	$(eval LIBRARY_PATH:=$(substr $(SPACE),:,$(filter-out $(PREFIX),$(subst :,$(SPACE),$(LIBRARY_PATH)))))
+	$(eval PERL5LIB:=$(substr $(SPACE),:,$(filter-out $(PREFIX),$(subst :,$(SPACE),$(PERL5LIB)))))
+	export PERL5LIB
+	$(eval PREFIX:=$(OLD_PREFIX))
+	
+core_tarball :
+	rm -rf $(PREFIX)/share/man $(PREFIX)/share/doc $(PREFIX)/share/gtk-doc $(PREFIX)/share/info $(PREFIX)/share/doxygen
+	$(if $(wildcard $(OLD_PREFIX)),,mkdir -p $(OLD_PREFIX))
+	cd $(PREFIX);tar -zcf $(OLD_PREFIX)/$(CORE_TARBALL_NAME) *
 
 
 eq=$(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
@@ -251,17 +303,19 @@ coverage_configure :
 	$(call pyconfig,$@)
 
 
-iceprod_configure : 
+iceprod_configure : $(ICEPROD)
 
+iceprod_configure_core : $(ICEPROD_CORE)
 
-
+iceprod-% :
 
 
 # echo vars
 echo :
 	echo $(CONF_DEPS)
 	echo $(PYTHON_DEPS)
-	echo $(PATH)
-	echo $(LD_LIBRARY_PATH)
+	echo $(CORE_DEPS)
+#	echo $(PATH)
+#	echo $(LD_LIBRARY_PATH)
 
 
