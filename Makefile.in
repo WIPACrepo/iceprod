@@ -117,9 +117,11 @@ install : build makeprefixdir install_build
 
 build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
 
-install_build : $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_configure
+install_build : $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_config
 
-core : $(addsuffix _download,$(CORE_DEPS)) modifyprefix $(addsuffix _configure,$(CORE_DEPS)) iceprod_configure_core core_tarball restoreprefix
+core : $(addsuffix _download,$(CORE_DEPS)) install_core
+install_core : PREFIX := $(PREFIX)_core
+install_core : $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
 
 endif
 
@@ -178,14 +180,19 @@ distclean :
 	$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),rm -rf $(call getconfdir,$(var)) $(notdir $(call geturi,$(var)));)
 
 
+# download commands are dynamically generated based on DEPS
+define download_expand
+ $(eval url = $(strip $(call geturi,$1)))
+ $(eval file = $(notdir $(url)))
+ $(eval dir = $(call getdirname,$(file)))
+ $(file) : 
+	$(WWW) $(WWWFLAGS) $(file) $(url)
+ $(dir) : $(file)
+	tar -zxf $(file)
+ $1_download : $(dir)
+endef
+$(eval $(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),$(call download_expand,$(var))))
 
-# general download
-%_download :
-	$(eval url:=$(strip $(call geturi,$(firstword $(subst _, ,$@)))))
-	$(eval filename:=$(notdir $(url)))
-	$(eval dirname:=$(call getdirname,$(filename)))
-	$(if $(wildcard $(filename)),,$(WWW) $(WWWFLAGS) $(filename) $(url))
-	$(if $(wildcard $(dirname)),,tar -zxf $(filename))
 
 # general clean
 %_clean :
@@ -195,24 +202,26 @@ distclean :
 
 # now list the build instructions for each dependency
 
-libtool_configure : libtool_download
+%_configure : %_download
+
+libtool_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-openssl_configure : openssl_download
+openssl_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./config --prefix=$(PREFIX) -fPIC;make;make install
 
-readline_configure : readline_download
+readline_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-expat_configure : expat_download
+expat_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
 # this is a globus dependency
-perl_configure : perl_download
+perl_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./Configure -des -Dprefix=$(PREFIX);make;make install
 	cpan App:cpanminus
@@ -225,25 +234,23 @@ perl_configure : perl_download
 	cpanm Test::Simple
 	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cpanm XML::Parser
 
-Python_configure : Python_download
+Python_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX) --enable-shared;make;make install
 
-libxml2_configure : libxml2_download
+libxml2_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/;make;make install
 
-libxslt_configure : libxslt_download
+libxslt_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/;make;make install
 
-pcre_configure : pcre_download
+pcre_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-nginxuploadmodule_configure : nginxuploadmodule_download
-
-nginx_configure : nginx_download
+nginx_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	$(eval pcredirname:=$(call getconfdir,pcre))
 	$(eval uploadmoddirname:=$(call getconfdir,nginxuploadmodule))
@@ -252,15 +259,15 @@ nginx_configure : nginx_download
 --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
 --without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname);make;make install
 
-curl_configure : curl_download
+curl_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-p7zip_configure : p7zip_download
+p7zip_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
-globus_configure : globus_download
+globus_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	$(if $(wildcard $(PREFIX)/etc),,mkdir $(PREFIX)/etc)
 	cd $(dirname);./configure --prefix=$(PREFIX);C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) make gpt globus-data-management-client;make install
@@ -303,9 +310,9 @@ coverage_configure :
 	$(call pyconfig,$@)
 
 
-iceprod_configure : $(ICEPROD)
+iceprod_config : $(ICEPROD)
 
-iceprod_configure_core : $(ICEPROD_CORE)
+iceprod_config_core : $(ICEPROD_CORE)
 
 iceprod-% :
 
@@ -315,7 +322,5 @@ echo :
 	echo $(CONF_DEPS)
 	echo $(PYTHON_DEPS)
 	echo $(CORE_DEPS)
-#	echo $(PATH)
-#	echo $(LD_LIBRARY_PATH)
 
 
