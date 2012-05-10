@@ -18,18 +18,6 @@ VPATH=@srcdir@
 NULL:=
 SPACE:= $(NULL) 
 
-PATH:=$(PREFIX)/bin:$(PATH)
-export PATH
-LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(LD_LIBRARY_PATH)
-export LD_LIBRARY_PATH
-GLOBUS_LOCATION:=$(PREFIX)
-export GLOBUS_LOCATION
-C_INCLUDE_PATH:=$(PREFIX)/include:$(C_INCLUDE_PATH)
-#export C_INCLUDE_PATH
-LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64:$(LIBRARY_PATH)
-#export LIBRARY_PATH
-PERL5LIB:=$(PREFIX)/lib/perl5:$(PREFIX)/lib/per5/site_perl:$(PERL5LIB)
-export PERL5LIB
 
 # custom variables
 PLATFORM=@platform@
@@ -117,13 +105,32 @@ install : build makeprefixdir install_build
 
 build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
 
-install_build : $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_config
+install_build : exportvars $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_config
 
 core : $(addsuffix _download,$(CORE_DEPS)) install_core
+install_core : OLD_PREFIX := $(PREFIX)
 install_core : PREFIX := $(PREFIX)_core
-install_core : $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
+install_core : exportvars $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
 
 endif
+
+ORIG_PATH:=$(PATH)
+ORIG_LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH)
+ORIG_C_INCLUDE_PATH:=$(C_INCLUDE_PATH)
+ORIG_LIBRARY_PATH:=$(LIBRARY_PATH)
+ORIG_PERL5LIB:=$(PERL5LIB)
+exportvars : 
+	$(eval PATH:=$(PREFIX)/bin:$(ORIG_PATH))
+	$(eval export PATH)
+	$(eval LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(ORIG_LD_LIBRARY_PATH))
+	$(eval export LD_LIBRARY_PATH)
+	$(eval GLOBUS_LOCATION:=$(PREFIX))
+	$(eval export GLOBUS_LOCATION)
+	$(eval C_INCLUDE_PATH:=$(PREFIX)/include:$(ORIG_C_INCLUDE_PATH))
+	$(eval LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64:$(ORIG_LIBRARY_PATH))
+	$(eval PERL5LIB:=$(PREFIX)/lib/perl:$(PREFIX)/lib/perl5:$(PREFIX)/lib/per5/site_perl:$(ORIG_PERL5LIB))
+	$(eval export PERL5LIB)
+
 
 makeprefixdir : 
 	mkdir -p $(PREFIX)
@@ -170,11 +177,8 @@ geturi=$(foreach var,$(DEPS_URLS),$(if $(call eq,$(1),$(call getdepname,$(call g
 getconfdir=$(call getdirname,$(notdir $(call geturi,$(1))))
 
 
-.PHONY : clean
 clean : $(addsuffix _clean,$(CONF_DEPS))
 	
-
-.PHONY : distclean
 distclean :
 	rm -rf Makefile env-shell.sh 
 	$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),rm -rf $(call getconfdir,$(var)) $(notdir $(call geturi,$(var)));)
@@ -221,9 +225,12 @@ expat_configure :
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
 
 # this is a globus dependency
-perl_configure : 
+perl_configure : perl_core_config perl_extras_config
+perl_core_config : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./Configure -des -Dprefix=$(PREFIX);make;make install
+perl_extras_config : 
+	echo $(PATH)
 	cpan App:cpanminus
 	cpanm Archive::Tar
 	cpanm Compress::Zlib
@@ -249,6 +256,8 @@ libxslt_configure :
 pcre_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
 	cd $(dirname);./configure --prefix=$(PREFIX);make;make install
+
+nginxuploadmodule_configure :
 
 nginx_configure : 
 	$(eval dirname:=$(call getconfdir,$(firstword $(subst _, ,$@))))
@@ -324,3 +333,4 @@ echo :
 	echo $(CORE_DEPS)
 
 
+.PHONY : clean distclean exportvars
