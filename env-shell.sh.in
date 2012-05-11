@@ -55,7 +55,7 @@ _I3PROD=@prefix@
 _IP_SHELL=$NEW_SHELL
 _LD_LIBRARY_PATH=$_I3PROD/lib:$_I3PROD/lib64:$LD_LIBRARY_PATH
 _DYLD_LIBRARY_PATH=$_I3PROD/lib:$_I3PROD/lib64:$DYLD_LIBRARY_PATH
-_PYTHONPATH=$_I3PROD/lib:$_I3PROD/lib64:$PYTHONPATH
+_PYTHONPATH=$_I3PROD/lib/python2.7/site-packages:$PYTHONPATH
 _PATH=$_I3PROD/bin:$_I3PROD/sbin:$PATH
 
 TOPBAR="************************************************************************"

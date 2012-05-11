@@ -43,6 +43,8 @@ else
     AC_SUBST(prebuilt,[build])
 fi
 
+AC_CHECK_FILE([Makefile.hist],[rm Makefile.hist])
+
 
 AC_PREFIX_DEFAULT("$HOME/iceprod")
 
