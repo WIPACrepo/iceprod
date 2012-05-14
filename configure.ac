@@ -8,6 +8,7 @@ AC_PROG_AWK
 AC_PROG_SED
 AC_PROG_GREP
 
+AC_PROG_MAKE_SET
 
 AC_CHECK_TOOLS(www,curl wget fetch,no)
 if test $www == curl; then

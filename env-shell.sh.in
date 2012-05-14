@@ -57,6 +57,7 @@ _LD_LIBRARY_PATH=$_I3PROD/lib:$_I3PROD/lib64:$LD_LIBRARY_PATH
 _DYLD_LIBRARY_PATH=$_I3PROD/lib:$_I3PROD/lib64:$DYLD_LIBRARY_PATH
 _PYTHONPATH=$_I3PROD/lib/python2.7/site-packages:$PYTHONPATH
 _PATH=$_I3PROD/bin:$_I3PROD/sbin:$PATH
+_MANPATH=$_I3PROD/man:$MANPATH
 
 TOPBAR="************************************************************************"
 WIDTH=`echo "$TOPBAR" | wc -c`
@@ -95,6 +96,7 @@ if [[ -z "$IP_SHELL" ]] # a clean, first invocation
 	LD_LIBRARY_PATH=$_LD_LIBRARY_PATH \
 	DYLD_LIBRARY_PATH=$_DYLD_LIBRARY_PATH \
 	PYTHONPATH=$_PYTHONPATH \
+	MANPATH=$_MANPATH \
 	I3PROD=$_I3PROD \
 	IP_SHELL=$_IP_SHELL \
 	$NEW_SHELL $ARGV

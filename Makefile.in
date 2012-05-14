@@ -18,6 +18,8 @@ VPATH=@srcdir@
 NULL:=
 SPACE:= $(NULL) 
 
+@SET_MAKE@
+
 
 # custom variables
 PLATFORM=@platform@
@@ -30,13 +32,13 @@ CORE_TARBALL_NAME=core_@tarball_name@
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
 http://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
 http://www.openssl.org/source/openssl-1.0.1b.tar.gz \
+http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz \
 ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz \
 ftp://xmlsoft.org/libxml2/libxslt-1.1.26.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pcre-8.30.tar.gz \
 http://curl.haxx.se/download/curl-7.25.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/expat-2.1.0.tar.gz \
 http://www.cpan.org/src/5.0/perl-5.14.2.tar.gz \
-http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxuploadmodule-2.2.0.tar.gz \
 http://nginx.org/download/nginx-1.2.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz \
@@ -114,31 +116,39 @@ install : build makeprefixdir install_build
 
 build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
 
-install_build : checkinstallhist exportvars $(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)) iceprod_config misc_config
+install_build : checkinstallhist exportvars install_config iceprod_config misc_config
 
 core : $(addsuffix _download,$(CORE_DEPS)) install_core
 install_core : OLD_PREFIX := $(PREFIX)
 install_core : PREFIX := $(PREFIX)_core
-install_core : checkinstallcorehist exportvars $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
+install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core core_tarball
+#install_core : checkinstallcorehist exportvars $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
 
 endif
 
+
+incmd:=$(if $(filter install%,$(MAKECMDGOALS)),YES,)
+lasthist:=$(if $(wildcard Makefile.hist),$(shell $(SED) -n 1p Makefile.hist|tr -d '\n'),YES)
+alreadyinstalled:=$(if $(wildcard Makefile.hist),$(shell $(SED) 1d Makefile.hist|tr '\n' ' '),)
+
 define createinstallhist
- $(eval incmd:=$(if $(filter install%,$(MAKECMDGOALS)),YES,))
- $(eval lasthist:=$(if $(wildcard Makefile.hist),$(shell cat Makefile.hist),YES))
- $(eval hist:=$(if $(incmd),$(if $(call eq,lasthist,install),,installclean),))
+ $(eval hist:=$(if $(incmd),$(if $(call eq,$(lasthist),install),,installclean),))
  checkinstallhist : $(hist)
-	echo install > Makefile.hist
+	$(if $(hist),echo install > Makefile.hist,)
+ install_config : $(if $(hist),$(CONF_DEPS) $(PYTHON_DEPS),$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
 endef
 $(eval $(call createinstallhist))
 define createinstallcorehist
- $(eval incmd:=$(if $(filter install%,$(MAKECMDGOALS)),YES,))
- $(eval lasthist:=$(if $(wildcard Makefile.hist),$(shell cat Makefile.hist),YES))
- $(eval hist:=$(if $(incmd),$(if $(call eq,lasthist,install_core),,installclean),))
+ $(eval hist:=$(if $(incmd),$(if $(call eq,$(lasthist),install_core),,installclean),))
  checkinstallcorehist : $(hist)
-	echo install_core > Makefile.hist
+	$(if $(hist),echo install_core > Makefile.hist,)
+ installcore_config : $(if $(hist),$(CORE_DEPS),$(foreach var,$(CORE_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
 endef
 $(eval $(call createinstallcorehist))
+
+
+moduleinstalled=$(shell echo $1 >> Makefile.hist)
+
 
 ORIG_PATH:=$(PATH)
 ORIG_LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH)
@@ -166,6 +176,7 @@ tarball :
 	cd $(PREFIX);tar -zcf $(curdir)/$(TARBALL_NAME) *
 
 core_tarball :
+	-chmod -Rf 755 $(PREFIX)/share/doc/p7zip
 	rm -rf $(PREFIX)/share/man $(PREFIX)/share/doc $(PREFIX)/share/gtk-doc $(PREFIX)/share/info $(PREFIX)/share/doxygen
 	$(if $(wildcard $(OLD_PREFIX)),,mkdir -p $(OLD_PREFIX))
 	cd $(PREFIX);tar -zcf $(OLD_PREFIX)/$(CORE_TARBALL_NAME) *
@@ -173,11 +184,12 @@ core_tarball :
 
 
 clean : $(addsuffix _clean,$(CONF_DEPS))
+	-rm -rf Makefile.hist
 
 installclean : $(addsuffix _installclean,$(CONF_DEPS))
 	
 distclean :
-	rm -rf Makefile env-shell.sh 
+	-rm -rf Makefile Makefile.hist env-shell.sh 
 	$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),rm -rf $(call getconfdir,$(var)) $(notdir $(call geturi,$(var)));)
 
 
@@ -203,39 +215,62 @@ $(eval $(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),$(call download_expand,$(var)))
 
 # now list the build instructions for each dependency
 
-libtool_configure : libtool_download $(call getconfdir,libtool)/Makefile
-	cd $(call getconfdir,libtool);make;make install
-$(call getconfdir,libtool)/Makefile : 
+libtool_configure : libtool_core_config
+	$(call moduleinstalled,libtool)
+libtool_core_config : $(call getconfdir,libtool)/Makefile
+	$(eval dir:=$(call getconfdir,libtool))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,libtool)/Makefile : libtool_download
 	cd $(call getconfdir,libtool);./configure --prefix=$(PREFIX)
 libtool_installclean : 
 	rm -rf $(call getconfdir,libtool)/Makefile
 
-openssl_configure : openssl_download
-	cd $(call getconfdir,openssl);./config --prefix=$(PREFIX) -fPIC;make;make install
+openssl_configure : openssl_core_config
+	$(call moduleinstalled,openssl)
+openssl_core_config : openssl_download
+	$(eval dir:=$(call getconfdir,openssl))
+	cd $(dir);./config --prefix=$(PREFIX) -fPIC
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
 openssl_installclean : 
 
 
-readline_configure : readline_download $(call getconfdir,readline)/Makefile
-	cd $(call getconfdir,readline);make;make install
-$(call getconfdir,readline)/Makefile : 
+readline_configure : readline_core_config
+	$(call moduleinstalled,readline)
+readline_core_config : $(call getconfdir,readline)/Makefile
+	$(eval dir:=$(call getconfdir,readline))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,readline)/Makefile : readline_download
 	cd $(call getconfdir,readline);./configure --prefix=$(PREFIX)
 readline_installclean : 
 	-rm -rf $(call getconfdir,readline)/Makefile
 
-expat_configure : expat_download $(call getconfdir,expat)/Makefile
-	cd $(call getconfdir,expat);make;make install
-$(call getconfdir,expat)/Makefile : 
+
+expat_configure : expat_core_config
+	$(call moduleinstalled,expat)
+expat_core_config : $(call getconfdir,expat)/Makefile
+	$(eval dir:=$(call getconfdir,expat))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,expat)/Makefile : expat_download
 	cd $(call getconfdir,expat);./configure --prefix=$(PREFIX)
 expat_installclean : 
 	-rm -rf $(call getconfdir,expat)/Makefile
 
+
 # this is a globus dependency
 # delete perl after building; configure script does not update
 #  prefix if run multiple times
-perl_configure : perl_download perl_core_config perl_extras_config
-perl_core_config : 
-	cd $(call getconfdir,perl);./Configure -des -Dprefix=$(PREFIX);make;make install
-perl_extras_config : 
+perl_configure : perl_extras_config
+	$(call moduleinstalled,perl)
+perl_core_config : perl_download
+	$(eval dir:=$(call getconfdir,perl))
+	cd $(dir);./Configure -des -Dprefix=$(PREFIX)
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+perl_extras_config : perl_core_config
 	echo $(PATH)
 	cpan App:cpanminus
 	cpanm Archive::Tar
@@ -250,39 +285,64 @@ perl_installclean :
 	-rm -rf $(call getconfdir,perl)
 
 
-Python_configure : Python_download $(call getconfdir,Python)/Makefile 
-	cd $(call getconfdir,Python);make;make install
-$(call getconfdir,Python)/Makefile : 
+Python_configure : Python_core_config
+	$(call moduleinstalled,Python)
+Python_core_config : $(call getconfdir,Python)/Makefile
+	$(eval dir:=$(call getconfdir,Python))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,Python)/Makefile : Python_download
 	cd $(call getconfdir,Python);./configure --prefix=$(PREFIX) --enable-shared
 Python_installclean : 
 	-rm -rf $(call getconfdir,Python)/Makefile
 
-libxml2_configure : libxml2_download $(call getconfdir,libxml2)/Makefile
-	cd $(call getconfdir,libxml2);make;make install
-$(call getconfdir,libxml2)/Makefile : 
+
+libxml2_configure : libxml2_core_config 
+	$(call moduleinstalled,libxml2)
+libxml2_core_config : $(call getconfdir,libxml2)/Makefile
+	$(eval dir:=$(call getconfdir,libxml2))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,libxml2)/Makefile : libxml2_download
 	cd $(call getconfdir,libxml2);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/
 libxml2_installclean : 
 	-rm -rf $(call getconfdir,libxml2)/Makefile
 
-libxslt_configure : libxslt_download $(call getconfdir,libxslt)/Makefile
-	cd $(call getconfdir,libxslt);make;make install
-$(call getconfdir,libxslt)/Makefile :
+
+libxslt_configure : libxslt_core_config
+	$(call moduleinstalled,libxslt)
+libxslt_core_config : $(call getconfdir,libxslt)/Makefile
+	$(eval dir:=$(call getconfdir,libxslt))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,libxslt)/Makefile : libxslt_download
 	cd $(call getconfdir,libxslt);./configure --prefix=$(PREFIX) LDFLAGS=-L$(PREFIX)/lib/
 libxslt_installclean : 
 	-rm -rf $(call getconfdir,libxslt)/Makefile
 
-pcre_configure : pcre_download
-	cd $(call getconfdir,pcre);./configure --prefix=$(PREFIX);make;make install
+
+pcre_configure : pcre_core_config
+	$(call moduleinstalled,pcre)
+pcre_core_config : pcre_download
+	$(eval dir:=$(call getconfdir,pcre))
+	cd $(dir);./configure --prefix=$(PREFIX)
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
 pcre_installclean : 
 	-rm -rf $(call getconfdir,pcre)
+
 
 nginxuploadmodule_configure : nginxuploadmodule_download
 nginxuploadmodule_installclean : 
 
 
-nginx_configure : nginx_download $(call getconfdir,nginx)/Makefile
-	cd $(call getconfdir,nginx);make;make install
-$(call getconfdir,nginx)/Makefile : 
+nginx_configure : nginx_core_config
+	$(call moduleinstalled,nginx)
+nginx_core_config : $(call getconfdir,nginx)/Makefile
+	$(eval dir:=$(call getconfdir,nginx))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,nginx)/Makefile : nginx_download
 	$(eval dirname:=$(call getconfdir,nginx))
 	$(eval pcredirname:=$(call getconfdir,pcre))
 	$(eval uploadmoddirname:=$(call getconfdir,nginxuploadmodule))
@@ -293,59 +353,96 @@ $(call getconfdir,nginx)/Makefile :
 nginx_installclean : 
 	-rm -rf $(call getconfdir,nginx)/Makefile
 
-curl_configure : curl_download $(call getconfdir,curl)/config.log
-	cd $(call getconfdir,curl);make;make install
-$(call getconfdir,curl)/config.log : 
+curl_configure : curl_core_config
+	$(call moduleinstalled,curl)
+curl_core_config : $(call getconfdir,curl)/config.log
+	$(eval dir:=$(call getconfdir,curl))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,curl)/config.log : curl_download
 	cd $(call getconfdir,curl);./configure --prefix=$(PREFIX)
 curl_installclean : 
 	-rm -rf $(call getconfdir,curl)/config.log
 
-p7zip_configure : p7zip_download
-	cd $(call getconfdir,p7zip);./configure --prefix=$(PREFIX);make;make install
+p7zip_configure : p7zip_core_config
+	$(call moduleinstalled,p7zip)
+p7zip_core_config : p7zip_download
+	$(eval dir:=$(call getconfdir,p7zip))
+	$(eval localplatform:=$(subst ., ,$(PLATFORM)))
+	$(eval ostype:=$(if $(filter Darwin,$(localplatform)),mac,linux))
+	cd $(dir);cp makefile.$(if $(call eq,$(ostype),mac),macosx_$(if $(filter x86_64,$(localplatform)),64bits,32bits),linux_$(if $(filter x86_64,$(localplatform)),amd64,any_cpu)) makefile.machine
+	$(MAKE) -C $(dir) DEST_HOME=$(PREFIX)
+	$(MAKE) -C $(dir) install DEST_HOME=$(PREFIX)
 p7zip_installclean :
 	-rm -rf $(call getconfdir,p7zip)
 
-globus_configure : globus_download $(call getconfdir,globus)/Makefile
+globus_configure : globus_core_config
+	$(call moduleinstalled,globus)
+globus_core_config : $(call getconfdir,globus)/Makefile
+	$(eval dir:=$(call getconfdir,globus))
 	$(if $(wildcard $(PREFIX)/etc),,mkdir $(PREFIX)/etc)
-	cd $(call getconfdir,globus);C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) make gpt globus-data-management-client;make install
-$(call getconfdir,globus)/Makefile : 
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) gpt globus-data-management-client
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) install
+$(call getconfdir,globus)/Makefile : globus_download
 	cd $(call getconfdir,globus);./configure --prefix=$(PREFIX)
 globus_installclean : 
 	-rm -rf $(call getconfdir,globus)/Makefile
 
 pyconfig=cd $(call getconfdir,$(firstword $(subst _, ,$(1))));python setup.py build;python setup.py install
 
-pyOpenSSL_configure : pyOpenSSL_download
+pyOpenSSL_configure : pyOpenSSL_core_config
+	$(call moduleinstalled,pyOpenSSL)
+pyOpenSSL_core_config : pyOpenSSL_download
 	$(call pyconfig,$@)
 
-apsw_configure : apsw_download
-	cd $(call getconfdir,apsw);python setup.py fetch --sqlite;python setup.py build;python setup.py install
+apsw_configure : apsw_core_config
+	$(call moduleinstalled,apsw)
+apsw_core_config : apsw_download
+	cd $(call getconfdir,apsw);python setup.py fetch --sqlite --missing-checksum-ok;python setup.py build;python setup.py install
 
-lxml_configure : lxml_download
+lxml_configure : lxml_core_config
+	$(call moduleinstalled,lxml)
+lxml_core_config : lxml_download
 	$(call pyconfig,$@)
 
-pycurl_configure : pycurl_download
+pycurl_configure : pycurl_core_config
+	$(call moduleinstalled,pycurl)
+pycurl_core_config : pycurl_download
 	$(call pyconfig,$@)
 
-tornado_configure : tornado_download
+tornado_configure : tornado_core_config
+	$(call moduleinstalled,tornado)
+tornado_core_config : tornado_download
 	$(call pyconfig,$@)
 
-jsonrpclib_configure : jsonrpclib_download
+jsonrpclib_configure : jsonrpclib_core_config
+	$(call moduleinstalled,jsonrpclib)
+jsonrpclib_core_config : jsonrpclib_download
 	$(call pyconfig,$@)
 
-tornadorpc_configure : tornadorpc_download
+tornadorpc_configure : tornadorpc_core_config
+	$(call moduleinstalled,tornadorpc)
+tornadorpc_core_config : tornadorpc_download
 	$(call pyconfig,$@)
 
-pyuv_configure : pyuv_download
+pyuv_configure : pyuv_core_config
+	$(call moduleinstalled,pyuv)
+pyuv_core_config : pyuv_download
 	$(call pyconfig,$@)
 
-pyuvtornado_configure : pyuvtornado_download
+pyuvtornado_configure : pyuvtornado_core_config
+	$(call moduleinstalled,pyuvtornado)
+pyuvtornado_core_config : pyuvtornado_download
 	$(call pyconfig,$@)
 
-pygridftp_configure : pygridftp_download
+pygridftp_configure : pygridftp_core_config
+	$(call moduleinstalled,pygridftp)
+pygridftp_core_config : pygridftp_download
 	$(call pyconfig,$@)
 
-coverage_configure : coverage_download
+coverage_configure : coverage_core_config
+	$(call moduleinstalled,coverage)
+coverage_core_config : coverage_download
 	$(call pyconfig,$@)
 
 
@@ -361,6 +458,7 @@ $(ICEPROD) :
 
 misc_config : 
 	cp env-shell.sh $(PREFIX)/env-shell.sh
+	chmod -Rf 755 $(PREFIX)/share/doc/p7zip
 
 
 # echo vars
@@ -373,4 +471,4 @@ cmds :
 	echo $(MAKECMDGOALS)
 
 
-.PHONY : clean distclean installclean exportvars iceprod_base iceprod_config iceprod_config_core $(ICEPROD) $(suffix _configure,$(CONF_DEPS)) $(suffix _configure,$(PYTHON_DEPS))
+.PHONY : clean distclean installclean build install install_build install_config install_core installcore_config exportvars iceprod_base iceprod_config iceprod_config_core $(ICEPROD) $(suffix _download,$(CONF_DEPS) $(PYTHON_DEPS)) $(suffix _configure, $(CONF_DEPS) $(PYTHON_DEPS))
