@@ -30,7 +30,8 @@ CORE_TARBALL_NAME=core_@tarball_name@
 
 # build packages
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
-http://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
+ftp://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
+ftp://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.1.1.tar.gz \
 http://www.openssl.org/source/openssl-1.0.1b.tar.gz \
 http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz \
 ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz \
@@ -42,12 +43,13 @@ http://www.cpan.org/src/5.0/perl-5.14.2.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxuploadmodule-2.2.0.tar.gz \
 http://nginx.org/download/nginx-1.2.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz \
-http://x2100.icecube.wisc.edu/downloads/iceprod2/globus-5.2.1.tar.gz
-
+http://x2100.icecube.wisc.edu/downloads/iceprod2/globus-5.2.1.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/git-1.7.10.2.tar.gz
 
 CONF_DEPS=$(foreach confdeps,$(notdir $(CONF_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(confdeps))))
 
-PYTHON_DEPS_URLS=http://x2100.icecube.wisc.edu/downloads/iceprod2/pyOpenSSL-0.11.tar.gz \
+PYTHON_DEPS_URLS=http://pypi.python.org/packages/source/s/setuptools/setuptools-0.6c11.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/pyOpenSSL-0.11.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/apsw-3.7.11.tar.gz \
 http://pypi.python.org/packages/source/l/lxml/lxml-2.3.4.tar.gz \
 http://pycurl.sourceforge.net/download/pycurl-7.19.0.tar.gz \
@@ -66,7 +68,7 @@ DEPS_URLS=$(CONF_DEPS_URLS) $(PYTHON_DEPS_URLS)
 ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
 
 # list only those that are needed for the iceprod core to run on remote nodes
-CORE_DEPS=libtool readline openssl libxml2 libxslt pcre curl expat perl Python p7zip globus pyOpenSSL apsw lxml pycurl jsonrpclib
+CORE_DEPS=libtool readline openssl Python libxml2 libxslt pcre curl expat perl globus p7zip pyOpenSSL apsw lxml pycurl jsonrpclib
 ICEPROD_CORE=iceprod-core iceprod-modules
 
 
@@ -122,7 +124,6 @@ core : $(addsuffix _download,$(CORE_DEPS)) install_core
 install_core : OLD_PREFIX := $(PREFIX)
 install_core : PREFIX := $(PREFIX)_core
 install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core core_tarball
-#install_core : checkinstallcorehist exportvars $(addsuffix _configure,$(CORE_DEPS)) iceprod_config_core core_tarball
 
 endif
 
@@ -135,14 +136,14 @@ define createinstallhist
  $(eval hist:=$(if $(incmd),$(if $(call eq,$(lasthist),install),,installclean),))
  checkinstallhist : $(hist)
 	$(if $(hist),echo install > Makefile.hist,)
- install_config : $(if $(hist),$(CONF_DEPS) $(PYTHON_DEPS),$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
+ install_config : $(if $(hist),$(addsuffix _configure,$(CONF_DEPS) $(PYTHON_DEPS)),$(foreach var,$(CONF_DEPS) $(PYTHON_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
 endef
 $(eval $(call createinstallhist))
 define createinstallcorehist
  $(eval hist:=$(if $(incmd),$(if $(call eq,$(lasthist),install_core),,installclean),))
  checkinstallcorehist : $(hist)
 	$(if $(hist),echo install_core > Makefile.hist,)
- installcore_config : $(if $(hist),$(CORE_DEPS),$(foreach var,$(CORE_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
+ installcore_config : $(if $(hist),$(addsuffix _configure,$(CORE_DEPS)),$(foreach var,$(CORE_DEPS),$(if $(filter $(var),$(alreadyinstalled)),,$(var)_configure)))
 endef
 $(eval $(call createinstallcorehist))
 
@@ -230,7 +231,7 @@ openssl_configure : openssl_core_config
 	$(call moduleinstalled,openssl)
 openssl_core_config : openssl_download
 	$(eval dir:=$(call getconfdir,openssl))
-	cd $(dir);./config --prefix=$(PREFIX) -fPIC
+	cd $(dir);./config --prefix=$(PREFIX) -fPIC shared
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 openssl_installclean : 
@@ -246,6 +247,18 @@ $(call getconfdir,readline)/Makefile : readline_download
 	cd $(call getconfdir,readline);./configure --prefix=$(PREFIX)
 readline_installclean : 
 	-rm -rf $(call getconfdir,readline)/Makefile
+
+
+gettext_configure : gettext_core_config
+	$(call moduleinstalled,gettext)
+gettext_core_config : $(call getconfdir,gettext)/Makefile
+	$(eval dir:=$(call getconfdir,gettext))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+$(call getconfdir,gettext)/Makefile : gettext_download
+	cd $(call getconfdir,gettext);./configure --prefix=$(PREFIX)
+gettext_installclean : 
+	-rm -rf $(call getconfdir,gettext)/Makefile
 
 
 expat_configure : expat_core_config
@@ -271,7 +284,6 @@ perl_core_config : perl_download
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 perl_extras_config : perl_core_config
-	$(if $(wildcard ~/.cpan/CPAN/MyConfig.pm),,mkdir -p ~/.cpan/CPAN;cp ./cpan_config.pm ~/.cpan/CPAN/MyConfig.pm)
 	cpan App:cpanminus
 	cpanm Archive::Tar
 	cpanm Compress::Zlib
@@ -282,7 +294,11 @@ perl_extras_config : perl_core_config
 	cpanm Test::Simple
 	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cpanm XML::Parser
 perl_installclean : 
-	-rm -rf $(call getconfdir,perl)
+	$(eval url = $(strip $(call geturi,perl)))
+	$(eval file = $(notdir $(url)))
+	$(eval dir:=$(call getconfdir,perl))
+	-rm -rf $(dir)
+	tar -zxf $(file);touch $(dir)
 
 
 Python_configure : Python_core_config
@@ -329,7 +345,11 @@ pcre_core_config : pcre_download
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 pcre_installclean : 
-	-rm -rf $(call getconfdir,pcre)
+	$(eval url = $(strip $(call geturi,pcre)))
+	$(eval file = $(notdir $(url)))
+	$(eval dir:=$(call getconfdir,pcre))
+	-rm -rf $(dir)
+	tar -zxf $(file);touch $(dir)
 
 
 nginxuploadmodule_configure : nginxuploadmodule_download
@@ -360,7 +380,7 @@ curl_core_config : $(call getconfdir,curl)/config.log
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 $(call getconfdir,curl)/config.log : curl_download
-	cd $(call getconfdir,curl);./configure --prefix=$(PREFIX)
+	cd $(call getconfdir,curl);./configure --prefix=$(PREFIX) --with-ssl=$(PREFIX)
 curl_installclean : 
 	-rm -rf $(call getconfdir,curl)/config.log
 
@@ -374,7 +394,11 @@ p7zip_core_config : p7zip_download
 	$(MAKE) -C $(dir) DEST_HOME=$(PREFIX)
 	$(MAKE) -C $(dir) install DEST_HOME=$(PREFIX)
 p7zip_installclean :
-	-rm -rf $(call getconfdir,p7zip)
+	$(eval url = $(strip $(call geturi,p7zip)))
+	$(eval file = $(notdir $(url)))
+	$(eval dir:=$(call getconfdir,p7zip))
+	-rm -rf $(dir)
+	tar -zxf $(file);touch $(dir)
 
 globus_configure : globus_core_config
 	$(call moduleinstalled,globus)
@@ -385,10 +409,31 @@ globus_core_config : $(call getconfdir,globus)/Makefile
 	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) install
 $(call getconfdir,globus)/Makefile : globus_download
 	cd $(call getconfdir,globus);./configure --prefix=$(PREFIX)
+#	cd $(call getconfdir,globus);./configure --prefix=$(PREFIX) --with-buildopts="--with-openssl=$(PREFIX)"
 globus_installclean : 
 	-rm -rf $(call getconfdir,globus)/Makefile
 
+
+git_configure : git_core_config
+	$(call moduleinstalled,git)
+git_core_config : git_download
+	$(eval dir:=$(call getconfdir,git))
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) prefix=$(PREFIX) all NO_TCLTK=YesPlease
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) prefix=$(PREFIX) install NO_TCLTK=YesPlease
+git_installclean :
+	$(eval url = $(strip $(call geturi,git)))
+	$(eval file = $(notdir $(url)))
+	$(eval dir:=$(call getconfdir,git))
+	-rm -rf $(dir)
+	tar -zxf $(file);touch $(dir)	
+
+
 pyconfig=cd $(call getconfdir,$(firstword $(subst _, ,$(1))));python setup.py build;python setup.py install
+
+setuptools_configure : setuptools_core_config
+	$(call moduleinstalled,setuptools)
+setuptools_core_config : setuptools_download
+	$(call pyconfig,$@)
 
 pyOpenSSL_configure : pyOpenSSL_core_config
 	$(call moduleinstalled,pyOpenSSL)
