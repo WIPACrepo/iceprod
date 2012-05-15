@@ -271,7 +271,7 @@ perl_core_config : perl_download
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 perl_extras_config : perl_core_config
-	echo $(PATH)
+	$(if $(wildcard ~/.cpan/CPAN/MyConfig.pm),,mkdir -p ~/.cpan/CPAN;cp ./cpan_config.pm ~/.cpan/CPAN/MyConfig.pm)
 	cpan App:cpanminus
 	cpanm Archive::Tar
 	cpanm Compress::Zlib
