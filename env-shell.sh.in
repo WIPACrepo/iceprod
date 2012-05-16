@@ -10,7 +10,7 @@
 # If you need to change things here to make things work, that's
 # a bug and you should *report* this.  Thanks for your help.  
 #
-if [[ "$1" = "help" ]]
+if [ "$1" = "help" ]
     then
     echo "Usage: $0 [SHELL]"
     echo "Spawn a new shell with an IceProd environment loaded"
@@ -27,16 +27,16 @@ if [[ "$1" = "help" ]]
     exit 1
 fi
 
-if [[ -z $SHELL ]]
+if [ -z $SHELL ]
     then
     SHELL=@SHELL@
 fi
 
-if [[ -z "$1" ]]
+if [ -z "$1" ]
     then # user did not specify a shell
     NEW_SHELL=$SHELL 
     # only exit if no shell specified on command line *and* env already loaded 
-    if [[ -n "$IP_SHELL" ]] 
+    if [ -n "$IP_SHELL" ]
 	then  
 	echo "****************************************************************"
 	echo "You are currently in a shell with an IceProd environment loaded."
@@ -64,7 +64,7 @@ WIDTH=`echo "$TOPBAR" | wc -c`
 
 WIDTH=$(( $WIDTH-2 ))
 
-function printctr()
+printctr()
 {
     LEN=`echo "$*" | wc -c`
     LOFFSET=$(( ($WIDTH-$LEN)/2 ))
@@ -74,7 +74,7 @@ function printctr()
     printf $FORMAT " " "$*" " "
 }
 
-if [[ -z "$ARGV" ]]
+if [ -z "$ARGV" ]
     then
     printf "$TOPBAR\n"
     printctr ""
@@ -89,7 +89,7 @@ if [[ -z "$ARGV" ]]
     printf "   PYTHONPATH = %s\n" $_PYTHONPATH
 fi
 
-if [[ -z "$IP_SHELL" ]] # a clean, first invocation
+if [ -z "$IP_SHELL" ] # a clean, first invocation
     then
 
     PATH=$_PATH \
