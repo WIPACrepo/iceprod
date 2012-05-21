@@ -30,6 +30,8 @@ CORE_TARBALL_NAME=core_@tarball_name@
 
 # build packages
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
+http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz \
+ftp://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.9.tar.gz \
 ftp://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
 ftp://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.1.1.tar.gz \
 http://www.openssl.org/source/openssl-1.0.1b.tar.gz \
@@ -58,7 +60,7 @@ http://pypi.python.org/packages/source/j/jsonrpclib/jsonrpclib-0.1.3.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/tornadorpc-2.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.6.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
-http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.3.2.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.4.0.tar.gz \
 http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
@@ -68,7 +70,7 @@ DEPS_URLS=$(CONF_DEPS_URLS) $(PYTHON_DEPS_URLS)
 ICEPROD=iceprod-core iceprod-client iceprod-server iceprod-modules
 
 # list only those that are needed for the iceprod core to run on remote nodes
-CORE_DEPS=libtool readline openssl Python libxml2 libxslt pcre curl expat perl globus p7zip pyOpenSSL apsw lxml pycurl jsonrpclib
+CORE_DEPS=libtool bzip2 ncurses readline openssl Python libxml2 libxslt pcre curl expat perl globus p7zip pyOpenSSL apsw lxml pycurl jsonrpclib pygridftp
 ICEPROD_CORE=iceprod-core iceprod-modules
 
 
@@ -237,6 +239,42 @@ openssl_core_config : openssl_download
 openssl_installclean : 
 
 
+bzip2_configure : bzip2_core_config
+	$(call moduleinstalled,bzip2)
+bzip2_core_config : 
+	$(eval dir:=$(call getconfdir,bzip2))
+	$(MAKE) -C $(dir) clean
+	$(MAKE) -C $(dir) -f Makefile-libbz2_so PREFIX=$(PREFIX)
+	cp -f $(dir)/libbz2.so.1.0.6 $(PREFIX)/lib
+	ln -fs $(PREFIX)/lib/libbz2.so.1.0.6 $(PREFIX)/lib/libbz2.so.1.0
+	ln -fs $(PREFIX)/lib/libbz2.so.1.0.6 $(PREFIX)/lib/libbz2.so.1
+	ln -fs $(PREFIX)/lib/libbz2.so.1.0.6 $(PREFIX)/lib/libbz2.so
+	$(MAKE) -C $(dir) clean
+	$(MAKE) -C $(dir) PREFIX=$(PREFIX)
+	$(MAKE) -C $(dir) install PREFIX=$(PREFIX)
+bzip2_installclean : 
+	$(eval url = $(strip $(call geturi,bzip2)))
+	$(eval file = $(notdir $(url)))
+	$(eval dir:=$(call getconfdir,bzip2))
+	-rm -rf $(dir)
+	tar -zxf $(file);touch $(dir)
+
+
+ncurses_configure : ncurses_core_config
+	$(call moduleinstalled,ncurses)
+ncurses_core_config : $(call getconfdir,ncurses)/Makefile
+	$(eval dir:=$(call getconfdir,ncurses))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
+	ln -fs $(PREFIX)/include/ncursesw/ncurses.h $(PREFIX)/include/ncurses.h
+	ln -fs $(PREFIX)/include/ncursesw/curses.h $(PREFIX)/include/curses.h
+	ln -fs $(PREFIX)/include/ncursesw/panel.h $(PREFIX)/include/panel.h
+$(call getconfdir,ncurses)/Makefile : ncurses_download
+	cd $(call getconfdir,ncurses);./configure --prefix=$(PREFIX) --enable-widec --with-shared
+ncurses_installclean : 
+	-rm -rf $(call getconfdir,ncurses)/Makefile
+
+
 readline_configure : readline_core_config
 	$(call moduleinstalled,readline)
 readline_core_config : $(call getconfdir,readline)/Makefile
@@ -244,7 +282,7 @@ readline_core_config : $(call getconfdir,readline)/Makefile
 	$(MAKE) -C $(dir)
 	$(MAKE) -C $(dir) install
 $(call getconfdir,readline)/Makefile : readline_download
-	cd $(call getconfdir,readline);./configure --prefix=$(PREFIX)
+	cd $(call getconfdir,readline);./configure --prefix=$(PREFIX) --enable-multibyte --with-curses
 readline_installclean : 
 	-rm -rf $(call getconfdir,readline)/Makefile
 
@@ -305,10 +343,10 @@ Python_configure : Python_core_config
 	$(call moduleinstalled,Python)
 Python_core_config : $(call getconfdir,Python)/Makefile
 	$(eval dir:=$(call getconfdir,Python))
-	$(MAKE) -C $(dir)
-	$(MAKE) -C $(dir) install
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir)
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) install
 $(call getconfdir,Python)/Makefile : Python_download
-	cd $(call getconfdir,Python);./configure --prefix=$(PREFIX) --enable-shared
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cd $(call getconfdir,Python);./configure --prefix=$(PREFIX) --enable-shared
 Python_installclean : 
 	-rm -rf $(call getconfdir,Python)/Makefile
 
