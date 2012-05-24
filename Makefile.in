@@ -61,6 +61,7 @@ http://x2100.icecube.wisc.edu/downloads/iceprod2/tornadorpc-2.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.6.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.4.0.tar.gz \
+http://pypi.python.org/packages/source/c/configobj/configobj-4.7.2.tar.gz \
 http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
@@ -120,12 +121,12 @@ install : build makeprefixdir install_build
 
 build : $(addsuffix _download,$(CONF_DEPS) $(PYTHON_DEPS))
 
-install_build : checkinstallhist exportvars install_config iceprod_config misc_config
+install_build : checkinstallhist exportvars install_config iceprod_config env-shell misc_config
 
 core : $(addsuffix _download,$(CORE_DEPS)) install_core
 install_core : OLD_PREFIX := $(PREFIX)
 install_core : PREFIX := $(PREFIX)_core
-install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core core_tarball
+install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core env-shell core_tarball
 
 endif
 
@@ -407,7 +408,8 @@ $(call getconfdir,nginx)/Makefile : nginx_download
 	cd $(dirname);./configure --prefix=$(PREFIX) --with-ipv6 --with-http_ssl_module --without-http_geo_module \
 --without-http_map_module --without-http_fastcgi_module --without-http_memcached_module --without-mail_pop3_module \
 --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
---without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname)
+--without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname) \
+--error-log-path=$(PREFIX)/var/log/nginx/error.log
 nginx_installclean : 
 	-rm -rf $(call getconfdir,nginx)/Makefile
 
@@ -523,6 +525,11 @@ pygridftp_configure : pygridftp_core_config
 pygridftp_core_config : pygridftp_download
 	$(call pyconfig,$@)
 
+configobj_configure : configobj_core_config
+	$(call moduleinstalled,configobj)
+configobj_core_config : configobj_download
+	$(call pyconfig,$@)
+
 coverage_configure : coverage_core_config
 	$(call moduleinstalled,coverage)
 coverage_core_config : coverage_download
@@ -539,9 +546,15 @@ iceprod_base :
 $(ICEPROD) :
 	cd $@;python setup.py install
 
-misc_config : 
+env-shell : 
 	cp env-shell.sh $(PREFIX)/env-shell.sh
+
+misc_config : 
 	chmod -Rf 755 $(PREFIX)/share/doc/p7zip
+	mkdir -p $(PREFIX)/var/www
+	mkdir -p $(PREFIX)/var/lib/iceprod
+	mv $(PREFIX)/man $(PREFIX)/share/man
+	mv $(PREFIX)/logs $(PREFIX)/log
 
 
 # echo vars

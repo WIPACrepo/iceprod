@@ -58,6 +58,8 @@ _DYLD_LIBRARY_PATH=$_I3PROD/lib:$_I3PROD/lib64:$DYLD_LIBRARY_PATH
 _PYTHONPATH=$_I3PROD/lib/python2.7/site-packages:$PYTHONPATH
 _PATH=$_I3PROD/bin:$_I3PROD/sbin:$PATH
 _MANPATH=$_I3PROD/man:$MANPATH
+_GLOBUS_LOCATION=$_I3PROD
+_X509_CERT_DIR=$_GLOBUS_LOCATION/etc/grid-security/certificates
 
 TOPBAR="************************************************************************"
 WIDTH=`echo "$TOPBAR" | wc -c`
@@ -87,6 +89,7 @@ if [ -z "$ARGV" ]
     printf "   PATH = %s\n" $_PATH
     printf "   LD_LIBRARY_PATH = %s\n" $_LD_LIBRARY_PATH
     printf "   PYTHONPATH = %s\n" $_PYTHONPATH
+    printf "   GLOBUS_LOCATION = %s\n" $_GLOBUS_LOCATION
 fi
 
 if [ -z "$IP_SHELL" ] # a clean, first invocation
@@ -97,6 +100,8 @@ if [ -z "$IP_SHELL" ] # a clean, first invocation
 	DYLD_LIBRARY_PATH=$_DYLD_LIBRARY_PATH \
 	PYTHONPATH=$_PYTHONPATH \
 	MANPATH=$_MANPATH \
+	GLOBUS_LOCATION=$_GLOBUS_LOCATION \
+	X509_CERT_DIR=$_X509_CERT_DIR \
 	I3PROD=$_I3PROD \
 	IP_SHELL=$_IP_SHELL \
 	$NEW_SHELL $ARGV
