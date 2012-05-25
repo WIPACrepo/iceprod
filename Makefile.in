@@ -482,6 +482,11 @@ pyOpenSSL_configure : pyOpenSSL_core_config
 pyOpenSSL_core_config : pyOpenSSL_download
 	$(call pyconfig,$@)
 
+pyasn1_configure : pyasn1_core_config
+	$(call moduleinstalled,pyasn1)
+pyasn1_core_config : pyasn1_download
+	$(call pyconfig,$@)
+
 apsw_configure : apsw_core_config
 	$(call moduleinstalled,apsw)
 apsw_core_config : apsw_download
