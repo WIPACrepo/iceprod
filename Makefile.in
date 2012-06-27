@@ -63,7 +63,8 @@ http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.6.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.4.1.tar.gz \
 http://pypi.python.org/packages/source/c/configobj/configobj-4.7.2.tar.gz \
-http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz
+http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz \
+http://pypi.python.org/packages/source/f/flexmock/flexmock-0.9.6.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
 
@@ -540,6 +541,11 @@ configobj_core_config : configobj_download
 coverage_configure : coverage_core_config
 	$(call moduleinstalled,coverage)
 coverage_core_config : coverage_download
+	$(call pyconfig,$@)
+
+flexmock_configure : flexmock_core_config
+	$(call moduleinstalled,flexmock)
+flexmock_core_config : flexmock_download
 	$(call pyconfig,$@)
 
 
