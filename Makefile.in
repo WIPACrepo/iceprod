@@ -162,6 +162,8 @@ ORIG_C_INCLUDE_PATH:=$(C_INCLUDE_PATH)
 ORIG_LIBRARY_PATH:=$(LIBRARY_PATH)
 ORIG_PERL5LIB:=$(PERL5LIB)
 exportvars : 
+	$(eval PREFIX:=$(PREFIX))
+	$(eval export PREFIX)
 	$(eval PATH:=$(PREFIX)/bin:$(ORIG_PATH))
 	$(eval export PATH)
 	$(eval LD_LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64/:$(ORIG_LD_LIBRARY_PATH))
