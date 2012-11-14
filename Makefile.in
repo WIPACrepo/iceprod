@@ -194,8 +194,12 @@ core_tarball :
 	rm -rf $(PREFIX)
 
     
-make_docs : iceprod_config
-	sphinx-build -b html -N -a -E -d docs_cache -C docs_conf.py $(PREFIX)/docs/iceprod/rst $(PREFIX)/docs/iceprod/html
+make_docs : make_docs_setup iceprod_config
+	sphinx-build -b html -N -a -E -d docs_cache -C docs_conf.py $(PREFIX)/share/doc/iceprod/rst $(PREFIX)/share/doc/iceprod/html
+make_docs_setup :
+	-mkdir -p $(PREFIX)/share/doc/iceprod/rst/projects
+	-mkdir -p $(PREFIX)/share/doc/iceprod/html
+    
 
 clean : $(addsuffix _clean,$(CONF_DEPS))
 	-rm -rf Makefile.hist

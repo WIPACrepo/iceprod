@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from distutils.core import setup
+import glob
 
 setup(name='IceProd',
       version='trunk',
@@ -12,7 +13,7 @@ setup(name='IceProd',
       packages=['iceprod'],
       package_dir={'iceprod': 'lib/iceprod'},
       data_files=[
-         ('share/doc/rst/',
+         ('share/doc/iceprod/rst',
             glob.glob('resources/docs/*'))
          ],
      )
