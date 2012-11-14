@@ -11,6 +11,9 @@ setup(name='IceProd',
       url='http://code.icecube.wisc.edu/svn/meta-projects/iceprod/trunk',
       packages=['iceprod'],
       package_dir={'iceprod': 'lib/iceprod'},
-      data_files=[],
+      data_files=[
+         ('share/doc/rst/',
+            glob.glob('resources/docs/*'))
+         ],
      )
 

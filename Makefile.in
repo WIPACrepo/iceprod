@@ -64,7 +64,8 @@ http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.4.1.tar.gz \
 http://pypi.python.org/packages/source/c/configobj/configobj-4.7.2.tar.gz \
 http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz \
-http://pypi.python.org/packages/source/f/flexmock/flexmock-0.9.6.tar.gz
+http://pypi.python.org/packages/source/f/flexmock/flexmock-0.9.6.tar.gz \
+http://pypi.python.org/packages/source/S/Sphinx/Sphinx-1.1.3.tar.gz
 
 PYTHON_DEPS=$(foreach pythondeps,$(notdir $(PYTHON_DEPS_URLS)),$(filter-out %.tar.gz %.tgz,$(subst -, ,$(pythondeps))))
 
@@ -130,6 +131,8 @@ install_core : OLD_PREFIX := $(PREFIX)
 install_core : PREFIX := $(PREFIX)_core
 install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core env-shell core_tarball
 
+docs : makeprefixdir exportvars make_docs
+
 endif
 
 
@@ -190,6 +193,9 @@ core_tarball :
 	cd $(PREFIX);tar -zcf $(OLD_PREFIX)/$(CORE_TARBALL_NAME) *
 	rm -rf $(PREFIX)
 
+    
+make_docs : iceprod_config
+	sphinx-build -b html -N -a -E -d docs_cache -C docs_conf.py $(PREFIX)/docs/iceprod/rst $(PREFIX)/docs/iceprod/html
 
 clean : $(addsuffix _clean,$(CONF_DEPS))
 	-rm -rf Makefile.hist
@@ -548,6 +554,11 @@ coverage_core_config : coverage_download
 flexmock_configure : flexmock_core_config
 	$(call moduleinstalled,flexmock)
 flexmock_core_config : flexmock_download
+	$(call pyconfig,$@)
+    
+Sphinx_configure : Sphinx_core_config
+	$(call moduleinstalled,Sphinx)
+Sphinx_core_config : Sphinx_download
 	$(call pyconfig,$@)
 
 
