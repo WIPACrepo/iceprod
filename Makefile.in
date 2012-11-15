@@ -30,6 +30,7 @@ CORE_TARBALL_NAME=core_@tarball_name@
 
 # build packages
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
+http://zlib.net/zlib-1.2.7.tar.gz \
 http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz \
 ftp://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.9.tar.gz \
 ftp://ftp.gnu.org/gnu/readline/readline-6.2.tar.gz \
@@ -159,10 +160,10 @@ $(eval $(call createinstallcorehist))
 moduleinstalled=$(shell echo $1 >> Makefile.hist)
 
 
-ORIG_PATH:=$(PATH)
-ORIG_LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH)
-ORIG_C_INCLUDE_PATH:=$(C_INCLUDE_PATH)
-ORIG_LIBRARY_PATH:=$(LIBRARY_PATH)
+ORIG_PATH:=$(PATH):/usr/local/bin:/usr/bin:/bin
+ORIG_LD_LIBRARY_PATH:=$(LD_LIBRARY_PATH):/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib:/lib64:/lib/i386-linux-gnu:/usr/lib/i386-linux-gnu:/lib/i686-linux-gnu:/usr/lib/i686-linux-gnu
+ORIG_C_INCLUDE_PATH:=$(C_INCLUDE_PATH):/usr/local/include:/usr/include
+ORIG_LIBRARY_PATH:=$(LIBRARY_PATH):/usr/local/lib64:/usr/local/lib:/usr/lib64:/usr/lib:/lib:/lib64:/lib/i386-linux-gnu:/usr/lib/i386-linux-gnu:/lib/i686-linux-gnu:/usr/lib/i686-linux-gnu
 ORIG_PERL5LIB:=$(PERL5LIB)
 exportvars : 
 	$(eval PREFIX:=$(PREFIX))
@@ -174,7 +175,9 @@ exportvars :
 	$(eval GLOBUS_LOCATION:=$(PREFIX))
 	$(eval export GLOBUS_LOCATION)
 	$(eval C_INCLUDE_PATH:=$(PREFIX)/include:$(ORIG_C_INCLUDE_PATH))
+	$(eval export C_INCLUDE_PATH)
 	$(eval LIBRARY_PATH:=$(PREFIX)/lib:$(PREFIX)/lib64:$(ORIG_LIBRARY_PATH))
+	$(eval export LIBRARY_PATH)
 	$(eval PERL5LIB:=$(PREFIX)/lib/perl:$(PREFIX)/lib/perl5:$(PREFIX)/lib/per5/site_perl:$(ORIG_PERL5LIB))
 	$(eval export PERL5LIB)
 
@@ -253,6 +256,17 @@ openssl_core_config : openssl_download
 	$(MAKE) -C $(dir) install
 openssl_installclean : 
 
+
+zlib_configure : zlib_core_config
+        $(call moduleinstalled,zlib)
+zlib_core_config : $(call getconfdir,zlib)/Makefile
+        $(eval dir:=$(call getconfdir,zlib))
+        $(MAKE) -C $(dir)
+        $(MAKE) -C $(dir) install
+$(call getconfdir,zlib)/Makefile : zlib_download
+        cd $(call getconfdir,zlib);./configure --prefix=$(PREFIX)
+zlib_installclean :
+        -rm -rf $(call getconfdir,zlib)/Makefile
 
 bzip2_configure : bzip2_core_config
 	$(call moduleinstalled,bzip2)
@@ -424,7 +438,7 @@ $(call getconfdir,nginx)/Makefile : nginx_download
 --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
 --without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname) \
 --error-log-path=$(PREFIX)/var/log/nginx/error.log --http-log-path=$(PREFIX)/var/log/nginx/access.log \
---pid-path=$(PREFIX)/var/run/nginx.pid
+--pid-path=$(PREFIX)/var/run/nginx.pid --with-cc-opt=-Wno-error=unused-but-set-variable
 nginx_installclean : 
 	-rm -rf $(call getconfdir,nginx)/Makefile
 
