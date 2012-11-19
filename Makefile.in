@@ -198,7 +198,7 @@ core_tarball :
 
     
 make_docs : make_docs_setup iceprod_config
-	sphinx-build -b html -N -a -E -d docs_cache -C docs_conf.py $(PREFIX)/share/doc/iceprod/rst $(PREFIX)/share/doc/iceprod/html
+	sphinx-build -b html -N -a -E -d docs_cache -c iceprod/resources/docs_conf $(PREFIX)/share/doc/iceprod/rst $(PREFIX)/share/doc/iceprod/html
 make_docs_setup :
 	-mkdir -p $(PREFIX)/share/doc/iceprod/rst/projects
 	-mkdir -p $(PREFIX)/share/doc/iceprod/html
@@ -258,15 +258,15 @@ openssl_installclean :
 
 
 zlib_configure : zlib_core_config
-        $(call moduleinstalled,zlib)
+	$(call moduleinstalled,zlib)
 zlib_core_config : $(call getconfdir,zlib)/Makefile
-        $(eval dir:=$(call getconfdir,zlib))
-        $(MAKE) -C $(dir)
-        $(MAKE) -C $(dir) install
+	$(eval dir:=$(call getconfdir,zlib))
+	$(MAKE) -C $(dir)
+	$(MAKE) -C $(dir) install
 $(call getconfdir,zlib)/Makefile : zlib_download
-        cd $(call getconfdir,zlib);./configure --prefix=$(PREFIX)
+	cd $(call getconfdir,zlib);./configure --prefix=$(PREFIX)
 zlib_installclean :
-        -rm -rf $(call getconfdir,zlib)/Makefile
+	-rm -rf $(call getconfdir,zlib)/Makefile
 
 bzip2_configure : bzip2_core_config
 	$(call moduleinstalled,bzip2)
@@ -343,23 +343,14 @@ expat_installclean :
 # this is a globus dependency
 # delete perl after building; configure script does not update
 #  prefix if run multiple times
-perl_configure : perl_extras_config
+perl_configure : perl_core_config
 	$(call moduleinstalled,perl)
 perl_core_config : perl_download
 	$(eval dir:=$(call getconfdir,perl))
-	cd $(dir);./Configure -des -Dprefix=$(PREFIX)
-	$(MAKE) -C $(dir)
-	$(MAKE) -C $(dir) install
-perl_extras_config : perl_core_config
-	cpan App:cpanminus
-	cpanm Archive::Tar
-	cpanm Compress::Zlib
-	cpanm Digest::MD5
-	cpanm File::Spec
-	cpanm IO::Zlib
-	cpanm Pod::Parser
-	cpanm Test::Simple
-	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cpanm XML::Parser
+	cd $(dir);C_INCLUDE_PATH="" LIBRARY_PATH="" ./Configure -des -Duserelocatableinc -Dprefix=$(PREFIX) -Dextras="Archive::Tar Compress:Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser Test::Simple XML::Parser"
+	C_INCLUDE_PATH="" LIBRARY_PATH="" $(MAKE) -C $(dir) depend
+	C_INCLUDE_PATH="" LIBRARY_PATH="" $(MAKE) -C $(dir)
+	C_INCLUDE_PATH="" LIBRARY_PATH="" $(MAKE) -C $(dir) install
 perl_installclean : 
 	$(eval url = $(strip $(call geturi,perl)))
 	$(eval file = $(notdir $(url)))
@@ -517,7 +508,7 @@ pyasn1_core_config : pyasn1_download
 apsw_configure : apsw_core_config
 	$(call moduleinstalled,apsw)
 apsw_core_config : apsw_download
-	cd $(call getconfdir,apsw);python setup.py fetch --sqlite --missing-checksum-ok;python setup.py build;python setup.py install
+	cd $(call getconfdir,apsw);python setup.py fetch --sqlite --version=3.7.14.1 --missing-checksum-ok;python setup.py build;python setup.py install
 
 lxml_configure : lxml_core_config
 	$(call moduleinstalled,lxml)
