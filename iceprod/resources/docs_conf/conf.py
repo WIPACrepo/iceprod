@@ -92,7 +92,7 @@ pygments_style = 'sphinx'
 # -- Autodoc options -----------------------------------------------------------------
 
 autoclass_content = 'both'
-autodoc_member_order = 'groupwise'
+autodoc_member_order = 'bysource'
 autodoc_default_flags = ['members', 'undoc-members']
 
 # -- Options for HTML output ---------------------------------------------------

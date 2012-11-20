@@ -3,7 +3,7 @@
 
 
 IceProd Metaproject
-=========================
+===================
 
 .. toctree::
    :maxdepth: 2
@@ -13,11 +13,34 @@ IceProd Metaproject
 
 
 Projects
-==============================
+========
 
 .. toctree::
-   :glob:
    :maxdepth: 2
 
-   projects/*/index
+   projects/core/index
+   
+.. toctree::
+   :maxdepth: 3
+   
+   projects/server/index
 
+.. toctree::
+   :maxdepth: 2
+
+   projects/modules/index
+
+
+   
+Technical Details
+=================
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1   
+   
+   details/overview
+   details/core
+   details/server
+   details/modules
+   details/extras
