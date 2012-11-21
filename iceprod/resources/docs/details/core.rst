@@ -22,10 +22,10 @@ The fundamental design of the core is to run a task composed of trays and module
 
 Parameters can be defined at every level, and each level is treated as a scope (such that inner scopes inherit from outer scopes).  This is accomplished via an internal environment for each scope.
 
-env
----
+Internal Environment
+--------------------
 
-The env is a dictionary composed of several objects:
+The internal envoronment (env) is a dictionary composed of several objects:
 
 * shell environment
 * parameters
@@ -56,7 +56,7 @@ This is where external software gets added.  The software can be an already down
 Projects
 ^^^^^^^^
 
-These are ties to :doc:`iceprod.modules </projects/modules/index>` modules.  Defining a project causes it to be imported and available directly from the env object::
+These are ties to :ref:`IceProdModules`.  Defining a project causes it to be imported and available directly from the env object::
 
     env['projects']['test'].testing()
     
@@ -83,4 +83,27 @@ If a module defines a src, that is assumed to be a Class which should be added t
 * A regular python script
 * An executable of some type (this is run in a subprocess with shell execution disabled)
 
+Task Execution
+--------------
+
+The main work unit is a task, so the core itself can be thought of as a task executor.  The main executable i3exec.py has a ``runner()`` function which does exactly that.  The general outline is:
+
+1. Load xml configuration
+2. Set log level
+3. Set some default options if not set in xml configuration
+4. Set up global env based on the xml configuration
+5. Run tasks
+    * If a task option is specified in the xml configuration, follow that:
+        
+        If the task is specified by name or number, run only that task.  If there is a problem finding the task specified, raise a critical error.
+        
+    * Otherwise, run all tasks in the xml configuration in the order they were written
+
+6. Destroy the global env, uploading and deleting files as needed
+7. Upload the log, error, and output files if specified in options
+
+Many Task Mode
+--------------
+
+The main executable i3.exec.py has the option to run directly on an xml configuration file or to query the server for xml configuration files to run on.  If an xml configuration file is not given as a argument, it will assume many task mode and query the server.  Whichever mode is used, they both run the same task execution detailed above.
 

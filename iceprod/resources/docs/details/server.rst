@@ -78,26 +78,30 @@ The callback argument should be a function capable of handling the result it is 
 
 For I/O applications, it is often necessary to pass connection details to the callback function.  There are two approaches:
 
-1. Quick and Dirty::
+1. Quick and Dirty:
 
-    def foo(arg1,callback,callback_args):
-        # do work
-        callback(result,callback_args)
-    def cb(result,args):
-        # handle result
-    foo(1,cb,{'handle':None})
+    .. code-block:: python
+
+        def foo(arg1,callback,callback_args):
+            # do work
+            callback(result,callback_args)
+        def cb(result,args):
+            # handle result
+        foo(1,cb,{'handle':None})
 
 |
 |     This passes callback arguments through the worker function using a second argument.  It is used often in lower level languages where things must be compiled to binary before running.
 
-2. Functional Programming::
+2. Functional Programming:
 
-    def foo(arg1,callback):
-        # do work
-        callback(result)
-    def cb(result,args={}):
-        # handle result
-    foo(1,partial(cb,args={'handle':None}))
+    .. code-block:: python
+
+        def foo(arg1,callback):
+            # do work
+            callback(result)
+        def cb(result,args={}):
+            # handle result
+        foo(1,partial(cb,args={'handle':None}))
 
 |
 |     In functional programming, function signatures can be changed by filling in only some of the arguments and treating that as a new function.  Python allows this with the ``functools.partial()`` built-in.
