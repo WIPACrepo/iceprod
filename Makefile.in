@@ -44,7 +44,8 @@ http://curl.haxx.se/download/curl-7.25.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/expat-2.1.0.tar.gz \
 http://www.cpan.org/src/5.0/perl-5.14.2.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxuploadmodule-2.2.0.tar.gz \
-http://nginx.org/download/nginx-1.2.0.tar.gz \
+http://x2100.icecube.wisc.edu/downloads/iceprod2/nginxauthrequestmodule-a29d74804ff1.tar.gz \
+http://nginx.org/download/nginx-1.2.6.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/p7zip-9.20.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/globus-5.2.1.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/git-1.7.10.2.tar.gz
@@ -64,7 +65,7 @@ http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuv-0.7.2.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pyuvtornado-0.5.0.tar.gz \
 http://x2100.icecube.wisc.edu/downloads/iceprod2/pygridftp-1.4.1.tar.gz \
 http://pypi.python.org/packages/source/c/configobj/configobj-4.7.2.tar.gz \
-http://pypi.python.org/packages/source/c/coverage/coverage-3.5.2.tar.gz \
+http://pypi.python.org/packages/source/c/coverage/coverage-3.6.tar.gz \
 http://pypi.python.org/packages/source/f/flexmock/flexmock-0.9.6.tar.gz \
 http://pypi.python.org/packages/source/S/Sphinx/Sphinx-1.1.3.tar.gz
 
@@ -413,6 +414,8 @@ pcre_installclean :
 nginxuploadmodule_configure : nginxuploadmodule_download
 nginxuploadmodule_installclean : 
 
+nginxauthrequestmodule_configure : nginxauthrequestmodule_download
+nginxauthrequestmodule_installclean : 
 
 nginx_configure : nginx_core_config
 	$(call moduleinstalled,nginx)
@@ -424,10 +427,12 @@ $(call getconfdir,nginx)/Makefile : nginx_download
 	$(eval dirname:=$(call getconfdir,nginx))
 	$(eval pcredirname:=$(call getconfdir,pcre))
 	$(eval uploadmoddirname:=$(call getconfdir,nginxuploadmodule))
+	$(eval authmoddirname:=$(call getconfdir,nginxauthrequestmodule))
 	cd $(dirname);./configure --prefix=$(PREFIX) --with-ipv6 --with-http_ssl_module --without-http_geo_module \
 --without-http_map_module --without-http_fastcgi_module --without-http_memcached_module --without-mail_pop3_module \
 --without-mail_imap_module --without-mail_smtp_module --without-http_uwsgi_module --without-http_scgi_module \
 --without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname) \
+--add-module=../$(authmoddirname) \
 --error-log-path=$(PREFIX)/var/log/nginx/error.log --http-log-path=$(PREFIX)/var/log/nginx/access.log \
 --pid-path=$(PREFIX)/var/run/nginx.pid --with-cc-opt=-Wno-error=unused-but-set-variable
 nginx_installclean : 
