@@ -434,7 +434,7 @@ $(call getconfdir,nginx)/Makefile : nginx_download
 --without-http_upstream_ip_hash_module --with-pcre=../$(pcredirname) --add-module=../$(uploadmoddirname) \
 --add-module=../$(authmoddirname) \
 --error-log-path=$(PREFIX)/var/log/nginx/error.log --http-log-path=$(PREFIX)/var/log/nginx/access.log \
---pid-path=$(PREFIX)/var/run/nginx.pid --with-cc-opt=-Wno-error=unused-but-set-variable
+--pid-path=$(PREFIX)/var/run/nginx.pid 
 nginx_installclean : 
 	-rm -rf $(call getconfdir,nginx)/Makefile
 
