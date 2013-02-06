@@ -88,4 +88,4 @@ The 15 char length was selected for IceProd 2.  This is hard coded into :class:`
 Pool Security
 -------------
 
-All communication is encrypted with SSL certificates.  The master is capable of creating its own CA certificate, or a CA certificate can be given at formation (note: the certificate must be able to sign other certificates).  When new sites join the pool, they receive a certificate signed by the master to use for all communications.  Tasks receive a certificate signed by the site certificate.
+All communication is encrypted with SSL certificates.  The master is capable of creating its own CA certificate, or a CA certificate can be given at formation (note: the certificate must be able to sign other certificates).  When new sites join the pool, they receive a certificate signed by the master to use for all communications.  Tasks receive a CA certificate bundle that includes the master and site certificates, allowing them to verify that they are communicating with a server in the pool.

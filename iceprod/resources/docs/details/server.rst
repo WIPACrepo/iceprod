@@ -116,7 +116,15 @@ RPC that is internal to the server is handled by an RPC service created on top o
 Proxying
 ^^^^^^^^
 
-The website provides proxying and caching services to http or gridftp urls.  This allows a site to cache particular files and serve a copy out to all the jobs.
+The website provides proxying and caching services to multiple urls.  This allows a site to cache particular files and serve a copy out to all the jobs.
+
+The basic proxy settings are True/False, or the url prefix (http, ftp, gsiftp, ...).  The proxy can be a list of multiple prefixes to proxy more than one type.
+
+Download
+""""""""
+
+If proxy is set to "match" it will attempt to detect if this is a script and only cache scripts.  In particular, anything that is a python file or from the svn server is cached.
+
 
 Task Communication
 ^^^^^^^^^^^^^^^^^^
