@@ -8,6 +8,14 @@ The server handles many different tasks and has several independent modules to t
 
 IceProd can be reloaded to update a configuration variable.  This will only reload the affected parts of IceProd, while letting the rest continue running.
 
+Configuration
+-------------
+
+Most of the config variables in the server are stored in plain text in a file in the etc/iceprod directory.  The main exception is the site_id, which is stored in the local database.
+
+Variables are defined in sections and subsections. Variables are also validated against a template and gain type information in the process.  The end result is a dictionary of values that can be directly used.
+
+
 
 Queueing
 --------
