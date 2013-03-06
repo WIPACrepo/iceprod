@@ -592,7 +592,6 @@ env-shell :
 misc_config : $(PREFIX)/etc/cacerts.crt
 	chmod -Rf 755 $(PREFIX)/share/doc/p7zip
 	$(if $(wildcard $(PREFIX)/var),,mkdir $(PREFIX)/var)
-	$(if $(wildcard $(PREFIX)/var/www),,mkdir $(PREFIX)/var/www)
 	$(if $(wildcard $(PREFIX)/var/www_uploads),,mkdir $(PREFIX)/var/www_uploads)
 	$(if $(wildcard $(PREFIX)/var/run),,mkdir $(PREFIX)/var/run)
 	$(if $(wildcard $(PREFIX)/var/lib),,mkdir $(PREFIX)/var/lib)
