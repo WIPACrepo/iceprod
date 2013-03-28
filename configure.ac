@@ -13,17 +13,38 @@ AC_PROG_MAKE_SET
 AC_CHECK_TOOLS(www,curl wget fetch,no)
 if test $www == curl; then
     AC_SUBST(wwwflags,"--retry 5 --max-time 300 -f --silent -o")
+    AC_SUBST(wwwauth,"--user icecube:skua")
 else
     if test $www == wget; then
         AC_SUBST(wwwflags,"-r --tries=5 --timeout=300 --quiet -O")
+        AC_SUBST(wwwauth,"--http-user=icecube --http-password=skua")
     else
         if test $www == fetch; then
             AC_SUBST(wwwflags,"-a -T 300 -q -o")
+            AC_SUBST(wwwauth,"")
         else
             AC_MSG_ERROR("curl, wget, or fetch required for downloading packages")
         fi
     fi
 fi
+
+AC_CHECK_TOOLS(PYTHON,python,no)
+if test $PYTHON == python; then
+    unicodeversion=`python -c "import sys
+if sys.maxunicode == 1114111:
+  sys.stdout.write('ucs4')
+else:
+  sys.stdout.write('ucs2')"`
+    if test $unicodeversion == "ucs4"; then
+        echo Python found, using 4-byte unicode
+    else
+        echo Python found, using 4-byte unicode
+    fi
+else
+    echo No python found, using 4-byte unicode
+    unicodeversion='ucs4'
+fi
+AC_SUBST(unicodeversion,"$unicodeversion")
 
 arch=`uname -m | sed -e 's/Power Macintosh/ppc/ ; s/i686/i386/'`
 ostype=`uname`
@@ -32,7 +53,7 @@ if test $ostype == Linux; then
 else
     ver=`uname -r`
 fi
-AC_SUBST(platform,"$arch.$ostype.$ver")
+AC_SUBST(platform,"$arch.$ostype.$ver.$unicodeversion")
 
 AC_SUBST(tarball_name,["$PACKAGE_TARNAME-$platform.tar.gz"])
 cmd=m4_joinall([],["$www $wwwflags"],["$tarball_name "],["$PACKAGE_URL"],["$tarball_name"])

@@ -20,13 +20,16 @@ SPACE:= $(NULL)
 
 @SET_MAKE@
 
-
 # custom variables
 PLATFORM=@platform@
 WWW=@www@
 WWWFLAGS=@wwwflags@
-TARBALL_NAME=@tarball_name@
-CORE_TARBALL_NAME=core_@tarball_name@
+WWWAUTH=@wwwauth@
+TARBALL_NAME=server-@tarball_name@
+CORE_TARBALL_NAME=env-@tarball_name@
+CORE_srcdir=@srcdir@/env
+CORE_PREFIX=@prefix@/env
+unicodeversion=@unicodeversion@
 
 # build packages
 CONF_DEPS_URLS=ftp://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz \
@@ -88,7 +91,6 @@ geturi=$(foreach var,$(DEPS_URLS),$(if $(call eq,$(1),$(call getdepname,$(call g
 getconfdir=$(call getdirname,$(notdir $(call geturi,$(1))))
 
 
-
 # decide to do prebuilt binary or src build
 .PHONY : all install build
 ifeq (@prebuilt@,prebuilt)
@@ -113,7 +115,7 @@ ifeq ($(wildcard $(CORE_TARBALL_NAME),)
 	echo "binary core_tarball not found"
 	exit 1
 else
-	cp $(CORE_TARBALL_NAME) $(PREFIX)/$(CORE_TARBALL_NAME)
+	cp $(CORE_TARBALL_NAME) $(PREFIX)/var/lib/iceprod/$(CORE_TARBALL_NAME)
 endif
 
 
@@ -130,8 +132,8 @@ install_build : checkinstallhist exportvars install_config iceprod_config env-sh
 
 core : $(addsuffix _download,$(CORE_DEPS)) install_core
 install_core : OLD_PREFIX := $(PREFIX)
-install_core : PREFIX := $(PREFIX)_core
-install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core env-shell core_tarball
+install_core : PREFIX := $(CORE_PREFIX)
+install_core : checkinstallcorehist exportvars installcore_config iceprod_config_core misc_config_core core_tarball
 
 docs : makeprefixdir exportvars make_docs
 
@@ -184,7 +186,7 @@ exportvars :
 
 
 makeprefixdir : 
-	$(if $(wildcard $(PREFIX)),,$(foreach d,$(subst /, ,$(PREFIX)),mkdir $d && cd $d && ))
+	$(if $(wildcard $(PREFIX)),,cd / && $(foreach d,$(subst /, ,$(PREFIX)),mkdir $d && cd $d && ))
 
 tarball : 
 	$(eval curdir:=$(PWD))
@@ -194,8 +196,7 @@ core_tarball :
 	-chmod -Rf 755 $(PREFIX)/share/doc/p7zip
 	rm -rf $(PREFIX)/share/man $(PREFIX)/share/doc $(PREFIX)/share/gtk-doc $(PREFIX)/share/info $(PREFIX)/share/doxygen
 	$(if $(wildcard $(OLD_PREFIX)),,$(foreach d,$(subst /, ,$(OLD_PREFIX)),mkdir $d && cd $d && ))
-	cd $(PREFIX);tar -zcf $(OLD_PREFIX)/$(CORE_TARBALL_NAME) *
-	rm -rf $(PREFIX)
+	tar -C $(dir $(PREFIX)) -zcf $(OLD_PREFIX)/$(CORE_TARBALL_NAME) $(notdir $(PREFIX))
 
     
 make_docs : make_docs_setup iceprod_config
@@ -221,7 +222,7 @@ define download_expand
  $(eval file = $(notdir $(url)))
  $(eval dir = $(call getdirname,$(file)))
  $(file) : 
-	$(WWW) $(WWWFLAGS) $(file) $(url)
+	$(WWW) $(WWWFLAGS) $(file) $(url) || $(WWW) $(WWWAUTH) $(WWWFLAGS) $(file) $(url)
  $(dir) : $(file)
 	tar -zxf $(file);touch $(dir)
  $1_download : $(dir)
@@ -367,7 +368,8 @@ Python_core_config : $(call getconfdir,Python)/Makefile
 	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir)
 	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) $(MAKE) -C $(dir) install
 $(call getconfdir,Python)/Makefile : Python_download
-	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cd $(call getconfdir,Python);./configure --prefix=$(PREFIX) --enable-shared
+	C_INCLUDE_PATH=$(C_INCLUDE_PATH) LIBRARY_PATH=$(LIBRARY_PATH) cd $(call getconfdir,Python);./configure \
+--prefix=$(PREFIX) --enable-shared --enable-unicode=$(unicodeversion)
 Python_installclean : 
 	-rm -rf $(call getconfdir,Python)/Makefile
 
@@ -599,6 +601,9 @@ misc_config : $(PREFIX)/etc/cacerts.crt
 	$(if $(wildcard $(PREFIX)/man),cp -rf $(PREFIX)/man $(PREFIX)/share/man;rm -rf $(PREFIX)/man,)
 	$(if $(wildcard $(PREFIX)/logs),rm -rf $(PREFIX)/logs)
 	$(if $(wildcard $(PREFIX)/log),,mkdir $(PREFIX)/log)
+
+misc_config_core : $(PREFIX)/etc/cacerts.crt
+	-rm -rf $(PREFIX)/man
 
 # get the CA certificates from curl, which is a weekly update from Mozilla
 $(PREFIX)/etc/cacerts.crt : 	
