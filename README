@@ -47,6 +47,7 @@ Other non-essential dependencies:
               (a globus dependency)
 * globus      (for gridftp)
 * git         (for something?)
+* squid       (for http proxy)
 Python non-essentials:
 * pyasn1      (for generating ssl certs)
 * pyopenssl   (for generating ssl certs)
@@ -70,14 +71,16 @@ Requirements:
     openssl-dev, libz-dev, libbz2-dev, libncurses-dev, libxml2-dev, libxslt-dev, libexpat1-dev
 Install Homebrew to the directory of your choice:
     git clone https://github.com/Homebrew/linuxbrew.git ~/.linuxbrew
-    echo "export PATH=~/.linuxbrew/bin:$PATH" >> ~/.bashrc
-    echo "export LD_LIBRARY_PATH=~/.linuxbrew/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
-    export PATH=~/.linuxbrew/bin:$PATH
+    echo "export PATH=~/.linuxbrew/bin:~/.linuxbrew/sbin:$PATH" >> ~/.bash_profile
+    echo "export LD_LIBRARY_PATH=~/.linuxbrew/lib:$LD_LIBRARY_PATH" >> ~/.bash_profile
+    export PATH=~/.linuxbrew/bin:~/.linuxbrew/sbin:$PATH
     export LD_LIBRARY_PATH=~/.linuxbrew/lib:$LD_LIBRARY_PATH
 Tap the iceprod repository:
     brew tap dsschult/iceprod
 Install the main dependencies:
     brew install dsschult/iceprod/curl
+    brew install readline
+    brew link readline --force
     brew install dsschult/iceprod/python
     brew install dsschult/iceprod/p7zip
     brew install nginx
@@ -86,7 +89,7 @@ Install the main dependencies:
     pip install pycurl tornado jsonrpclib lxml configobj
 Install optional dependencies:
     curl -kL http://install.perlbrew.pl | bash
-    echo "source ~/perl5/perlbrew/etc/bashrc" >> ~/.bashrc
+    echo "source ~/perl5/perlbrew/etc/bashrc" >> ~/.bash_profile
     source ~/perl5/perlbrew/etc/bashrc
     perlbrew install perl-5.18.1
     perlbrew switch perl-5.18.1
@@ -94,9 +97,10 @@ Install optional dependencies:
     cpanm Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser Test::Simple XML::Parser
     brew install dsschult/iceprod/libtool
     brew install dsschult/iceprod/globus-toolkit --gridftp-only
-    echo "export GLOBUS_LOCATION=~/.linuxbrew" >> ~/.bashrc
+    echo "export GLOBUS_LOCATION=~/.linuxbrew" >> ~/.bash_profile
     export GLOBUS_LOCATION=~/.linuxbrew
     brew install git
+    brew install squid
     pip install pyasn1 pyopenssl pyuv sphinx coverage flexmock
     brew install pyuv_tornado
     brew install python-gridftp
