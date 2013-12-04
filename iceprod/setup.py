@@ -3,6 +3,7 @@
 
 from distutils.dir_util import remove_tree
 from distutils.core import setup
+from distutils import sysconfig
 import os
 import glob
 
@@ -27,7 +28,8 @@ def make_docs(src='resources/docs',dest='share/doc/iceprod/rst'):
 dirstoremove = [
     os.path.expandvars('./build'),
     ]
-dirstoremove.extend(glob.glob(os.path.expandvars('$PREFIX/share/doc/iceprod/*/*')))
+dirstoremove.extend(glob.glob(os.path.expandvars(os.path.join(sysconfig.PREFIX,
+                    'share/doc/iceprod/*/*'))))
 for d in dirstoremove:
     print 'Removing',d
     try:
@@ -49,3 +51,7 @@ setup(name='IceProd',
       data_files=make_docs(),
      )
 
+try:
+    remove_tree(os.path.expandvars('./build'))
+except:
+    pass

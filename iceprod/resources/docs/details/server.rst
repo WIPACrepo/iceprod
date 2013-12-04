@@ -4,7 +4,7 @@
 IceProd Server
 ==============
 
-The server handles many different tasks and has several independent modules to take care of them.  It uses `Python Multiprocessing <http://docs.python.org/2/library/multiprocessing.html>`_ to prevent anything in one module from inadvertantly affecting another module.  The main process handles startup and communication between each module.  It can also reload, restart, stop, or kill the modules.
+The server handles many different tasks and has several independent modules to take care of them.  It uses `Python Multiprocessing <http://docs.python.org/2/library/multiprocessing.html>`_ to prevent anything in one module from inadvertently affecting another module.  The main process handles startup and communication between each module.  It can also reload, restart, stop, or kill the modules.
 
 IceProd can be reloaded to update a configuration variable.  This will only reload the affected parts of IceProd, while letting the rest continue running.
 
@@ -124,9 +124,7 @@ RPC that is internal to the server is handled by an RPC service created on top o
 Proxying
 ^^^^^^^^
 
-The website provides proxying and caching services to multiple urls.  This allows a site to cache particular files and serve a copy out to all the jobs.
-
-The basic proxy settings are True/False, or the url prefix (http, ftp, gsiftp, ...).  The proxy can be a list of multiple prefixes to proxy more than one type.
+Proxying is taken care of by Squid Cache, if configured.  IceProd can start its own squid or use an external squid.
 
 Download
 """"""""

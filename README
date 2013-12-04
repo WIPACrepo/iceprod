@@ -13,9 +13,10 @@ For IceCube users with CVMFS access, IceProd is already installed.  To load the 
 
 Installation:
 
-Install IceProd using the manual python install process:
+Install IceProd using the handy install script:
+    python install.py
 
-  python setup.py install
+This checks for dependencies and calls each module's setup.py script.
 
 
 Prerequisites:
@@ -52,7 +53,7 @@ Python non-essentials:
 * pyasn1      (for generating ssl certs)
 * pyopenssl   (for generating ssl certs)
 * pyuv        (for async file operations)
-* pyuvtornado (for async file operations)
+* pyuv_tornado(for async file operations)
 * pygridftp   (for gridftp-python integration)
 * sphinx      (for generating documentation)
 * coverage    (for tests)
@@ -78,7 +79,8 @@ Install Homebrew to the directory of your choice:
 Tap the iceprod repository:
     brew tap dsschult/iceprod
 Install the main dependencies:
-    brew install dsschult/iceprod/curl
+    brew install curl
+    brew link curl --force
     brew install readline
     brew link readline --force
     brew install dsschult/iceprod/python
