@@ -143,8 +143,12 @@ def install(options):
     """Install IceProd"""
     src_path = os.getcwd()
     build_path = sys.prefix
+    i3prod_path = sys.prefix
     if options.prefix:
         build_path = options.prefix
+    if options.i3prod:
+        i3prod_path = options.i3prod
+    _mkdir(i3prod_path)
     
     # Run setup for each package
     if options.install:
@@ -175,10 +179,10 @@ def install(options):
     envsh_template = open(os.path.join(src_path,'env-shell.sh.in'),'r')
     envsh          = open(os.path.join(build_path,'env-shell.sh'),'w')
     for line in envsh_template:
-        line = line.replace('@I3PRODPATH@',build_path)
+        line = line.replace('@I3PRODPATH@',i3prod_path)
         line = line.replace('@META_PROJECT@',meta.upper())
         line = line.replace('@VERSION@',version)
-        line = line.replace('@prefix@',build_path)
+        line = line.replace('@PREFIX@',build_path)
         envsh.write(line)
     envsh_template.close()
     envsh.close()
@@ -217,6 +221,8 @@ if __name__ == '__main__':
                       dest="doc", help="Generate sphinx HTML documentation")
     parser.add_option("-p", "--prefix", action="store", default=None,
                       dest="prefix", help="Install prefix")
+    parser.add_option("-i", "--i3prod", action="store", default=None,
+                      dest="i3prod", help="IceProd working directory")
     parser.add_option("--install-certs", action="store_true", default=False,
                       dest="certs", help="Install OSG CA certificates")
     parser.add_option("--debug", action="store_true", default=False,

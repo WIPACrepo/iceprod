@@ -43,14 +43,15 @@ else
     ARGV=$*
 fi
 
-_I3PROD=@prefix@
+_I3PREFIX=@PREFIX@
+_I3PROD=@I3PRODPATH@
 _IP_SHELL=$NEW_SHELL
-_LD_LIBRARY_PATH=$_I3PROD/lib:$LD_LIBRARY_PATH
-_DYLD_LIBRARY_PATH=$_I3PROD/lib:$DYLD_LIBRARY_PATH
-_PYTHONPATH=$_I3PROD/lib/python2.7/site-packages:$PYTHONPATH
-_PATH=$_I3PROD/bin:$_I3PROD/sbin:$PATH
-_MANPATH=$_I3PROD/share/man:$MANPATH
-_GLOBUS_LOCATION=$_I3PROD
+_LD_LIBRARY_PATH=$_I3PREFIX/lib:$LD_LIBRARY_PATH
+_DYLD_LIBRARY_PATH=$_I3PREFIX/lib:$DYLD_LIBRARY_PATH
+_PYTHONPATH=$_I3PREFIX/lib/python2.7/site-packages:$PYTHONPATH
+_PATH=$_I3PREFIX/bin:$_I3PREFIX/sbin:$PATH
+_MANPATH=$_I3PREFIX/share/man:$MANPATH
+_GLOBUS_LOCATION=$_I3PREFIX
 _X509_CERT_DIR=$_GLOBUS_LOCATION/etc/grid-security/certificates
 
 TOPBAR="************************************************************************"
@@ -77,6 +78,11 @@ if [ -z "$ARGV" ]
     printctr "@META_PROJECT@ @VERSION@"
     printctr ""
     printf "$TOPBAR\n"
+    printf "\n"
+    printf "I3PREFIX = %s\n" $_I3PREFIX
+    printf "I3PROD = %s\n" $_I3PROD
+    printf "\n"
+    printf "$TOPBAR\n"
     printf "IceProd environment has:\n"
     printf "   PATH = %s\n" $_PATH
     printf "   LD_LIBRARY_PATH = %s\n" $_LD_LIBRARY_PATH
@@ -93,6 +99,7 @@ then
     MANPATH=$_MANPATH \
     GLOBUS_LOCATION=$_GLOBUS_LOCATION \
     X509_CERT_DIR=$_X509_CERT_DIR \
+    I3PREFIX=$_I3PREFIX \
     I3PROD=$_I3PROD \
     IP_SHELL=$_IP_SHELL \
     $NEW_SHELL $ARGV
