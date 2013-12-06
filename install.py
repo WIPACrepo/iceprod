@@ -178,6 +178,7 @@ def install(options):
         line = line.replace('@I3PRODPATH@',build_path)
         line = line.replace('@META_PROJECT@',meta.upper())
         line = line.replace('@VERSION@',version)
+        line = line.replace('@prefix@',build_path)
         envsh.write(line)
     envsh_template.close()
     envsh.close()
