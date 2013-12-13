@@ -101,6 +101,7 @@ Install optional dependencies:
     brew install dsschult/iceprod/globus-toolkit --gridftp-only
     echo "export GLOBUS_LOCATION=~/.linuxbrew" >> ~/.bash_profile
     export GLOBUS_LOCATION=~/.linuxbrew
+    brew install globus-ca-certs
     brew install git
     brew install squid
     pip install pyasn1 pyopenssl pyuv sphinx coverage flexmock

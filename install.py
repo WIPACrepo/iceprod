@@ -113,24 +113,6 @@ def check_globus():
     else:
         print_green('certificates found',tabs=1)
 
-def install_OSG_certs(options):
-    """Get the globus CA certificates from OSG"""
-    build_path = sys.prefix
-    if options.prefix:
-        build_path = options.prefix
-    url = 'http://software.grid.iu.edu/pacman/cadist/1.35/osg-certificates-1.35.tar.gz'
-    install_path = os.path.expandvars(os.path.join(build_path,'etc','grid-security'))
-    _mkdir(install_path)
-    try:
-        t_dir = tempfile.mkdtemp()
-        ca_path = os.path.join(t_dir,'osg-certificates.tar.gz')
-        _subprocess_call(['curl','-o'+ca_path,url],
-                         verbose=options.debug)
-        _subprocess_call(['tar','-C'+install_path, '-zxf', ca_path],
-                         verbose=options.debug)
-    finally:
-        shutil.rmtree(t_dir,ignore_errors=True)
-
 libraries = [
    "iceprod",
    "iceprod-core",
@@ -223,8 +205,6 @@ if __name__ == '__main__':
                       dest="prefix", help="Install prefix")
     parser.add_option("-i", "--i3prod", action="store", default=None,
                       dest="i3prod", help="IceProd working directory")
-    parser.add_option("--install-certs", action="store_true", default=False,
-                      dest="certs", help="Install OSG CA certificates")
     parser.add_option("--debug", action="store_true", default=False,
                       dest="debug", help="Debugging - print errors")
 
@@ -239,8 +219,6 @@ if __name__ == '__main__':
         if options.debug:
             raise
     else:
-        if options.certs:
-            install_OSG_certs(options)
         try:
             check_optional_libs(debug=options.debug)
             check_optional_pylibs(debug=options.debug)
