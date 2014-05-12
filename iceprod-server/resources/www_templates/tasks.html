@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Task Summary{% end %}
+
+{% block body %}
+
+{% for s in status %}
+<div>
+  <div style="display:inline;width:40px"><a href="/task?status={{ url_escape(s) }}">{{ s }}</a></div>
+  <div style="display:inline;width:40px">{{ status[s] }}</div>
+</div>
+{% end %}
+
+{% end %}
