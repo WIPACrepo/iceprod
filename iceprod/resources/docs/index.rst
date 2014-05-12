@@ -13,7 +13,7 @@ IceProd Metaproject
 
 
 Projects
-========
+--------
 
 .. toctree::
    :maxdepth: 2
@@ -32,15 +32,12 @@ Projects
 
 
    
-Technical Details
-=================
+Dev Notes
+---------
+
+Low-level details for developers.
 
 .. toctree::
-   :titlesonly:
-   :maxdepth: 1   
-   
-   details/overview
-   details/core
-   details/server
-   details/modules
-   details/extras
+    :maxdepth: 2
+    
+    details

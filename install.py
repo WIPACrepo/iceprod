@@ -67,9 +67,7 @@ def _mkdir(d):
 def check_libs():
     """Check for presence of lib dependencies"""
     print 'Checking for required dependencies:'
-    _check_bin('curl',['curl','--version'])
-    _check_bin('p7zip',['7za'])
-    _check_bin('nginx',['nginx','-v'])
+    _check_bin('curl', ['curl','--version'])
 
 def check_pylibs():
     """Check for presence of python module dependencies"""
@@ -79,26 +77,29 @@ def check_pylibs():
     _check_python('jsonrpclib')
     _check_python('tornadorpc')
     _check_python('lxml')
-    _check_python('configobj')
 
 def check_optional_libs(debug=False):
     """Check for presence of optional lib dependencies"""
     print 'Checking for optional dependencies:'
-    _check_bin('globus-toolkit',['grid-proxy-init','-version'])
-    _check_bin('git',['git','--version'],fail=debug)
-    _check_bin('squid',['squid','-v'],fail=debug)
+    _check_bin('nginx', ['nginx','-v'], fail=debug)
+    _check_bin('p7zip', ['7za'], fail=debug)
+    _check_bin('globus-gridftp-client', ['grid-proxy-init','-version'],
+               fail=debug)
+    _check_bin('git', ['git','--version'], fail=debug)
+    _check_bin('squid', ['squid','-v'], fail=debug)
 
 def check_optional_pylibs(debug=False):
     """Check for presence of optional python module dependencies"""
     print 'Checking for optional python dependencies:'
-    _check_python('pyasn1',fail=debug)
-    _check_python('pyopenssl',imp='OpenSSL',fail=debug)
-    _check_python('pyuv',fail=debug)
-    _check_python('pyuv_tornado',fail=debug)
-    _check_python('pygridftp',imp='gridftpClient',fail=debug)
-    _check_python('sphinx',fail=debug)
-    _check_python('coverage',fail=debug)
-    _check_python('flexmock',fail=debug)
+    _check_python('configobj', fail=debug)
+    _check_python('pyasn1', fail=debug)
+    _check_python('pyopenssl', imp='OpenSSL', fail=debug)
+    _check_python('pyuv', fail=debug)
+    _check_python('pyuv_tornado', fail=debug)
+    _check_python('pygridftp', imp='gridftpClient', fail=debug)
+    _check_python('sphinx', fail=debug)
+    _check_python('coverage', fail=debug)
+    _check_python('flexmock', fail=debug)
 
 def check_globus():
     """Check for globus CA certificates"""
@@ -130,6 +131,9 @@ def install(options):
         build_path = options.prefix
     if options.i3prod:
         i3prod_path = options.i3prod
+    _mkdir(build_path)
+    for d in ('bin','etc','lib','share'):
+        _mkdir(os.path.join(build_path,d))
     _mkdir(i3prod_path)
     
     # Run setup for each package
@@ -144,6 +148,7 @@ def install(options):
     
     # get the browser CA certificates from curl, which is a pem encoding
     # of the Mozilla CA bundle
+    # TODO: find a better way to do this, that also keeps this up to date
     ca_path = os.path.join(build_path,'etc','cacerts.crt')
     _subprocess_call(['curl','-o'+ca_path,'http://curl.haxx.se/ca/cacert.pem'],
                      verbose=options.debug)
@@ -177,7 +182,7 @@ def docs(options):
     if options.prefix:
         build_path = options.prefix
     
-    _mkdir(os.path.join(build_path,'share/doc/iceprod/rst/projects'))    
+    _mkdir(os.path.join(build_path,'share/doc/iceprod/rst/projects'))
     _mkdir(os.path.join(build_path,'share/doc/iceprod/html'))
     
     cmd = ['sphinx-build',
@@ -224,8 +229,7 @@ if __name__ == '__main__':
             check_optional_pylibs(debug=options.debug)
             check_globus()
         except:
-            if options.debug:
-                raise
+            pass
         if options.install:
             print "Preparing IceProd installation"
             install(options)
