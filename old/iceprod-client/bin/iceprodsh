@@ -1,0 +1,219 @@
+#! /usr/bin/env python
+#
+"""
+ Script for submitting XML IceTray jobs to a remote SOAP production
+ system.
+
+ copyright  (c) 2005 the icecube collaboration
+
+ @version: $Revision: $
+ @date: $Date: $
+ @author: Juan Carlos Diaz Velez <juancarlos@icecube.wisc.edu>
+""" 
+import getpass, getopt
+import sys, os, time
+import string, re, glob
+import logging
+from os.path import expandvars
+from ConfigParser import ConfigParser,SafeConfigParser
+logging.basicConfig()
+
+from iceprod.core import odict
+from iceprod.core import dataclasses
+from iceprod.core.xmlparser import IceTrayXMLParser
+from iceprod.core.xmlwriter import IceTrayXMLWriter
+from iceprod.core.dataclasses import *
+from iceprod.core.configuration import Config
+from iceprod.core import metadata, lex
+from iceprod.client.soaptrayclient import i3SOAPClient
+from iceprod.client import therapist
+
+import inspect
+from iceprod.client import commands
+command_list = {}
+for name, obj in inspect.getmembers(commands):
+    if inspect.isclass(obj) and name != "Command":
+        command_list[name] = obj
+
+logger = logging.getLogger('iceprodsh')
+
+options = ["production", "test", "url","username","prefix","editor"]
+cfg = SafeConfigParser()
+
+class IceProdShell:
+    def __init__(self,username,url):
+        self.username = username
+        self.password = None
+        if os.getenv('EDITOR'): 
+            self.editor = os.getenv('EDITOR')
+        elif os.getenv('SVN_EDITOR'): 
+            self.editor = os.getenv('SVN_EDITOR')
+        else:
+            self.editor = 'vi'
+        self.production = 0
+        self.test     = 0
+        self.meta     = None
+        self.metadict = {}
+        self.url      = url
+        self.client = i3SOAPClient(url=self.url)
+        self.gKeys = map(lambda x:re.compile(x[0]),therapist.gPats)
+        self.gValues = map(lambda x:x[1],therapist.gPats)
+        self.filename = 'new.xml'
+        self.xmlvalidate = 1
+        self.descmap = {}
+        self.cfg = cfg
+        self.prefix = "/data/sim"
+        self.logger = logger
+        
+    def completer(self,text,state):
+        if readline.get_line_buffer().strip().startswith('set'):
+            results = [x for x in options if x.startswith(text)] + [None]
+        elif readline.get_line_buffer().strip().startswith('get'):
+            results = [x for x in options if x.startswith(text)] + [None]
+        elif readline.get_line_buffer().strip().split()[0] in ['open','saveas']:
+            results = [x for x in glob.glob(text+'*') if x.startswith(text)] + [None]
+        else:
+            results = [x for x in command_list.keys() if x.startswith(text)] + [None]
+        return results[state]
+
+    def auth(self):
+        if not self.password:
+            self.password = getpass.getpass("Please enter a password for '%s': " % self.username)
+
+    def do(self,args,rawinput):
+        if not self.url.startswith('http') and args[0] != "set":
+            print "url is not set. Try setting it with 'set url' or use the --url option."
+            return
+        
+        if args[0] in command_list:
+            c = command_list[args[0]]()
+            error = c.CheckArgs(args[1:])
+            if error is not None:
+                print "Error:",error
+                return
+            c.Execute(self)
+        else:
+            print "unknown command"
+            print "you said '%s'." % rawinput
+            while rawinput[-1] in "!.": rawinput = rawinput[:-1]
+            try:
+                print therapist.respond(rawinput,self.gKeys,self.gValues)
+            except: pass
+
+
+if __name__ == '__main__':
+
+    arguments = sys.argv
+
+    host = "condor.icecube.wisc.edu"
+    port = 9078   #########################################
+    production = False
+    meta       = None
+    metadict   = {}
+    testprod   = False
+    use_secure = False
+    interactive = False
+
+    username = getpass.getuser()
+    url = ""
+    prefix = "/data/sim"
+    xmlvalidate = 1
+
+    try:
+        cfg.read(os.path.join(os.getenv('HOME'),".iceprodshrc"))
+        url = cfg.get('iceprodsh','url')
+        username = cfg.get('iceprodsh','username')
+    except Exception,e:
+        print >> sys.stderr, "Could not find configuration,%s" % e
+        print >> sys.stderr, "Reverting to simprodshrc syntax"
+        try:
+           cfgcompat = Config(os.path.join(os.getenv('HOME'),".simprodshrc"))
+           cfgcompat.Read()
+           url = cfgcompat.GetValue('URL')
+           username = cfgcompat.GetValue('ConfigDatabaseUser')
+        except: pass
+    try:
+        opts,args = getopt.getopt(arguments[1:], 
+                    'm:v:r:u:hi',
+                ["meta=","validate=","help", "interactive","production", "test", "url=","username=","prefix="])
+    except getopt.GetoptError, e:
+        print e
+        os._exit(1)
+
+    # Process cmdline arguments
+    for o, a in opts:
+        if o in ("--production",):
+            production=1
+        if o in ("--test",):
+            testprod=1
+        if o in ("--meta",):
+            meta=a
+        if o in ("-m",):
+            key,val = a.split(':')
+            metadict[key] = val
+        if o in ("--prefix"):
+            prefix=a
+        if o in ("-i", "--interactive"):
+            interactive=True
+        if o in ("-v", "--validate"):
+            xmlvalidate=int(a)
+        if o in ("-h", "--help"):
+            print command_list['usage'].usage
+            sys.exit()
+        if o in ("-u", "--username"):
+            username = a
+        if o in ("--url","-r"):
+            url= a
+
+    if not cfg.has_section('iceprodsh'): cfg.add_section('iceprodsh')
+    cfg.set('iceprodsh','username',username)
+    cfg.set('iceprodsh','url',url)
+    cfgfile = open(os.path.join(os.getenv('HOME'),".iceprodshrc"),'w')
+    cfg.write(cfgfile)
+    cfgfile.close()
+
+    shell = IceProdShell(username,url)
+    shell.production  = production
+    shell.xmlvalidate = xmlvalidate
+    shell.test        = testprod
+    shell.meta        = meta
+    shell.metadict    = metadict
+    shell.prefix      = prefix
+
+    if len(args) < 1: interactive = True
+    elif args[0].endswith('.xml'): 
+       interactive = True
+       cmd = command_list['open']()
+       cmd.CheckArgs([args[0]])
+       cmd.Execute(shell)
+       
+
+    if interactive: 
+        try:
+            import readline
+            import rlcompleter
+        except Exception,e:
+            print >> sys.stderr,"Cannot start interactive session:",e
+            sys.exit(1)
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer(shell.completer)
+        if os.path.exists(expandvars('$HOME/.iceprodsh_history')):
+            readline.read_history_file(expandvars('$HOME/.iceprodsh_history'))
+        while True:
+            line = ""
+            try:
+                line = raw_input('\033[0;32m%s\033[m' %'iceprodsh> ')
+            except EOFError: 
+                command_list['quit']().Execute(shell)
+
+            if not len(line): continue
+            newargs = map(string.strip,line.split())
+            #opts,args = getopt.getopt(newargs,'', [])
+            shell.do(newargs,line)
+
+    if len(args) < 1:
+        print command_list['usage'].usage
+        sys.exit(1)
+
+    shell.do(args," ".join(args))
+

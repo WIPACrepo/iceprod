@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Dataset Summary{% end %}
+
+{% block body %}
+
+{% for s in status %}
+<div>
+  <div style="display:inline;width:40px"><a href="/dataset?status={{ url_escape(s) }}">{{ s }}</a></div>
+  <div style="display:inline;width:40px">{{ status[s] }}</div>
+</div>
+{% end %}
+
+<h3 style="margin-top:3em"><a href="/submit">Submit a new dataset</a></h3>
+
+{% end %}

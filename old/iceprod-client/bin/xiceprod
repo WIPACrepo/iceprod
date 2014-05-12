@@ -1,0 +1,115 @@
+#! /usr/bin/env python
+#
+"""
+  Front-end to GtkConfig
+
+  copyright  (c) 2005 the icecube collaboration
+  
+  Usage:: 
+  	guiconfig.py [option] <file>
+	
+  	where option is one of
+	
+	   -h,
+	   --help            : This screen
+	
+	   -u <username>, 
+	   --user=<username> : Specify a username (default from environment)
+	
+	   --production      : Authenticate, update production database and 
+	                       create metadata. For production by 
+	                       authorized users.
+	
+	   --ssl             : Use SSL encryption.
+	   --noauth          : Don't authenticate against database.
+
+  @version: $Revision: $
+  @date: $Date: $
+  @author: Juan Carlos Diaz Velez <juancarlos@icecube.wisc.edu>
+
+"""
+
+import sys
+import logging
+logging.basicConfig()
+
+import getopt
+from iceprod.client.gtk import gtkicetray
+import gtk
+
+logger = logging.getLogger('xiceprod')
+
+def usage(arguments):
+	"""
+	print usage/help info
+
+  	@param arguments: cmdline args passed to program
+	"""
+	print """
+	Usage: %s [option] <file>
+	
+	where option is one of
+	
+	   -h,
+	   --help            : This screen
+	
+	   -u <username>, 
+	   --user=<username> : Specify a username (default from environment)
+	
+	   --production      : Authenticate, update production database and 
+	                       create metadata. For production by 
+	                       authorized users.
+	
+	   --ssl             : Use SSL encryption.
+	   --noauth          : Don't authenticate against database.
+	   """ % arguments[0]
+
+
+if __name__ == '__main__':
+
+	arguments = sys.argv
+	user = None
+	production = False
+	prodtest   = False
+	validate   = False
+	auth       = True
+
+	opts,args = getopt.getopt(
+					arguments[1:], 
+					'v:u:f:h',
+					["test","noauth","help", "ssl", "production", "user=","validate="])
+	for o, a in opts:
+		if o in ("-u", "--user"):
+			user = a
+
+		if o in ("--noauth"):
+			auth=False
+
+		if o in ("--production"):
+			production=True
+
+		if o in ("--test"):
+			prodtest=True
+
+		if o in ("-v","--validate"):
+			validate=int(a)
+
+		if o in ("-h", "--help"):
+			usage(arguments)
+			sys.exit()
+
+	try:
+  		guitray =  gtkicetray.GtkConfig(user,production,auth)
+  		guitray.validatexml = validate
+  		if prodtest: guitray.RunTest()
+  		if len(args):
+			guitray.getconfig(args[0])
+
+  		gtk.main()
+	except KeyboardInterrupt:
+  		logger.info("Received keyboard interrupt")
+  		sys.exit(0)
+	except Exception, e:
+  		sys.excepthook(sys.exc_type,sys.exc_value,sys.exc_traceback) 
+  		print "%s:%s" % (sys.exc_type(e),str(e))
+

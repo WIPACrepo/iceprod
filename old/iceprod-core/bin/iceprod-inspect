@@ -1,0 +1,9 @@
+#!/bin/env python
+import sys
+import iceprod.modules 
+
+for module in sys.argv[1:]:
+    try:
+        iceprod.modules.ipinspect(module,True)
+    except Exception,e:
+        print e

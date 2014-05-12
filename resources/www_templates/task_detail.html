@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% autoescape None %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Task Details{% end %}
+
+{% block body %}
+
+<div class="task_details">
+{% for k in task %}
+<div class="key_value">
+  <div>{{ escape(k) }}</div>
+  <div>
+  {% if k == 'dataset_id' %}
+    <a href="/dataset/{{ task[k] }}">{{ escape(task[k]) }}</a>
+  {% else %}
+    {{ task[k] }}
+  {% end %}
+  </div>
+</div>
+{% end %}
+</div>
+
+{% for k in logs %}
+<div class="logs">
+  <p class="log_name">{{ escape(k) }}</p>
+  <div class="log_body">{{ '<br />'.join(map(escape,logs[k].replace('\r','').split('\n'))) }}</div>
+</div>
+{% end %}
+
+{% end %}

@@ -1,0 +1,21 @@
+div.task_details {
+    background: lightgreen;
+    margin-bottom: 40px;
+}
+div.task_details div.key_value {
+    padding: 2px 4px;
+}
+div.task_details div.key_value div {
+    display: inline-block;
+}
+div.task_details div.key_value div:nth-of-type(1) {
+    width: 150px;
+}
+div.logs p.log_name {
+    font-weight: bold;
+}
+div.logs div.log_body {
+    background: pink;
+    padding: 10px;
+    margin: 5px 5px 5px 20px;
+}

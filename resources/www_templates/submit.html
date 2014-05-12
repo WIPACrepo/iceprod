@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% autoescape None %}
+
+{% block title %}IceProd{% end %}
+
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
+{% end %}
+
+{% block page_title %}Submit{% end %}
+
+{% block body %}
+<div id="submit_area">Enable javsascript to submit datasets.</div>
+
+<div id="error"></div>
+
+{% end %}
+
+{% block body_scripts %}
+<script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript" src="/static/submit.js"></script>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+    // initalize the submission form
+    Submission("init",{passkey:"{{ passkey }}",
+                       element:"#submit_area",
+                       gridspec:{{ json_encode(gridspec) }}
+                      });
+});
+</script>
+{% end %}
