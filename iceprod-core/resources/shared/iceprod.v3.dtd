@@ -1,0 +1,102 @@
+<!ELEMENT configuration (options?,steering?,task*)* >
+<!ATTLIST configuration xmlns:xsi CDATA #IMPLIED >
+<!ATTLIST configuration xsi:noNamespaceSchemaLocation CDATA #IMPLIED >
+<!ATTLIST configuration parentid CDATA #IMPLIED >
+<!ATTLIST configuration version CDATA #IMPLIED >
+<!ATTLIST configuration iceprod_version CDATA #IMPLIED >
+
+<!ELEMENT options (parameter*) >
+
+<!ELEMENT steering (parameter*,system*,batchsys*,resource*,data*)* >
+
+<!ELEMENT system (parameter*) >
+
+<!ELEMENT batchsys (parameter*) >
+<!ATTLIST batchsys name CDATA #IMPLIED >
+
+<!ELEMENT task (tray*,parameter*,batchsys*,resource*,data*,class*,project*)* >
+<!ATTLIST task name CDATA #IMPLIED >
+<!ATTLIST task depends CDATA #IMPLIED >
+
+<!ELEMENT tray (module*,parameter*,resource*,data*,class*,project*)* >
+<!ATTLIST tray name CDATA #IMPLIED >
+<!ATTLIST tray iter CDATA #IMPLIED >
+
+<!ELEMENT module (parameter*,resource*,data*,class*,project*)* >
+<!ATTLIST module name CDATA #IMPLIED >
+<!ATTLIST module class CDATA #IMPLIED >
+<!ATTLIST module src CDATA #IMPLIED >
+<!ATTLIST module args CDATA #IMPLIED >
+
+<!ELEMENT parameter (#PCDATA)* >
+<!ATTLIST parameter name CDATA #REQUIRED >
+<!ATTLIST parameter type CDATA #IMPLIED >
+<!ATTLIST parameter value CDATA #IMPLIED >
+
+<!ELEMENT class EMPTY >
+<!ATTLIST class name CDATA #REQUIRED >
+<!ATTLIST class src CDATA #IMPLIED >
+<!ATTLIST class resource_name CDATA #IMPLIED >
+<!ATTLIST class recursive CDATA #IMPLIED >
+<!ATTLIST class libs CDATA #IMPLIED >
+<!ATTLIST class env_vars CDATA #IMPLIED >
+
+<!ELEMENT project EMPTY >
+<!ATTLIST project name CDATA #IMPLIED >
+<!ATTLIST project class CDATA #REQUIRED >
+
+<!ELEMENT resource EMPTY >
+<!ATTLIST resource remote CDATA #IMPLIED >
+<!ATTLIST resource local CDATA #IMPLIED >
+<!ATTLIST resource compression CDATA #IMPLIED >
+
+<!ELEMENT data EMPTY >
+<!ATTLIST data type CDATA #REQUIRED >
+<!ATTLIST data movement CDATA #REQUIRED >
+<!ATTLIST data compression CDATA #IMPLIED >
+<!ATTLIST data remote CDATA #IMPLIED >
+<!ATTLIST data local CDATA #IMPLIED >
+
+<!-- DIF_PLUS section -->
+<!ELEMENT DIF_Plus (DIF,Plus) >
+<!ATTLIST DIF_Plus xmlns:xsi CDATA #IMPLIED >
+<!ATTLIST DIF_Plus xsi:noNamespaceSchemaLocation CDATA #IMPLIED >
+<!ELEMENT DIF (Entry_ID?|Entry_Title?|Parameters|ISO_Topic_Category|
+    Data_Center|Summary|Metadata_Name|Metadata_Version|Personnel?| 
+    Sensor_Name|Source_Name|DIF_Creation_Date)* >
+
+<!ELEMENT Entry_ID (#PCDATA)>
+<!ELEMENT Entry_Title (#PCDATA)>
+<!ELEMENT Parameters (#PCDATA)>
+<!ELEMENT ISO_Topic_Category (#PCDATA)>
+<!ELEMENT Data_Center (Data_Center_Name|Personnel)*>
+<!ELEMENT Summary (#PCDATA)>
+<!ELEMENT Metadata_Name (#PCDATA)>
+<!ELEMENT Metadata_Version (#PCDATA)>
+<!ELEMENT Personnel (Role?|First_Name?|Last_Name?|Email?)*>
+<!ELEMENT Sensor_Name (#PCDATA)>
+<!ELEMENT Source_Name (#PCDATA)>
+<!ELEMENT DIF_Creation_Date (#PCDATA) >
+<!ELEMENT Data_Center_Name (#PCDATA) >
+<!ELEMENT Role (#PCDATA) >
+<!ELEMENT First_Name (#PCDATA) >
+<!ELEMENT Last_Name (#PCDATA) >
+<!ELEMENT Email (#PCDATA) >
+
+
+<!ELEMENT Plus (Start_DateTime?|End_DateTime?|Category?|Subcategory?|Run_Number?|
+            I3Db_Key?|SimDb_Key?|Project*|Steering_File?|Log_File?|Command_Line?)* >
+<!ELEMENT Start_DateTime (#PCDATA)>
+<!ELEMENT End_DateTime (#PCDATA)>
+<!ELEMENT Category (#PCDATA)>
+<!ELEMENT Subcategory (#PCDATA)>
+<!ELEMENT Run_Number (#PCDATA)>
+<!ELEMENT I3Db_Key (#PCDATA)>
+<!ELEMENT SimDb_Key (#PCDATA)>
+<!ELEMENT Steering_File (#PCDATA) >
+<!ELEMENT Log_File (#PCDATA) >
+<!ELEMENT Command_Line (#PCDATA) >
+
+<!ELEMENT Project (Name,Version) >
+<!ELEMENT Name ( #PCDATA ) >
+<!ELEMENT Version ( #PCDATA ) >
