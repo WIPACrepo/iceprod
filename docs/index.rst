@@ -18,18 +18,12 @@ Projects
 .. toctree::
    :maxdepth: 2
 
-   projects/core/index
+   core/index
    
 .. toctree::
    :maxdepth: 3
    
-   projects/server/index
-
-.. toctree::
-   :maxdepth: 2
-
-   projects/modules/index
-
+   server/index
 
    
 Dev Notes

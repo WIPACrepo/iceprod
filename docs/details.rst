@@ -10,7 +10,6 @@ Some discussions may get very technical.
 .. toctree::
    :maxdepth: 3
    
-   projects/core/details/index
-   projects/server/details/index
-   projects/modules/details/index
+   core/details/index
+   server/details/index
    extra_details
