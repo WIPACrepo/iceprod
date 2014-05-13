@@ -1,41 +1,64 @@
 IceProd
+=======
 
-IceProd is a Python framework for distributed management of batch jobs.  It runs as a layer on top of other batch middleware such as CREAM, Condor, and PBS and can pool together resources from different batch systems.  The primary purpose is to coordinate and administer many large sets of jobs at once, keeping a history of the entire job lifecycle.
+IceProd is a Python framework for distributed management of batch jobs. 
+It runs as a layer on top of other batch middleware such as CREAM, Condor, 
+and PBS and can pool together resources from different batch systems. 
+The primary purpose is to coordinate and administer many large sets of 
+jobs at once, keeping a history of the entire job lifecycle.
 
+.. note:
 
------------------
+    For IceCube users with CVMFS access, IceProd is already installed. 
+    To load the environment execute::
+    
+        /cvmfs/icecube.wisc.edu/iceprod/stable/env-shell.sh
+    
+    or::
+    
+        source `/cvmfs/icecube.wisc.edu/iceprod/stable/setup.sh`
+    
+    depending on whether you want to get a new shell or load the variables
+    into the current shell.
 
-For IceCube users with CVMFS access, IceProd is already installed.  To load the environment execute:
-/cvmfs/icecube.wisc.edu/iceprod/stable/env-shell.sh
+Installation
+------------
 
------------------
+**Easy Installation**: Download the latest source and build.
 
+.. parsed-literal::
 
-Installation:
+    tar xvzf icecube-$VERSION.tar.gz
+    cd icecube-$VERSION
+    python setup.py build
+    sudo python setup.py install
 
-Install IceProd using the handy install script:
-    python install.py
+**Platforms**: IceProd should run on any Unix-like platform, although only
+Linux has been extensively tested and can be recommented for production
+deployment (even though Mac OS X is derived from BSD and supports kqueue, its
+networking performance is generally poor so it is recommended only for
+development use).
 
-This checks for dependencies and calls each module's setup.py script.
-
-
-Prerequisites:
-
-IceProd runs on python 2.7
+**Prerequisites**: IceProd runs on python 2.7, 3.2, 3.3, and 3.4. 
 
 The following is required:
 
 Programs:
+
 * curl
-* p7zip
-* nginx
 
 Python libraries:
+
 * pycurl
+
 * tornado
+
 * jsonrpclib
+
 * tornadorpc
+
 * lxml
+
 * configobj
 
 There are two types of database interface available:
@@ -43,12 +66,15 @@ There are two types of database interface available:
 * mysql:   depends on mysqldb: https://pypi.python.org/pypi/MySQL-python
 
 Other non-essential dependencies:
+* p7zip       (for compression)
+* nginx       (for ssl offloading and better security)
+* squid       (for http proxy)
 * libtool     (a globus dependency)
 * perl 5.10 + modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
               (a globus dependency)
 * globus      (for gridftp)
 * git         (for something?)
-* squid       (for http proxy)
+
 Python non-essentials:
 * pyasn1      (for generating ssl certs)
 * pyopenssl   (for generating ssl certs)
@@ -60,25 +86,32 @@ Python non-essentials:
 * flexmock    (for tests)
 
 
-Easy Install of Prerequisites:
+**Manual Install of Prerequisites**:
 
-Homebrew (http://brew.sh)
-and the Linuxbrew fork (https://github.com/Homebrew/linuxbrew)
+`http://brew.sh Homebrew`_ and the 
+`https://github.com/Homebrew/linuxbrew Linuxbrew fork`_
 greatly simplify installation.
 
 Requirements:
+
     a compiler
     curl, git, ruby
     openssl-dev, libz-dev, libbz2-dev, libncurses-dev, libxml2-dev, libxslt-dev, libexpat1-dev
-Install Homebrew to the directory of your choice:
+
+Install Homebrew to the directory of your choice::
+
     git clone https://github.com/Homebrew/linuxbrew.git ~/.linuxbrew
     echo "export PATH=~/.linuxbrew/bin:~/.linuxbrew/sbin:$PATH" >> ~/.bash_profile
     echo "export LD_LIBRARY_PATH=~/.linuxbrew/lib:$LD_LIBRARY_PATH" >> ~/.bash_profile
     export PATH=~/.linuxbrew/bin:~/.linuxbrew/sbin:$PATH
     export LD_LIBRARY_PATH=~/.linuxbrew/lib:$LD_LIBRARY_PATH
-Tap the iceprod repository:
+
+Tap the iceprod repository::
+
     brew tap dsschult/iceprod
-Install the main dependencies:
+
+Install the main dependencies::
+
     brew install curl
     brew link curl --force
     brew install readline
@@ -89,7 +122,9 @@ Install the main dependencies:
     brew install apsw
     brew install tornadorpc
     pip install pycurl tornado jsonrpclib lxml configobj
-Install optional dependencies:
+
+Install optional dependencies::
+
     curl -kL http://install.perlbrew.pl | bash
     echo "source ~/perl5/perlbrew/etc/bashrc" >> ~/.bash_profile
     source ~/perl5/perlbrew/etc/bashrc
