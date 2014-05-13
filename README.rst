@@ -78,6 +78,7 @@ Other non-essential dependencies:
 Python non-essentials:
 * pyasn1      (for generating ssl certs)
 * pyopenssl   (for generating ssl certs)
+* setproctitle(for setting a process name)
 * pyuv        (for async file operations)
 * pyuv_tornado(for async file operations)
 * pygridftp   (for gridftp-python integration)

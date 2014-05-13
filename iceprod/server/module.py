@@ -13,9 +13,10 @@ import os
 from functools import partial
 
 try:
-    import iceprod.procname
+    from setproctitle import setproctitle
 except ImportError:
-    print('Could not import procname module')
+    setproctitle = None
+    print('Could not import setproctitle module')
 import iceprod.core.logger
 
 from iceprod.server.RPCInternal import RPCService
@@ -61,11 +62,11 @@ class module(object):
         iceprod.core.logger.removestdout()
         
         # Change name of process for ps
-        try:
-            iceprod.procname.setprocname(logger.name)
-        except:
-            logger.warn("Could not import procname module.")
-            logger.warn("Will not be able to set process name for daemon")
+        if setproctitle:
+            try:
+                setproctitle(logger.name)
+            except Exception:
+                logger.warn('could not set proctitle')
     
     def start(self,blocking=True):
         """Start the messaging service"""
