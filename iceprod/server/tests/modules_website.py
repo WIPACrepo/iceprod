@@ -53,7 +53,6 @@ import iceprod.core.logger
 from iceprod.server import module
 from iceprod.server.modules.website import website
 from iceprod.server.dbclient import MetaDB,DB
-from iceprod.server.proxy import Proxy
 from iceprod.server.nginx import Nginx
 from iceprod.server import openssl
 try:
@@ -437,401 +436,401 @@ class website_test(unittest.TestCase):
         else:
             printer('Test website LibHandler')
     
-    def test_21_DownloadHandler(self):
-        """Test DownloadHandler"""
-        try:
-            # test that objects are called on startup
-            passkey = 'passkey'
-            def db_start(*args,**kwargs):
-                db_start.called = True
-            db_start.called = False
-            flexmock(MetaDB).should_receive('start').replace_with(db_start)
-            def db_stop(*args,**kwargs):
-                db_stop.called = True
-            db_stop.called = False
-            flexmock(MetaDB).should_receive('stop').replace_with(db_stop)
-            def f(*args,**kwargs):
-                ret = f.returns.pop(0)
-                logger.info('f() returns %r',ret)
-                if 'callback' in kwargs:
-                    kwargs['callback'](ret)
-                else:
-                    return ret
-            flexmock(MetaDB).should_receive('__getattr__').replace_with(lambda a:f)
-            def message_handling_loop():
-                message_handling_loop.called = True
-            flexmock(website).should_receive('message_handling_loop').replace_with(message_handling_loop)
-            
-            def proxy_func(name,*args,**kwargs):
-                proxy_func.called = name
-                if proxy_func.ret:
-                    kwargs['writer'](proxy_func.ret)
-                    kwargs['callback']()
-                else:
-                    kwargs['error']('error')
-            proxy_func.ret = 'OK'
-            flexmock(Proxy).should_receive('size_request').replace_with(
-                partial(proxy_func,'size_request'))
-            flexmock(Proxy).should_receive('checksum_request').replace_with(
-                partial(proxy_func,'checksum_request'))
-            flexmock(Proxy).should_receive('download_request').replace_with(
-                partial(proxy_func,'download_request'))
-            
-            pycurl_handle = dataclasses.PycURL()
-            def writer(data):
-                writer.data += data
-            writer.data = ''
-            
-            args = [self.cfg,Queue(),Pipe()[1],Queue()]
-            web = website(args)
-            try:
-                for _ in xrange(50): # try for 5 seconds
-                    if (tornado.ioloop.IOLoop.initialized() and 
-                        tornado.ioloop.IOLoop.instance()._running):
-                        break
-                    time.sleep(0.1)
-                if not (tornado.ioloop.IOLoop.initialized() and 
-                        tornado.ioloop.IOLoop.instance()._running):
-                    raise Exception('did not start tornado')
-                
-                address = 'localhost:%d/download'%(
-                          self.cfg['webserver']['tornado_port'])
-                logger.info('try connecting directly to tornado at %s',address)
-                
-                kwargs = {'cacert': self.cfg['system']['ssl_cacert'],
-                          'username': self.cfg['download']['http_username'],
-                          'password': self.cfg['download']['http_password']
-                         }
-                
-                body = json_encode({'type':'download',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'download_request':
-                    raise Exception('download_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raiseException('error expected for download_request')
-                if proxy_func.called != 'download_request':
-                    raise Exception('download_request not called')
-                
-                body = json_encode({'type':'checksum',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'checksum_request':
-                    raise Exception('checksum_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for checksum_request')
-                if proxy_func.called != 'checksum_request':
-                    raise Exception('checksum_request not called')
-                
-                body = json_encode({'type':'size',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'size_request':
-                    raise Exception('size_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for size_request')
-                if proxy_func.called != 'size_request':
-                    raise Exception('size_request not called')
-                
-                body = json_encode({'type':'tests',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                f.returns = [True]
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for bad request type')
-                
-                
-                
-                time.sleep(0.1)
-                
-                address = '%s:%d/download'%(self.hostname,
-                                   self.cfg['webserver']['port'])
-                logger.info('try connecting to nginx->tornado at %s',address)
-                
-                
-                body = json_encode({'type':'download',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'download_request':
-                    raise Exception('download_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raiseException('error expected for download_request')
-                if proxy_func.called != 'download_request':
-                    raise Exception('download_request not called')
-                
-                body = json_encode({'type':'checksum',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'checksum_request':
-                    raise Exception('checksum_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for checksum_request')
-                if proxy_func.called != 'checksum_request':
-                    raise Exception('checksum_request not called')
-                
-                body = json_encode({'type':'size',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True]
-                writer.data = ''
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                if proxy_func.called != 'size_request':
-                    raise Exception('size_request not called')
-                
-                f.returns = [True]
-                proxy_func.ret = False
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for size_request')
-                if proxy_func.called != 'size_request':
-                    raise Exception('size_request not called')
-                
-                body = json_encode({'type':'tests',
-                                    'url':address+'/test',
-                                    'key':passkey,
-                                   });
-                f.returns = [True]
-                proxy_func.ret = 'OK'
-                proxy_func.called = None
-                try:
-                    ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                except:
-                    pass
-                else:
-                    raise Exception('error expected for bad request type')
-                
-            finally:
-                web.stop()
-            
-        except Exception as e:
-            logger.error('Error running website DownloadHandler test - %s',str(e))
-            printer('Test website DownloadHandler',False)
-            raise
-        else:
-            printer('Test website DownloadHandler')
-    
-    def test_30_upload(self):
-        """Test upload"""
-        try:
-            # test that objects are called on startup
-            passkey = 'passkey'
-            def db_start(*args,**kwargs):
-                db_start.called = True
-            db_start.called = False
-            flexmock(MetaDB).should_receive('start').replace_with(db_start)
-            def db_stop(*args,**kwargs):
-                db_stop.called = True
-            db_stop.called = False
-            flexmock(MetaDB).should_receive('stop').replace_with(db_stop)
-            def f(*args,**kwargs):
-                f.names.append(kwargs['func_name'])
-                ret = f.returns.pop(0)
-                logger.info('f(func_name=%s) returns %r',kwargs['func_name'],ret)
-                if 'callback' in kwargs:
-                    kwargs['callback'](ret)
-                else:
-                    return ret
-            flexmock(MetaDB).should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            def message_handling_loop():
-                message_handling_loop.called = True
-            flexmock(website).should_receive('message_handling_loop').replace_with(message_handling_loop)
-            
-            pycurl_handle = dataclasses.PycURL()
-            def writer(data):
-                writer.data += data
-            writer.data = ''
-            
-            # make 10M test data file
-            filename = str(random.randint(0,10000))
-            filecontents = os.urandom(10**7)
-            dest_path = os.path.join(self.test_dir,filename)
-            with open(dest_path,'w') as file:
-                file.write(filecontents)
-            size = os.path.getsize(dest_path)
-            chksum = functions.sha512sum(dest_path)
-            
-            args = [self.cfg,Queue(),Pipe()[1],Queue()]
-            web = website(args)
-            try:
-                for _ in xrange(50): # try for 5 seconds
-                    if (tornado.ioloop.IOLoop.initialized() and 
-                        tornado.ioloop.IOLoop.instance()._running):
-                        break
-                    time.sleep(0.1)
-                if not (tornado.ioloop.IOLoop.initialized() and 
-                        tornado.ioloop.IOLoop.instance()._running):
-                    raise Exception('did not start tornado')
-                
-                address = '%s:%d/upload'%(self.hostname,
-                                   self.cfg['webserver']['port'])
-                logger.info('try connecting to nginx->tornado at %s',address)
-                
-                kwargs = {'cacert': self.cfg['system']['ssl_cacert'],
-                          'username': self.cfg['download']['http_username'],
-                          'password': self.cfg['download']['http_password']
-                         }
-                
-                # do pre-upload
-                body = json_encode({'type':'upload',
-                                    'url':address,
-                                    'size':size,
-                                    'checksum':chksum,
-                                    'checksum_type':'sha512',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True,'testurl']
-                f.names = []
-                writer.data = ''
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                try:
-                    ret = json_decode(writer.data)
-                except:
-                    raise Exception('initial request: ret is not json')
-                if 'type' not in ret or ret['type'] != 'upload':
-                    raise Exception('initial request: type incorrect')
-                if 'url' not in ret or ret['url'] != address:
-                    raise Exception('initial request: url incorrect')
-                if 'upload' not in ret or ret['upload'] != '/upload/testurl':
-                    raise Exception('initial request: upload incorrect')
-                if (len(f.names) < 2 or f.names[0] != 'authorize_task' or
-                    f.names[1] != 'new_upload'):
-                    logger.info('DB funcs: %r',f.names)
-                    raise Exception('initial request: DB funcs incorrect')
-                
-                # move to actual upload
-                f.returns = [True,True]
-                f.names = []
-                ret = pycurl_handle.put(address+'/testurl',dest_path,**kwargs)
-                if (len(f.names) < 2 or f.names[0] != 'is_upload_addr' or
-                    f.names[1] != 'handle_upload'):
-                    logger.info('DB funcs: %r',f.names)
-                    raise Exception('upload request: DB funcs incorrect')
-                
-                # do check-upload
-                body = json_encode({'type':'check',
-                                    'url':address+'/testurl',
-                                    'key':passkey,
-                                   });
-                
-                f.returns = [True,True]
-                f.names = []
-                writer.data = ''
-                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
-                try:
-                    ret = json_decode(writer.data)
-                except:
-                    raise Exception('check request: ret is not json')
-                if 'type' not in ret or ret['type'] != 'check':
-                    raise Exception('check request: type incorrect')
-                if 'url' not in ret or ret['url'] != address+'/testurl':
-                    raise Exception('check request: url incorrect')
-                if 'result' not in ret or ret['result'] != True:
-                    raise Exception('check request: result incorrect')
-                if (len(f.names) < 2 or f.names[0] != 'authorize_task' or
-                    f.names[1] != 'check_upload'):
-                    logger.info('DB funcs: %r',f.names)
-                    raise Exception('check request: DB funcs incorrect')
-                
-            finally:
-                web.stop()
-            
-        except Exception as e:
-            logger.error('Error running website upload test - %s',str(e))
-            printer('Test website upload',False)
-            raise
-        else:
-            printer('Test website upload')
+    #def test_21_DownloadHandler(self):
+    #    """Test DownloadHandler"""
+    #    try:
+    #        # test that objects are called on startup
+    #        passkey = 'passkey'
+    #        def db_start(*args,**kwargs):
+    #            db_start.called = True
+    #        db_start.called = False
+    #        flexmock(MetaDB).should_receive('start').replace_with(db_start)
+    #        def db_stop(*args,**kwargs):
+    #            db_stop.called = True
+    #        db_stop.called = False
+    #        flexmock(MetaDB).should_receive('stop').replace_with(db_stop)
+    #        def f(*args,**kwargs):
+    #            ret = f.returns.pop(0)
+    #            logger.info('f() returns %r',ret)
+    #            if 'callback' in kwargs:
+    #                kwargs['callback'](ret)
+    #            else:
+    #                return ret
+    #        flexmock(MetaDB).should_receive('__getattr__').replace_with(lambda a:f)
+    #        def message_handling_loop():
+    #            message_handling_loop.called = True
+    #        flexmock(website).should_receive('message_handling_loop').replace_with(message_handling_loop)
+    #        
+    #        def proxy_func(name,*args,**kwargs):
+    #            proxy_func.called = name
+    #            if proxy_func.ret:
+    #                kwargs['writer'](proxy_func.ret)
+    #                kwargs['callback']()
+    #            else:
+    #                kwargs['error']('error')
+    #        proxy_func.ret = 'OK'
+    #        flexmock(Proxy).should_receive('size_request').replace_with(
+    #            partial(proxy_func,'size_request'))
+    #        flexmock(Proxy).should_receive('checksum_request').replace_with(
+    #            partial(proxy_func,'checksum_request'))
+    #        flexmock(Proxy).should_receive('download_request').replace_with(
+    #            partial(proxy_func,'download_request'))
+    #        
+    #        pycurl_handle = dataclasses.PycURL()
+    #        def writer(data):
+    #            writer.data += data
+    #        writer.data = ''
+    #        
+    #        args = [self.cfg,Queue(),Pipe()[1],Queue()]
+    #        web = website(args)
+    #        try:
+    #            for _ in xrange(50): # try for 5 seconds
+    #                if (tornado.ioloop.IOLoop.initialized() and 
+    #                    tornado.ioloop.IOLoop.instance()._running):
+    #                    break
+    #                time.sleep(0.1)
+    #            if not (tornado.ioloop.IOLoop.initialized() and 
+    #                    tornado.ioloop.IOLoop.instance()._running):
+    #                raise Exception('did not start tornado')
+    #            
+    #            address = 'localhost:%d/download'%(
+    #                      self.cfg['webserver']['tornado_port'])
+    #            logger.info('try connecting directly to tornado at %s',address)
+    #            
+    #            kwargs = {'cacert': self.cfg['system']['ssl_cacert'],
+    #                      'username': self.cfg['download']['http_username'],
+    #                      'password': self.cfg['download']['http_password']
+    #                     }
+    #            
+    #            body = json_encode({'type':'download',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'download_request':
+    #                raise Exception('download_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raiseException('error expected for download_request')
+    #            if proxy_func.called != 'download_request':
+    #                raise Exception('download_request not called')
+    #            
+    #            body = json_encode({'type':'checksum',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'checksum_request':
+    #                raise Exception('checksum_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for checksum_request')
+    #            if proxy_func.called != 'checksum_request':
+    #                raise Exception('checksum_request not called')
+    #            
+    #            body = json_encode({'type':'size',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'size_request':
+    #                raise Exception('size_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for size_request')
+    #            if proxy_func.called != 'size_request':
+    #                raise Exception('size_request not called')
+    #            
+    #            body = json_encode({'type':'tests',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            f.returns = [True]
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for bad request type')
+    #            
+    #            
+    #            
+    #            time.sleep(0.1)
+    #            
+    #            address = '%s:%d/download'%(self.hostname,
+    #                               self.cfg['webserver']['port'])
+    #            logger.info('try connecting to nginx->tornado at %s',address)
+    #            
+    #            
+    #            body = json_encode({'type':'download',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'download_request':
+    #                raise Exception('download_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raiseException('error expected for download_request')
+    #            if proxy_func.called != 'download_request':
+    #                raise Exception('download_request not called')
+    #            
+    #            body = json_encode({'type':'checksum',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'checksum_request':
+    #                raise Exception('checksum_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for checksum_request')
+    #            if proxy_func.called != 'checksum_request':
+    #                raise Exception('checksum_request not called')
+    #            
+    #            body = json_encode({'type':'size',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True]
+    #            writer.data = ''
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            if proxy_func.called != 'size_request':
+    #                raise Exception('size_request not called')
+    #            
+    #            f.returns = [True]
+    #            proxy_func.ret = False
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for size_request')
+    #            if proxy_func.called != 'size_request':
+    #                raise Exception('size_request not called')
+    #            
+    #            body = json_encode({'type':'tests',
+    #                                'url':address+'/test',
+    #                                'key':passkey,
+    #                               });
+    #            f.returns = [True]
+    #            proxy_func.ret = 'OK'
+    #            proxy_func.called = None
+    #            try:
+    #                ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            except:
+    #                pass
+    #            else:
+    #                raise Exception('error expected for bad request type')
+    #            
+    #        finally:
+    #            web.stop()
+    #        
+    #    except Exception as e:
+    #        logger.error('Error running website DownloadHandler test - %s',str(e))
+    #        printer('Test website DownloadHandler',False)
+    #        raise
+    #    else:
+    #        printer('Test website DownloadHandler')
+    #
+    #def test_30_upload(self):
+    #    """Test upload"""
+    #    try:
+    #        # test that objects are called on startup
+    #        passkey = 'passkey'
+    #        def db_start(*args,**kwargs):
+    #            db_start.called = True
+    #        db_start.called = False
+    #        flexmock(MetaDB).should_receive('start').replace_with(db_start)
+    #        def db_stop(*args,**kwargs):
+    #            db_stop.called = True
+    #        db_stop.called = False
+    #        flexmock(MetaDB).should_receive('stop').replace_with(db_stop)
+    #        def f(*args,**kwargs):
+    #            f.names.append(kwargs['func_name'])
+    #            ret = f.returns.pop(0)
+    #            logger.info('f(func_name=%s) returns %r',kwargs['func_name'],ret)
+    #            if 'callback' in kwargs:
+    #                kwargs['callback'](ret)
+    #            else:
+    #                return ret
+    #        flexmock(MetaDB).should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
+    #        def message_handling_loop():
+    #            message_handling_loop.called = True
+    #        flexmock(website).should_receive('message_handling_loop').replace_with(message_handling_loop)
+    #        
+    #        pycurl_handle = dataclasses.PycURL()
+    #        def writer(data):
+    #            writer.data += data
+    #        writer.data = ''
+    #        
+    #        # make 10M test data file
+    #        filename = str(random.randint(0,10000))
+    #        filecontents = os.urandom(10**7)
+    #        dest_path = os.path.join(self.test_dir,filename)
+    #        with open(dest_path,'w') as file:
+    #            file.write(filecontents)
+    #        size = os.path.getsize(dest_path)
+    #        chksum = functions.sha512sum(dest_path)
+    #        
+    #        args = [self.cfg,Queue(),Pipe()[1],Queue()]
+    #        web = website(args)
+    #        try:
+    #            for _ in xrange(50): # try for 5 seconds
+    #                if (tornado.ioloop.IOLoop.initialized() and 
+    #                    tornado.ioloop.IOLoop.instance()._running):
+    #                    break
+    #                time.sleep(0.1)
+    #            if not (tornado.ioloop.IOLoop.initialized() and 
+    #                    tornado.ioloop.IOLoop.instance()._running):
+    #                raise Exception('did not start tornado')
+    #            
+    #            address = '%s:%d/upload'%(self.hostname,
+    #                               self.cfg['webserver']['port'])
+    #            logger.info('try connecting to nginx->tornado at %s',address)
+    #            
+    #            kwargs = {'cacert': self.cfg['system']['ssl_cacert'],
+    #                      'username': self.cfg['download']['http_username'],
+    #                      'password': self.cfg['download']['http_password']
+    #                     }
+    #            
+    #            # do pre-upload
+    #            body = json_encode({'type':'upload',
+    #                                'url':address,
+    #                                'size':size,
+    #                                'checksum':chksum,
+    #                                'checksum_type':'sha512',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True,'testurl']
+    #            f.names = []
+    #            writer.data = ''
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            try:
+    #                ret = json_decode(writer.data)
+    #            except:
+    #                raise Exception('initial request: ret is not json')
+    #            if 'type' not in ret or ret['type'] != 'upload':
+    #                raise Exception('initial request: type incorrect')
+    #            if 'url' not in ret or ret['url'] != address:
+    #                raise Exception('initial request: url incorrect')
+    #            if 'upload' not in ret or ret['upload'] != '/upload/testurl':
+    #                raise Exception('initial request: upload incorrect')
+    #            if (len(f.names) < 2 or f.names[0] != 'authorize_task' or
+    #                f.names[1] != 'new_upload'):
+    #                logger.info('DB funcs: %r',f.names)
+    #                raise Exception('initial request: DB funcs incorrect')
+    #            
+    #            # move to actual upload
+    #            f.returns = [True,True]
+    #            f.names = []
+    #            ret = pycurl_handle.put(address+'/testurl',dest_path,**kwargs)
+    #            if (len(f.names) < 2 or f.names[0] != 'is_upload_addr' or
+    #                f.names[1] != 'handle_upload'):
+    #                logger.info('DB funcs: %r',f.names)
+    #                raise Exception('upload request: DB funcs incorrect')
+    #            
+    #            # do check-upload
+    #            body = json_encode({'type':'check',
+    #                                'url':address+'/testurl',
+    #                                'key':passkey,
+    #                               });
+    #            
+    #            f.returns = [True,True]
+    #            f.names = []
+    #            writer.data = ''
+    #            ret = pycurl_handle.post(address,writer,postbody=body,**kwargs)
+    #            try:
+    #                ret = json_decode(writer.data)
+    #            except:
+    #                raise Exception('check request: ret is not json')
+    #            if 'type' not in ret or ret['type'] != 'check':
+    #                raise Exception('check request: type incorrect')
+    #            if 'url' not in ret or ret['url'] != address+'/testurl':
+    #                raise Exception('check request: url incorrect')
+    #            if 'result' not in ret or ret['result'] != True:
+    #                raise Exception('check request: result incorrect')
+    #            if (len(f.names) < 2 or f.names[0] != 'authorize_task' or
+    #                f.names[1] != 'check_upload'):
+    #                logger.info('DB funcs: %r',f.names)
+    #                raise Exception('check request: DB funcs incorrect')
+    #            
+    #        finally:
+    #            web.stop()
+    #        
+    #    except Exception as e:
+    #        logger.error('Error running website upload test - %s',str(e))
+    #        printer('Test website upload',False)
+    #        raise
+    #    else:
+    #        printer('Test website upload')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()    

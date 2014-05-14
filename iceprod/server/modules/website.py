@@ -27,7 +27,6 @@ from pyuv_tornado import fs
 
 from iceprod.server import module
 from iceprod.server.dbclient import DB
-from iceprod.server.proxy import Proxy
 from iceprod.server.nginx import Nginx
 import iceprod.core.functions
 
@@ -206,294 +205,294 @@ class LibHandler(tornado.web.RequestHandler):
     def post_send(self,path,errno):
         self.finish()
 
-
-class DownloadHandler(tornado.web.RequestHandler):
-    """Handler for downloads"""
-    def get(self):
-        """GET is invalid and returns an error"""
-        raise tornado.web.HTTPError(405,'GET is invalid.  Use POST')
-        # TODO: make this human-browsable in future
-    
-    @tornado.web.asynchronous
-    def post(self):
-        """POST request should be json
-           
-           parameters
-             :type: type of result requested (download, size, checksum)
-             :url: the url requested
-             :key: authorization key
-             :site_id: designate this request as coming from another site
-        
-           return values (by request type)
-             :download: response will be the file or 404 error
-             :size: response will be json of the type {url,size} or 404 error
-             :checksum: response will be json of the type {url,checksum} or 404 error
-        """
-        # parse JSON
-        try:
-            request = tornado.escape.json_decode(self.request.body)
-        except Exception as e:
-            raise tornado.web.HTTPError(400,'POST request is not valid json')
-        
-        # look for authorization data
-        if not isinstance(request,dict):
-            self.json_error('json is not a dict')
-        if 'url' not in request:
-            self.json_error('json does not contain url')
-        if 'key' not in request:
-            self.json_error('json does not contain key')
-        
-        # try to authorize
-        if 'site_id' in request:
-            # authorize site
-            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
-            DB.authorize_site(request['site_id'],request['key'],callback=cb)
-        else:
-            # authorize task
-            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
-            DB.authorize_task(request['key'],callback=cb)
-    
-    def json_error(self,error,status=400):
-        """Create a proper jsonrpc error message"""
-        self.set_status(status)
-        self.write({'error':error}) # autoconverts to json and sets content-type
-        self.finish()
-    
-    def post_after_auth(self,request,write,flush,finish,error,auth=False):
-        """Callback after perforing authorization on the request"""
-        # send response
-        if auth is True:
-            # make request from url
-            h = urlparse(request['url'])[1]
-            url = tornado.httpserver.HTTPRequest('GET',request['url'],host=h)
-            # get current host
-            host = self.request.host
-            # check request setting
-            type='download'
-            if 'type' in request:
-                type = str(request['type'])
-            if type == 'size':
-                # only send file size
-                Proxy.size_request(url,
-                                   host=host,
-                                   writer=write,
-                                   error=error,
-                                   callback=finish)
-            elif type == 'checksum':
-                # only send checksum
-                Proxy.checksum_request(url,
-                                       host=host,
-                                       writer=write,
-                                       error=error,
-                                       callback=finish)
-            
-            elif type == 'download':
-                # check cache setting
-                cache=True
-                if 'cache' in request:
-                    cache = request['cache']
-                # send the file
-                Proxy.download_request(url,
-                                       host=host,
-                                       cache=cache,
-                                       writer=write,
-                                       flusher=flush,
-                                       error=error,
-                                       callback=finish)
-            else:
-                error('invalid type in json request')                
-        else:
-            # send error message
-            error('authorization invalid: %r'%(auth))
-
-
-class UploadHandler(tornado.web.RequestHandler):
-    """Superclass for Upload Handlers
-
-       Start with a POST json request to prepare for upload.
-       The POST should return a url to upload to or an error.
-       Then send a POST request with the actual file. This request
-       is authenticated before uploading.
-       Finally, send a POST json request to make sure upload
-       was successful.
-    """
-    upload_prefix = '/upload'
-
-class UploadFileHandler(UploadHandler):
-    """Handle step 2 of upload"""
-    def get(self):
-        """GET is invalid and returns an error"""
-        raise tornado.web.HTTPError(405,'GET is invalid. Use POST')
-    
-    @tornado.web.asynchronous
-    def post(self):
-        """POST request gets buffered by Nginx, then sent here to be delt with.
-           File is checked against size and checksum before returning success.
-           If final destination is not here, file will be forwarded.
-        """
-        url = self.request.uri[len(self.upload_prefix)+1:]
-        name = self.get_argument('name', default=None)
-        content_type = self.get_argument('content-type', default=None)
-        path = self.get_argument('path', default=None)
-        host = self.request.host
-        
-        cb = partial(self.post_after,self.write,self.set_status,self.finish)
-        DB.handle_upload(url,name,content_type,path,host,callback=cb)
-    
-    def post_after(self,write,set_status,finish,ret):
-        if ret and not isinstance(ret,Exception):
-            set_status(200)
-            write("upload complete")
-        else:
-            set_status(500)
-            write("upload failed")
-        finish()
-
-class UploadAuthHandler(UploadHandler):
-    """Handle authentication for step 2 of upload"""
-    @tornado.web.asynchronous
-    def get(self):
-        """Call auth()"""
-        self.auth()
-    
-    @tornado.web.asynchronous
-    def post(self):
-        """Call auth()"""
-        self.auth()
-    
-    def auth(self):
-        """Authenticate request by checking url to see if it is on the list"""
-        if 'X-Original-URI' in self.request.headers:
-            url = self.request.headers['X-Original-URI']
-            if self.upload_prefix+'/' in url:
-                url = url[len(self.upload_prefix)+1:]
-                cb = partial(self.post_after,self.write,self.set_status,self.finish)
-                DB.is_upload_addr(url,callback=cb)
-                return
-        self.set_status(403)
-        self.write('Request denied')
-        self.finish()
-    
-    def post_after(self,write,set_status,finish,auth):
-        if auth and not isinstance(auth,Exception):
-            set_status(200)
-            write("OK")
-            finish()
-        else:
-            set_status(403)
-            write('Request denied')
-            finish()
-
-class UploadJSONHandler(UploadHandler):
-    """Handle steps 1,3 of upload"""
-    def get(self):
-        """GET is invalid and returns an error"""
-        raise tornado.web.HTTPError(405,'GET is invalid. Use POST')
-    
-    @tornado.web.asynchronous
-    def post(self):
-        """POST request should be json
-           
-           json parameters
-             :type: type of result requested (upload, check)
-             :url: the url requested
-             :size: (if upload type) the size of the file to upload
-             :checksum: (if upload type) the checksum of the file to upload
-             :checksum_type: (if upload type) the checksum type (md5,sha1,sha256,sha512)
-             :key: authorization key
-             :site_id: designate this request as coming from another site
-           
-           Upload response will be json
-             :type: upload
-             :url: the url requested
-             :upload: the url to upload the file to
-           
-           Check response will be json
-             :type: check
-             :url: the url requested
-             :result: True/False/"Still Uploading"
-           
-        """
-        # parse JSON
-        try:
-            request = tornado.escape.json_decode(self.request.body)
-        except Exception as e:
-            raise tornado.web.HTTPError(400,'POST request is not valid json')
-        
-        # look for authorization data
-        if not isinstance(request,dict):
-            self.json_error('json is not a dict')
-        if 'url' not in request:
-            self.json_error('json does not contain url')
-        if 'key' not in request:
-            self.json_error('json does not contain key')
-        
-        # try to authorize
-        if 'site_id' in request:
-            # authorize site
-            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
-            DB.authorize_site(request['site_id'],request['key'],callback=cb)
-        else:
-            # authorize task
-            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
-            DB.authorize_task(request['key'],callback=cb)
-    
-    def json_error(self,error,status=400):
-        """Create a proper jsonrpc error message"""
-        self.set_status(status)
-        self.write({'error':error}) # autoconverts to json and sets content-type
-        self.finish()
-    
-    def post_after_auth(self,request,write,flush,finish,error,auth=False):
-        """Callback after perforing authorization on the request"""
-        # send response
-        if auth is True:
-            # check request setting
-            type='upload'
-            if 'type' in request:
-                type = str(request['type'])
-            if type == 'upload':
-                if ('url' not in request or
-                    'size' not in request or 
-                    'checksum' not in request or
-                    'checksum_type' not in request):
-                    error('missing url, size, checksum, or checksum_type')
-                    return
-                # ask for a new upload url
-                cb = partial(self.new_upload,write,flush,finish,
-                             error,request['url'])
-                DB.new_upload(request['url'],
-                              request['size'],
-                              request['checksum'],
-                              request['checksum_type'],
-                              callback=cb)
-            elif type == 'check':
-                if 'url' not in request:
-                    error('missing url')
-                    return
-                cb = partial(self.check_upload,write,flush,finish,
-                             error,request['url'])
-                DB.check_upload(request['url'],callback=cb)
-            else:
-                error('type is invalid')
-        else:
-            # send error message
-            json_error('authorization invalid: %r'%(auth))
-    
-    def new_upload(self,write,flush,finish,error,oldurl,uid=None):
-        if uid:
-            newurl = self.upload_prefix+'/'+uid
-            write({'type':'upload','url':oldurl,'upload':newurl})
-            finish()
-        else:
-            error('could not upload')
-    
-    def check_upload(self,write,flush,finish,error,oldurl,result=None):
-        if result is not None:
-            write({'type':'check','url':oldurl,'result':result})
-            finish()
-        else:
-            error('could not check upload')
+#
+#class DownloadHandler(tornado.web.RequestHandler):
+#    """Handler for downloads"""
+#    def get(self):
+#        """GET is invalid and returns an error"""
+#        raise tornado.web.HTTPError(405,'GET is invalid.  Use POST')
+#        # TODO: make this human-browsable in future
+#    
+#    @tornado.web.asynchronous
+#    def post(self):
+#        """POST request should be json
+#           
+#           parameters
+#             :type: type of result requested (download, size, checksum)
+#             :url: the url requested
+#             :key: authorization key
+#             :site_id: designate this request as coming from another site
+#        
+#           return values (by request type)
+#             :download: response will be the file or 404 error
+#             :size: response will be json of the type {url,size} or 404 error
+#             :checksum: response will be json of the type {url,checksum} or 404 error
+#        """
+#        # parse JSON
+#        try:
+#            request = tornado.escape.json_decode(self.request.body)
+#        except Exception as e:
+#            raise tornado.web.HTTPError(400,'POST request is not valid json')
+#        
+#        # look for authorization data
+#        if not isinstance(request,dict):
+#            self.json_error('json is not a dict')
+#        if 'url' not in request:
+#            self.json_error('json does not contain url')
+#        if 'key' not in request:
+#            self.json_error('json does not contain key')
+#        
+#        # try to authorize
+#        if 'site_id' in request:
+#            # authorize site
+#            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
+#            DB.authorize_site(request['site_id'],request['key'],callback=cb)
+#        else:
+#            # authorize task
+#            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
+#            DB.authorize_task(request['key'],callback=cb)
+#    
+#    def json_error(self,error,status=400):
+#        """Create a proper jsonrpc error message"""
+#        self.set_status(status)
+#        self.write({'error':error}) # autoconverts to json and sets content-type
+#        self.finish()
+#    
+#    def post_after_auth(self,request,write,flush,finish,error,auth=False):
+#        """Callback after perforing authorization on the request"""
+#        # send response
+#        if auth is True:
+#            # make request from url
+#            h = urlparse(request['url'])[1]
+#            url = tornado.httpserver.HTTPRequest('GET',request['url'],host=h)
+#            # get current host
+#            host = self.request.host
+#            # check request setting
+#            type='download'
+#            if 'type' in request:
+#                type = str(request['type'])
+#            if type == 'size':
+#                # only send file size
+#                Proxy.size_request(url,
+#                                   host=host,
+#                                   writer=write,
+#                                   error=error,
+#                                   callback=finish)
+#            elif type == 'checksum':
+#                # only send checksum
+#                Proxy.checksum_request(url,
+#                                       host=host,
+#                                       writer=write,
+#                                       error=error,
+#                                       callback=finish)
+#            
+#            elif type == 'download':
+#                # check cache setting
+#                cache=True
+#                if 'cache' in request:
+#                    cache = request['cache']
+#                # send the file
+#                Proxy.download_request(url,
+#                                       host=host,
+#                                       cache=cache,
+#                                       writer=write,
+#                                       flusher=flush,
+#                                       error=error,
+#                                       callback=finish)
+#            else:
+#                error('invalid type in json request')                
+#        else:
+#            # send error message
+#            error('authorization invalid: %r'%(auth))
+#
+#
+#class UploadHandler(tornado.web.RequestHandler):
+#    """Superclass for Upload Handlers
+#
+#       Start with a POST json request to prepare for upload.
+#       The POST should return a url to upload to or an error.
+#       Then send a POST request with the actual file. This request
+#       is authenticated before uploading.
+#       Finally, send a POST json request to make sure upload
+#       was successful.
+#    """
+#    upload_prefix = '/upload'
+#
+#class UploadFileHandler(UploadHandler):
+#    """Handle step 2 of upload"""
+#    def get(self):
+#        """GET is invalid and returns an error"""
+#        raise tornado.web.HTTPError(405,'GET is invalid. Use POST')
+#    
+#    @tornado.web.asynchronous
+#    def post(self):
+#        """POST request gets buffered by Nginx, then sent here to be delt with.
+#           File is checked against size and checksum before returning success.
+#           If final destination is not here, file will be forwarded.
+#        """
+#        url = self.request.uri[len(self.upload_prefix)+1:]
+#        name = self.get_argument('name', default=None)
+#        content_type = self.get_argument('content-type', default=None)
+#        path = self.get_argument('path', default=None)
+#        host = self.request.host
+#        
+#        cb = partial(self.post_after,self.write,self.set_status,self.finish)
+#        DB.handle_upload(url,name,content_type,path,host,callback=cb)
+#    
+#    def post_after(self,write,set_status,finish,ret):
+#        if ret and not isinstance(ret,Exception):
+#            set_status(200)
+#            write("upload complete")
+#        else:
+#            set_status(500)
+#            write("upload failed")
+#        finish()
+#
+#class UploadAuthHandler(UploadHandler):
+#    """Handle authentication for step 2 of upload"""
+#    @tornado.web.asynchronous
+#    def get(self):
+#        """Call auth()"""
+#        self.auth()
+#    
+#    @tornado.web.asynchronous
+#    def post(self):
+#        """Call auth()"""
+#        self.auth()
+#    
+#    def auth(self):
+#        """Authenticate request by checking url to see if it is on the list"""
+#        if 'X-Original-URI' in self.request.headers:
+#            url = self.request.headers['X-Original-URI']
+#            if self.upload_prefix+'/' in url:
+#                url = url[len(self.upload_prefix)+1:]
+#                cb = partial(self.post_after,self.write,self.set_status,self.finish)
+#                DB.is_upload_addr(url,callback=cb)
+#                return
+#        self.set_status(403)
+#        self.write('Request denied')
+#        self.finish()
+#    
+#    def post_after(self,write,set_status,finish,auth):
+#        if auth and not isinstance(auth,Exception):
+#            set_status(200)
+#            write("OK")
+#            finish()
+#        else:
+#            set_status(403)
+#            write('Request denied')
+#            finish()
+#
+#class UploadJSONHandler(UploadHandler):
+#    """Handle steps 1,3 of upload"""
+#    def get(self):
+#        """GET is invalid and returns an error"""
+#        raise tornado.web.HTTPError(405,'GET is invalid. Use POST')
+#    
+#    @tornado.web.asynchronous
+#    def post(self):
+#        """POST request should be json
+#           
+#           json parameters
+#             :type: type of result requested (upload, check)
+#             :url: the url requested
+#             :size: (if upload type) the size of the file to upload
+#             :checksum: (if upload type) the checksum of the file to upload
+#             :checksum_type: (if upload type) the checksum type (md5,sha1,sha256,sha512)
+#             :key: authorization key
+#             :site_id: designate this request as coming from another site
+#           
+#           Upload response will be json
+#             :type: upload
+#             :url: the url requested
+#             :upload: the url to upload the file to
+#           
+#           Check response will be json
+#             :type: check
+#             :url: the url requested
+#             :result: True/False/"Still Uploading"
+#           
+#        """
+#        # parse JSON
+#        try:
+#            request = tornado.escape.json_decode(self.request.body)
+#        except Exception as e:
+#            raise tornado.web.HTTPError(400,'POST request is not valid json')
+#        
+#        # look for authorization data
+#        if not isinstance(request,dict):
+#            self.json_error('json is not a dict')
+#        if 'url' not in request:
+#            self.json_error('json does not contain url')
+#        if 'key' not in request:
+#            self.json_error('json does not contain key')
+#        
+#        # try to authorize
+#        if 'site_id' in request:
+#            # authorize site
+#            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
+#            DB.authorize_site(request['site_id'],request['key'],callback=cb)
+#        else:
+#            # authorize task
+#            cb = partial(self.post_after_auth,request,self.write,self.flush,self.finish,self.json_error)
+#            DB.authorize_task(request['key'],callback=cb)
+#    
+#    def json_error(self,error,status=400):
+#        """Create a proper jsonrpc error message"""
+#        self.set_status(status)
+#        self.write({'error':error}) # autoconverts to json and sets content-type
+#        self.finish()
+#    
+#    def post_after_auth(self,request,write,flush,finish,error,auth=False):
+#        """Callback after perforing authorization on the request"""
+#        # send response
+#        if auth is True:
+#            # check request setting
+#            type='upload'
+#            if 'type' in request:
+#                type = str(request['type'])
+#            if type == 'upload':
+#                if ('url' not in request or
+#                    'size' not in request or 
+#                    'checksum' not in request or
+#                    'checksum_type' not in request):
+#                    error('missing url, size, checksum, or checksum_type')
+#                    return
+#                # ask for a new upload url
+#                cb = partial(self.new_upload,write,flush,finish,
+#                             error,request['url'])
+#                DB.new_upload(request['url'],
+#                              request['size'],
+#                              request['checksum'],
+#                              request['checksum_type'],
+#                              callback=cb)
+#            elif type == 'check':
+#                if 'url' not in request:
+#                    error('missing url')
+#                    return
+#                cb = partial(self.check_upload,write,flush,finish,
+#                             error,request['url'])
+#                DB.check_upload(request['url'],callback=cb)
+#            else:
+#                error('type is invalid')
+#        else:
+#            # send error message
+#            json_error('authorization invalid: %r'%(auth))
+#    
+#    def new_upload(self,write,flush,finish,error,oldurl,uid=None):
+#        if uid:
+#            newurl = self.upload_prefix+'/'+uid
+#            write({'type':'upload','url':oldurl,'upload':newurl})
+#            finish()
+#        else:
+#            error('could not upload')
+#    
+#    def check_upload(self,write,flush,finish,error,oldurl,result=None):
+#        if result is not None:
+#            write({'type':'check','url':oldurl,'result':result})
+#            finish()
+#        else:
+#            error('could not check upload')
 
 class MainHandler(tornado.web.RequestHandler):
     """Handler for public facing website"""
@@ -674,7 +673,7 @@ class website(module.module):
                 kwargs['sslcert'] = self.cfg['system']['ssl_cert']
                 kwargs['sslkey'] = self.cfg['system']['ssl_key']
                 kwargs['cacert'] = self.cfg['system']['ssl_cacert']
-            Proxy.configure(**kwargs)
+            #Proxy.configure(**kwargs)
             
             # start nginx
             nginx_kwargs = kwargs.copy()
@@ -700,7 +699,7 @@ class website(module.module):
                 request_time = 1000.0 * handler.request.request_time()
                 log_method("%d %s %.2fms", handler.get_status(),
                         handler._request_summary(), request_time)
-            UploadHandler.upload_prefix = '/upload'
+            #UploadHandler.upload_prefix = '/upload'
             LibHandler.prefix = '/lib/'
             LibHandler.directory = os.path.expanduser(os.path.expandvars(
                               self.cfg['webserver']['lib_dir']))
