@@ -6,24 +6,24 @@ IceProd Metaproject
 ===================
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
    
-   overview
-   quickstart
+    overview
+    quickstart
 
 
 Projects
 --------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   core/index
+    core/index
    
 .. toctree::
-   :maxdepth: 3
+    :maxdepth: 3
    
-   server/index
+    server/index
 
    
 Dev Notes

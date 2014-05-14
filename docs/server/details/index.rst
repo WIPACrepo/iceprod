@@ -115,16 +115,6 @@ For I/O applications, it is often necessary to pass connection details to the ca
 |     In functional programming, function signatures can be changed by filling in only some of the arguments and treating that as a new function.  Python allows this with the ``functools.partial()`` built-in.
 
 Most of the code in the IceProd server uses the functional programming style, though there is some of the first style in the GridFTP python bindings.
-    
-Internal RPC
-^^^^^^^^^^^^
-
-RPC that is internal to the server is handled by an RPC service created on top of Tornado sockets.  This is the primary link between different components of the server and the database module.  
-
-Proxying
-^^^^^^^^
-
-Proxying is taken care of by Squid Cache, if configured.  IceProd can start its own squid or use an external squid.
 
 Download
 """"""""
@@ -151,6 +141,22 @@ Nginx
 ^^^^^
 
 For security, the website uses nginx as a front end.  Nginx handles all SSL certificate checking, static files, and file uploading before proxying the request to Tornado.  Nginx has been proven to be a very robust web server, with over 10% of the web (and growing) using it.  It is also the recommended front end for production Tornado sites.
+    
+Internal RPC
+------------
+
+RPC that is internal to the server is handled by an RPC service created on top of ZeroMQ sockets.  This is the primary link between different components of the server.
+
+.. toctree::
+    :maxdepth: 3
+
+    zmq
+    rpcinternal
+
+Proxying
+--------
+
+Proxying is taken care of by Squid Cache, if configured.  IceProd can start its own squid or use an external squid.
 
 
 Other Utilities

@@ -12,7 +12,7 @@ from functools import partial
 from contextlib import contextmanager
 import logging
 
-from icecube.server.zmq import AsyncSendReceive
+from iceprod.server.zeromq import AsyncSendReceive
 
 logger = logging.getLogger('RPCinternal')
 
@@ -40,24 +40,26 @@ class MessageFactory():
     """
     A message factory for creating and parsing binary messages.
     
-    See `https://docs.python.org/2/library/struct.html#format-characters`_
-    for info about struct packing.
+    See the Python library `struct`_ module for info about struct packing.
+    
+    .. _struct: https://docs.python.org/2/library/struct.html#format-characters
     """
     import binascii,struct,ctypes
     
     # big endian (id, version, sequenceNumber, bodyLen, bodyChecksum,
     #             messageType, headerChecksum)
-    HEADERFMT = '!4sBLLL?L'
+    HEADERFMT = '!4sBLLLBL'
     HEADERSIZE = struct.calcsize(HEADERFMT)
     # big endian (id, version, sequenceNumber, bodyLen, bodyChecksum,
     #             messageType, serviceLength, serviceName, headerChecksum)
-    HEADERFMT_SERVICE = '!4sBLLL?B%dsL'
+    HEADERFMT_SERVICE = '!4sBLLLBB%dsL'
     ID_TAG = b'IRPC'
     PROTOCOL_VERSION=1
-    class MESSAGE_TYPE:
-        SERVER, BROADCAST, BROADCAST_ACK, SERVICE, RESPONSE = range(5)
     MAX_SEQ = 4294967295
     MAX_SERVICE = 255
+    class MESSAGE_TYPE:
+        """Enum:"""
+        SERVER, BROADCAST, BROADCAST_ACK, SERVICE, RESPONSE = range(5)
     
     @classmethod
     def getChecksum(cls,data):
@@ -563,22 +565,22 @@ class RPCService():
     or regular methods. Each function is called with kwargs from the client
     and a 'callback' response function for async.
     
-    Example RPC class:
+    Example RPC class::
     
-    class RPC():
-        def test(self,var1,var2,callback):
-            # do something with vars
-            # return directly for fast calls
-            return var1
-        def test2(self,var3,var3,callback):
-            # do something else with vars
-            # very time consuming tasks should be done async, and passed the
-            # callback function to return a value
-            time_consumer(var3,callback=callback)
-        @staticmethod
-        def test3(callback):
-            # this is a bare method with no args, just a callback
-            pass # and we don't even have to use it
+        class RPC():
+            def test(self,var1,var2,callback):
+                # do something with vars
+                # return directly for fast calls
+                return var1
+            def test2(self,var3,var3,callback):
+                # do something else with vars
+                # very time consuming tasks should be done async, and passed the
+                # callback function to return a value
+                time_consumer(var3,callback=callback)
+            @staticmethod
+            def test3(callback):
+                # this is a bare method with no args, just a callback
+                pass # and we don't even have to use it
     
     :param address: the address of the :class:`Server`
     :param block: whether to block or start a separate thread, optional,

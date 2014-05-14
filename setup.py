@@ -27,7 +27,7 @@ with open('README.rst') as f:
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['pycurl', 'tornado>=2.4', 'jsonrpclib', 'lxml',
-                        'setproctitle']
+                        'setproctitle','pyzmq']
     extras_require = {
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']

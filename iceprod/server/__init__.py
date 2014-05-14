@@ -5,12 +5,14 @@ import os
 import sys
 import logging
 
-# do a monkey patching of tornado json library
-from iceprod.core.jsonUtil import json_encode,json_decode
-import tornado.escape
-tornado.escape.json_encode = json_encode
-tornado.escape.json_decode = json_decode
-
+try:
+    # do a monkey patching of tornado json library
+    from iceprod.core.jsonUtil import json_encode,json_decode
+    import tornado.escape
+    tornado.escape.json_encode = json_encode
+    tornado.escape.json_decode = json_decode
+except ImportError:
+    pass
 
 def listmodules(package_name=''):
     """List modules in a package or directory"""
