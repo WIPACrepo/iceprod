@@ -35,13 +35,13 @@ The message header is a binary packed string:
   duplicates. The same number is expected in the response.
 * body length (4 bytes - uint): The length of the message body.
 * body checksum (4 bytes - uint): A CRC32 checksum of the body.
-* message type (1 byte - uint): The :class:`MessageFactory.MESSAGE_TYPE`.
+* message type (1 byte - uint): The :class:`MessageFactory.MESSAGE_TYPE <iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE>`.
 
   If the message type == SERVICE:
   
-  * service length (4 bytes - uint): The length of the service name.
-  * service name (string): The name of the service being offered.
-  | 
+    * service length (4 bytes - uint): The length of the service name.
+    * service name (string): The name of the service being offered.
+
   
 * header checksum (4 bytes - uint): A CRC32 checksum of the rest of the header.
 

@@ -1,14 +1,12 @@
 .. index:: Exe
 .. _Exe:
 
+Execution
+=========
 
 .. automodule:: iceprod.core.exe
    :no-members:
    :no-undoc-members:
-
-
-Execution
-=========
 
 Environment Functions
 ---------------------

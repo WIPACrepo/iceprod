@@ -1,8 +1,8 @@
 """
-  A module for overloading xml functions
-
-  copyright  (c) 2012 the icecube collaboration
+A module for overloading xml functions
 """
+
+from __future__ import absolute_import, division, print_function
 
 import StringIO
 

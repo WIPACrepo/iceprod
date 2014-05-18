@@ -1,0 +1,202 @@
+"""
+Utilities for IceProd functionality.
+"""
+
+from __future__ import absolute_import, division, print_function
+
+import os
+import time
+
+
+class NoncriticalError(Exception):
+    """An exception that can be logged and then ignored."""
+    def __init__(self, value):
+        self.value = value
+    def __repr__(self):
+        return 'NoncriticalError(%r)'%(self.value)
+    def __reduce__(self):
+        return (NoncriticalError,(self.value,))
+
+class IFace(object):
+    """A network interface object
+    
+       :ivar name: ' '
+       :ivar encap: ' '
+       :ivar mac: ' '
+       :ivar link: []
+       :ivar rx_packets: 0
+       :ivar tx_packets: 0
+       :ivar rx_bytes: 0
+       :ivar tx_bytes: 0
+    """
+    def __init__(self):
+        self.name = ''
+        self.encap = ''
+        self.mac = ''
+        self.link = [] # list of dicts
+        self.rx_packets = 0
+        self.tx_packets = 0
+        self.rx_bytes = 0
+        self.tx_bytes = 0
+    
+    def __eq__(self,other):
+        return (self.name == other.name and
+                self.encap == other.encap and
+                self.mac == other.mac and
+                self.link == other.link)
+    def __ne__(self,other):
+        return not self.__eq__(other)
+        
+    def __str__(self):
+        ret = 'Interface name='+self.name+' encap='+self.encap+' mac='+self.mac
+        for l in self.link:
+            ret += '\n '
+            for k in l.keys():
+                ret += ' '+k+'='+l[k]
+        ret += '\n  RX packets='+str(self.rx_packets)+' TX packets='+str(self.tx_packets)
+        ret += '\n  RX bytes='+str(self.rx_bytes)+' TX bytes='+str(self.tx_bytes)
+        return ret
+
+# TODO: consider moving this to its own module, with more general naming
+try:
+    import pycurl
+except ImportError:
+    # TODO: make this potentially usable
+    class PycURL(object):
+        pass
+else:
+    class PycURL(object):
+        """An object to download/upload files using pycURL"""
+        def __init__(self):
+            self.curl = pycurl.Curl()
+            self.curl.setopt(pycurl.FOLLOWLOCATION, 1)
+            self.curl.setopt(pycurl.MAXREDIRS, 5)
+            self.curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+            self.curl.setopt(pycurl.TIMEOUT, 300) # timeout after 300 seconds (5 min)
+            self.curl.setopt(pycurl.NOSIGNAL, 1)
+            self.curl.setopt(pycurl.NOPROGRESS, 1)
+            self.curl.setopt(pycurl.SSLCERTTYPE, 'PEM')
+            self.curl.setopt(pycurl.SSLKEYTYPE, 'PEM')
+            self.curl.setopt(pycurl.SSL_VERIFYPEER, 1)
+            self.curl.setopt(pycurl.SSL_VERIFYHOST, 2)
+            self.curl.setopt(pycurl.FAILONERROR, True)
+        
+        def put(self, url, filename, username=None, password=None,
+                sslcert=None, sslkey=None, cacert=None):
+            """Upload a file using POST"""
+            try:
+                self.curl.setopt(pycurl.URL, url)
+                self.curl.setopt(pycurl.HTTPPOST, [('file',(pycurl.FORM_FILE, filename))])
+                self.curl.setopt(pycurl.TIMEOUT, 1800) # use longer timeout for uploads
+                if username:
+                    if password:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
+                    else:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, str(cacert))
+                self.curl.perform()
+                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
+                if error_code not in (200,304):
+                    raise NoncriticalError('HTTP error code: %d'%error_code)
+            except:
+                raise
+            finally:
+                self.curl.setopt(pycurl.TIMEOUT, 300)
+                if username:
+                    self.curl.setopt(pycurl.USERPWD, '')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, '')
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, '')
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, '')
+        
+        def fetch(self, url, filename, username=None, password=None,
+                sslcert=None, sslkey=None, cacert=None):
+            """Download a file using GET"""
+            fp = open(filename,'wb')
+            error = None
+            try:
+                self.curl.setopt(pycurl.URL, url)
+                self.curl.setopt(pycurl.WRITEDATA, fp)
+                if username:
+                    if password:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
+                    else:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, str(cacert))
+                self.curl.perform()
+                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
+                if error_code not in (200,304):
+                    raise NoncriticalError('HTTP error code: %d'%error_code)
+            except:
+                error = True
+                raise
+            finally:
+                fp.close()
+                if error:
+                    os.remove(filename)
+                if username:
+                    self.curl.setopt(pycurl.USERPWD, '')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, '')
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, '')
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, '')
+        
+        def post(self, url, writefunc, username=None, password=None, 
+                sslcert=None, sslkey=None, cacert=None, headerfunc=None,
+                postbody=None, timeout=None):
+            """Download a file using POST, output to writefunc"""
+            if not writefunc or not callable(writefunc):
+                raise Exception('Write function invalid: %s'%str(writefunc))
+            try:
+                self.curl.setopt(pycurl.URL, url)
+                if postbody:
+                    self.curl.setopt(pycurl.POST,1)
+                    self.curl.setopt(pycurl.POSTFIELDS, postbody)
+                if headerfunc and callable(headerfunc):
+                    self.curl.setopt(pycurl.HEADERFUNCTION,headerfunc)
+                self.curl.setopt(pycurl.WRITEFUNCTION,writefunc)
+                if timeout:
+                    self.curl.setopt(pycurl.TIMEOUT, timeout)
+                if username:
+                    if password:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
+                    else:
+                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, str(cacert))
+                self.curl.perform()
+                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
+                if error_code not in (200,304):
+                    raise NoncriticalError('HTTP error code: %d'%error_code)
+            except:
+                raise
+            finally:
+                if timeout:
+                    self.curl.setopt(pycurl.TIMEOUT, 300)
+                if username:
+                    self.curl.setopt(pycurl.USERPWD, '')
+                if sslcert:
+                    self.curl.setopt(pycurl.SSLCERT, '')
+                if sslkey:
+                    self.curl.setopt(pycurl.SSLKEY, '')
+                if cacert:
+                    self.curl.setopt(pycurl.CAINFO, '')
+

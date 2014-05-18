@@ -2,6 +2,8 @@
   RPC calls over ZeroMQ
 """
 
+from __future__ import absolute_import, division, print_function
+
 import os
 import sys
 import random
@@ -631,6 +633,7 @@ class RPCService():
         """Unpack data from RPC format"""
         try:
             methodname = data['method']
+            # TODO: think about providing positional args, like JSONRPC
             kwargs = data['params']
         except Exception as e:
             # error unpacking data

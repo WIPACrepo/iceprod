@@ -1,8 +1,9 @@
 """
-  Core modules for running IceProd Tasks
-
-  copyright (c) 2012 the icecube collaboration
+Some constants and basic functions with wide uses.
 """
+
+from __future__ import absolute_import, division, print_function
+
 import os
 import sys
 import logging

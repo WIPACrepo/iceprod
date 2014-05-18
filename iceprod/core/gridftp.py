@@ -1,8 +1,9 @@
 """
-  gridftp interface
-
-  copyright (c) 2012 the icecube collaboration  
+gridftp interface
 """
+
+from __future__ import absolute_import, division, print_function
+
 import os
 import logging
 from threading import Event

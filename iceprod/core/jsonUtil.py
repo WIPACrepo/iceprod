@@ -1,8 +1,8 @@
 """
-  Some JSON encoding and decoding utilities
-  
-  copyright (c) 2012 the icecube collaboration
+Some JSON encoding and decoding utilities.
 """
+
+from __future__ import absolute_import, division, print_function
 
 import json
 from datetime import date,datetime,time

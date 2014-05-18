@@ -1,17 +1,15 @@
 """
-  A simple jsonrpc client using pycurl for the http connection
-  
-  copyright (c) 2012 the icecube collaboration
+A simple jsonrpc client using pycurl for the http connection
 """
 import logging
 from threading import RLock
 
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.core.dataclasses import PycURL
+from iceprod.core.util import PycURL
 
 
 class Client(object):
-    """raw JSONRPC client object"""
+    """Raw JSONRPC client object"""
     id = 0
     idlock = RLock()
     
@@ -95,7 +93,7 @@ class Client(object):
             return None
 
 class MetaJSONRPC(type):
-    """metaclass for JSONRPC.  Allows for static class usage."""
+    """Metaclass for JSONRPC.  Allows for static class usage."""
     __rpc = None
     __timeout = None
     __address = None
@@ -104,6 +102,7 @@ class MetaJSONRPC(type):
     
     @classmethod
     def start(cls,timeout=None,address=None,passkey=None,ssl_options=None):
+        """Start the JSONRPC Client."""
         if timeout is not None:
             cls.__timeout = timeout
         if address is not None:
@@ -117,11 +116,13 @@ class MetaJSONRPC(type):
     
     @classmethod
     def stop(cls):
+        """Stop the JSONRPC Client."""
         cls.__rpc.close()
         cls.__rpc = None
     
     @classmethod
     def restart(cls):
+        """Restart the JSONRPC Client."""
         cls.stop()
         cls.start()
     
@@ -148,14 +149,14 @@ class MetaJSONRPC(type):
         return _Method(cls.__rpc,cls.__passkey,name)
 
 class JSONRPC(object):
-    """JSONRPC connection.
-       Call JSONRPC.start(address,ssl_options) to start.
-       Call JSONRPC.stop() to stop.
-       Call JSONRPC.restart()
-       Call JSONRPC functions as regular function calls.
+    """
+    JSONRPC client connection.
+    
+    Call JSONRPC functions as regular function calls.
        
-       Example:
-           JSONRPC.set_task_status(task_id,'waiting')
+    Example::
+    
+        JSONRPC.set_task_status(task_id,'waiting')
     """
     __metaclass__ = MetaJSONRPC
     def __getattr__(self,name):

@@ -2,16 +2,16 @@
 .. _Dataclasses:
 
 
+Dataclasses
+===========
 
 .. automodule:: iceprod.core.dataclasses
    :no-members:
    :no-undoc-members:
 
-Dataclasses
-===========
-
 XML Configuration Objects
 -------------------------
+
 The building blocks of how datasets, jobs, and tasks are configured.
 
 .. autoclass:: Job 
@@ -47,6 +47,7 @@ The building blocks of how datasets, jobs, and tasks are configured.
 
 Metadata XML Objects
 --------------------
+
 Metadata for NSF requirements
 
 .. autoclass:: DifPlus
@@ -58,15 +59,4 @@ Metadata for NSF requirements
 .. autoclass:: Personnel
 
 .. autoclass:: DataCenter
-
-
-Other Objects
--------------
-
-.. autoexception:: NoncriticalError
-   :no-inherited-members:
-
-.. autoclass:: IFace
-
-.. autoclass:: PycURL
 

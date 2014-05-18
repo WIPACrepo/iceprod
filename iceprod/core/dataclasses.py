@@ -1,288 +1,489 @@
 """
-  A set of classes common to IceProd.
+A set of classes that holds dataset configuration data.
 
-  copyright (c) 2012 the icecube collaboration
+Each class is based on a dictionary and only contains simple elements for 
+easy serialization to json (or other formats). A full dataset configuration
+can be had by serializing the :class:`Job` class.
+
+The `convert` method of each class will turn any regular dictionary objects
+into special `dataclasses` objects.
+
+The `valid` method of each class will test the validity of the data to be
+an actual dataset config.
 """
 
-import os, time
-from collections import OrderedDict
-import cPickle as pickle
-from json import dumps as tojson, loads as fromjson
+from __future__ import absolute_import, division, print_function
 
-### The XML Configuration Objects ###
+import os
+import time
 
-class Job(object):
-    """Holds all information about a job
-    
-       :ivar dataset: 0
-       :ivar parent_id: 0
-       :ivar xml_version: 3
-       :ivar iceprod_version: 2.0
-       :ivar options: {} -- a dict of parameters to pass to task runner, name is key
-       :ivar steering: None
-       :ivar tasks: OrderedDict()
-       :ivar difplus: None
-       :ivar description: str()
-       :ivar categories: []
+from numbers import Number, Integral
+try:
+    String = basestring
+except NameError:
+    String = str
+
+class Job(dict):
     """
-    def __init__(self):
-        self.dataset      = 0
-        self.parent_id    = 0
-        self.xml_version  = 3
-        self.iceprod_version = 2.0
-        self.options      = {}
-        self.steering     = None
-        self.tasks        = OrderedDict()
-        self.difplus      = None
-        self.description  = ''
-        self.categories   = []
-
-class Steering(object):
-    """Holds all information that goes in the steering section of a configuration
+    Holds all information about a running job.
     
-        :ivar parameters: {}
-        :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
-        :ivar system: {} -- just specialized parameters
-        :ivar resources: []
-        :ivar data: []
-    """
-    def __init__(self):
-        self.parameters   = {}
-        self.batchsys     = {}
-        self.system       = {}
-        self.resources    = []
-        self.data         = []
-
-class _TaskCommon(object):
-    """Holds common attributes used by task, tray, module
+    If the `options` are empty, this is the same as a dataset
+    configuration.
     
-        :ivar name: None
-        :ivar resources: []
-        :ivar data: [] 
-        :ivar classes: []
-        :ivar projects: []
-        :ivar parameters: {}
+    :ivar dataset: 0
+    :ivar parent_id: 0
+    :ivar version: 3
+    :ivar options: {} -- a dict of parameters to pass to the task runner
+    :ivar steering: None
+    :ivar tasks: []
+    :ivar difplus: None
+    :ivar description: ""
+    :ivar categories: []
     """
-    def __init__(self):
-        self.name         = None
-        self.resources    = []
-        self.data         = []
-        self.classes      = []
-        self.projects     = []
-        self.parameters   = {}
+    def __init__(self,*args,**kwargs):
+        self['dataset']     = 0
+        self['parent_id']   = 0
+        self['version']     = 3
+        self['options']     = {}
+        self['steering']    = None
+        self['tasks']       = []
+        self['difplus']     = None
+        self['description'] = ''
+        self['categories']  = []
+        super(Job,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        if not isinstance(self['steering'],Steering):
+            tmp = Steering(self['steering'])
+            tmp.convert()
+            self['steering'] = tmp
+        for i,t in enumerate(self['tasks']):
+            if not isinstance(t,Task):
+                tmp = Task(t)
+                tmp.convert()
+                self['tasks'][i] = tmp
+        if not isinstance(self['difplus'],DifPlus):
+            tmp = DifPlus(self['difplus'])
+            tmp.convert()
+            self['difplus'] = tmp
+    
+    def valid(self):
+        try:
+            return (isinstance(self['dataset'],(Number,String)) and
+                    isinstance(self['parent_id'],(Number,String)) and
+                    isinstance(self['version'],Number) and
+                    self['version'] >= 3 and
+                    isinstance(self['options'],dict) and
+                    isinstance(self['steering'],Steering) and
+                    self['steering'].valid() and
+                    isinstance(self['tasks'],list) and
+                    all(isinstance(t,Task) and t.valid() for t in self['tasks']) and
+                    isinstance(self['difplus'],DifPlus) and
+                    self['difplus'].valid() and
+                    isinstance(self['description'],String) and
+                    isinstance(self['categories'],list)
+                   )
+        except Exception:
+            return False
+
+class Steering(dict):
+    """
+    Holds all information that goes in the steering section of a configuration.
+    
+    :ivar parameters: {}
+    :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
+    :ivar system: {} -- just specialized parameters
+    :ivar resources: []
+    :ivar data: []
+    """
+    def __init__(self,*args,**kwargs):
+        self['parameters'] = {}
+        self['batchsys']   = {}
+        self['system']     = {}
+        self['resources']  = []
+        self['data']       = []
+        super(Steering,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        for i,r in enumerate(self['resources']):
+            if not isinstance(r,Resource):
+                tmp = Resource(r)
+                tmp.convert()
+                self['resources'][i] = tmp
+        for i,d in enumerate(self['data']):
+            if not isinstance(d,Data):
+                tmp = Data(d)
+                tmp.convert()
+                self['data'][i] = tmp
+    
+    def valid(self):
+        try:
+            return (isinstance(self['parameters'],dict) and
+                    isinstance(self['batchsys'],dict) and
+                    all(isinstance(b,dict) for b in self['batchsys']) and
+                    isinstance(self['system'],dict) and
+                    isinstance(self['resources'],list) and
+                    all(isinstance(r,Resources) and r.valid() for r in self['resources']) and
+                    isinstance(self['data'],list) and
+                    all(isinstance(d,Data) and d.valid() for d in self['data'])
+                   )
+        except Exception:
+            return False
+
+class _TaskCommon(dict):
+    """
+    Holds common attributes used by task, tray, module.
+    
+    :ivar name: None
+    :ivar resources: []
+    :ivar data: [] 
+    :ivar classes: []
+    :ivar projects: []
+    :ivar parameters: {}
+    """
+    def __init__(self,*args,**kwargs):
+        self['name']       = None
+        self['resources']  = []
+        self['data']       = []
+        self['classes']    = []
+        self['projects']   = []
+        self['parameters'] = {}
+        super(_TaskCommon,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        for i,r in enumerate(self['resources']):
+            if not isinstance(r,Resource):
+                tmp = Resource(r)
+                tmp.convert()
+                self['resources'][i] = tmp
+        for i,d in enumerate(self['data']):
+            if not isinstance(d,Data):
+                tmp = Data(d)
+                tmp.convert()
+                self['data'][i] = tmp
+        for i,c in enumerate(self['classes']):
+            if not isinstance(c,Class):
+                tmp = Class(c)
+                tmp.convert()
+                self['classes'][i] = tmp
+        for i,p in enumerate(self['projects']):
+            if not isinstance(p,Project):
+                tmp = Project(p)
+                tmp.convert()
+                self['projects'][i] = tmp
+    
+    def valid(self):
+        try:
+            return ((self['name'] is None or isinstance(self['name'],String)) and
+                    isinstance(self['resources'],list) and
+                    all(isinstance(r,Resources) and r.valid() for r in self['resources']) and
+                    isinstance(self['data'],list) and
+                    all(isinstance(d,Data) and d.valid() for d in self['data']) and
+                    isinstance(self['classes'],list) and
+                    all(isinstance(c,Class) and c.valid() for c in self['classes']) and
+                    isinstance(self['projects'],list) and
+                    all(isinstance(p,Project) and p.valid() for p in self['projects']) and
+                    isinstance(self['parameters'],dict)
+                   )
+        except Exception:
+            return False
 
 class Task(_TaskCommon):
-    """Holds all information about a task
-    
-        :ivar depends: [] -- a list of task names
-        :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
-        :ivar trays: OrderedDict()
     """
-    def __init__(self):
-        super(Task,self).__init__()
-        self.depends      = []
-        self.batchsys     = {}
-        self.trays        = OrderedDict()
+    Holds all information about a task.
+    
+    :ivar depends: [] -- a list of task names
+    :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
+    :ivar trays: []
+    """
+    def __init__(self,*args,**kwargs):
+        self['depends']  = []
+        self['batchsys'] = {}
+        self['trays']    = []
+        super(Task,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        super(Task,self).convert()
+        for i,t in enumerate(self['trays']):
+            if not isinstance(t,Tray):
+                tmp = Tray(t)
+                tmp.convert()
+                self['trays'][i] = tmp
+    
+    def valid(self):
+        try:
+            return (super(Task,self).valid() and
+                    isinstance(self['depends'],list) and
+                    all(isinstance(r,(String,Number)) for r in self['depends']) and
+                    isinstance(self['batchsys'],dict) and
+                    isinstance(self['trays'],list) and
+                    all(isinstance(t,Tray) and t.valid() for t in self['trays'])
+                   )
+        except Exception:
+            return False
 
 class Tray(_TaskCommon):
-    """ Holds all information about a tray
-    
-        :ivar iterations: 1
-        :ivar modules: OrderedDict()
     """
-    def __init__(self):
-        super(Tray,self).__init__()
-        self.iterations   = 1
-        self.modules      = OrderedDict()
+    Holds all information about a tray.
+    
+    :ivar iterations: 1
+    :ivar modules: []
+    """
+    def __init__(self,*args,**kwargs):
+        self['iterations'] = 1
+        self['modules']    = []
+        super(Tray,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        super(Task,self).convert()
+        for i,m in enumerate(self['modules']):
+            if not isinstance(m,Module):
+                tmp = Module(m)
+                tmp.convert()
+                self['modules'][i] = tmp
+    
+    def valid(self):
+        try:
+            return (super(Task,self).valid() and
+                    isinstance(self['iterations'],Integral) and
+                    isinstance(self['modules'],list) and
+                    all(isinstance(m,Module) and m.valid() for m in self['modules'])
+                   )
+        except Exception:
+            return False
 
 class Module(_TaskCommon):
-    """Holds all information about a module
-    
-        :ivar running_class: None -- the python class or function to call
-        :ivar src: None -- src of class or script
-        :ivar args: None -- args to give to class or src if not an iceprod module
     """
-    def __init__(self):
-        super(Module,self).__init__()
-        self.running_class = None
-        self.src           = None
-        self.args          = None
-
-class Parameter(object):
-    """A parameter object
+    Holds all information about a module.
     
-        :ivar name: None -- required
-        :ivar value: None -- required
-        :ivar type: None -- optional (bool,int,float,string,json,pickle)
+    :ivar running_class: None -- the python class or function to call
+    :ivar src: None -- src of class or script
+    :ivar args: None -- args to give to class or src if not an iceprod module
     """
-    def __init__(self,name=None,value=None,type=None):
-        self.name         = name
-        self.type         = type
-        if type is None:
-            # try guessing type
-            if isinstance(value,bool):
-                type = 'bool'
-            elif isinstance(value,basestring):
-                type = 'basestring'
-            elif isinstance(value,int):
-                type = 'int'
-            elif isinstance(value,float):
-                type = 'float'
-            elif isinstance(value,(list,tuple)):
-                type = 'list'
-            elif isinstance(value,dict):
-                type = 'dict'
-            elif isinstance(value,set):
-                type = 'set'
-                value = list(value)
-        self.type = type
-        if type is None:
-            self.value = value
-        if type in ('b','bool'):
-            self.value = str(value)
-        elif type in ('s','str','string','unicode','basestring','u'):
-            self.value = value
-        elif type == 'pickle':
-            try:
-                self.value = pickle.dumps(value)
-            except:
-                self.value = str(value)
-        else:
-            try:
-                self.value = tojson(value)
-            except:
-                self.value = str(value)
+    def __init__(self,*args,**kwargs):
+        self['running_class'] = None
+        self['src']           = None
+        self['args']          = None
+        super(Module,self).__init__(*args,**kwargs)
     
-    def get(self):
-        """Get the value in the correct type"""
-        if not self.type:
-            return self.value
-        elif self.type in ('b','bool'):
-            return (self.value.lower() in 'true' or self.value)
-        elif self.type in ('s','str','string','unicode','basestring','u'):
-            return self.value
-        elif self.type == 'pickle':
-            try:
-                return pickle.loads(self.value)
-            except:
-                return self.value
-        else:
-            try:
-                ret = fromjson(self.value)
-            except:
-                ret = self.value
-            if self.type == 'set':
-                try:
-                    ret = set(ret)
-                except:
-                    pass
-            return ret
+    def convert(self):
+        super(Task,self).convert()
+    
+    def valid(self):
+        try:
+            return (super(Task,self).valid() and
+                    (self['running_class'] is None or isinstance(self['running_class'],String)) and
+                    (self['src'] is None or isinstance(self['src'],String))
+                   )
+        except Exception:
+            return False
 
-class Class(object):
-    """A class object, downloaded from a url
-    
-        :ivar name: None -- required
-        :ivar src: None -- if downloaded from url
-        :ivar resource_name: None -- if present in resource object
-        :ivar recursive: False
-        :ivar libs: None -- if more than default lib directory
-        :ivar env_vars: None
+class Class(dict):
     """
-    def __init__(self):
-        self.name         = None
-        self.src          = None
-        self.resource_name = None
-        self.recursive    = False
-        self.libs         = None
-        self.env_vars     = None
-
-class Project(object):
-    """A project object, shipped with IceProd
+    A class object, downloaded from a url.
     
-        :ivar class_name: None -- required
-        :ivar name: None -- optional
+    :ivar name: None -- required
+    :ivar src: None -- if downloaded from url
+    :ivar resource_name: None -- if present in resource object
+    :ivar recursive: False
+    :ivar libs: None -- if more than default lib directory
+    :ivar env_vars: None
     """
-    def __init__(self):
-        self.name         = None
-        self.class_name   = None # required
-
-class _ResourceCommon(object):
-    """Holds common attributes used by Resource and Data
+    def __init__(self,*args,**kwargs):
+        self['name']          = None
+        self['src']           = None
+        self['resource_name'] = None
+        self['recursive']     = False
+        self['libs']          = None
+        self['env_vars']      = None
+        super(Class,self).__init__(*args,**kwargs)
     
-        :ivar remote: None
-        :ivar local: None
-        :ivar compression: None
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return ((self['name'] is None or isinstance(self['name'],String)) and
+                    (self['src'] is None or isinstance(self['src'],String)) and
+                    (self['resource_name'] is None or isinstance(self['resource_name'],String)) and
+                    (self['recursive'] is True or self['recursive'] is False) and
+                    (self['libs'] is None or isinstance(self['libs'],String)) and
+                    (self['env_vars'] is None or isinstance(self['env_vars'],String))
+                   )
+        except Exception:
+            return False
+
+class Project(dict):
+    """
+    A project object, shipped with IceProd.
+    
+    :ivar class_name: None -- required
+    :ivar name: None -- optional
+    """
+    def __init__(self,*args,**kwargs):
+        self['name']       = None
+        self['class_name'] = None # required
+        super(Project,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return ((self['name'] is None or isinstance(self['name'],String)) and
+                    (self['class_name'] is None or isinstance(self['class_name'],String))
+                   )
+        except Exception:
+            return False
+
+class _ResourceCommon(dict):
+    """
+    Holds common attributes used by Resource and Data.
+    
+    :ivar remote: None
+    :ivar local: None
+    :ivar compression: None
     """
     compression_options = ['none','gzip','gz','bzip','bz2','lzma']
 
-    def __init__(self):
-        self.remote       = None
-        self.local        = None
-        self.compression  = None
+    def __init__(self,*args,**kwargs):
+        self['remote']      = None
+        self['local']       = None
+        self['compression'] = None
+        super(_ResourceCommon,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return ((self['remote'] is None or isinstance(self['remote'],String)) and
+                    (self['local'] is None or isinstance(self['local'],String)) and
+                    (self['compression'] is None or self['compression'] is True or
+                     self['compression'] is False or
+                     self['compression'] in self.compression_options)
+                   )
+        except Exception:
+            return False
 
 class Resource(_ResourceCommon):
-    """A resource object, representing a file to download
-    
-        :ivar arch: None
     """
-    def __init__(self):
-        super(Resource,self).__init__()
-        self.arch         = None
+    A resource object, representing a file to download.
+    
+    :ivar arch: None
+    """
+    def __init__(self,*args,**kwargs):
+        self['arch'] = None
+        super(Resource,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return (super(Resource,self).valid() and
+                    (self['arch'] is None or isinstance(self['arch'],String))
+                   )
+        except Exception:
+            return False
 
 class Data(_ResourceCommon):
-    """A data object, representing input and/or output of data
+    """
+    A data object, representing input and/or output of data.
     
-        :ivar type: None -- required
-        :ivar movement: None -- required
+    :ivar type: None -- required
+    :ivar movement: None -- required
     """
     type_options = ['permanent','tray_temp','task_temp','job_temp','dataset_temp','site_temp']
     movement_options = ['input','output','both']
     
-    def __init__(self):
-        super(Data,self).__init__()
-        self.type         = None
-        self.movement     = None
+    def __init__(self,*args,**kwargs):
+        self['type']     = None
+        self['movement'] = None
+        super(Data,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return (super(Data,self).valid() and
+                    (self['type'] is None or self['type'] in self.type_options) and
+                    (self['movement'] is None or self['movement'] in self.movement_options)
+                   )
+        except Exception:
+            return False
     
     def storage_location(self,env):
-        """Get storage location"""
+        """
+        Get storage location from the environment.
+        
+        :param env: environment
+        :returns: storage location as a string, or raises Exception
+        """
         type = self.type.lower()
         if type not in Data.type_options:
             raise Exception('Data.type is undefined')
         if 'parameters' in env and type in env['parameters']:
-            return env['parameters'][type].value
+            return env['parameters'][type]
         elif type == 'permanent':
             if 'parameters' in env and 'data_url' in env['parameters']:
-                return env['parameters']['data_url'].value
+                return env['parameters']['data_url']
             else:
                 raise Exception('data_url not defined in env[\'parameters\']')
         else:
             raise Exception('%s not defined in env' % type)
 
-class DifPlus(object):
-    """A DifPlus object
+class DifPlus(dict):
+    """
+    A DifPlus object.
     
-        :ivar dif: None
-        :ivar plus: None
+    :ivar dif: None
+    :ivar plus: None
     """
-    def __init__(self):
-        self.dif          = None
-        self.plus         = None
+    def __init__(self,*args,**kwargs):
+        self['dif']  = None
+        self['plus'] = None
+        super(DifPlus,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        if self['dif'] and not isinstance(self['dif'],Dif):
+            tmp = Dif(self['dif'])
+            tmp.convert()
+            self['dif'] = tmp
+        if self['plus'] and not isinstance(Plus):
+            tmp = Plus(self['plus'])
+            tmp.convert()
+            self['plus'] = tmp
+    
+    def valid(self):
+        try:
+            return ((self['dif'] is None or (isinstance(self['dif'],Dif) and
+                     self['dif'].valid())) and
+                    (self['plus'] is None or (isinstance(self['plus'],Plus) and
+                     self['plus'].valid()))
+                   )
+        except Exception:
+            return False
 
-class Dif(object):
-    """A Dif object
-       :ivar entry_id: None
-       :ivar entry_title: None
-       :ivar parameters: ' '
-       :ivar iso_topic_category: 'geoscientificinformation'
-       :ivar data_ceter: None
-       :ivar summary: ' '
-       :ivar metadata_name: '[CEOS IDN DIF]'
-       :ivar metadata_version: '9.4'
-       :ivar personnel: None
-       :ivar sensor_name: 'ICECUBE'
-       :ivar source_name: 'SIMULATION'
-       :ivar dif_creation_date: time.strftime("%Y-%m-%d")
+class Dif(dict):
     """
+    A Dif object.
+    
+   :ivar entry_id: None
+   :ivar entry_title: None
+   :ivar parameters: ' '
+   :ivar iso_topic_category: 'geoscientificinformation'
+   :ivar data_ceter: None
+   :ivar summary: ' '
+   :ivar metadata_name: '[CEOS IDN DIF]'
+   :ivar metadata_version: '9.4'
+   :ivar personnel: []
+   :ivar sensor_name: 'ICECUBE'
+   :ivar source_name: 'SIMULATION'
+   :ivar dif_creation_date: time.strftime("%Y-%m-%d")
+    """
+    # TODO: move these to the DB, or somewhere IceCube-specific
     valid_parameters = [ 
         "SPACE SCIENCE > Astrophysics > Neutrinos", 
         "SPACE SCIENCE > Astrophysics > Neutrinos > Atmospheric", 
@@ -328,34 +529,66 @@ class Dif(object):
         "RPSC-MET":"Raytheon Polar Services Corporation Meteorology"
     }
     
-    def __init__(self):
-        self.entry_id     = None
-        self.entry_title  = None
-        self.parameters   = ''
-        self.iso_topic_category = 'geoscientificinformation'
-        self.data_ceter   = None
-        self.summary      = ''
-        self.metadata_name = '[CEOS IDN DIF]'
-        self.metadata_version = '9.4'
-        self.personnel    = None
-        self.sensor_name  = 'ICECUBE'
-        self.source_name  = 'SIMULATION'
-        self.dif_creation_date = time.strftime("%Y-%m-%d")
-
-class Plus(object):
-    """A Plus object
+    def __init__(self,*args,**kwargs):
+        self['entry_id']     = None
+        self['entry_title']  = None
+        self['parameters']   = ''
+        self['iso_topic_category'] = 'geoscientificinformation'
+        self['data_ceter']   = None
+        self['summary']      = ''
+        self['metadata_name'] = '[CEOS IDN DIF]'
+        self['metadata_version'] = '9.4'
+        self['personnel']    = []
+        self['sensor_name']  = 'ICECUBE'
+        self['source_name']  = 'SIMULATION'
+        self['dif_creation_date'] = time.strftime("%Y-%m-%d")
+        super(Dif,self).__init__(*args,**kwargs)
     
-       :ivar start: None
-       :ivar end: None
-       :ivar category: None
-       :ivar subcategory: None
-       :ivar run_number: None
-       :ivar i3db_key: None
-       :ivar simdb_key: None
-       :ivar project: OrderedDict() -- {name: version}
-       :ivar steering_file: None
-       :ivar log_file: None
-       :ivar command_line: None
+    def convert(self):
+        for i,p in enumerate(self['personnel']):
+            if not isinstance(p,Personnel):
+                tmp = Personnel(p)
+                tmp.convert()
+                self['personnel'][i] = tmp
+    
+    def valid(self):
+        try:
+            return ((self['entry_id'] is None or
+                     isinstance(self['entry_id'],(Number,String))) and
+                    (self['entry_title'] is None or
+                     isinstance(self['entry_title'],String)) and
+                    isinstance(self['parameters'],String) and
+                    isinstance(self['iso_topic_category'],String) and
+                    (self['data_ceter'] is None or
+                     (isinstance(self['data_ceter'],DataCenter) and
+                      self['data_center'].valid())) and
+                    isinstance(self['summary'],String) and
+                    isinstance(self['metadata_name'],String) and
+                    isinstance(self['metadata_version'],(Number,String)) and
+                    any(isinstance(p,Personnel) and p.valid() for p in self['personnel']) and
+                    isinstance(self['sensor_name'],String) and
+                    isinstance(self['source_name'],String) and
+                    isinstance(self['dif_creation_date'],(Number,String))
+                   )
+        except Exception:
+            return False
+
+
+class Plus(dict):
+    """
+    A Plus object.
+    
+   :ivar start: None
+   :ivar end: None
+   :ivar category: None
+   :ivar subcategory: None
+   :ivar run_number: None
+   :ivar i3db_key: None
+   :ivar simdb_key: None
+   :ivar project: [] -- [{name: version}]
+   :ivar steering_file: None
+   :ivar log_file: None
+   :ivar command_line: None
     """
     
     valid_category = [
@@ -379,234 +612,111 @@ class Plus(object):
         "GRB" 
     ]
     
-    def __init__(self):
-        self.start        = None
-        self.end          = None
-        self.category     = None
-        self.subcategory  = None
-        self.run_number   = None
-        self.i3db_key     = None
-        self.simdb_key    = None
-        self.project      = OrderedDict()
-        self.steering_file = None
-        self.log_file     = None
-        self.command_line = None
-
-class Personnel(object):
-    """A Personnel object
+    def __init__(self,*args,**kwargs):
+        self['start']        = None
+        self['end']          = None
+        self['category']     = None
+        self['subcategory']  = None
+        self['run_number']   = None
+        self['i3db_key']     = None
+        self['simdb_key']    = None
+        self['project']      = []
+        self['steering_file'] = None
+        self['log_file']     = None
+        self['command_line'] = None
+        super(Plus,self).__init__(*args,**kwargs)
     
-       :ivar role: None
-       :ivar first_name: None
-       :ivar last_name: None
-       :ivar email: None
-    """
-    def __init__(self):
-        self.role         = None
-        self.first_name   = None
-        self.last_name    = None
-        self.email        = None
-
-class DataCenter(object):
-    """A Data Center object
-    
-       :ivar name: 'UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison'
-       :ivar personnel: None
-    """
-    def __init__(self):
-        self.name         = 'UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison'
-        self.personnel    = None
-
-
-### Other objects ###
-
-class NoncriticalError(Exception):
-    """An exception that can be logged and then ignored"""
-    def __init__(self, value):
-        self.value = value
-    def __repr__(self):
-        return 'NoncriticalError(%r)'%(self.value)
-    def __reduce__(self):
-        return (NoncriticalError,(self.value,))
-
-class IFace(object):
-    """A network interface object
-    
-       :ivar name: ' '
-       :ivar encap: ' '
-       :ivar mac: ' '
-       :ivar link: []
-       :ivar rx_packets: 0
-       :ivar tx_packets: 0
-       :ivar rx_bytes: 0
-       :ivar tx_bytes: 0
-    """
-    def __init__(self):
-        self.name = ''
-        self.encap = ''
-        self.mac = ''
-        self.link = [] # list of dicts
-        self.rx_packets = 0
-        self.tx_packets = 0
-        self.rx_bytes = 0
-        self.tx_bytes = 0
-    
-    def __eq__(self,other):
-        return (self.name == other.name and
-                self.encap == other.encap and
-                self.mac == other.mac and
-                self.link == other.link)
-    def __ne__(self,other):
-        return not self.__eq__(other)
-        
-    def __str__(self):
-        ret = 'Interface name='+self.name+' encap='+self.encap+' mac='+self.mac
-        for l in self.link:
-            ret += '\n '
-            for k in l.keys():
-                ret += ' '+k+'='+l[k]
-        ret += '\n  RX packets='+str(self.rx_packets)+' TX packets='+str(self.tx_packets)
-        ret += '\n  RX bytes='+str(self.rx_bytes)+' TX bytes='+str(self.tx_bytes)
-        return ret
-
-try:
-    import pycurl
-except ImportError:
-    # TODO: make this potentially usable
-    class PycURL(object):
+    def convert(self):
         pass
-else:
-    class PycURL(object):
-        """An object to download/upload files using pycURL"""
-        def __init__(self):
-            self.curl = pycurl.Curl()
-            self.curl.setopt(pycurl.FOLLOWLOCATION, 1)
-            self.curl.setopt(pycurl.MAXREDIRS, 5)
-            self.curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-            self.curl.setopt(pycurl.TIMEOUT, 300) # timeout after 300 seconds (5 min)
-            self.curl.setopt(pycurl.NOSIGNAL, 1)
-            self.curl.setopt(pycurl.NOPROGRESS, 1)
-            self.curl.setopt(pycurl.SSLCERTTYPE, 'PEM')
-            self.curl.setopt(pycurl.SSLKEYTYPE, 'PEM')
-            self.curl.setopt(pycurl.SSL_VERIFYPEER, 1)
-            self.curl.setopt(pycurl.SSL_VERIFYHOST, 2)
-            self.curl.setopt(pycurl.FAILONERROR, True)
-        
-        def put(self, url, filename, username=None, password=None,
-                sslcert=None, sslkey=None, cacert=None):
-            """Upload a file using POST"""
-            try:
-                self.curl.setopt(pycurl.URL, url)
-                self.curl.setopt(pycurl.HTTPPOST, [('file',(pycurl.FORM_FILE, filename))])
-                self.curl.setopt(pycurl.TIMEOUT, 1800) # use longer timeout for uploads
-                if username:
-                    if password:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
-                    else:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, str(cacert))
-                self.curl.perform()
-                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
-                if error_code not in (200,304):
-                    raise NoncriticalError('HTTP error code: %d'%error_code)
-            except:
-                raise
-            finally:
-                self.curl.setopt(pycurl.TIMEOUT, 300)
-                if username:
-                    self.curl.setopt(pycurl.USERPWD, '')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, '')
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, '')
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, '')
-        
-        def fetch(self, url, filename, username=None, password=None,
-                sslcert=None, sslkey=None, cacert=None):
-            """Download a file using GET"""
-            fp = open(filename,'wb')
-            error = None
-            try:
-                self.curl.setopt(pycurl.URL, url)
-                self.curl.setopt(pycurl.WRITEDATA, fp)
-                if username:
-                    if password:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
-                    else:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, str(cacert))
-                self.curl.perform()
-                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
-                if error_code not in (200,304):
-                    raise NoncriticalError('HTTP error code: %d'%error_code)
-            except:
-                error = True
-                raise
-            finally:
-                fp.close()
-                if error:
-                    os.remove(filename)
-                if username:
-                    self.curl.setopt(pycurl.USERPWD, '')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, '')
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, '')
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, '')
-        
-        def post(self, url, writefunc, username=None, password=None, 
-                sslcert=None, sslkey=None, cacert=None, headerfunc=None,
-                postbody=None, timeout=None):
-            """Download a file using POST, output to writefunc"""
-            if not writefunc or not callable(writefunc):
-                raise Exception('Write function invalid: %s'%str(writefunc))
-            try:
-                self.curl.setopt(pycurl.URL, url)
-                if postbody:
-                    self.curl.setopt(pycurl.POST,1)
-                    self.curl.setopt(pycurl.POSTFIELDS, postbody)
-                if headerfunc and callable(headerfunc):
-                    self.curl.setopt(pycurl.HEADERFUNCTION,headerfunc)
-                self.curl.setopt(pycurl.WRITEFUNCTION,writefunc)
-                if timeout:
-                    self.curl.setopt(pycurl.TIMEOUT, timeout)
-                if username:
-                    if password:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':'+str(password))
-                    else:
-                        self.curl.setopt(pycurl.USERPWD, str(username)+':')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, str(sslcert))
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, str(sslkey))
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, str(cacert))
-                self.curl.perform()
-                error_code = self.curl.getinfo(pycurl.HTTP_CODE)
-                if error_code not in (200,304):
-                    raise NoncriticalError('HTTP error code: %d'%error_code)
-            except:
-                raise
-            finally:
-                if timeout:
-                    self.curl.setopt(pycurl.TIMEOUT, 300)
-                if username:
-                    self.curl.setopt(pycurl.USERPWD, '')
-                if sslcert:
-                    self.curl.setopt(pycurl.SSLCERT, '')
-                if sslkey:
-                    self.curl.setopt(pycurl.SSLKEY, '')
-                if cacert:
-                    self.curl.setopt(pycurl.CAINFO, '')
+    
+    def valid(self):
+        try:
+            return ((self['start'] is None or
+                     isinstance(self['start'],(Number,String))) and
+                    (self['end'] is None or
+                     isinstance(self['end'],(Number,String))) and
+                    (self['category'] is None or
+                     isinstance(self['category'],String)) and
+                    (self['subcategory'] is None or
+                     isinstance(self['subcategory'],String)) and
+                    (self['run_number'] is None or
+                     isinstance(self['run_number'],(Number,String))) and
+                    (self['i3db_key'] is None or
+                     isinstance(self['i3db_key'],(Number,String))) and
+                    (self['simdb_key'] is None or
+                     isinstance(self['simdb_key'],(Number,String))) and
+                    (self['project'] is None or
+                     isinstance(self['project'],(Number,String))) and
+                    (self['steering_file'] is None or
+                     isinstance(self['steering_file'],String)) and
+                    (self['log_file'] is None or
+                     isinstance(self['log_file'],String)) and
+                    (self['command_line'] is None or
+                     isinstance(self['command_line'],String))
+                   )
+        except Exception:
+            return False
 
+
+class Personnel(dict):
+    """
+    A Personnel object.
+    
+   :ivar role: None
+   :ivar first_name: None
+   :ivar last_name: None
+   :ivar email: None
+    """
+    def __init__(self,*args,**kwargs):
+        self['role']       = None
+        self['first_name'] = None
+        self['last_name']  = None
+        self['email']      = None
+        super(Personnel,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return ((self['role'] is None or
+                     isinstance(self['role'],String)) and
+                    (self['first_name'] is None or
+                     isinstance(self['first_name'],String)) and
+                    (self['last_name'] is None or
+                     isinstance(self['last_name'],String)) and
+                    (self['email'] is None or
+                     isinstance(self['email'],String))
+                   )
+        except Exception:
+            return False
+
+class DataCenter(dict):
+    """
+    A Data Center object.
+    
+   :ivar name: None
+   :ivar personnel: []
+    """
+    valid_names = ['UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison']
+    
+    def __init__(self,*args,**kwargs):
+        self['name']      = None
+        self['personnel'] = []
+        super(DataCenter,self).__init__(*args,**kwargs)
+    
+    def convert(self):
+        for i,p in enumerate(self['personnel']):
+            if not isinstance(p,Personnel):
+                tmp = Personnel(p)
+                tmp.convert()
+                self['personnel'][i] = tmp
+    
+    def valid(self):
+        try:
+            return ((self['name'] is None or
+                     isinstance(self['name'],String)) and
+                    any(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
+                   )
+        except Exception:
+            return False

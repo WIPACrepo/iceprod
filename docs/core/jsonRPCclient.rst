@@ -1,19 +1,22 @@
 .. index:: jsonRPCclient
 .. _jsonRPCclient:
 
-
-
+JSON RPC Client
+===============
 
 .. automodule:: iceprod.core.jsonRPCclient
    :no-members:
-   :no-undoc-members:
+   
+.. autoclass:: JSONRPC
+   :no-members:
 
-JSON RPC Client
-===============
+   .. automethod:: MetaJSONRPC.start
+
+   .. automethod:: MetaJSONRPC.stop
+
+   .. automethod:: MetaJSONRPC.restart
 
 .. autoclass:: Client
 
 
-.. autoclass:: JSONRPC
-   :members: start stop restart
 

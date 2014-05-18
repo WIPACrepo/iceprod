@@ -1,8 +1,8 @@
 """
-  Common functions
-
-  copyright (c) 2012 the icecube collaboration
+Common functions
 """
+
+from __future__ import absolute_import, division, print_function
 
 import sys
 import os
@@ -23,7 +23,7 @@ try:
 except:
     import pickle
 
-from iceprod.core import dataclasses
+from iceprod.core import util
 from iceprod.core.gridftp import GridFTP
 from iceprod.core.jsonUtil import json_encode,json_decode
 
@@ -51,7 +51,7 @@ def uncompress(file):
     proc = subprocess.Popen('7za l -mmt=off %s'%(file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     output = proc.communicate()[0]
     if proc.returncode:
-        raise dataclasses.NoncriticalError('Failed to open archive')
+        raise util.NoncriticalError('Failed to open archive')
     files = []
     type = ''
     save = False
@@ -159,7 +159,7 @@ def uncompress(file):
             return files[0]
         else:
             return files
-    raise dataclasses.NoncriticalError('Failed to uncompress')
+    raise util.NoncriticalError('Failed to uncompress')
 
 def compress(file,compression='lzma'):
     """Compress a file or directory.
@@ -174,7 +174,7 @@ def compress(file,compression='lzma'):
     logger.info(output)
     if not proc.returncode:
         return newfile
-    raise dataclasses.NoncriticalError('Failed to compress')
+    raise util.NoncriticalError('Failed to compress')
 
 def iscompressed(file):
     """Check if a file is a compressed file, based on file name"""
@@ -204,13 +204,13 @@ def tar(tfile,files,workdir=None):
             for name in files:
                 if name.startswith(workdir):
                     file = name[len(workdir)+1:]
-                    print file
+                    print(file)
                     tar.add(name,arcname=file)
                 else:
                     tar.add(name)
         except Exception:
             logger.warning('cannnot add %s to tar file'%(str(files)))
-            raise dataclasses.NoncriticalError('cannot add to tar file')
+            raise util.NoncriticalError('cannot add to tar file')
     tar.close()
     return tfile
 
@@ -446,7 +446,7 @@ def getInterfaces(legacy=False,newkernel=False):
         for g in groups:
             if 'UP' not in g[1] or 'DOWN' in g[1]:
                 continue
-            iface = dataclasses.IFace()
+            iface = util.IFace()
             iface.name = g.pop(0)[:-1]
             link = {}
             nextis = None
@@ -560,7 +560,7 @@ def getInterfaces(legacy=False,newkernel=False):
             del groups[i]
         
         for g in groups:
-            iface = dataclasses.IFace()
+            iface = util.IFace()
             iface.name = g.pop(0)
             link = {}
             nextis = None
@@ -708,7 +708,7 @@ def upload(local,remote,proxy=False,options={}):
             success = True
     return success
 
-pycurl_handle = dataclasses.PycURL()
+pycurl_handle = util.PycURL()
 def wget(url,dest='./',cache=False,proxy=False,options={}):
     """wrapper for downloading from multiple protocols"""
     dest = os.path.expandvars(dest)
@@ -796,7 +796,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                 else:
                     # do regular get
                     pycurl_handle.fetch(url,dest_path,**kwargs)
-            except dataclasses.NoncriticalError as e:
+            except util.NoncriticalError as e:
                 ee = e.value
                 try:
                     if 'HTTP error code' in ee:
@@ -811,7 +811,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                 if i == 0:
                     # try regenerating the pycurl handle
                     logger.info('regenerating pycurl handle because of error')
-                    pycurl_handle = dataclasses.PycURL()
+                    pycurl_handle = util.PycURL()
                 else:
                     logger.error('error fetching url %s : %s',url,e)
                     ret = None
@@ -940,13 +940,13 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                         try:
                             url2 = url+type+'sum'
                             pycurl_handle.post(url2,cb,**kwargs)
-                        except dataclasses.NoncriticalError:
+                        except util.NoncriticalError:
                             continue
                         else:
                             break
                     if cb.data:
                         ret = (cb.data,type)
-            except dataclasses.NoncriticalError as e:
+            except util.NoncriticalError as e:
                 ee = e.value
                 try:
                     if 'HTTP error code' in ee:
@@ -961,7 +961,7 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                 if i == 0:
                     # try regenerating the pycurl handle
                     logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = dataclasses.PycURL()
+                    pycurl_handle = util.PycURL()
                 else:
                     logger.error('error fetching url %s : %s',url,e)
                     ret = None
@@ -1101,7 +1101,7 @@ def wput(source,url,proxy=False,options={}):
                     if i == 0:
                         # try regenerating the pycurl handle
                         logger.warn('regenerating pycurl handle because of error')
-                        pycurl_handle = dataclasses.PycURL()
+                        pycurl_handle = util.PycURL()
                     else:
                         logger.error('error uploading to url %s : %r',url,e)
                         raise
@@ -1124,7 +1124,7 @@ def wput(source,url,proxy=False,options={}):
                         if i == 0:
                             # try regenerating the pycurl handle
                             logger.warn('regenerating pycurl handle because of error')
-                            pycurl_handle = dataclasses.PycURL()
+                            pycurl_handle = util.PycURL()
                         else:
                             logger.error('error uploading to url %s : %r',url,e)
                             raise
@@ -1147,7 +1147,7 @@ def wput(source,url,proxy=False,options={}):
                         if i == 0:
                             # try regenerating the pycurl handle
                             logger.warn('regenerating pycurl handle because of error')
-                            pycurl_handle = dataclasses.PycURL()
+                            pycurl_handle = util.PycURL()
                         else:
                             logger.error('error uploading to url %s : %r',url,e)
                             raise
@@ -1196,7 +1196,7 @@ def wput(source,url,proxy=False,options={}):
                 if i == 0:
                     # try regenerating the pycurl handle
                     logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = dataclasses.PycURL()
+                    pycurl_handle = util.PycURL()
                 else:
                     logger.error('error uploading to url %s : %s',url,e)
                     raise
@@ -1441,7 +1441,7 @@ def inproxy(url,dest_path,options):
                 if i == 0:
                     # try regenerating the pycurl handle
                     logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = dataclasses.PycURL()
+                    pycurl_handle = util.PycURL()
                 else:
                     logger.error('error fetching url %s : %s',url,e)
                     ret = None
@@ -1489,7 +1489,7 @@ def inproxy_checksum(url,dest_path,options):
             if i == 0:
                 # try regenerating the pycurl handle
                 logger.warn('regenerating pycurl handle because of error')
-                pycurl_handle = dataclasses.PycURL()
+                pycurl_handle = util.PycURL()
             else:
                 logger.error('error fetching url %s : %s',url,e)
                 ret = None

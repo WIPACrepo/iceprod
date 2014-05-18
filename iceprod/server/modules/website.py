@@ -1,8 +1,8 @@
 """
   website module
-
-  copyright (c) 2012 the icecube collaboration
 """
+
+from __future__ import absolute_import, division, print_function
 
 import sys
 import os
@@ -23,14 +23,10 @@ import tornado.ioloop
 import tornado.web
 import tornado.httpserver
 
-from pyuv_tornado import fs
-
 from iceprod.server import module
 from iceprod.server.dbclient import DB
 from iceprod.server.nginx import Nginx
 import iceprod.core.functions
-
-
 
 
 class JSONRPCHandler(tornado.web.RequestHandler):

@@ -1,15 +1,17 @@
 """
-  A recursive descent parser for the IceProd meta language
-  
-  copyright (c) 2013 the icecube collaboration
+A `recursive descent parser 
+<http://en.wikipedia.org/wiki/Recursive_descent_parser>`_ for the IceProd meta 
+language. Most commonly used in IceProd dataset configurations to refer to 
+other parts of the same configuration.
 """
+
+from __future__ import absolute_import, division, print_function
 
 import re
 import string
 import random
 
 class safe_eval:
-    """Safe evaluation for arithmatic operations"""
     import ast
     import operator as op
     # supported operators
@@ -22,6 +24,10 @@ class safe_eval:
                  ast.BitXor: op.xor}
     @classmethod
     def eval(cls,expr):
+        """
+        Safe evaluation of arithmatic operations using 
+        :mod:`Abstract Syntax Trees <ast>`.
+        """
         return cls.__eval(cls.ast.parse(expr).body[0].value) # Module(body=[Expr(value=...)])
     @classmethod
     def __eval(cls,node):
@@ -41,27 +47,76 @@ class GrammarException(Exception):
 
 class ExpParser:
     """
-    Expression parsing class for parameter values. 
-    """
+    Expression parsing class for parameter values.
     
-    # grammar definition
-    #
-    # char      := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#%&'*+,-./:;<=>?@\^_`|~[]{}
-    # word      := char | char + word
-    # starter   := $
-    # scopeL    := (
-    # scopeR    := )
-    # symbol    := starter | starter + word
-    # phrase    := symbol + scopeL + sentence + scopeR
-    # sentence  := phrase | word | phrase + sentence | word + sentence
-
-    def parse(self,input,job=dataclasses.Job(),env={}):
-        # only parse strings
+    Grammar Definition::
+    
+        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#%&'*+,-./:;<=>?@\^_`|~[]{}
+        word     := char | char + word
+        starter  := $
+        scopeL   := (
+        scopeR   := )
+        symbol   := starter | starter + word
+        phrase   := symbol + scopeL + sentence + scopeR
+        sentence := phrase | word | phrase + sentence | word + sentence
+    
+    Keywords:
+    
+    * steering : A parameter from :class:`iceprod.core.dataclasses.Steering`
+    * system : A system value from :class:`iceprod.core.dataclasses.Steering`
+    * args, options : An option value from :class:`iceprod.core.dataclasses.Job`
+    * metadata : A value from :class:`iceprod.core.dataclasses.Dif` or
+      :class:`iceprod.core.dataclasses.Plus`
+    * eval : An arithmatic expression
+    * choice : A random choice from a list of possibilites
+    * sprintf : The sprintf string syntax
+    
+    Examples::
+    
+        $steering(my_parameter)
+        $system(gpu_opts)
+        $args(option1)
+        $options(option1)
+        $metadata(sensor_name)
+        $eval(1+2)
+        $choice(1,2,3,4)
+        $sprintf("%04d",4)
+    """
+    def __init__(self):
+        self.job = None
+        self.env = None
+        self.depth = 0
+        # dict of keyword : function mappings
+        self.keywords = {'steering' : self.steering_func,
+                         'system' : self.system_func,
+                         'args' : self.options_func,
+                         'options' : self.options_func,
+                         'metadata' : self.difplus_func,
+                         'eval' : self.eval_func,
+                         'choice' : self.choice_func,
+                         'sprintf' : self.sprintf_func
+                        }
+    
+    def parse(self,input,job=None,env=None):
+        """
+        Parse the input, expanding where possible.
+        
+        :param input: input string
+        :param job: :class:`iceprod.core.dataclasses.Job`, optional
+        :param env: env dictionary, optional
+        :returns: expanded string
+        """
         if not isinstance(input,str):
             return input
         # set job and env
-        self.job = job
-        self.env = env
+        if job:
+            self.job = job
+        else:
+            self.job = dataclasses.Job()
+        if env:
+            self.env = env
+        else:
+            self.env = {}
         self.depth = 0 # start at a depth of 0
         # parse input
         (left, right) = self.sentence(input)
@@ -72,7 +127,6 @@ class ExpParser:
         return left + right
 
     def sentence(self,input):
-        # find words or phrases
         if self.depth > 100:
             raise GrammarError('too recursive, check for circular dependencies')
         self.depth += 1
@@ -135,7 +189,7 @@ class ExpParser:
             raise GrammarException('missing symbol starter')
 
     special_chars = set('$()')
-    chars = set([x for x in string.printable if x not in special_chars])
+    chars = set(string.printable)-special_chars
     def word(self,input):
         i = 0
         l = len(input)
@@ -175,15 +229,15 @@ class ExpParser:
         if ret == None and param == None:
             # do general search for keyword
             if 'parameters' in self.env and keyword in self.env['parameters']: # search env params first
-                ret = str(self.env['parameters'][keyword].value)
-            elif hasattr(self.job,keyword): # search job second
+                ret = str(self.env['parameters'][keyword])
+            elif keyword in self.job: # search job second
                 try:
-                    ret = str(getattr(self.job,keyword))
+                    ret = str(self.job[keyword])
                 except:
                     pass
             elif keyword in self.job.options: # search options third
                 try:
-                    ret = str(self.job.options[keyword].value)
+                    ret = str(self.job.options[keyword])
                 except:
                     pass
         
@@ -196,32 +250,32 @@ class ExpParser:
     def steering_func(self,param):
         """Find param in steering"""
         if self.job.steering and param in self.job.steering.parameters:
-            return self.job.steering.parameters[param].value
+            return str(self.job.steering.parameters[param])
         else:
             raise GrammarException('steering:'+str(param))
 
     def system_func(self,param):
         """Find param in steering.system"""
         if self.job.steering and param in self.job.steering.system:
-            return self.job.steering.system[param].value
+            return str(self.job.steering.system[param])
         else:
             raise GrammarException('system:'+str(param))
     
     def options_func(self,param):
         """Find param in options"""
         if param in self.job.options:
-            return self.job.options[param].value
+            return str(self.job.options[param])
         else:
             raise GrammarException('options:'+str(param))
     
     def difplus_func(self,param):
         """Find param in dif plus"""
         try:
-            # try dif
-            return str(getattr(self.job.difplus.dif,param))
+            # try dif, then plus
+            return str(self.job.difplus.dif[param])
         except:
             try:
-                return str(getattr(self.job.difplus.plus,param))
+                return str(self.job.difplus.plus[param])
             except:
                 raise GrammarException('difplus:'+str(param))
     
@@ -295,18 +349,3 @@ class ExpParser:
                 return fmt_str
         except Exception as e:
             raise GrammarException(str(e))
-    
-    def __init__(self):
-        self.job = None
-        self.env = None
-        self.depth = 0
-        # dict of keyword : function mappings
-        self.keywords = {'steering' : self.steering_func,
-                         'system' : self.system_func,
-                         'args' : self.options_func,
-                         'options' : self.options_func,
-                         'metadata' : self.difplus_func,
-                         'eval' : self.eval_func,
-                         'choice' : self.choice_func,
-                         'sprintf' : self.sprintf_func
-                        }

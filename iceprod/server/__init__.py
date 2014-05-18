@@ -1,6 +1,9 @@
 """
 Some general functions used by the iceprod server
 """
+
+from __future__ import absolute_import, division, print_function
+
 import os
 import sys
 import logging

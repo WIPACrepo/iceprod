@@ -2,12 +2,11 @@
 
 import os
 import sys
+import glob
 
-# python version check to fail hard
-major_ver,minor_ver = sys.version_info[:2] 
-if (major_ver < 2 or (major_ver == 2 and minor_ver < 7) or
-    (major_ver == 3 and minor_ver < 2)):
-    raise Exception('Python is too old. IceProd requires 2.7+ or 3.2+')
+if sys.version_info < (2, 7) or (3, 0) <= sys.version_info < (3, 2):
+    print('ERROR: IceProd requires at least Python 2.7 or 3.2 to run.')
+    sys.exit(1)
 
 try:
     # Use setuptools if available, for install_requires (among other things).
@@ -26,9 +25,9 @@ with open('README.rst') as f:
 
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
-    install_requires = ['pycurl', 'tornado>=2.4', 'jsonrpclib', 'lxml',
-                        'setproctitle','pyzmq']
+    install_requires = ['tornado>=2.4', 'jsonrpclib', 'pyzmq']
     extras_require = {
+        'utils': ['setproctitle', 'pycurl', 'lxml'],
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']
     }
@@ -40,8 +39,9 @@ if setuptools is not None:
 setup(
     name='iceprod',
     version=version,
-    packages = ['iceprod', 'iceprod.client', 'iceprod.core', 'iceprod.server'],
-    package_data = {
+    scripts=glob.glob('bin/*'),
+    packages=['iceprod', 'iceprod.client', 'iceprod.core', 'iceprod.server'],
+    package_data={
         # data files need to be listed both here (which determines what gets
         # installed) and in MANIFEST.in (which determines what gets included
         # in the sdist tarball)

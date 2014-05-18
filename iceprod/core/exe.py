@@ -1,8 +1,10 @@
 """
-  The core execution functions
-  
-  copyright (c) 2012 the icecube collaboration  
+The core execution functions for running on a node.
+
+These are all called from `i3exec`.
 """
+
+from __future__ import absolute_import, division, print_function
 
 import sys
 import os
@@ -28,6 +30,7 @@ import logging
 logger = logging.getLogger('exe')
 
 from iceprod.core import to_log,constants
+from iceprod.core import util
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import parser
@@ -41,13 +44,23 @@ from iceprod.modules.ipmodule import IPBaseClass
 config = dataclasses.Job()
 parseObj = parser.ExpParser()
 def parseValue(value,env={}):
-    """Parse a value from the available env and global config"""
+    """
+    Parse a value from the available env and global config.
+    
+    Uses the :class:`Meta Parser <iceprod.core.parser>` on any string value.
+    Pass-through for any other object.
+    
+    :param value: The value to parse
+    :param env: The environment to use, optional
+    :returns: The parsed value
+    """
     if isinstance(value,str):
         return os.path.expandvars(parseObj.parse(value,config,env))
     else:
         return value
+
 def parseObject(obj,env):
-    """Run parseValue function on all attributes of an object"""
+    """Run :func:`parseValue` on all attributes of an object"""
     ret = copy.copy(obj)
     for attr in obj.__dict__.keys():
         tmp = getattr(obj,attr)
