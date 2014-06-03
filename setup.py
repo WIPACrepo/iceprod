@@ -35,16 +35,19 @@ if setuptools is not None:
     #    install_requires.append('backports.ssl_match_hostname')
     kwargs['install_requires'] = install_requires
     kwargs['extras_require'] = extras_require
+    kwargs['zip_safe'] = False
 
 setup(
     name='iceprod',
     version=version,
     scripts=glob.glob('bin/*'),
-    packages=['iceprod', 'iceprod.client', 'iceprod.core', 'iceprod.server'],
+    packages=['iceprod', 'iceprod.client', 'iceprod.core', 'iceprod.server',
+              'iceprod.server.modules', 'iceprod.server.plugins'],
     package_data={
         # data files need to be listed both here (which determines what gets
         # installed) and in MANIFEST.in (which determines what gets included
         # in the sdist tarball)
+        'iceprod.server':['data/www/*','data/www_templates/*'],
         },
     author="IceCube Collaboration",
     author_email="simprod@icecube.wisc.edu", # TODO: better email address

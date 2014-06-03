@@ -62,10 +62,10 @@ def parseValue(value,env={}):
 def parseObject(obj,env):
     """Run :func:`parseValue` on all attributes of an object"""
     ret = copy.copy(obj)
-    for attr in obj.__dict__.keys():
-        tmp = getattr(obj,attr)
+    for attr in obj.keys():
+        tmp = obj[attr]
         if isinstance(tmp,str):
-            setattr(ret,attr,parseValue(tmp,env))
+            ret[attr] = parseValue(tmp,env)
     return ret
 
 def setupenv(obj,oldenv={}):
@@ -90,45 +90,45 @@ def setupenv(obj,oldenv={}):
         # copy parameters
         if 'parameters' not in env:
             env['parameters'] = {}
-        if hasattr(obj,'parameters'):
+        if 'parameters' in obj:
             # copy new parameters to env first so local referrals work
-            env['parameters'].update(obj.parameters)
+            env['parameters'].update(obj['parameters'])
             # parse parameter values and update if necessary
-            for p in obj.parameters.values():
-                newval = parseValue(p.value,env)
-                if newval != p.value:
-                    env['parameters'][p.name].value = newval
+            for p in obj['parameters']:
+                newval = parseValue(obj['parameters'][p],env)
+                if newval != obj['parameters'][p]:
+                    env['parameters'][p] = newval
         
         if 'resources' not in env:
             env['resources'] = {}
-        if hasattr(obj,'resources'):
+        if 'resources' in obj:
             # download resources
-            for resource in obj.resources:
+            for resource in obj['resources']:
                 downloadResource(env,parseObject(resource,env))
         
         if 'data' not in env:
             env['data'] = {}
-        if hasattr(obj,'data'):
+        if 'data' in obj:
             # download data
-            for data in obj.data:
+            for data in obj['data']:
                 d = parseObject(data,env)
-                if d.movement in ('input','both'):
+                if d['movement'] in ('input','both'):
                     downloadData(env,d)
-                if d.movement in ('output','both'):
+                if d['movement'] in ('output','both'):
                     if 'uploads' not in env:
                         env['uploads'] = []
                     env['uploads'].append(d)
             
         if 'classes' not in env:
             env['classes'] = {}
-        if hasattr(obj,'classes'):
+        if 'classes' in obj:
             # set up classes
-            for c in obj.classes:
+            for c in obj['classes']:
                 setupClass(env,parseObject(c,env))
         
         if 'projects' not in env:
             env['projects'] = {}
-        if hasattr(obj,'projects'):
+        if 'projects' in obj:
             # set up projects
             for project in obj.projects:
                 setupProject(env,parseObject(project,env))
@@ -149,7 +149,7 @@ def destroyenv(env):
                 uploadData(env,d)
             except dataclasses.NoncriticalError, e:
                 logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
-                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug'].value == 'True':
+                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug']:
                     raise
     
     # delete any files
@@ -167,7 +167,7 @@ def destroyenv(env):
                         del env['ld_local_path'][base] # remove file from dict
             except OSError, e:
                 logger.error('failed to delete file %s - %s',(str(f),str(e)))
-                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug'].value == 'True':
+                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug']:
                     raise
     
     # reset environment
@@ -184,45 +184,45 @@ def downloadResource(env,resource,remote_base=None,local_base=None):
     """Download a resource and put location in the env"""
     if not remote_base:
         if 'resource_url' in env['parameters']:
-            remote_base = env['parameters']['resource_url'].value
+            remote_base = env['parameters']['resource_url']
         else:
             remote_base = 'http://x2100.icecube.wisc.edu'
-    if functions.isurl(resource.remote):
-        url = resource.remote
+    if functions.isurl(resource['remote']):
+        url = resource['remote']
     else:
-        url = os.path.join(remote_base,resource.remote)
+        url = os.path.join(remote_base,resource['remote'])
     if not local_base:
         if 'resource_directory' in env['parameters']:
-            local_base = env['parameters']['resource_directory'].value
+            local_base = env['parameters']['resource_directory']
         else:
             local_base = 'resource'
-    if not resource.local:
-        resource.local = os.path.basename(resource.remote)
-    local = os.path.join(local_base,resource.local)
+    if not resource['local']:
+        resource['local'] = os.path.basename(resource['remote'])
+    local = os.path.join(local_base,resource['local'])
     if 'files' not in env:
         env['files'] = {}
     if not os.path.exists(os.path.dirname(local)):
         os.makedirs(os.path.dirname(local))
     
     # get resource
-    if resource.local in env['files']:
-        logger.info('resource %s already exists in env, so skip download and compression',resource.local)
+    if resource['local'] in env['files']:
+        logger.info('resource %s already exists in env, so skip download and compression',resource['local'])
         return
     elif os.path.exists(local):
-        logger.info('resource %s already exists as file, so skip download',resource.local)
+        logger.info('resource %s already exists as file, so skip download',resource['local'])
     else:
         # download resource
         download_options = {}
         if 'parameters' in env and 'http_username' in env['parameters']:
-            download_options['http_username'] = env['parameters']['http_username'].value
+            download_options['http_username'] = env['parameters']['http_username']
         if 'parameters' in env and 'http_password' in env['parameters']:
-            download_options['http_password'] = env['parameters']['http_password'].value
+            download_options['http_password'] = env['parameters']['http_password']
         
         if not functions.download(url,local,options=download_options):
             raise dataclasses.NoncriticalError('Failed to download %s'%url)
     
     # check compression
-    if resource.compression:
+    if resource['compression']:
         # uncompress file
         try:
             files = functions.uncompress(local)
@@ -234,14 +234,14 @@ def downloadResource(env,resource,remote_base=None,local_base=None):
             return
     
     # add file to env
-    env['files'][resource.local] = local
-    logger.warn('resource %s added to env',resource.local)
+    env['files'][resource['local']] = local
+    logger.warn('resource %s added to env',resource['local'])
 
 def downloadData(env,data):
     """Download data and put location in the env"""
-    remote_base = data.storage_location(env)
+    remote_base = data['storage_location'](env)
     if 'data_directory' in env['parameters']:
-        local_base = env['parameters']['data_directory'].value
+        local_base = env['parameters']['data_directory']
     else:
         local_base = 'data'
     downloadResource(env,data,remote_base,local_base)
@@ -249,13 +249,13 @@ def downloadData(env,data):
 def uploadData(env,data):
     """Upload data"""
     parameters = env['parameters']
-    remote_base = data.storage_location(env)
+    remote_base = data['storage_location'](env)
     if 'data_directory' in parameters:
-        local_base = parameters['data_directory'].value
+        local_base = parameters['data_directory']
     else:
         local_base = 'data'
-    url = os.path.join(remote_base,data.remote)
-    local = os.path.join(local_base,data.local)
+    url = os.path.join(remote_base,data['remote'])
+    local = os.path.join(local_base,data['local'])
     if not os.path.exists(local):
         raise dataclasses.NoncriticalError('file %s does not exist'%local)
     
@@ -274,7 +274,7 @@ def uploadData(env,data):
             local2 = newlocal
     
     # check compression
-    if data.compression:
+    if data['compression']:
         # get compression type, if specified
         c = functions.iscompressed(url)
         if c:
@@ -289,11 +289,11 @@ def uploadData(env,data):
     proxy = False
     upload_options = {}
     if 'parameters' in env and 'http_username' in parameters:
-        upload_options['http_username'] = parameters['http_username'].value
+        upload_options['http_username'] = parameters['http_username']
     if 'parameters' in env and 'http_password' in parameters:
-        upload_options['http_password'] = parameters['http_password'].value
+        upload_options['http_password'] = parameters['http_password']
     if 'parameters' in env and 'proxy' in parameters:
-        proxy = parameters['proxy'].value
+        proxy = parameters['proxy']
     try:
         ret = functions.upload(local,url,proxy=proxy,options=upload_options)
         if not ret:
@@ -309,58 +309,60 @@ def setupClass(env,class_obj):
     if not class_obj:
         raise Exception('Class is not defined')
     loaded = False
-    if class_obj.name in env['classes']:
+    if class_obj['name'] in env['classes']:
         # class already loaded, so leave it alone
-        logger.info('class %s already loaded',class_obj.name)
-    elif class_obj.resource_name:
+        logger.info('class %s already loaded',class_obj['name'])
+    elif class_obj['resource_name']:
         # class is downloaded as a resource
-        if 'files' not in env or class_obj.resource_name not in env['files']:
-            logger.error('resource %s for class %s does not exist',class_obj.resource_name,class_obj.name)
+        if 'files' not in env or class_obj['resource_name'] not in env['files']:
+            logger.error('resource %s for class %s does not exist',
+                         class_obj['resource_name'],class_obj['name'])
         else:
-            local = env['files'][class_obj.resource_name]
+            local = env['files'][class_obj['resource_name']]
             if not isinstance(local,str):
                 local = local[0]
-            if class_obj.src and os.path.exists(os.path.join(local,class_obj.src)):
+            if (class_obj.src and 
+                os.path.exists(os.path.join(local,class_obj['src']))):
                 # treat src as a path inside the resource
-                local = os.path.join(local,class_obj.src)
+                local = os.path.join(local,class_obj['src'])
             loaded = True
     else:
         # get url of class
         i = 0
         while True:
-            url = class_obj.src
+            url = class_obj['src']
             if functions.isurl(url):
                 i = 10 # skip repeat download attempts
             else:
                 if i == 0:
                     # first, look in resources
                     if 'parameters' in env and 'resource_url' in env['parameters']:
-                        url = os.path.join(env['parameters']['resource_url'].value,class_obj.src)
+                        url = os.path.join(env['parameters']['resource_url'],class_obj['src'])
                     else:
-                        url = os.path.join('http://x2100.icecube.wisc.edu/downloads/',class_obj.src)
+                        url = os.path.join('http://x2100.icecube.wisc.edu/downloads/',class_obj['src'])
                 elif i == 1:
                     # then, look in regular svn
                     if 'parameters' in env and 'svn_repository' in env['parameters']:
-                        url = os.path.join(env['parameters']['svn_repository'].value,class_obj.src)
+                        url = os.path.join(env['parameters']['svn_repository'],class_obj['src'])
                     else:
-                        url = os.path.join('http://code.icecube.wisc.edu/svn/projects/',class_obj.src)
+                        url = os.path.join('http://code.icecube.wisc.edu/svn/projects/',class_obj['src'])
                 else:
-                    raise dataclasses.NoncriticalError('Cannot find class %s because of bad src url'%class_obj.name)
+                    raise dataclasses.NoncriticalError('Cannot find class %s because of bad src url'%class_obj['name'])
             
             if 'parameters' in env and 'local_temp' in env['parameters']:
-                local_temp = env['parameters']['local_temp'].value
+                local_temp = env['parameters']['local_temp']
             else:
                 local_temp = os.path.join(os.getcwd(),'classes')
             if not os.path.exists(local_temp):
                 os.makedirs(local_temp)
                 
-            local = os.path.join(local_temp,class_obj.name.replace(' ','_'))
+            local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
             
             download_options = {}
             if 'parameters' in env and 'http_username' in env['parameters']:
-                download_options['http_username'] = env['parameters']['http_username'].value
+                download_options['http_username'] = env['parameters']['http_username']
             if 'parameters' in env and 'http_password' in env['parameters']:
-                download_options['http_password'] = env['parameters']['http_password'].value
+                download_options['http_password'] = env['parameters']['http_password']
             
             # download class
             logger.warn('attempting to download class %s',url)
@@ -392,8 +394,8 @@ def setupClass(env,class_obj):
         
     if loaded:
         # add to env
-        env['classes'][class_obj.name] = local
-        logger.warn('class %s loaded at %r',class_obj.name,local)
+        env['classes'][class_obj['name']] = local
+        logger.warn('class %s loaded at %r',class_obj['name'],local)
         
         # add binary libraries to the LD_LIBRARY_PATH
         local_lib = os.path.join(os.getcwd(),'resource_libs')  # must be the same as specified in loader.sh
@@ -441,8 +443,8 @@ def setupClass(env,class_obj):
         if os.path.isdir(local):
             # build search list
             search_list = []
-            if class_obj.libs is not None:
-                search_list.extend(class_obj.libs.split(':'))
+            if class_obj['libs'] is not None:
+                search_list.extend(class_obj['libs'].split(':'))
                 if 'lib64' not in search_list:
                     search_list.append('lib64')
                 if 'lib' not in search_list:
@@ -479,9 +481,9 @@ def setupClass(env,class_obj):
                 # check for binary library
                 ldpath(root,f)
         # modify environment variables
-        logger.info('env_vars = %s',class_obj.env_vars)
-        if class_obj.env_vars is not None:
-            for e in class_obj.env_vars.split(';'):
+        logger.info('env_vars = %s',class_obj['env_vars'])
+        if class_obj['env_vars'] is not None:
+            for e in class_obj['env_vars'].split(';'):
                 try:
                     k,v = e.split('=')
                 except ValueError,e:
@@ -503,27 +505,27 @@ def setupProject(env,project):
         env['projects'] = {}
     if not project:
         raise Exception('Project is not defined')
-    if project.name in env['projects']:
+    if project['name'] in env['projects']:
         # project already loaded, so leave it alone
-        logger.info('project %s already loaded'%project.name)
+        logger.info('project %s already loaded'%project['name'] )
     else:
-        logger.info('project %s being loaded from %s',project.name,project.class_name)
+        logger.info('project %s being loaded from %s',project['name'] ,project['class_name'])
         # import project
         try:
-            x = __import__(project.class_name,globals(),locals(),[project.class_name])
+            x = __import__(project['class_name'],globals(),locals(),[project['class_name']])
         except ImportError as e:
             # try as iceprod.modules
             try:
-                x = __import__('iceprod.modules.'+project.class_name,globals(),locals(),[project.class_name])
+                x = __import__('iceprod.modules.'+project['class_name'],globals(),locals(),[project['class_name']])
             except ImportError as e:
-                logger.error('cannot import project %s: %s',str(project.class_name),str(e))
+                logger.error('cannot import project %s: %s',str(project['class_name']),str(e))
                 pass
             else:
                 # add to env
-                env['projects'][project.name] = x
+                env['projects'][project['name'] ] = x
         else:
             # add to env
-            env['projects'][project.name] = x
+            env['projects'][project['name'] ] = x
 
 ### Run Functions ###
 
@@ -536,10 +538,7 @@ def runtask(globalenv,task):
     # set up task_temp
     if not os.path.exists('task_temp'):
         os.mkdir('task_temp')
-    o = dataclasses.Parameter()
-    o.name = 'task_temp'
-    o.value = os.path.join(os.getcwd(),'task_temp')
-    globalenv['task_temp'] = o
+    globalenv['task_temp'] = os.path.join(os.getcwd(),'task_temp')
     
     # set up stats
     stats = {}
@@ -550,13 +549,13 @@ def runtask(globalenv,task):
         
         try:
             # run trays
-            for tray in task.trays:
+            for tray in task['trays']:
                 tmpstat = {}
-                ret.append(runtray(env, task.trays[tray], stats=tmpstat))
+                ret.append(runtray(env, task['trays'][tray], stats=tmpstat))
                 if len(tmpstat) > 1:
-                    stats[task.trays[tray].name] = tmpstat
+                    stats[task['trays'][tray]['name']] = tmpstat
                 elif len(tmpstat) == 1:
-                    stats[task.trays[tray].name] = tmpstat[tmpstat.keys()[0]]
+                    stats[task['trays'][tray]['name']] = tmpstat[tmpstat.keys()[0]]
         
         finally:
             # destroy env
@@ -564,8 +563,8 @@ def runtask(globalenv,task):
             del env
         
         # finish task
-        if ('offline' in config.options and 
-            config.options['offline'].value != 'True'):
+        if ('offline' in config['options'] and 
+            not config['options']['offline']):
             try:
                 finishtask(stats)
             except Exception as e:
@@ -593,15 +592,12 @@ def runtray(globalenv,tray,stats={}):
     # set up tray_temp
     if not os.path.exists('tray_temp'):
         os.mkdir('tray_temp')
-    o = dataclasses.Parameter()
-    o.name = 'tray_temp'
-    o.value = os.path.join(os.getcwd(),'tray_temp')
-    globalenv['tray_temp'] = o
+    globalenv['tray_temp'] = os.path.join(os.getcwd(),'tray_temp')
     
     # run iterations
     try:
         tmpenv = globalenv.copy()
-        for i in xrange(tray.iterations):
+        for i in xrange(tray['iterations']):
             # set up local env
             tmpenv['parameters']['tray_iteration'] = i
             env = setupenv(tray,tmpenv)
@@ -610,8 +606,8 @@ def runtray(globalenv,tray,stats={}):
             
             try:
                 # run modules
-                for module in tray.modules:
-                    tmpret.append(runmodule(env, tray.modules[module],
+                for module in tray['modules']:
+                    tmpret.append(runmodule(env, tray['modules'][module],
                                             stats=tmpstat))
                 
             finally:
@@ -642,12 +638,12 @@ def runmodule(globalenv,module,stats={}):
     
     # set up local env
     env = setupenv(module,globalenv)
-    if module.running_class:
-        module.running_class = parseValue(module.running_class,env)
-    if module.args:
-        module.args = parseValue(module.args,env)
-    if module.src:
-        module.src = parseValue(module.src,env)
+    if module['running_class']:
+        module['running_class'] = parseValue(module['running_class'],env)
+    if module['args']:
+        module['args'] = parseValue(module['args'],env)
+    if module['src']:
+        module['src'] = parseValue(module['src'],env)
     
     try:
         # launch multiprocessing to handle actual module
@@ -656,14 +652,14 @@ def runmodule(globalenv,module,stats={}):
                                           args=[env,module,queue])
         process.start()
         try:
-            interval = float(config.options['stillrunninginterval'].value)
+            interval = float(config['options']['stillrunninginterval'])
         except:
             interval = 0
         if interval < 60:
             interval = 60
         while process.is_alive():
-            if ('offline' in config.options and 
-                config.options['offline'].value != 'True'):
+            if ('offline' in config['options'] and 
+                not config['options']['offline']):
                 # check for DB kill
                 try:
                     stillrunning()
@@ -701,8 +697,8 @@ def runmodule(globalenv,module,stats={}):
     
     # split out stats, if any
     if isinstance(ret,tuple):
-        if module.name:
-            stats[module.name] = ret[1]
+        if module['name']:
+            stats[module['name']] = ret[1]
         else:
             stats.update(ret[1])
         ret = ret[0]
@@ -715,28 +711,29 @@ def run_module(env,module,queue):
     # make empty stats dict so the module can fill it
     env['stats'] = {}
     try:
-        if module.src:
+        if module['src']:
             # get script to run
             c = dataclasses.Class()
-            c.src = module.src
-            c.name = os.path.basename(c.src)
+            c['src'] = module['src']
+            c['name'] = os.path.basename(c['src'])
             setupClass(env,c)
-            if c.name not in env['classes']:
-                raise dataclasses.NoncriticalError('Failed to install class %s'%c.name)
-            logger.info('class stored at %s',env['classes'][c.name])
+            if c['name'] not in env['classes']:
+                raise dataclasses.NoncriticalError('Failed to install class %s'%c['name'])
+            logger.info('class stored at %s',env['classes'][c['name']])
         
         # run the module script
-        logger.warn('running module \'%s\' with class %s',module.name,module.running_class)    
+        logger.warn('running module \'%s\' with class %s',module['name'],
+                    module['running_class'])
         ret = None
-        if not module.running_class:
+        if not module['running_class']:
             script = True
         else:
             script = False
-            mods = module.running_class.rsplit('.',1)
+            mods = module['running_class'].rsplit('.',1)
             if len(mods) < 2:
-                cl = module.running_class
-                if module.src:
-                    mod = os.path.splitext(c.name)[0]
+                cl = module['running_class']
+                if module['src']:
+                    mod = os.path.splitext(c['name'])[0]
                 else:
                     # check if it is in a project
                     for p in env['projects']:
@@ -760,7 +757,7 @@ def run_module(env,module,queue):
                 elif module.src:
                     logger.info('from src')
                     if module.src[-3:] == '.py':
-                        filepath = env['classes'][c.name]
+                        filepath = env['classes'][c['name']]
                         if '.' in mod:
                             mod = mod.rsplit('.',1)[1]
                         x = imp.load_source(mod,filepath)
@@ -789,17 +786,17 @@ def run_module(env,module,queue):
                 mod_cl = clas()
                 if 'parameters' in env:
                     for p in env['parameters']:
-                        p = env['parameters'][p]
+                        p_value = env['parameters'][p]
                         try:
-                            mod_cl.SetParameter(p.name,p.value)
+                            mod_cl.SetParameter(p,p_value)
                         except:
                             try:
-                                logger.warn('failed to add parameter %s with value %r',p.name,p.value)
+                                logger.warn('failed to add parameter %s with value %r',p,p_value)
                             except:
                                 logger.warn('failed to add parameter %r',p)
                             continue
                         else:
-                            logger.warn('added parameter %s with value %r',p.name,p.value)
+                            logger.warn('added parameter %s with value %r',p,p_value)
                 ret = mod_cl.Execute(env['stats'])
             #elif inspect.isclass(clas) and issubclass(clas,IPModule):
                 # new style iceprod modules
@@ -807,7 +804,7 @@ def run_module(env,module,queue):
             #    mod_cl = clas(env)
             else:
                 # unknown callable, just call it and hope that's all it needs
-                args = module.args
+                args = module['args']
                 logger.warn('unknown callable, args=%s',args)
                 if args and args[0] in ('{','['):
                     # args is json
@@ -825,10 +822,10 @@ def run_module(env,module,queue):
                 if (ret is not None and 
                     not isinstance(ret,(bool,int,float,complex,Container))):
                     ret = None
-        elif module.src:
+        elif module['src']:
             # the class isn't actually present, so try running it
             # as a script as a last resort
-            args = module.args
+            args = module['args']
             logger.warn('call as script, args=%s',args)
             if not args:
                 args = []
@@ -848,7 +845,7 @@ def run_module(env,module,queue):
                 else:
                     raise Exception('args is unknown type')
             try:
-                mod_name = env['classes'][c.name].replace(';`','').strip()
+                mod_name = env['classes'][c['name']].replace(';`','').strip()
                 if not mod_name or mod_name == '':
                     raise Exception('mod_name is blank')
                 ret = None
@@ -866,13 +863,13 @@ def run_module(env,module,queue):
                     sys.stdout.write("%s\n"%l)
                 ret = proc.returncode
             except:
-                logger.critical('cannot run module \'%s\' with script %s',module.name,mod_name)
+                logger.critical('cannot run module \'%s\' with script %s',module['name'],mod_name)
                 raise
             else:
                 if ret:
                     # something went wrong 
-                    logger.error('error running module \'%s\' with script %s',module.name,mod_name)
-                    raise dataclasses.NoncriticalError('error running module \'%s\' with script %s'%(module.name,mod_name))
+                    logger.error('error running module \'%s\' with script %s',module['name'],mod_name)
+                    raise dataclasses.NoncriticalError('error running module \'%s\' with script %s'%(module['name'],mod_name))
         else:
             logger.warn('module is a script or class is missing, and src is not defined')
             raise dataclasses.NoncriticalError('error running module')
@@ -926,59 +923,59 @@ def downloadtask(gridspec):
 
 def processing():
     """Tell the server that we are processing this task"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot update status')
-    ret = JSONRPC.set_processing(config.options['task_id'].value)
+    ret = JSONRPC.set_processing(config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
 
 def finishtask(stats={}):
     """Finish a task"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot finish task')
-    if 'DBkill' in config.options and config.options['DBkill']:
+    if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't finish task on a DB kill
     outstats = stats
-    if 'stats' in config.options:
+    if 'stats' in config['options']:
         # filter stats
-        stat_keys = set(json_decode(config.options['stats'].value))
+        stat_keys = set(json_decode(config['options']['stats']))
         outstats = {k:stats[k] for k in stats if k in stat_keys}
-    ret = JSONRPC.finish_task(config.options['task_id'].value,stats=outstats)
+    ret = JSONRPC.finish_task(config['options']['task_id'],stats=outstats)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
 
 def stillrunning():
     """Check if the task should still be running according to the DB"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot finish task')
-    ret = JSONRPC.stillrunning(config.options['task_id'].value)
+    ret = JSONRPC.stillrunning(config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
     if not ret:
-        config.options['DBkill'] = True
+        config['options']['DBkill'] = True
         raise Exception('task should be stopped')
 
 def taskerror():
     """Tell the server about the error experienced"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot send error')
-    if 'DBkill' in config.options and config.options['DBkill']:
+    if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't change status on a DB kill
-    ret = JSONRPC.task_error(config.options['task_id'].value)
+    ret = JSONRPC.task_error(config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
 
 def _upload_logfile(task_id,name,file):
     """Upload a log file"""
-    if 'DBkill' in config.options and config.options['DBkill']:
+    if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't upload logs on a DB kill
     data = json_compressor.compress(open(file).read())
     ret = JSONRPC.upload_logfile(task_id,name,data)
@@ -994,21 +991,21 @@ def uploadLogging():
     
 def uploadLog():
     """Upload log files"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot send log')
-    _upload_logfile(config.options['task_id'].value,'stdlog',constants['stdlog'])
+    _upload_logfile(config['options']['task_id'],'stdlog',constants['stdlog'])
     
 def uploadErr():
     """Upload error files"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot send error')
-    _upload_logfile(config.options['task_id'].value,'stderr',constants['stderr'])
+    _upload_logfile(config['options']['task_id'],'stderr',constants['stderr'])
     
 def uploadOut():
     """Upload out files"""
-    if 'task_id' not in config.options:
-        raise Exception('config.options[task_id] not specified, '
+    if 'task_id' not in config['options']:
+        raise Exception('config["options"][task_id] not specified, '
                         'so cannot send output')
-    _upload_logfile(config.options['task_id'].value,'stdout',constants['stdout'])
+    _upload_logfile(config['options']['task_id'],'stdout',constants['stdout'])
