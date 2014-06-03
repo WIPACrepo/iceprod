@@ -15,5 +15,5 @@ multiprocessing.Process = CoverageProcess
 def load_suite():
     # accumulate tests
     loader = unittest.defaultTestLoader
-    test_suites = loader.discover('iceprod.core.tests','*.py')
+    test_suites = loader.discover('.','*/*_test.py')
     return unittest.TestSuite(test_suites)
