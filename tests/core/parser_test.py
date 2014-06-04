@@ -1,24 +1,12 @@
 """
-  Test script for parser
-
-  copyright (c) 2013 the icecube collaboration
+Test script for parser
 """
 
-from __future__ import print_function,absolute_import
-try:
-    from core_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('parser')
 
 import os, sys, time
@@ -49,10 +37,10 @@ class parser_test(unittest.TestCase):
         """Test parser steering"""
         try:
             job = dataclasses.Job()
-            job.steering = dataclasses.Steering()
-            job.steering.parameters = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['steering'] = dataclasses.Steering()
+            job['steering']['parameters'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
@@ -60,13 +48,13 @@ class parser_test(unittest.TestCase):
             
             # run tests
             ret = p.steering_func('test')
-            expected = job.steering.parameters['test'].value
+            expected = job['steering']['parameters']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.steering_func('test2')
-            expected = job.steering.parameters['test2'].value
+            expected = job['steering']['parameters']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
@@ -89,10 +77,10 @@ class parser_test(unittest.TestCase):
         """Test parser system"""
         try:
             job = dataclasses.Job()
-            job.steering = dataclasses.Steering()
-            job.steering.system = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['steering'] = dataclasses.Steering()
+            job['steering']['system'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
@@ -100,13 +88,13 @@ class parser_test(unittest.TestCase):
             
             # run tests
             ret = p.system_func('test')
-            expected = job.steering.system['test'].value
+            expected = job['steering']['system']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.system_func('test2')
-            expected = job.steering.system['test2'].value
+            expected = job['steering']['system']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
@@ -129,9 +117,9 @@ class parser_test(unittest.TestCase):
         """Test parser options"""
         try:
             job = dataclasses.Job()
-            job.options = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['options'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
@@ -139,13 +127,13 @@ class parser_test(unittest.TestCase):
             
             # run tests
             ret = p.options_func('test')
-            expected = job.options['test'].value
+            expected = job['options']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.options_func('test2')
-            expected = job.options['test2'].value
+            expected = job['options']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
@@ -168,23 +156,23 @@ class parser_test(unittest.TestCase):
         """Test parser difplus"""
         try:
             job = dataclasses.Job()
-            job.difplus = dataclasses.DifPlus()
-            job.difplus.dif = dataclasses.Dif()
-            job.difplus.plus = dataclasses.Plus()
-            job.difplus.plus.category = 'filtered'
+            job['difplus'] = dataclasses.DifPlus()
+            job['difplus']['dif'] = dataclasses.Dif()
+            job['difplus']['plus'] = dataclasses.Plus()
+            job['difplus']['plus']['category'] = 'filtered'
             
             p = parser.ExpParser()
             p.job = job
             
             # run tests
             ret = p.difplus_func('sensor_name')
-            expected = job.difplus.dif.sensor_name
+            expected = job['difplus']['dif']['sensor_name']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('dif: ret != expected')
             
             ret = p.difplus_func('category')
-            expected = job.difplus.plus.category
+            expected = job['difplus']['plus']['category']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('plus: ret != expected')
@@ -210,13 +198,13 @@ class parser_test(unittest.TestCase):
             
             # run tests
             ret = p.eval_func('4+4')
-            expected = '8'
+            expected = 8
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('simple: ret != expected')
             
             ret = p.eval_func('(4+3*2)%3')
-            expected = '1'
+            expected = 1
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('nested: ret != expected')
@@ -318,6 +306,11 @@ class parser_test(unittest.TestCase):
             if ret not in expected:
                 logger.info('multi: ret=%r, expected=%r',ret,expected)
                 raise Exception('ret != expected')
+            ret = p.choice_func([1,2,3,4])
+            expected = [1,2,3,4]
+            if ret not in expected:
+                logger.info('multi: ret=%r, expected=%r',ret,expected)
+                raise Exception('ret != expected')
             
             ret = p.choice_func('1')
             expected = '1'
@@ -349,23 +342,23 @@ class parser_test(unittest.TestCase):
         """Test parser parse steering"""
         try:
             job = dataclasses.Job()
-            job.steering = dataclasses.Steering()
-            job.steering.parameters = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['steering'] = dataclasses.Steering()
+            job['steering']['parameters'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$steering(test)',job=job)
-            expected = job.steering.parameters['test'].value
+            expected = job['steering']['parameters']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.parse('$steering(test2)',job=job)
-            expected = job.steering.parameters['test2'].value
+            expected = job['steering']['parameters']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
@@ -388,23 +381,23 @@ class parser_test(unittest.TestCase):
         """Test parser parse system"""
         try:
             job = dataclasses.Job()
-            job.steering = dataclasses.Steering()
-            job.steering.system = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['steering'] = dataclasses.Steering()
+            job['steering']['system'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$system(test)',job=job)
-            expected = job.steering.system['test'].value
+            expected = job['steering']['system']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.parse('$system(test2)',job=job)
-            expected = job.steering.system['test2'].value
+            expected = job['steering']['system']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
@@ -426,28 +419,28 @@ class parser_test(unittest.TestCase):
         """Test parser parse options"""
         try:
             job = dataclasses.Job()
-            job.options = {
-                'test': dataclasses.Parameter('test',1),
-                'test2': dataclasses.Parameter('test2','2'),
+            job['options'] = {
+                'test': 1,
+                'test2': '2',
             }
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$options(test)',job=job)
-            expected = job.options['test'].value
+            expected = job['options']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
             
             ret = p.parse('$options(test2)',job=job)
-            expected = job.options['test2'].value
+            expected = job['options']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
             
             ret = p.parse('$(test2)',job=job)
-            expected = job.options['test2'].value
+            expected = job['options']['test2']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2 general search: ret != expected')
@@ -459,7 +452,7 @@ class parser_test(unittest.TestCase):
                 raise Exception('test3: ret != expected')
             
             ret = p.parse('$args(test)',job=job)
-            expected = job.options['test'].value
+            expected = job['options']['test']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('args: ret != expected')
@@ -475,22 +468,22 @@ class parser_test(unittest.TestCase):
         """Test parser difplus"""
         try:
             job = dataclasses.Job()
-            job.difplus = dataclasses.DifPlus()
-            job.difplus.dif = dataclasses.Dif()
-            job.difplus.plus = dataclasses.Plus()
-            job.difplus.plus.category = 'filtered'
+            job['difplus'] = dataclasses.DifPlus()
+            job['difplus']['dif'] = dataclasses.Dif()
+            job['difplus']['plus'] = dataclasses.Plus()
+            job['difplus']['plus']['category'] = 'filtered'
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$metadata(sensor_name)',job=job)
-            expected = job.difplus.dif.sensor_name
+            expected = job['difplus']['dif']['sensor_name']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('dif: ret != expected')
             
             ret = p.parse('$metadata(category)',job=job)
-            expected = job.difplus.plus.category
+            expected = job['difplus']['plus']['category']
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('plus: ret != expected')
@@ -515,13 +508,13 @@ class parser_test(unittest.TestCase):
             
             # run tests
             ret = p.parse('$eval(4+4)')
-            expected = '8'
+            expected = 8
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('simple: ret != expected')
             
             ret = p.parse('$eval(\(4+3*2\)%3)')
-            expected = '1'
+            expected = 1
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('nested: ret != expected')
@@ -626,7 +619,7 @@ class parser_test(unittest.TestCase):
                 raise Exception('single: ret != expected')
             
             ret = p.parse('$choice()')
-            expected = ''
+            expected = '$choice()'
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('empty: ret != expected')
@@ -634,21 +627,21 @@ class parser_test(unittest.TestCase):
             
         except Exception, e:
             logger.error('Error running parser parse sprintf test: %s',str(e))
-            printer('Test parser parse sprintf',False)
+            printer('Test parser parse choice',False)
             raise
         else:
-            printer('Test parser parse sprintf')
+            printer('Test parser parse choice')
 
 
     def test_20_env(self):
         """Test parser parse env"""
         try:
             p = parser.ExpParser()
-            env = {'parameters':{'test':dataclasses.Parameter('test',1)}}
+            env = {'parameters':{'test':1}}
             
             # run tests
             ret = p.parse('$(test)',env=env)
-            expected = '1'
+            expected = 1
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('sentence: ret != expected')
@@ -682,14 +675,14 @@ class parser_test(unittest.TestCase):
         """Test parser parse job"""
         try:
             job = dataclasses.Job()
-            job.test = 1
-            job.test2 = 'test'
+            job['test'] = 1
+            job['test2'] = 'test'
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$(test)',job=job)
-            expected = '1'
+            expected = 1
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test: ret != expected')
@@ -717,47 +710,47 @@ class parser_test(unittest.TestCase):
         """Test parser parse"""
         try:
             job = dataclasses.Job()
-            job.steering = dataclasses.Steering()
-            job.steering.parameters = {
-                'FILTER_filtered': dataclasses.Parameter('FILTER_filtered',1),
-                'SIM_filtered': dataclasses.Parameter('SIM_filtered',2),
+            job['steering'] = dataclasses.Steering()
+            job['steering']['parameters'] = {
+                'FILTER_filtered': 1,
+                'SIM_filtered': 2,
             }
-            job.steering.system = {
-                'test': dataclasses.Parameter('test','FILTER'),
-                'test2': dataclasses.Parameter('test2','SIM'),
+            job['steering']['system'] = {
+                'test': 'FILTER',
+                'test2': 'SIM',
             }
-            job.options = {
-                'FILTER_filtered': dataclasses.Parameter('FILTER_filtered',3),
-                'SIM_filtered': dataclasses.Parameter('SIM_filtered',4),
+            job['options'] = {
+                'FILTER_filtered': 3,
+                'SIM_filtered': 4,
             }
-            job.difplus = dataclasses.DifPlus()
-            job.difplus.dif = dataclasses.Dif()
-            job.difplus.plus = dataclasses.Plus()
-            job.difplus.plus.category = 'filtered'
+            job['difplus'] = dataclasses.DifPlus()
+            job['difplus']['dif'] = dataclasses.Dif()
+            job['difplus']['plus'] = dataclasses.Plus()
+            job['difplus']['plus']['category'] = 'filtered'
             
             p = parser.ExpParser()
             
             # run tests
             ret = p.parse('$sprintf("$%s(%s_%s)","steering",$system(test),$metadata(category))',job=job)
-            expected = '1'
+            expected = 1
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test1: ret != expected')
             
             ret = p.parse('$sprintf("$%s(%s_%s)","steering",$system(test2),$metadata(category))',job=job)
-            expected = '2'
+            expected = 2
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test2: ret != expected')
             
             ret = p.parse('$sprintf("$%s(%s_%s)","options",$system(test),$metadata(category))',job=job)
-            expected = '3'
+            expected = 3
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test3: ret != expected')
             
             ret = p.parse('$sprintf("$%s(%s_%s)","options",$system(test2),$metadata(category))',job=job)
-            expected = '4'
+            expected = 4
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('test4: ret != expected')

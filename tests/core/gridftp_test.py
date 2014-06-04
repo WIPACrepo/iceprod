@@ -1,25 +1,12 @@
-#! /usr/bin/env python
 """
-  Test script for gridftp
-
-  copyright (c) 2012 the icecube collaboration  
+Test script for gridftp
 """
 
-from __future__ import print_function
-try:
-    from core_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('gridftp')
 
 import os, sys, time

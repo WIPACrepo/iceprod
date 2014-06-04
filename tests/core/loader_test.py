@@ -1,24 +1,12 @@
 """
-  Test script for loader.sh
-
-  copyright (c) 2013 the icecube collaboration
+Test script for loader.sh
 """
 
-from __future__ import print_function,absolute_import
-try:
-    from core_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('loader')
 
 import os, sys, time

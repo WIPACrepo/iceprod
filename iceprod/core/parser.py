@@ -45,6 +45,64 @@ from iceprod.core import dataclasses
 class GrammarException(Exception):
     pass
 
+class ParseObj(object):
+    """
+    A object container for temporary parsed objects.
+    """
+    def __init__(self,obj=None):
+        self.obj = obj
+    def __repr__(self):
+        return repr(self.obj)
+    def __str__(self):
+        return str(self.obj)
+    def __nonzero__(self):
+        return bool(self.obj)
+    def __len__(self):
+        return len(self.obj)
+    def __getitem__(self,key):
+        if self.obj:
+            try:
+                return self.obj[key]
+            except TypeError:
+                return str(self.obj)[key]
+        else:
+            raise TypeError("'%s' object has no attribute '__getitem__'"%
+                            (self.obj.__class__.__name__,))
+    def __contains__(self,item):
+        if self.obj:
+            return item in self.obj
+        else:
+            return False
+    def __add__(self,other):
+        if self.obj is None:
+            return other
+        elif other:
+            try:
+                return ParseObj(self.obj + other.obj)
+            except Exception:
+                return ParseObj(str(self) + str(other))
+        else:
+            return self
+    def __iadd__(self,other):
+        if self.obj is None:
+            try:
+                self.obj = other.obj
+            except Exception:
+                self.obj = other
+        elif other:
+            try:
+                self.obj += other.obj
+            except Exception:
+                self.obj = str(self) + str(other)
+        return self
+    def __eq__(self,other):
+        try:
+            return self.obj == other.obj
+        except Exception:
+            return self.obj == other
+    def __ne__(self,other):
+        return not (self == other)
+
 class ExpParser:
     """
     Expression parsing class for parameter values.
@@ -108,6 +166,7 @@ class ExpParser:
         """
         if not isinstance(input,str):
             return input
+        input = ParseObj(input)
         # set job and env
         if job:
             self.job = job
@@ -124,7 +183,7 @@ class ExpParser:
         self.job = None
         self.env = None
         # return parsed output
-        return left + right
+        return (left + right).obj
 
     def sentence(self,input):
         if self.depth > 100:
@@ -136,14 +195,14 @@ class ExpParser:
             try:
                 (left,right) = self.word(input)
             except:
-                (left,right) = ('',input)
+                (left,right) = (ParseObj(),input)
         if left and right:
             (left2,right) = self.sentence(right)
             left += left2
         if not right:
-            right = ''
+            right = ParseObj()
         if not left:
-            left = ''
+            left = ParseObj()
         self.depth -= 1
         return (left,right)
     
@@ -155,7 +214,7 @@ class ExpParser:
         (sR,right) = self.scopeR(right)
         
         # do actual processing
-        ret = self.process_phrase(sym,sen)
+        ret = ParseObj(self.process_phrase(sym,sen))
         
         # return processed work + input to the right
         return (ret,right)
@@ -172,19 +231,19 @@ class ExpParser:
 
     def scopeL(self,input):
         if input and input[0] in '(':
-            return (input[0],input[1:])
+            return (ParseObj(input[0]),ParseObj(input[1:]))
         else:
             raise GrammarException('missing scopeL')
 
     def scopeR(self,input):
         if input and input[0] in ')':
-            return (input[0],input[1:])
+            return (ParseObj(input[0]),ParseObj(input[1:]))
         else:
             raise GrammarException('missing scopeR')
 
     def starter(self,input):
         if input and input[0] == '$':
-            return (input[0],input[1:])
+            return (ParseObj(input[0]),ParseObj(input[1:]))
         else:
             raise GrammarException('missing symbol starter')
 
@@ -204,7 +263,7 @@ class ExpParser:
             i += 1
         if i == 0:
             raise GrammarException('no chars in word')
-        return (input[:i],input[i:]) 
+        return (ParseObj(input[:i]),ParseObj(input[i:]))
 
     # done with grammar
     # do actual work now
@@ -221,50 +280,55 @@ class ExpParser:
             param = sentence
         # search for keyword in special list
         ret = None
-        if keyword in self.keywords:
+        if keyword in self.keywords and param != None:
             try:
-                ret = self.keywords[keyword](param)
-            except GrammarException:
+                ret = self.keywords[keyword](str(param))
+            except GrammarException as e:
                 pass
-        if ret == None and param == None:
+        if ret is None and param is None:
             # do general search for keyword
-            if 'parameters' in self.env and keyword in self.env['parameters']: # search env params first
-                ret = str(self.env['parameters'][keyword])
-            elif keyword in self.job: # search job second
+            keyword = str(keyword)
+            if 'parameters' in self.env and keyword in self.env['parameters']:
+                # search env params first
+                ret = ParseObj(self.env['parameters'][keyword])
+            elif keyword in self.job and not isinstance(self.job[keyword],dict):
+                # search job second
                 try:
-                    ret = str(self.job[keyword])
-                except:
+                    ret = ParseObj(self.job[keyword])
+                except Exception:
                     pass
-            elif keyword in self.job.options: # search options third
+            elif keyword in self.job['options']: # search options third
                 try:
-                    ret = str(self.job.options[keyword])
-                except:
+                    ret = ParseObj(self.job['options'][keyword])
+                except Exception as e:
+                    print('error',e)
                     pass
         
-        if ret == None:
+        if ret is None:
             ret = sym+'('+sentence+')'
         else:
-            ret = ''.join(self.sentence(ret))
+            left,right = self.sentence(ret)
+            ret = left + right
         return ret
     
     def steering_func(self,param):
         """Find param in steering"""
-        if self.job.steering and param in self.job.steering.parameters:
-            return str(self.job.steering.parameters[param])
+        if self.job['steering'] and param in self.job['steering']['parameters']:
+            return ParseObj(self.job['steering']['parameters'][param])
         else:
             raise GrammarException('steering:'+str(param))
 
     def system_func(self,param):
         """Find param in steering.system"""
-        if self.job.steering and param in self.job.steering.system:
-            return str(self.job.steering.system[param])
+        if self.job['steering'] and param in self.job['steering']['system']:
+            return ParseObj(self.job['steering']['system'][param])
         else:
             raise GrammarException('system:'+str(param))
     
     def options_func(self,param):
         """Find param in options"""
-        if param in self.job.options:
-            return str(self.job.options[param])
+        if param in self.job['options']:
+            return ParseObj(self.job['options'][param])
         else:
             raise GrammarException('options:'+str(param))
     
@@ -272,17 +336,20 @@ class ExpParser:
         """Find param in dif plus"""
         try:
             # try dif, then plus
-            return str(self.job.difplus.dif[param])
+            return ParseObj(self.job['difplus']['dif'][param])
         except:
             try:
-                return str(self.job.difplus.plus[param])
+                return ParseObj(self.job['difplus']['plus'][param])
             except:
                 raise GrammarException('difplus:'+str(param))
     
     def choice_func(self,param):
         """Evaluate param as choice expression"""
         try:
-            return random.choice(param.split(','))
+            if isinstance(param,(tuple,list)):
+                return ParseObj(random.choice(param))
+            else:
+                return ParseObj(random.choice(param.split(',')))
         except:
             raise GrammarException('not a valid choice')
     
@@ -294,7 +361,7 @@ class ExpParser:
             raise GrammarException('Unsafe operator call')
         else:
             try:
-                return str(safe_eval.eval(param))
+                return ParseObj(safe_eval.eval(param))
             except Exception as e:
                 raise GrammarException('Eval is not basic arithmetic')
     
@@ -344,8 +411,8 @@ class ExpParser:
             
             # do sprintf on fmt_str and args
             if len(args) > 0:
-                return fmt_str % tuple(args)
+                return ParseObj(fmt_str % tuple(args))
             else:
-                return fmt_str
+                return ParseObj(fmt_str)
         except Exception as e:
             raise GrammarException(str(e))

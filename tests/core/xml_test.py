@@ -1,31 +1,12 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
 """
-  Test script for core xml
-
-  copyright (c) 2011 the icecube collaboration
-
-  @version: $Revision: $
-  @date: $Date: $
-  @author: David Schultz <david.schultz@icecube.wisc.edu>
-  
+Test script for core xml
 """
 
-from __future__ import print_function
-try:
-    from core_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('xml')
 
 import os, sys, time

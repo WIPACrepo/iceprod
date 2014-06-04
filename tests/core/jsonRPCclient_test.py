@@ -1,24 +1,12 @@
-#! /usr/bin/env python
 """
-  Test script for jsonRPCclient
-
-  copyright (c) 2012 the icecube collaboration  
+Test script for jsonRPCclient
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
 import logging
-try:
-    from core_tester import printer,glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('jsonRPCclient')
 
 import os, sys, time
