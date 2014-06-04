@@ -53,7 +53,8 @@ class Job(dict):
         super(Job,self).__init__(*args,**kwargs)
     
     def convert(self):
-        if not isinstance(self['steering'],Steering):
+        if (self['steering'] is not None and 
+            not isinstance(self['steering'],Steering)):
             tmp = Steering(self['steering'])
             tmp.convert()
             self['steering'] = tmp
@@ -62,7 +63,8 @@ class Job(dict):
                 tmp = Task(t)
                 tmp.convert()
                 self['tasks'][i] = tmp
-        if not isinstance(self['difplus'],DifPlus):
+        if (self['difplus'] is not None and 
+            not isinstance(self['difplus'],DifPlus)):
             tmp = DifPlus(self['difplus'])
             tmp.convert()
             self['difplus'] = tmp
@@ -74,12 +76,14 @@ class Job(dict):
                     isinstance(self['version'],Number) and
                     self['version'] >= 3 and
                     isinstance(self['options'],dict) and
-                    isinstance(self['steering'],Steering) and
-                    self['steering'].valid() and
+                    (self['steering'] is None or (
+                        isinstance(self['steering'],Steering) and
+                        self['steering'].valid())) and
                     isinstance(self['tasks'],list) and
                     all(isinstance(t,Task) and t.valid() for t in self['tasks']) and
-                    isinstance(self['difplus'],DifPlus) and
-                    self['difplus'].valid() and
+                    (self['difplus'] is None or (
+                        isinstance(self['difplus'],DifPlus) and
+                        self['difplus'].valid())) and
                     isinstance(self['description'],String) and
                     isinstance(self['categories'],list)
                    )
@@ -235,7 +239,7 @@ class Tray(_TaskCommon):
         super(Tray,self).__init__(*args,**kwargs)
     
     def convert(self):
-        super(Task,self).convert()
+        super(Tray,self).convert()
         for i,m in enumerate(self['modules']):
             if not isinstance(m,Module):
                 tmp = Module(m)
@@ -244,7 +248,7 @@ class Tray(_TaskCommon):
     
     def valid(self):
         try:
-            return (super(Task,self).valid() and
+            return (super(Tray,self).valid() and
                     isinstance(self['iterations'],Integral) and
                     isinstance(self['modules'],list) and
                     all(isinstance(m,Module) and m.valid() for m in self['modules'])
@@ -267,11 +271,11 @@ class Module(_TaskCommon):
         super(Module,self).__init__(*args,**kwargs)
     
     def convert(self):
-        super(Task,self).convert()
+        super(Module,self).convert()
     
     def valid(self):
         try:
-            return (super(Task,self).valid() and
+            return (super(Module,self).valid() and
                     (self['running_class'] is None or isinstance(self['running_class'],String)) and
                     (self['src'] is None or isinstance(self['src'],String))
                    )
@@ -565,7 +569,7 @@ class Dif(dict):
                     isinstance(self['summary'],String) and
                     isinstance(self['metadata_name'],String) and
                     isinstance(self['metadata_version'],(Number,String)) and
-                    any(isinstance(p,Personnel) and p.valid() for p in self['personnel']) and
+                    all(isinstance(p,Personnel) and p.valid() for p in self['personnel']) and
                     isinstance(self['sensor_name'],String) and
                     isinstance(self['source_name'],String) and
                     isinstance(self['dif_creation_date'],(Number,String))
@@ -645,8 +649,10 @@ class Plus(dict):
                      isinstance(self['i3db_key'],(Number,String))) and
                     (self['simdb_key'] is None or
                      isinstance(self['simdb_key'],(Number,String))) and
-                    (self['project'] is None or
-                     isinstance(self['project'],(Number,String))) and
+                    all((isinstance(p,dict) and
+                         all(isinstance(k,String) for k in p.keys()) and
+                         all(isinstance(v,(Number,String)) for v in p.values())
+                        ) for p in self['project']) and
                     (self['steering_file'] is None or
                      isinstance(self['steering_file'],String)) and
                     (self['log_file'] is None or
@@ -716,7 +722,7 @@ class DataCenter(dict):
         try:
             return ((self['name'] is None or
                      isinstance(self['name'],String)) and
-                    any(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
+                    all(isinstance(p,Personnel) and p.valid() for p in self['personnel'])
                    )
         except Exception:
             return False

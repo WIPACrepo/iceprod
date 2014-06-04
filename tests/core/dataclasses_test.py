@@ -34,128 +34,285 @@ class dataclasses_test(unittest.TestCase):
     def tearDown(self):
         super(dataclasses_test,self).tearDown()
 
-    def test_01_parameter_init(self):
-        """Test the parameter init"""
+    def test_01_job(self):
+        """Test the Job class"""
         try:
-            Parameter = iceprod.core.dataclasses.Parameter
+            j = iceprod.core.dataclasses.Job()
             
-            p = Parameter('t',True)
-            if p.name != 't' or p.value != 'True' or p.type != 'bool':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad bool parameter')
+            if not j.valid():
+                raise Exception('empty job not valid')
             
-            p = Parameter('t','str')
-            if p.name != 't' or p.value != 'str' or p.type != 'basestring':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad str parameter')
+            j.convert()
             
-            p = Parameter('t',2)
-            if p.name != 't' or p.value != '2' or p.type != 'int':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad int parameter')
-            
-            p = Parameter('t',2.0)
-            if p.name != 't' or p.value != '2.0' or p.type != 'float':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad float parameter')
-            
-            p = Parameter('t',(1,2))
-            if p.name != 't' or p.value != '[1, 2]' or p.type != 'list':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad tuple parameter')
-            
-            p = Parameter('t',[1,2])
-            if p.name != 't' or p.value != '[1, 2]' or p.type != 'list':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad list parameter')
-            
-            p = Parameter('t',{1,2})
-            if p.name != 't' or p.value != '[1, 2]' or p.type != 'set':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad set parameter')
-            
-            p = Parameter('t',{1:3,2:4})
-            if p.name != 't' or p.value != '{"1": 3, "2": 4}' or p.type != 'dict':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad dict parameter')
-            
-            p = Parameter('t',{'t':'testing'},type='pickle')
-            if p.name != 't' or p.value != pickle.dumps({'t':'testing'}) or p.type != 'pickle':
-                logger.debug('%r %r %r',p.name,p.value,p.type)
-                raise Exception('bad pickle parameter')
+            if not j.valid():
+                raise Exception('converted empty job not valid')
             
         except Exception as e:
-            logger.error('Error running parameter init test: %s',str(e))
-            printer('Test dataclasses.Parameter init',False)
+            logger.error('Error running Job class test: %s',str(e))
+            printer('Test dataclasses.Job',False)
             raise
         else:
-            printer('Test dataclasses.Parameter init')
+            printer('Test dataclasses.Job')
 
-    def test_02_parameter_get(self):
-        """Test the parameter get"""
+    def test_02_steering(self):
+        """Test the Steering class"""
         try:
-            Parameter = iceprod.core.dataclasses.Parameter
+            s = iceprod.core.dataclasses.Steering()
             
-            p = Parameter('t',True)
-            v = p.get()
-            if v is not True:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad bool parameter')
+            if not s.valid():
+                raise Exception('empty steering not valid')
             
-            p = Parameter('t','str')
-            v = p.get()
-            if v != 'str':
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad str parameter')
+            s.convert()
             
-            p = Parameter('t',2)
-            v = p.get()
-            if v != 2:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad int parameter')
-            
-            p = Parameter('t',2.0)
-            v = p.get()
-            if v != 2.0:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad float parameter')
-            
-            p = Parameter('t',(1,2))
-            v = p.get()
-            if v != [1,2]:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad tuple parameter')
-            
-            p = Parameter('t',[1,2])
-            v = p.get()
-            if v != [1,2]:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad list parameter')
-            
-            p = Parameter('t',{1,2})
-            v = p.get()
-            if v != {1,2}:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad set parameter')
-            
-            p = Parameter('t',{1:3,2:4})
-            v = p.get()
-            if v != {'1':3,'2':4}:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad dict parameter')
-            
-            p = Parameter('t',{'t':'testing'},type='pickle')
-            v = p.get()
-            if v != {'t':'testing'}:
-                logger.debug('%r %r %r = %r',p.name,p.value,p.type,v)
-                raise Exception('bad pickle parameter')
+            if not s.valid():
+                raise Exception('converted empty steering not valid')
             
         except Exception as e:
-            logger.error('Error running parameter get test: %s',str(e))
-            printer('Test dataclasses.Parameter get',False)
+            logger.error('Error running Steering class test: %s',str(e))
+            printer('Test dataclasses.Steering',False)
             raise
         else:
-            printer('Test dataclasses.Parameter get')
+            printer('Test dataclasses.Steering')
+
+    def test_03_task(self):
+        """Test the Task class"""
+        try:
+            t = iceprod.core.dataclasses.Task()
+            
+            if not t.valid():
+                raise Exception('empty task not valid')
+            
+            t.convert()
+            
+            if not t.valid():
+                raise Exception('converted empty task not valid')
+            
+        except Exception as e:
+            logger.error('Error running Task class test: %s',str(e))
+            printer('Test dataclasses.Task',False)
+            raise
+        else:
+            printer('Test dataclasses.Task')
+
+    def test_04_tray(self):
+        """Test the Tray class"""
+        try:
+            t = iceprod.core.dataclasses.Tray()
+            
+            if not t.valid():
+                raise Exception('empty tray not valid')
+            
+            t.convert()
+            
+            if not t.valid():
+                raise Exception('converted empty tray not valid')
+            
+        except Exception as e:
+            logger.error('Error running Tray class test: %s',str(e))
+            printer('Test dataclasses.Tray',False)
+            raise
+        else:
+            printer('Test dataclasses.Tray')
+
+    def test_05_module(self):
+        """Test the Module class"""
+        try:
+            m = iceprod.core.dataclasses.Module()
+            
+            if not m.valid():
+                raise Exception('empty module not valid')
+            
+            m.convert()
+            
+            if not m.valid():
+                raise Exception('converted empty module not valid')
+            
+        except Exception as e:
+            logger.error('Error running Module class test: %s',str(e))
+            printer('Test dataclasses.Module',False)
+            raise
+        else:
+            printer('Test dataclasses.Module')
+
+    def test_06_class(self):
+        """Test the Class class"""
+        try:
+            c = iceprod.core.dataclasses.Class()
+            
+            if not c.valid():
+                raise Exception('empty class not valid')
+            
+            c.convert()
+            
+            if not c.valid():
+                raise Exception('converted empty class not valid')
+            
+        except Exception as e:
+            logger.error('Error running Class class test: %s',str(e))
+            printer('Test dataclasses.Class',False)
+            raise
+        else:
+            printer('Test dataclasses.Class')
+
+    def test_07_project(self):
+        """Test the Project class"""
+        try:
+            p = iceprod.core.dataclasses.Project()
+            
+            if not p.valid():
+                raise Exception('empty project not valid')
+            
+            p.convert()
+            
+            if not p.valid():
+                raise Exception('converted empty project not valid')
+            
+        except Exception as e:
+            logger.error('Error running Project class test: %s',str(e))
+            printer('Test dataclasses.Project',False)
+            raise
+        else:
+            printer('Test dataclasses.Project')
+
+    def test_08_resource(self):
+        """Test the Resource class"""
+        try:
+            r = iceprod.core.dataclasses.Resource()
+            
+            if not r.valid():
+                raise Exception('empty resource not valid')
+            
+            r.convert()
+            
+            if not r.valid():
+                raise Exception('converted empty resource not valid')
+            
+        except Exception as e:
+            logger.error('Error running Resource class test: %s',str(e))
+            printer('Test dataclasses.Resource',False)
+            raise
+        else:
+            printer('Test dataclasses.Resource')
+
+    def test_09_data(self):
+        """Test the Data class"""
+        try:
+            d = iceprod.core.dataclasses.Data()
+            
+            if not d.valid():
+                raise Exception('empty data not valid')
+            
+            d.convert()
+            
+            if not d.valid():
+                raise Exception('converted empty data not valid')
+            
+        except Exception as e:
+            logger.error('Error running Data class test: %s',str(e))
+            printer('Test dataclasses.Data',False)
+            raise
+        else:
+            printer('Test dataclasses.Data')
+
+    def test_10_difplus(self):
+        """Test the DifPlus class"""
+        try:
+            d = iceprod.core.dataclasses.DifPlus()
+            
+            if not d.valid():
+                raise Exception('empty difplus not valid')
+            
+            d.convert()
+            
+            if not d.valid():
+                raise Exception('converted empty difplus not valid')
+            
+        except Exception as e:
+            logger.error('Error running DifPlus class test: %s',str(e))
+            printer('Test dataclasses.DifPlus',False)
+            raise
+        else:
+            printer('Test dataclasses.DifPlus')
+
+    def test_11_dif(self):
+        """Test the Dif class"""
+        try:
+            d = iceprod.core.dataclasses.Dif()
+            
+            if not d.valid():
+                raise Exception('empty dif not valid')
+            
+            d.convert()
+            
+            if not d.valid():
+                raise Exception('converted empty dif not valid')
+            
+        except Exception as e:
+            logger.error('Error running Dif class test: %s',str(e))
+            printer('Test dataclasses.Dif',False)
+            raise
+        else:
+            printer('Test dataclasses.Dif')
+
+    def test_12_plus(self):
+        """Test the Plus class"""
+        try:
+            p = iceprod.core.dataclasses.Plus()
+            
+            if not p.valid():
+                raise Exception('empty plus not valid')
+            
+            p.convert()
+            
+            if not p.valid():
+                raise Exception('converted empty plus not valid')
+            
+        except Exception as e:
+            logger.error('Error running Plus class test: %s',str(e))
+            printer('Test dataclasses.Plus',False)
+            raise
+        else:
+            printer('Test dataclasses.Plus')
+
+    def test_13_personnel(self):
+        """Test the Personnel class"""
+        try:
+            p = iceprod.core.dataclasses.Personnel()
+            
+            if not p.valid():
+                raise Exception('empty personnel not valid')
+            
+            p.convert()
+            
+            if not p.valid():
+                raise Exception('converted empty personnel not valid')
+            
+        except Exception as e:
+            logger.error('Error running Personnel class test: %s',str(e))
+            printer('Test dataclasses.Personnel',False)
+            raise
+        else:
+            printer('Test dataclasses.Personnel')
+
+    def test_14_datacenter(self):
+        """Test the DataCenter class"""
+        try:
+            d = iceprod.core.dataclasses.DataCenter()
+            
+            if not d.valid():
+                raise Exception('empty datacenter not valid')
+            
+            d.convert()
+            
+            if not d.valid():
+                raise Exception('converted empty datacenter not valid')
+            
+        except Exception as e:
+            logger.error('Error running DataCenter class test: %s',str(e))
+            printer('Test dataclasses.DataCenter',False)
+            raise
+        else:
+            printer('Test dataclasses.DataCenter')
 
 
 def load_tests(loader, tests, pattern):
