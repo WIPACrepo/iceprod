@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import logging
+import fnmatch
 
 def printer(input,passed=True):
     numcols = 60
@@ -27,10 +28,22 @@ def printer(input,passed=True):
         final_str += '\033[31m'+'failed'+'\033[0m'
     print(final_str)
 
+test_glob = '*'
 def glob_tests(x):
-    """glob the tests that were requested"""    
-    glob_func_str = '*'
-    if len(sys.argv) > 2:
-        glob_func_str = sys.argv[2]
-    import fnmatch
-    return fnmatch.filter(x,glob_func_str)
+    """glob the tests that were requested"""
+    return fnmatch.filter(x,test_glob)
+
+def listmodules(package_name=''):
+    """List modules in a package or directory"""
+    import os,imp
+    package_name_os = package_name.replace('.','/')
+    file, pathname, description = imp.find_module(package_name_os)
+    if file:
+        # Not a package
+        return []
+    ret = []
+    for module in os.listdir(pathname):
+        if module.endswith('.py') and module != '__init__.py':
+            tmp = os.path.splitext(module)[0] 
+            ret.append(package_name+'.'+tmp)
+    return ret

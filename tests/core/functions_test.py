@@ -31,6 +31,7 @@ from flexmock import flexmock
 
 from iceprod.core import to_log
 import iceprod.core.dataclasses
+import iceprod.core.util
 import iceprod.core.gridftp
 import iceprod.core.functions
 from iceprod.core.jsonUtil import json_encode,json_decode
@@ -47,19 +48,19 @@ class functions_test(unittest.TestCase):
         self.put_error = None
         self.put_called = False
         self.put_args = ([],{})
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('put').replace_with(self.put)
+        flexmock(iceprod.core.util.PycURL).should_receive('put').replace_with(self.put)
         self.fetch_error = None
         self.fetch_body = ''
         self.fetch_called = False
         self.fetch_args = ([],{})
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('fetch').replace_with(self.fetch)
+        flexmock(iceprod.core.util.PycURL).should_receive('fetch').replace_with(self.fetch)
         self.post_error = None
         self.post_headers = []
         self.post_body = ''
         self.post_called = False
         self.post_args = ([],{})
         self.post_response = None
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('post').replace_with(self.post)
+        flexmock(iceprod.core.util.PycURL).should_receive('post').replace_with(self.post)
     
     def tearDown(self):
         shutil.rmtree(self.test_dir)
@@ -1740,7 +1741,7 @@ class functions_test(unittest.TestCase):
                 raise Exception('simple http: data not equal.  expected %r and got %r'%(data,data2))
             
             # try download from iceprod server (POST only)
-            self.fetch_error = iceprod.core.dataclasses.NoncriticalError('HTTP error code: %d'%405)
+            self.fetch_error = iceprod.core.util.NoncriticalError('HTTP error code: %d'%405)
             download_options = {'key':'abcd'}
             
             # download file from resources

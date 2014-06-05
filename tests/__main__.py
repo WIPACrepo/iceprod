@@ -17,6 +17,7 @@ import sys
 import signal
 import logging
 import logging.handlers
+import argparse
 import unittest
 
 logging.basicConfig()
@@ -27,9 +28,19 @@ def handler1(signum, frame):
    logger.warn('Exiting...')
    os._exit(0)
 
-glob_str = '*'
-if len(sys.argv) > 1:
-    glob_str = sys.argv[1]
+parser = argparse.ArgumentParser()
+parser.add_argument('--core',action='store_true')
+parser.add_argument('--server',action='store_true')
+parser.add_argument('file_glob', type=str, nargs='?', default='*')
+parser.add_argument('test_glob', type=str, nargs='?', default='*')
+args = parser.parse_args()
+if not args.core and not args.server:
+    # if neither is selected, select all
+    args.core = True
+    args.server = True
+
+import tests.util
+tests.util.test_glob = args.test_glob
 
 # set up logger
 rootLogger = logging.getLogger()
@@ -58,8 +69,10 @@ print('')
 # accumulate tests
 loader = unittest.defaultTestLoader
 test_suites = unittest.TestSuite()
-test_suites.addTests(loader.discover('tests.core',glob_str+'_test.py'))
-test_suites.addTests(loader.discover('tests.server',glob_str+'_test.py'))
+if args.core:
+    test_suites.addTests(loader.discover('tests.core',args.file_glob+'_test.py'))
+if args.server:
+    test_suites.addTests(loader.discover('tests.server',args.file_glob+'_test.py'))
 
 # run tests
 runner = unittest.TextTestRunner(verbosity=0)
