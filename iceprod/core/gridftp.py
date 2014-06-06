@@ -127,6 +127,8 @@ try:
     import gridftpClient
 except ImportError:
     import time
+    import tempfile
+    import shutil
     import subprocess
     def _cmd(cmd):
         return not subprocess.call(cmd)
@@ -217,20 +219,30 @@ except ImportError:
                 raise Exception('address type not supported for address %s'%str(address))
             
             async_callback = callback
+            tmpdir = None
             if filename is None:
-                dest = os.path.expandvars('file:$PWD/tmp')
+                # todo: we should really use a tmpfile
+                tmpdir = tempfile.mkdtemp(dir=os.getcwd())
+                dest = 'file:'+os.path.join(tmpdir,'get_tmp_file')
                 if callback:
                     def cb(ret):
                         if ret and not os.path.exists(dest[5:]):
                             ret = False
+                        if ret:
+                            try:
+                                contents = open(dest[5:]).read()
+                            except Exception:
+                                ret = False
+                        if tmpdir:
+                            shutil.rmtree(tmpdir,ignore_errors=True)
                         if streaming_callback:
                             if ret:
-                                streaming_callback(open(dest[5:]).read())
+                                streaming_callback(contents)
                             callback(ret)
                         elif filename:
                             return ret
                         elif ret:
-                            callback(open(dest[5:]).read())
+                            callback(contents)
                         else:
                             callback(ret)
                     async_callback = cb
@@ -247,14 +259,21 @@ except ImportError:
                 _cmd_async(cmd, callback=async_callback, timeout=timeout)
             else:
                 ret = _cmd(cmd)
+                if ret and filename is None:
+                    try:
+                        contents = open(dest[5:]).read()
+                    except Exception:
+                        ret = False
+                if tmpdir:
+                    shutil.rmtree(tmpdir,ignore_errors=True)
                 if streaming_callback:
                     if ret:
-                        streaming_callback(open(dest[5:]).read())
+                        streaming_callback(contents)
                     return ret
                 elif filename:
                     return ret
                 elif ret:
-                    return open(dest[5:]).read()
+                    return contents
                 else:
                     return ret
         
@@ -276,9 +295,11 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
             
+            tmpdir = None
             if streaming_callback is not None:
                 # stream data to server
-                src = os.path.expandvars('file:$PWD/tmp')
+                tmpdir = tempfile.mkdtemp(dir=os.getcwd())
+                src = 'file:'+os.path.join(tmpdir,'put_tmp_file')
                 with open(src[5:],'w') as f:
                     while True:
                         try:
@@ -288,7 +309,8 @@ except ImportError:
                         else:
                             f.write(line)
             elif data is not None:
-                src = os.path.expandvars('file:$PWD/tmp')
+                tmpdir = tempfile.mkdtemp(dir=os.getcwd())
+                src = 'file:'+os.path.join(tmpdir,'put_tmp_file')
                 open(src[5:],'w').write(data)
             elif filename is not None:
                 src = 'file:'+filename
@@ -302,9 +324,16 @@ except ImportError:
                     timeout = cls._timeout
                 else:
                     timeout = request_timeout
-                _cmd_async(cmd, callback=callback, timeout=timeout)
+                def cb(ret):
+                    if tmpdir:
+                        shutil.rmtree(tmpdir,ignore_errors=True)
+                    callback(ret)
+                _cmd_async(cmd, callback=cb, timeout=timeout)
             else:
-                return _cmd(cmd)
+                ret = _cmd(cmd)
+                if tmpdir:
+                    shutil.rmtree(tmpdir,ignore_errors=True)
+                return ret
         
         @classmethod
         def list(cls,address,callback=None,request_timeout=None,details=False,
