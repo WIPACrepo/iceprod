@@ -15,6 +15,7 @@ import filecmp
 import random
 import string
 import subprocess
+import tempfile
 import socket
 
 try:
@@ -40,7 +41,7 @@ from iceprod.core.jsonUtil import json_encode,json_decode
 class functions_test(unittest.TestCase):
     def setUp(self):
         super(functions_test,self).setUp()
-        self.test_dir = os.path.join(os.getcwd(),'test')
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         if not os.path.exists(self.test_dir):
             os.mkdir(self.test_dir)
         
@@ -103,12 +104,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress with unix utility
                 if subprocess.call('gzip %s'%filename,shell=True):
@@ -132,11 +132,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
         except Exception as e:
             logger.error('Error running uncompression test: %s',str(e))
@@ -151,12 +150,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress with unix utility
                 dir,file = os.path.split(filename)
@@ -181,28 +179,25 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
                 
             for i in xrange(0,10):
                 # create test files
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 filename2 = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename2,'w')
-                file_contents2 = ''
-                for x in xrange(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-                f.close()
+                with open(filename2,'w') as f:
+                    file_contents2 = ''
+                    for x in xrange(0,1000):
+                        file_contents2 += str(random.choice(string.ascii_letters))
+                    f.write(file_contents2)
                 
                 # compress with unix utility
                 dir,file = os.path.split(filename)
@@ -233,16 +228,14 @@ class functions_test(unittest.TestCase):
                     logger.warning('file names1 are different')
                 if not os.path.samefile(filename2,files[1]):
                     logger.warning('file names2 are different')
-                f = open(files[0],'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents1 not the same' 
-                f.close()
-                f = open(files[1],'r')
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same' 
-                f.close()
+                with open(files[0],'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents1 not the same' 
+                with open(files[1],'r') as f:
+                    results = f.read(len(file_contents2)*10)
+                    if file_contents2 != results:
+                        raise Exception, 'contents2 not the same' 
             
         except Exception as e:
             logger.error('Error running uncompression test: %s',str(e))
@@ -257,12 +250,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress with unix utility
                 dir,file = os.path.split(filename)
@@ -287,11 +279,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
         except Exception as e:
             logger.error('Error running uncompression test: %s',str(e))
@@ -306,12 +297,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress with in-house tar + compress
                 dir,file = os.path.split(filename)
@@ -337,11 +327,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same'
             
         except Exception as e:
             logger.error('Error running uncompression test: %s',str(e))
@@ -356,12 +345,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress with unix utility
                 if subprocess.call('bzip2 %s'%filename,shell=True):
@@ -404,19 +392,17 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create 2 test files
                 filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 filename2 = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-                f = open(filename2,'w')
-                file_contents2 = ''
-                for x in xrange(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-                f.close()
+                with open(filename2,'w') as f:
+                    file_contents2 = ''
+                    for x in xrange(0,1000):
+                        file_contents2 += str(random.choice(string.ascii_letters))
+                    f.write(file_contents2)
                 
                 # compress with unix utility
                 dir,file = os.path.split(filename)
@@ -452,18 +438,16 @@ class functions_test(unittest.TestCase):
                     filecmp2 = files[0]
                 if not os.path.samefile(filename,filecmp):
                     logger.warning('file names are different')
-                f = open(filecmp,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(filecmp,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
                 if not os.path.samefile(filename,filecmp2):
                     logger.warning('file names2 are different')
-                f = open(filecmp2,'r')
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same' 
-                f.close()
+                with open(filecmp2,'r') as f:
+                    results = f.read(len(file_contents2)*10)
+                    if file_contents2 != results:
+                        raise Exception, 'contents2 not the same' 
             
         except Exception as e:
             logger.error('Error running uncompression test: %s',str(e))
@@ -478,12 +462,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress
                 file = iceprod.core.functions.compress(filename,'gz')
@@ -502,11 +485,10 @@ class functions_test(unittest.TestCase):
                     raise Exception, 'gzip filename is invalid'
                 
                 # check file
-                f = open(filename,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(filename,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
         except Exception as e:
             logger.error('Error running compression test: %s',str(e))
@@ -521,12 +503,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # compress
                 file = iceprod.core.functions.compress(filename,'lzma')
@@ -549,11 +530,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
         except Exception as e:
             logger.error('Error running compression test: %s',str(e))
@@ -568,12 +548,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,5):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # tar file
                 tfile = iceprod.core.functions.tar(filename+'.tar',filename,os.path.dirname(filename))
@@ -598,28 +577,25 @@ class functions_test(unittest.TestCase):
                     raise Exception, 'untar filename is invalid'
                 
                 # check file
-                f = open(filename,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(filename,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
             for i in xrange(0,5):
                 # create 2 test files
                 filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 filename2 = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename2,'w')
-                file_contents2 = ''
-                for x in xrange(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-                f.close()
+                with open(filename2,'w') as f:
+                    file_contents2 = ''
+                    for x in xrange(0,1000):
+                        file_contents2 += str(random.choice(string.ascii_letters))
+                    f.write(file_contents2)
                 
                 # tar files
                 with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
@@ -646,16 +622,14 @@ class functions_test(unittest.TestCase):
                     raise Exception, 'untar filename is invalid'
                 
                 # check files
-                f = open(filename,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
-                f = open(filename2,'r')
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same' 
-                f.close()
+                with open(filename,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
+                with open(filename2,'r') as f:
+                    results = f.read(len(file_contents2)*10)
+                    if file_contents2 != results:
+                        raise Exception, 'contents2 not the same' 
             
         except Exception as e:
             logger.error('Error running tar and compression test: %s',str(e))
@@ -670,12 +644,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # tar file
                 tfile = iceprod.core.functions.tar(filename+'.tar',filename,os.path.dirname(filename))
@@ -703,11 +676,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.samefile(filename,files):
                     logger.warning('file names are different')
-                f = open(files,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same' 
-                f.close()
+                with open(files,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same' 
             
         except Exception as e:
             logger.error('Error running tar and compression test: %s',str(e))
@@ -786,12 +758,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get md5sum from functions
                 internal = iceprod.core.functions.md5sum(filename)
@@ -819,12 +790,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get md5sum from functions
                 internal = iceprod.core.functions.md5sum(filename)
@@ -838,12 +808,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_md5sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get md5sum from functions
                 if subprocess.call('md5sum %s > %s.md5sum'%(filename,filename),shell=True):
@@ -869,12 +838,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha1sum from functions
                 internal = iceprod.core.functions.sha1sum(filename)
@@ -902,12 +870,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha1sum from functions
                 internal = iceprod.core.functions.sha1sum(filename)
@@ -921,12 +888,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha1sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha1sum from functions
                 if subprocess.call('sha1sum %s > %s.sha1sum'%(filename,filename),shell=True):
@@ -952,12 +918,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha256sum from functions
                 internal = iceprod.core.functions.sha256sum(filename)
@@ -985,12 +950,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha256sum from functions
                 internal = iceprod.core.functions.sha256sum(filename)
@@ -1004,12 +968,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha256sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha256sum from functions
                 if subprocess.call('sha256sum %s > %s.sha256sum'%(filename,filename),shell=True):
@@ -1035,12 +998,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha512sum from functions
                 internal = iceprod.core.functions.sha512sum(filename)
@@ -1068,12 +1030,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha512sum from functions
                 internal = iceprod.core.functions.sha512sum(filename)
@@ -1087,12 +1048,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_sha512sum'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get sha512sum from functions
                 if subprocess.call('sha512sum %s > %s.sha512sum'%(filename,filename),shell=True):
@@ -1118,12 +1078,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_removedirs'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # remove file
                 iceprod.core.functions.removedirs(filename)
@@ -1139,12 +1098,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_removedirs'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # remove directory
                 iceprod.core.functions.removedirs(dir)
@@ -1167,12 +1125,11 @@ class functions_test(unittest.TestCase):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
                 filename2 = os.path.join(self.test_dir,'test_copy'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # copy file
                 iceprod.core.functions.copy(filename,filename2)
@@ -1180,11 +1137,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.isfile(filename2):
                     raise Exception, 'copy failed to copy %s to %s'%(filename,filename2)
-                f = open(filename2,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'     
-                f.close()
+                with open(filename2,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same'     
             
             for i in xrange(0,10):
                 # create test directory
@@ -1196,12 +1152,11 @@ class functions_test(unittest.TestCase):
                 rand = str(random.randint(0,100000))
                 filename = os.path.join(dir,'test_copy'+rand)
                 filename2 = os.path.join(dir2,'test_copy'+rand)
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # copy directory
                 iceprod.core.functions.copy(dir,dir2)
@@ -1212,11 +1167,10 @@ class functions_test(unittest.TestCase):
                 # check file
                 if not os.path.isfile(filename2):
                     raise Exception, 'copy failed to copy %s to %s'%(filename,filename2)
-                f = open(filename2,'r')
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'   
-                f.close()
+                with open(filename2,'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception, 'contents not the same'   
             
         except Exception as e:
             logger.error('Error running copy test: %s',str(e))
@@ -1233,12 +1187,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find file
                 matches = iceprod.core.functions.find_regex(self.test_dir,'test','file')
@@ -1262,12 +1215,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find directory 
                 matches = iceprod.core.functions.find_regex(self.test_dir,os.path.basename(dir),'dir')
@@ -1286,25 +1238,24 @@ class functions_test(unittest.TestCase):
             logging.info('find either')
             for i in xrange(0,10):
                 # create test directory
-                dir = os.path.join(self.test_dir,str(random.randint(0,100000)))
+                dir = os.path.join(self.test_dir,'test_d'+str(random.randint(0,100000)))
                 os.mkdir(dir)
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
-                # find directory 
-                matches = iceprod.core.functions.find_regex(os.getcwd(),'test')
+                # find directory
+                matches = iceprod.core.functions.find_regex(self.test_dir,'test')
                 logging.info('matches = %s',str(matches))
                 if not matches:
                     raise Exception, 'failed to return any matches'
-                elif self.test_dir not in matches:
-                    raise Exception, 'failed to find %s'%self.test_dir
+                elif dir not in matches:
+                    raise Exception, 'failed to find %s'%dir
                 elif filename not in matches:
                     raise Exception, 'failed to find %s'%filename
                 
@@ -1326,12 +1277,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find file
                 matches = iceprod.core.functions.find_unix(self.test_dir,'test*','file')
@@ -1355,12 +1305,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find directory 
                 matches = iceprod.core.functions.find_unix(self.test_dir,os.path.basename(dir),'dir')
@@ -1384,20 +1333,19 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find directory 
-                matches = iceprod.core.functions.find_unix(os.getcwd(),'test*')
+                matches = iceprod.core.functions.find_unix(self.test_dir,'*')
                 logging.info('matches = %s',str(matches))
                 if not matches:
                     raise Exception, 'failed to return any matches'
-                elif self.test_dir not in matches:
-                    raise Exception, 'failed to find %s'%self.test_dir
+                elif dir not in matches:
+                    raise Exception, 'failed to find %s'%dir
                 elif filename not in matches:
                     raise Exception, 'failed to find %s'%filename
                 
@@ -1419,12 +1367,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find file
                 matches = iceprod.core.functions.find_glob(self.test_dir,'test*','file')
@@ -1448,12 +1395,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find directory 
                 matches = iceprod.core.functions.find_glob(self.test_dir,os.path.basename(dir),'dir')
@@ -1477,12 +1423,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
-                file_contents = ''
-                for x in xrange(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # find file 
                 matches = iceprod.core.functions.find_glob(self.test_dir,os.path.join(os.path.basename(dir),'test*'))
@@ -1513,12 +1458,11 @@ class functions_test(unittest.TestCase):
             for i in xrange(0,10):
                 # create test file
                 filename = os.path.join(self.test_dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
                 file_contents = ''
-                for x in xrange(0,10):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    for x in xrange(0,10):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get tail
                 tail = iceprod.core.functions.tail(filename)
@@ -1540,12 +1484,11 @@ class functions_test(unittest.TestCase):
                 
                 # create a file in the directory
                 filename = os.path.join(dir,'test_find'+str(random.randint(0,100000)))
-                f = open(filename,'w')
                 file_contents = ''
-                for x in xrange(0,10000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-                f.close()
+                with open(filename,'w') as f:
+                    for x in xrange(0,1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
                 
                 # get tail
                 tail = iceprod.core.functions.tail(filename)

@@ -42,6 +42,7 @@ def _checksuffixes(file,prev,s):
     elif file.endswith(s):
         return s[1:]
 
+# todo: handle the case of the missing 7za
 def uncompress(file):
     """Uncompress a file, if possible"""
     file = file.replace(';`','')
@@ -131,6 +132,8 @@ def uncompress(file):
                 exists = True
                 if file.endswith(('.tgz','.tbz2','.tbz')):
                     exists = False # these archives sometimes don't work with caching
+                    os.rename(files[0],files[0]+'.tar')
+                    files[0] += '.tar'
                 for f in files2:
                     if not os.path.exists(f):
                         exists = False

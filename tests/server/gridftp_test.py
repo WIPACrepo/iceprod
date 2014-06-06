@@ -1,25 +1,12 @@
-#! /usr/bin/env python
 """
-  Test script for gridftp tornado integration
-
-  copyright (c) 2012 the icecube collaboration
+Test script for gridftp tornado integration
 """
 
-from __future__ import print_function
-try:
-    from server_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('gridftp')
 
 import os, sys, time
@@ -27,6 +14,7 @@ import shutil
 import random
 import string
 import subprocess
+import tempfile
 from threading import Event
 
 try:
@@ -47,7 +35,7 @@ import iceprod.server.gridftp
 class gridftp_test(unittest.TestCase):
     def setUp(self):
         self._timeout = 120
-        self.test_dir = os.path.join(os.getcwd(),'test')
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.server_test_dir = os.path.join('gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/test',
                                             str(random.randint(0,2**32)))
         try:

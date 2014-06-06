@@ -14,6 +14,7 @@ import shutil
 import random
 import string
 import subprocess
+import tempfile
 from threading import Event
 
 try:
@@ -33,7 +34,7 @@ import iceprod.core.gridftp
 class gridftp_test(unittest.TestCase):
     def setUp(self):
         self._timeout = 10
-        self.test_dir = os.path.join(os.getcwd(),'test')
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.server_test_dir = os.path.join('gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/test',
                                             str(random.randint(0,2**32)))
         try:
