@@ -7,6 +7,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import time
 
+import subprocess
+import tempfile
+import shutil
 
 class NoncriticalError(Exception):
     """An exception that can be logged and then ignored."""
@@ -66,9 +69,122 @@ class IFace(object):
 try:
     import pycurl
 except ImportError:
-    # TODO: make this potentially usable
     class PycURL(object):
-        pass
+        """An object to download/upload files using cURL"""
+        def __init__(self):
+            self.opts = {'connect-timeout':'30',
+                         'cert-type':'PEM',
+                         'key-type':'PEM',
+                         'fail':None,
+                         'max-time':'300',
+                         'location':None,
+                         'max-redirs':'5',
+                         'post301':None,
+                         'post302':None,
+                         'post303':None,
+                        }
+        
+        def put(self, url, filename, username=None, password=None,
+                sslcert=None, sslkey=None, cacert=None):
+            """Upload a file using POST"""
+            opts = self.opts
+            opts.update({
+                'url':url,
+                'data-binary':'@'+filename,
+                'max-time':'1800',
+            })
+            if username:
+                if password:
+                    opts['user'] = str(username)+':'+str(password)
+                else:
+                    opts['user'] = str(username)+':'
+            if sslcert:
+                opts['cert'] = str(sslcert)
+            if sslkey:
+                opts['key'] = str(sslkey)
+            if cacert:
+                opts['cacert'] = str(cacert)
+            cmd = ['curl']
+            for k in opts:
+                if opts[k] is None:
+                    cmd.append('--'+k)
+                else:
+                    cmd.append('--'+k+' '+opts[k])
+            subprocess.check_call(cmd)
+        
+        def fetch(self, url, filename, username=None, password=None,
+                sslcert=None, sslkey=None, cacert=None):
+            """Download a file using GET"""
+            opts = self.opts
+            opts.update({
+                'url':url,
+                'output':filename,
+            })
+            if username:
+                if password:
+                    opts['user'] = str(username)+':'+str(password)
+                else:
+                    opts['user'] = str(username)+':'
+            if sslcert:
+                opts['cert'] = str(sslcert)
+            if sslkey:
+                opts['key'] = str(sslkey)
+            if cacert:
+                opts['cacert'] = str(cacert)
+            cmd = ['curl']
+            for k in opts:
+                if opts[k] is None:
+                    cmd.append('--'+k)
+                else:
+                    cmd.append('--'+k+' '+opts[k])
+            subprocess.check_call(cmd)
+        
+        def post(self, url, writefunc, username=None, password=None, 
+                sslcert=None, sslkey=None, cacert=None, headerfunc=None,
+                postbody=None, timeout=None):
+            """Download a file using POST, output to writefunc"""
+            if not writefunc or not callable(writefunc):
+                raise Exception('Write function invalid: %s'%str(writefunc))
+            # make some tempfiles
+            tmp_dir = tempfile.mkdtemp(dir=os.getcwd())
+            filename = os.path.join(tmp_dir,'download')
+            headerfunc_file = os.path.join(tmp_dir,'headers')
+            try:
+                opts = self.opts
+                opts.update({
+                    'url':url,
+                    'output':filename,
+                })
+                if postbody:
+                    opts['data'] = postbody
+                if headerfunc and callable(headerfunc):
+                    opts['dump-header'] = headerfunc_file
+                if timeout:
+                    opts['max-time'] = str(timeout)
+                if username:
+                    if password:
+                        opts['user'] = str(username)+':'+str(password)
+                    else:
+                        opts['user'] = str(username)+':'
+                if sslcert:
+                    opts['cert'] = str(sslcert)
+                if sslkey:
+                    opts['key'] = str(sslkey)
+                if cacert:
+                    opts['cacert'] = str(cacert)
+                cmd = ['curl']
+                for k in opts:
+                    if opts[k] is None:
+                        cmd.append('--'+k)
+                    else:
+                        cmd.append('--'+k+' '+opts[k])
+                subprocess.check_call(cmd)
+                if headerfunc and callable(headerfunc):
+                    headerfunc(open(headerfunc_file).read())
+                writefunc(open(filename).read())
+            finally:
+                shutil.rmtree(tmp_dir)
+        
 else:
     class PycURL(object):
         """An object to download/upload files using pycURL"""

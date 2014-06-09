@@ -32,6 +32,7 @@ logger = logging.getLogger('exe')
 from iceprod.core import to_log,constants
 from iceprod.core import util
 from iceprod.core import dataclasses
+from iceprod.core import util
 from iceprod.core import functions
 from iceprod.core import parser
 from iceprod.core.jsonRPCclient import JSONRPC
@@ -78,7 +79,7 @@ def setupenv(obj,oldenv={}):
             env[key] = copy.copy(oldenv[key])
         
         if not obj:
-            raise dataclasses.NoncriticalError('object to load environment from is empty')
+            raise util.NoncriticalError('object to load environment from is empty')
         
         # make sure deletions for this env are clear (don't inherit)
         env['deletions'] = []
@@ -130,10 +131,10 @@ def setupenv(obj,oldenv={}):
             env['projects'] = {}
         if 'projects' in obj:
             # set up projects
-            for project in obj.projects:
+            for project in obj['projects']:
                 setupProject(env,parseObject(project,env))
         
-    except dataclasses.NoncriticalError as e:
+    except util.NoncriticalError as e:
         logger.warning('Noncritical error when setting up environment',exc_info=True)
     except Exception as e:
         logger.critical('Serious error when setting up environment',exc_info=True)
@@ -147,7 +148,7 @@ def destroyenv(env):
         for d in env['uploads']:
             try:
                 uploadData(env,d)
-            except dataclasses.NoncriticalError, e:
+            except util.NoncriticalError, e:
                 logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
                 if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug']:
                     raise
@@ -219,18 +220,18 @@ def downloadResource(env,resource,remote_base=None,local_base=None):
             download_options['http_password'] = env['parameters']['http_password']
         
         if not functions.download(url,local,options=download_options):
-            raise dataclasses.NoncriticalError('Failed to download %s'%url)
+            raise util.NoncriticalError('Failed to download %s'%url)
     
     # check compression
     if resource['compression']:
         # uncompress file
         try:
             files = functions.uncompress(local)
-        except dataclasses.NoncriticalError:
+        except util.NoncriticalError:
             pass
         else:
             # add uncompressed file(s) to env
-            env['files'][resource.local] = files
+            env['files'][resource['local']] = files
             return
     
     # add file to env
@@ -239,7 +240,7 @@ def downloadResource(env,resource,remote_base=None,local_base=None):
 
 def downloadData(env,data):
     """Download data and put location in the env"""
-    remote_base = data['storage_location'](env)
+    remote_base = data.storage_location(env)
     if 'data_directory' in env['parameters']:
         local_base = env['parameters']['data_directory']
     else:
@@ -249,7 +250,7 @@ def downloadData(env,data):
 def uploadData(env,data):
     """Upload data"""
     parameters = env['parameters']
-    remote_base = data['storage_location'](env)
+    remote_base = data.storage_location(env)
     if 'data_directory' in parameters:
         local_base = parameters['data_directory']
     else:
@@ -257,7 +258,7 @@ def uploadData(env,data):
     url = os.path.join(remote_base,data['remote'])
     local = os.path.join(local_base,data['local'])
     if not os.path.exists(local):
-        raise dataclasses.NoncriticalError('file %s does not exist'%local)
+        raise util.NoncriticalError('file %s does not exist'%local)
     
     # remove tar or compress file extensions to get at the real file
     suffixes = ('.tar',)+functions.compress_suffixes
@@ -266,7 +267,7 @@ def uploadData(env,data):
         # make a tar file
         try:
             local2 = functions.tar(local2+'.tar',local2,workdir=local_base)
-        except dataclasses.NoncriticalError:
+        except util.NoncriticalError:
             pass
         if not '.tar' in url:
             newlocal = tempfile.mkstemp(dir=local_base)[1]
@@ -281,7 +282,7 @@ def uploadData(env,data):
             # url has compression on it, so use that
             try:
                 local2 = functions.compress(local2,c)
-            except dataclasses.NoncriticalError as e:
+            except util.NoncriticalError as e:
                 logger.warning('cannot compress file %s'%local)
                 pass
     
@@ -297,8 +298,8 @@ def uploadData(env,data):
     try:
         ret = functions.upload(local,url,proxy=proxy,options=upload_options)
         if not ret:
-            raise dataclasses.NoncriticalError('upload returned false')
-    except dataclasses.NoncriticalError as e:
+            raise util.NoncriticalError('upload returned false')
+    except util.NoncriticalError as e:
         logger.critical('cannot upload file %s'%(str(e)))
         raise
 
@@ -321,7 +322,7 @@ def setupClass(env,class_obj):
             local = env['files'][class_obj['resource_name']]
             if not isinstance(local,str):
                 local = local[0]
-            if (class_obj.src and 
+            if (class_obj['src'] and 
                 os.path.exists(os.path.join(local,class_obj['src']))):
                 # treat src as a path inside the resource
                 local = os.path.join(local,class_obj['src'])
@@ -347,7 +348,7 @@ def setupClass(env,class_obj):
                     else:
                         url = os.path.join('http://code.icecube.wisc.edu/svn/projects/',class_obj['src'])
                 else:
-                    raise dataclasses.NoncriticalError('Cannot find class %s because of bad src url'%class_obj['name'])
+                    raise util.NoncriticalError('Cannot find class %s because of bad src url'%class_obj['name'])
             
             if 'parameters' in env and 'local_temp' in env['parameters']:
                 local_temp = env['parameters']['local_temp']
@@ -371,7 +372,7 @@ def setupClass(env,class_obj):
                     if i < 10:
                         i += 1
                         continue # retry with different url
-                    raise dataclasses.NoncriticalError('Failed to download %s'%url)
+                    raise util.NoncriticalError('Failed to download %s'%url)
             except:
                 if i < 10:
                     i += 1
@@ -379,7 +380,7 @@ def setupClass(env,class_obj):
                 raise
             try:
                 files = functions.uncompress(local)
-            except dataclasses.NoncriticalError:
+            except util.NoncriticalError:
                 pass
             else:
                 # check if we extracted a tarfile
@@ -439,7 +440,10 @@ def setupClass(env,class_obj):
             # add to PYTHONPATH
             logger.info('adding to PYTHONPATH: %s',root)
             sys.path.append(root)
-            os.environ['PYTHONPATH'] += ':'+root
+            if 'PYTHONPATH' in os.environ:
+                os.environ['PYTHONPATH'] += ':'+root
+            else:
+                os.environ['PYTHONPATH'] = root
         if os.path.isdir(local):
             # build search list
             search_list = []
@@ -551,11 +555,11 @@ def runtask(globalenv,task):
             # run trays
             for tray in task['trays']:
                 tmpstat = {}
-                ret.append(runtray(env, task['trays'][tray], stats=tmpstat))
+                ret.append(runtray(env, tray, stats=tmpstat))
                 if len(tmpstat) > 1:
-                    stats[task['trays'][tray]['name']] = tmpstat
+                    stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
-                    stats[task['trays'][tray]['name']] = tmpstat[tmpstat.keys()[0]]
+                    stats[tray['name']] = tmpstat[tmpstat.keys()[0]]
         
         finally:
             # destroy env
@@ -607,9 +611,8 @@ def runtray(globalenv,tray,stats={}):
             try:
                 # run modules
                 for module in tray['modules']:
-                    tmpret.append(runmodule(env, tray['modules'][module],
+                    tmpret.append(runmodule(env, module,
                                             stats=tmpstat))
-                
             finally:
                 stats[i] = tmpstat
                 # destroy env
@@ -718,7 +721,7 @@ def run_module(env,module,queue):
             c['name'] = os.path.basename(c['src'])
             setupClass(env,c)
             if c['name'] not in env['classes']:
-                raise dataclasses.NoncriticalError('Failed to install class %s'%c['name'])
+                raise util.NoncriticalError('Failed to install class %s'%c['name'])
             logger.info('class stored at %s',env['classes'][c['name']])
         
         # run the module script
@@ -740,7 +743,7 @@ def run_module(env,module,queue):
                         if cl in {x for x in dir(env['projects'][p]) if x[0] != '_'}:
                             mod = env['projects'][p]
                     else:
-                        raise dataclasses.NoncriticalError('Must specify full python path to class to run in module.running_class')
+                        raise util.NoncriticalError('Must specify full python path to class to run in module.running_class')
             else:
                 mod,cl = mods
                 if mod.startswith('iceprod.modules'):
@@ -754,9 +757,9 @@ def run_module(env,module,queue):
                       {x for x in dir(env['projects'][mod]) if x[0] != '_'}):
                     logger.info('from a project')
                     x = env['projects'][mod]
-                elif module.src:
+                elif module['src']:
                     logger.info('from src')
-                    if module.src[-3:] == '.py':
+                    if module['src'][-3:] == '.py':
                         filepath = env['classes'][c['name']]
                         if '.' in mod:
                             mod = mod.rsplit('.',1)[1]
@@ -869,10 +872,10 @@ def run_module(env,module,queue):
                 if ret:
                     # something went wrong 
                     logger.error('error running module \'%s\' with script %s',module['name'],mod_name)
-                    raise dataclasses.NoncriticalError('error running module \'%s\' with script %s'%(module['name'],mod_name))
+                    raise util.NoncriticalError('error running module \'%s\' with script %s'%(module['name'],mod_name))
         else:
             logger.warn('module is a script or class is missing, and src is not defined')
-            raise dataclasses.NoncriticalError('error running module')
+            raise util.NoncriticalError('error running module')
     except Exception as e:
         # log the traceback
         import traceback
@@ -934,7 +937,7 @@ def processing():
 def finishtask(stats={}):
     """Finish a task"""
     if 'task_id' not in config['options']:
-        raise Exception('config["options"][task_id] not specified, '
+        raise Exception('config["options"]["task_id"] not specified, '
                         'so cannot finish task')
     if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't finish task on a DB kill

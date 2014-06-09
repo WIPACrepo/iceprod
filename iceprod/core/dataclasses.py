@@ -425,7 +425,7 @@ class Data(_ResourceCommon):
         :param env: environment
         :returns: storage location as a string, or raises Exception
         """
-        type = self.type.lower()
+        type = self['type'].lower()
         if type not in Data.type_options:
             raise Exception('Data.type is undefined')
         if 'parameters' in env and type in env['parameters']:

@@ -1,24 +1,12 @@
 """
-  Test script for core exe
-
-  copyright (c) 2013 the icecube collaboration
+Test script for core exe
 """
 
-from __future__ import print_function
-try:
-    from core_tester import printer,glob_tests
-    import logging
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
 logger = logging.getLogger('exe')
 
 import os
@@ -75,7 +63,7 @@ class exe_test(unittest.TestCase):
         upload.should_receive('upload').replace_with(self.upload)
         
         # set offline mode
-        iceprod.core.exe.config.options = {'offline':iceprod.core.dataclasses.Parameter('offline',True)}
+        iceprod.core.exe.config.options = {'offline':True}
     
     def tearDown(self):
         iceprod.core.exe.config.options = {}
@@ -172,7 +160,7 @@ class exe_test(unittest.TestCase):
             so_file = so_file[1:]
         
         with open(so_file+'.c','w') as f:
-            f.write("""#include <Python.h>
+            f.write("""#include <python2.7/Python.h>
 
 static PyObject* say_hello(PyObject* self, PyObject* args)
 {
@@ -224,106 +212,100 @@ inithello(void)
             # set download() return value
             self.download_return = 'the data'
             
-            # create an environment
-            resource_url = iceprod.core.dataclasses.Parameter()
-            resource_url.name = 'resource_url'
-            resource_url.value = 'http://x2100.icecube.wisc.edu/downloads'
-            resource_directory = iceprod.core.dataclasses.Parameter()
-            resource_directory.name = 'resource_directory'
-            resource_directory.value = self.test_dir
-            parameters = {'resource_url': resource_url,
-                          'resource_directory': resource_directory}
+            # create an environment 
+            parameters = {'resource_url': 'http://x2100.icecube.wisc.edu/downloads',
+                          'resource_directory': self.test_dir}
             env = {'parameters':parameters}
             
             # create a resource object
             r = iceprod.core.dataclasses.Resource()
-            r.remote = 'stuff'
-            r.local = 'localstuff'
+            r['remote'] = 'stuff'
+            r['local'] = 'localstuff'
             
             # try downloading the resource
             iceprod.core.exe.downloadResource(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('downloadResource did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('downloadResource did not write to the '
-                                'expected filename of %s'%r.local)
+                                'expected filename of %s'%r['local'])
             
             # try a compressed object
-            r.remote = 'stuff2.gz'
-            r.local = 'localstuff2.gz'
-            r.compression = True
+            r['remote'] = 'stuff2.gz'
+            r['local'] = 'localstuff2.gz'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadResource(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-3])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-3])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-3])
+                                'expected filename of %s'%r['local'][:-3])
             
             # try a tarred object
-            r.remote = 'stuff3.tar'
-            r.local = 'localstuff3.tar'
-            r.compression = True
+            r['remote'] = 'stuff3.tar'
+            r['local'] = 'localstuff3.tar'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadResource(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             
             # try a tarred compressed object
-            r.remote = 'stuff4.tar.bz2'
-            r.local = 'localstuff4.tar.bz2'
-            r.compression = True
+            r['remote'] = 'stuff4.tar.bz2'
+            r['local'] = 'localstuff4.tar.bz2'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadResource(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-8])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-8])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-8])
+                                'expected filename of %s'%r['local'][:-8])
             
             # try a tarred compressed object
-            r.remote = 'stuff5.tgz'
-            r.local = 'localstuff5.tgz'
-            r.compression = True
+            r['remote'] = 'stuff5.tgz'
+            r['local'] = 'localstuff5.tgz'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadResource(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             
             # try supplying invalid env
-            r.compression = None
+            r['compression'] = None
             try:
                 iceprod.core.exe.downloadResource({},r)
             except Exception as e:
@@ -346,107 +328,101 @@ inithello(void)
             self.download_return = 'the data'
             
             # create an environment
-            data_url = iceprod.core.dataclasses.Parameter()
-            data_url.name = 'data_url'
-            data_url.value = 'http://x2100.icecube.wisc.edu/downloads'
-            data_directory = iceprod.core.dataclasses.Parameter()
-            data_directory.name = 'data_directory'
-            data_directory.value = self.test_dir
-            parameters = {'data_url': data_url,
-                          'data_directory': data_directory}
+            parameters = {'data_url': 'http://x2100.icecube.wisc.edu/downloads',
+                          'data_directory': self.test_dir}
             env = {'parameters':parameters}
             
             # create a resource object
             r = iceprod.core.dataclasses.Data()
-            r.remote = 'stuff'
-            r.local = 'localstuff'
-            r.type = 'permanent'
-            r.movement = 'input'
+            r['remote'] = 'stuff'
+            r['local'] = 'localstuff'
+            r['type'] = 'permanent'
+            r['movement'] = 'input'
             
             # try downloading the resource
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('downloadResource did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('downloadResource did not write to the '
-                                'expected filename of %s'%r.local)
+                                'expected filename of %s'%r['local'])
             
             # try a compressed object
-            r.remote = 'stuff2.gz'
-            r.local = 'localstuff2.gz'
-            r.compression = True
+            r['remote'] = 'stuff2.gz'
+            r['local'] = 'localstuff2.gz'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-3])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-3])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-3])
+                                'expected filename of %s'%r['local'][:-3])
             
             # try a tarred object
-            r.remote = 'stuff3.tar'
-            r.local = 'localstuff3.tar'
-            r.compression = True
+            r['remote'] = 'stuff3.tar'
+            r['local'] = 'localstuff3.tar'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             
             # try a tarred compressed object
-            r.remote = 'stuff4.tar.bz2'
-            r.local = 'localstuff4.tar.bz2'
-            r.compression = True
+            r['remote'] = 'stuff4.tar.bz2'
+            r['local'] = 'localstuff4.tar.bz2'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-8])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-8])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-8])
+                                'expected filename of %s'%r['local'][:-8])
             
             # try a tarred compressed object
-            r.remote = 'stuff5.tgz'
-            r.local = 'localstuff5.tgz'
-            r.compression = True
+            r['remote'] = 'stuff5.tgz'
+            r['local'] = 'localstuff5.tgz'
+            r['compression'] = True
             
             # try downloading the resource
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             
             # try supplying invalid env
-            r.compression = None
+            r['compression'] = None
             try:
                 iceprod.core.exe.downloadData({},r)
             except Exception as e:
@@ -469,32 +445,26 @@ inithello(void)
             self.download_return = 'the data'
             
             # create an environment
-            data_url = iceprod.core.dataclasses.Parameter()
-            data_url.name = 'data_url'
-            data_url.value = 'http://x2100.icecube.wisc.edu/downloads'
-            data_directory = iceprod.core.dataclasses.Parameter()
-            data_directory.name = 'data_directory'
-            data_directory.value = self.test_dir
-            parameters = {'data_url': data_url,
-                          'data_directory': data_directory}
+            parameters = {'data_url': 'http://x2100.icecube.wisc.edu/downloads',
+                          'data_directory': self.test_dir}
             env = {'parameters':parameters}
             
             # create a resource object
             r = iceprod.core.dataclasses.Data()
-            r.remote = 'stuff'
-            r.local = 'localstuff'
-            r.type = 'permanent'
-            r.movement = 'both'
+            r['remote'] = 'stuff'
+            r['local'] = 'localstuff'
+            r['type'] = 'permanent'
+            r['movement'] = 'both'
             
             # try downloading the data
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('downloadResource did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('downloadResource did not write to the '
-                                'expected filename of %s'%r.local)
+                                'expected filename of %s'%r['local'])
             # try uploading the data
             self.upload_return = 'a different value'
             iceprod.core.exe.uploadData(env,r)
@@ -503,22 +473,22 @@ inithello(void)
                 raise Exception('upload failed for regular data')
             
             # try a compressed object
-            r.remote = 'stuff2.gz'
-            r.local = 'localstuff2.gz'
-            r.compression = True
+            r['remote'] = 'stuff2.gz'
+            r['local'] = 'localstuff2.gz'
+            r['compression'] = True
             
             # try downloading the data
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-3])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-3])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-3])
+                                'expected filename of %s'%r['local'][:-3])
             # try uploading the data
             self.upload_return = 'a different value'
             iceprod.core.exe.uploadData(env,r)
@@ -527,22 +497,22 @@ inithello(void)
                 raise Exception('upload failed for compressed data')
             
             # try a tarred object
-            r.remote = 'stuff3.tar'
-            r.local = 'localstuff3.tar'
-            r.compression = True
+            r['remote'] = 'stuff3.tar'
+            r['local'] = 'localstuff3.tar'
+            r['compression'] = True
             
             # try downloading the data
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             # try uploading the data
             self.upload_return = 'a different value'
             iceprod.core.exe.uploadData(env,r)
@@ -551,22 +521,22 @@ inithello(void)
                 raise Exception('upload failed for tarred data')
             
             # try a tarred compressed object
-            r.remote = 'stuff4.tar.bz2'
-            r.local = 'localstuff4.tar.bz2'
-            r.compression = True
+            r['remote'] = 'stuff4.tar.bz2'
+            r['local'] = 'localstuff4.tar.bz2'
+            r['compression'] = True
             
             # try downloading the data
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-8])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-8])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-8])
+                                'expected filename of %s'%r['local'][:-8])
             # try uploading the data
             self.upload_return = 'a different value'
             iceprod.core.exe.uploadData(env,r)
@@ -575,22 +545,22 @@ inithello(void)
                 raise Exception('upload failed for tarred compressed data')
             
             # try a tarred compressed object
-            r.remote = 'stuff5.tgz'
-            r.local = 'localstuff5.tgz'
-            r.compression = True
+            r['remote'] = 'stuff5.tgz'
+            r['local'] = 'localstuff5.tgz'
+            r['compression'] = True
             
             # try downloading the data
             iceprod.core.exe.downloadData(env,r)
             # check for record of file in env
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('did not add the file '
-                                '%s to the env'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local)):
+                                '%s to the env'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'])):
                 raise Exception('did not write to the '
-                                'expected filename of %s'%r.local)
-            if not os.path.isfile(os.path.join(self.test_dir,r.local[:-4])):
+                                'expected filename of %s'%r['local'])
+            if not os.path.isfile(os.path.join(self.test_dir,r['local'][:-4])):
                 raise Exception('did not uncompress to the '
-                                'expected filename of %s'%r.local[:-4])
+                                'expected filename of %s'%r['local'][:-4])
             # try uploading the data
             self.upload_return = 'a different value'
             iceprod.core.exe.uploadData(env,r)
@@ -600,7 +570,7 @@ inithello(void)
                                 'data (tgz)')
             
             # try supplying invalid env
-            r.compression = None
+            r['compression'] = None
             try:
                 iceprod.core.exe.uploadData({},r)
             except Exception as e:
@@ -624,14 +594,11 @@ inithello(void)
             
             # create a class object
             r = iceprod.core.dataclasses.Class()
-            r.name = 'datatransfer.py'
-            r.src = 'datatransfer.py'
+            r['name'] = 'datatransfer.py'
+            r['src'] = 'datatransfer.py'
             
             # create an env
-            local_temp = iceprod.core.dataclasses.Parameter()
-            local_temp.name = 'local_temp'
-            local_temp.value = os.path.join(self.test_dir,'classes')
-            env = {'parameters':{'local_temp':local_temp}}
+            env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
             
             # try setting up the class
             try:
@@ -640,9 +607,9 @@ inithello(void)
                 logger.error('exe.setupClass() error')
                 raise
             # check for record of file in env
-            if r.name not in env['classes']:
+            if r['name'] not in env['classes']:
                 raise Exception('setupClass did not add the src file' +
-                                ' %s to the env'%r.local)
+                                ' %s to the env'%r['local'])
             # check for ability to use class
             try:
                 import datatransfer
@@ -666,15 +633,12 @@ inithello(void)
             
             # create a class object
             r = iceprod.core.dataclasses.Class()
-            r.name = 'datatransfer.py'
-            r.src = 'datatransfer.py'
-            r.env_vars = 'I3_BUILD=$CLASS'
+            r['name'] = 'datatransfer.py'
+            r['src'] = 'datatransfer.py'
+            r['env_vars'] = 'I3_BUILD=$CLASS'
             
             # create an env
-            local_temp = iceprod.core.dataclasses.Parameter()
-            local_temp.name = 'local_temp'
-            local_temp.value = os.path.join(self.test_dir,'classes')
-            env = {'parameters':{'local_temp':local_temp}}
+            env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
             
             # try setting up the class
             try:
@@ -683,9 +647,9 @@ inithello(void)
                 logger.error('exe.setupClass() error')
                 raise
             # check for record of file in env
-            if r.name not in env['classes']:
+            if r['name'] not in env['classes']:
                 raise Exception('setupClass did not add the src file' +
-                                ' %s to the env'%r.local)
+                                ' %s to the env'%r['local'])
             # check for ability to use class
             try:
                 import datatransfer
@@ -700,15 +664,12 @@ inithello(void)
             
             # create a class object
             r = iceprod.core.dataclasses.Class()
-            r.name = 'datatransfer.py'
-            r.src = 'datatransfer.py'
-            r.env_vars = 'tester=1:2:3;PATH=$PWD;PYTHONPATH=$PWD/test'
+            r['name'] = 'datatransfer.py'
+            r['src'] = 'datatransfer.py'
+            r['env_vars'] = 'tester=1:2:3;PATH=$PWD;PYTHONPATH=$PWD/test'
             
             # create an env
-            local_temp = iceprod.core.dataclasses.Parameter()
-            local_temp.name = 'local_temp'
-            local_temp.value = os.path.join(self.test_dir,'classes')
-            env = {'parameters':{'local_temp':local_temp}}
+            env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
             
             # try setting up the class
             try:
@@ -717,9 +678,9 @@ inithello(void)
                 logger.error('exe.setupClass() error')
                 raise
             # check for record of file in env
-            if r.name not in env['classes']:
+            if r['name'] not in env['classes']:
                 raise Exception('setupClass did not add the src file' +
-                                ' %s to the env'%r.local)
+                                ' %s to the env'%r['local'])
             # check for ability to use class
             try:
                 import datatransfer
@@ -760,10 +721,10 @@ inithello(void)
             
             # create a project object based on full path
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule'
-            r.class_name = 'iceprod.modules.ipmodule'
+            r['name'] = 'ipmodule'
+            r['class_name'] = 'iceprod.modules.ipmodule'
             
-            # create an env          
+            # create an env
             env = {}
             
             # try setting up the project
@@ -773,13 +734,13 @@ inithello(void)
                 logger.error('exe.setupProject() error')
                 raise
             # check for record of file in env
-            if r.name not in env['projects']:
+            if r['name'] not in env['projects']:
                 raise Exception('setupProject did not add the project %s' +
-                                ' to the env'%r.name)
+                                ' to the env'%r['name'])
             # check for ability to use project
             tester.here = False
             try:
-                x = env['projects'][r.name].Test()
+                x = env['projects'][r['name']].Test()
             except Exception as e:
                 logger.error('%r',e,exc_info=True)
                 raise Exception('setupProject did not make project ' +
@@ -789,8 +750,8 @@ inithello(void)
                 
             # create a project object from iceprod.modules
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule2'
-            r.class_name = 'ipmodule'
+            r['name'] = 'ipmodule2'
+            r['class_name'] = 'ipmodule'
             
             # try setting up the project
             try:
@@ -799,13 +760,13 @@ inithello(void)
                 logger.error('exe.setupProject() error')
                 raise
             # check for record of file in env
-            if r.name not in env['projects']:
+            if r['name'] not in env['projects']:
                 raise Exception('setupProject did not add the project %s' +
-                                ' to the env'%r.name)
+                                ' to the env'%r['name'])
             # check for ability to use project
             tester.here = False
             try:
-                x = env['projects'][r.name].Test()
+                x = env['projects'][r['name']].Test()
             except Exception as e:
                 logger.error('%r',e,exc_info=True)
                 raise Exception('setupProject did not make project ' +
@@ -821,13 +782,13 @@ inithello(void)
                 logger.error('exe.setupProject() error')
                 raise
             # check for record of file in env
-            if r.name not in env['projects']:
+            if r['name'] not in env['projects']:
                 raise Exception('setupProject did not add the project %s' +
-                                ' to the env 2'%r.name)          
+                                ' to the env 2'%r['name'])
             # check for ability to use project
             tester.here = False
             try:
-                x = env['projects'][r.name].Test()
+                x = env['projects'][r['name']].Test()
             except Exception as e:
                 logger.error('%r',e,exc_info=True)
                 raise Exception('setupProject did not make project ' +
@@ -838,8 +799,8 @@ inithello(void)
             
             # create a bad project object
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule3'
-            r.class_name = 'badmodule'
+            r['name'] = 'ipmodule3'
+            r['class_name'] = 'badmodule'
             
             # try setting up the project
             try:
@@ -848,9 +809,9 @@ inithello(void)
                 logger.error('exe.setupProject() error')
                 raise
             # check for record of file in env
-            if r.name in env['projects']:
+            if r['name'] in env['projects']:
                 raise Exception('setupProject added the project %s to the'+
-                                ' env when it wasn\'t supposed to'%r.name)
+                                ' env when it wasn\'t supposed to'%r['name'])
             
             
             # try setting up an empty project
@@ -860,7 +821,7 @@ inithello(void)
                 pass
             else:
                 raise Exception('setupProject added the project %s to the'+
-                                ' env when it wasn\'t supposed to'%r.name)
+                                ' env when it wasn\'t supposed to'%r['name'])
             
         except Exception as e:
             logger.error('Error running setupProject test: %s',str(e))
@@ -951,61 +912,34 @@ inithello(void)
             
             # create a resource object
             r = iceprod.core.dataclasses.Resource()
-            r.remote = 'globus.tar.gz'
-            r.local = 'globus.tar.gz'
-            steering.resources.append(r)
+            r['remote'] = 'globus.tar.gz'
+            r['local'] = 'globus.tar.gz'
+            steering['resources'].append(r)
             
             # create some parameters
-            test_param = iceprod.core.dataclasses.Parameter()
-            test_param.name = 'test_param'
-            test_param.value = 'value'
-            steering.parameters = {'test_param':test_param}
+            steering['parameters'] = {'test_param':'value'}
             
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing resource directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'resource_directory'
-            o.value = os.path.join(self.test_dir,'resources')
-            options['resource_directory'] = o 
+            options['resource_directory'] = os.path.join(self.test_dir,'resources')
             
             # set download() return value
             self.download_return = 'the data'
@@ -1019,7 +953,7 @@ inithello(void)
                 raise
             
             # test parameters
-            for p in steering.parameters:
+            for p in steering['parameters']:
                 if p not in env['parameters']:
                     raise Exception('Parameters were not applied ' +
                                     'correctly: missing %r'%p)
@@ -1031,19 +965,19 @@ inithello(void)
                                     'correctly: missing %r'%p)
             
             # test resource
-            if r.local not in env['files']:
+            if r['local'] not in env['files']:
                 raise Exception('downloadResource did not add the file ' +
-                                '%s to the env'%r.local)
-            if (env['files'][r.local] != 
-                os.path.join(self.test_dir,'resources',r.local)):
+                                '%s to the env'%r['local'])
+            if (env['files'][r['local']] != 
+                os.path.join(self.test_dir,'resources',r['local'])):
                 raise Exception('downloadResource did not return the ' +
                                 'expected filename of %s' % 
                                 os.path.join(self.test_dir,'resources',
-                                             r.local))
-            if not os.path.isfile(env['files'][r.local]):
+                                             r['local']))
+            if not os.path.isfile(env['files'][r['local']]):
                 raise Exception('downloadResource did not write to the ' +
                                 'expected filename of %s' % 
-                                env['files'][r.local])
+                                env['files'][r['local']])
             
         except Exception as e:
             logger.error('Error running setupenv steering test: %s',str(e))
@@ -1060,63 +994,36 @@ inithello(void)
             
             # create a data object
             r = iceprod.core.dataclasses.Data()
-            r.remote = 'globus.tar.gz'
-            r.local = 'globus.tar.gz'
-            r.type = 'permanent'
-            r.movement = 'both'
-            steering.data.append(r)
+            r['remote'] = 'globus.tar.gz'
+            r['local'] = 'globus.tar.gz'
+            r['type'] = 'permanent'
+            r['movement'] = 'both'
+            steering['data'].append(r)
             
             # create parameters
-            test_param = iceprod.core.dataclasses.Parameter()
-            test_param.name = 'test_param'
-            test_param.value = 'value'
-            steering.parameters = {'test_param':test_param}
+            steering['parameters'] = {'test_param':'value'}
                 
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set download() return value
             self.download_return = 'the data'
@@ -1194,71 +1101,44 @@ inithello(void)
         else:
             printer('Test exe.destroyenv(): steering')
 
-    def test_20_runmodule_iceprod_nosrc(self):    
+    def test_20_runmodule_iceprod_nosrc(self):
         """Test runmodule with iceprod module and no src"""
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod.modules.ipmodule.Test_old'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod.modules.ipmodule.Test_old'
             
             # create parameters
-            hello = iceprod.core.dataclasses.Parameter()
-            hello.name = 'greeting'
-            hello.value = 'new greeting'
-            module.parameters = {hello.name: hello}
+            module['parameters'] = {'greeting': 'new greeting'}
             
             # make project
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule'
-            r.class_name = 'iceprod.modules.ipmodule'
-            module.projects.append(r)
+            r['name'] = 'ipmodule'
+            r['class_name'] = 'iceprod.modules.ipmodule'
+            module['projects'].append(r)
             
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1280,71 +1160,44 @@ inithello(void)
         else:
             printer('Test exe.runmodule(): iceprod module (project, long)')
 
-    def test_21_runmodule_iceprod_nosrc(self):    
+    def test_21_runmodule_iceprod_nosrc(self):
         """Test runmodule with iceprod module and no src"""
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'ipmodule.Test_old'
+            module['name'] = 'module'
+            module['running_class'] = 'ipmodule.Test_old'
             
             # create parameters
-            hello = iceprod.core.dataclasses.Parameter()
-            hello.name = 'greeting'
-            hello.value = 'new greeting'
-            module.parameters = {hello.name: hello}
+            module['parameters'] = {'greeting': 'new greeting'}
             
             # make project
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule'
-            r.class_name = 'iceprod.modules.ipmodule'
-            module.projects.append(r)
+            r['name'] = 'ipmodule'
+            r['class_name'] = 'iceprod.modules.ipmodule'
+            module['projects'].append(r)
             
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1371,9 +1224,9 @@ inithello(void)
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.src = 'test.py'
-            module.running_class = 'test.Test'
+            module['name'] = 'module'
+            module['src'] = 'test.py'
+            module['running_class'] = 'test.Test'
             
             # set download() return value
             def down():
@@ -1389,56 +1242,29 @@ class Test(IPBaseClass):
             self.download_return = down
             
             # create parameters
-            hello = iceprod.core.dataclasses.Parameter()
-            hello.name = 'greeting'
-            hello.value = 'new greeting'
-            module.parameters = {hello.name: hello}
+            module['parameters'] = {'greeting': 'new greeting'}
             
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1465,9 +1291,9 @@ class Test(IPBaseClass):
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.src = 'test.py'
-            module.running_class = 'Test'
+            module['name'] = 'module'
+            module['src'] = 'test.py'
+            module['running_class'] = 'Test'
             
             # set download() return value
             def down():
@@ -1483,62 +1309,35 @@ class Test(IPBaseClass):
             self.download_return = down
             
             # create parameters
-            hello = iceprod.core.dataclasses.Parameter()
-            hello.name = 'greeting'
-            hello.value = 'new greeting'
-            module.parameters = {hello.name: hello}
+            module['parameters'] = {'greeting': 'new greeting'}
             
             # make project
             r = iceprod.core.dataclasses.Project()
-            r.name = 'ipmodule'
-            r.class_name = 'iceprod.modules.ipmodule'
-            module.projects.append(r)
+            r['name'] = 'ipmodule'
+            r['class_name'] = 'iceprod.modules.ipmodule'
+            module['projects'].append(r)
             
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1566,9 +1365,9 @@ class Test(IPBaseClass):
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.src = 'test.py'
-            module.running_class = 'test.Test'
+            module['name'] = 'module'
+            module['src'] = 'test.py'
+            module['running_class'] = 'test.Test'
             
             # set download() return value
             def down():
@@ -1582,48 +1381,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1639,7 +1414,7 @@ def Test():
                 raise Exception('failed to call test.Test()')
         
             # try with short form of class
-            module.running_class = 'Test'
+            module['running_class'] = 'Test'
             
             # run the module
             with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1663,8 +1438,8 @@ def Test():
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.src = 'test.py'
+            module['name'] = 'module'
+            module['src'] = 'test.py'
             
             # set download() return value
             def down():
@@ -1680,48 +1455,24 @@ if __name__ == '__main__':
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1748,8 +1499,8 @@ if __name__ == '__main__':
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.src = 'test.sh'
+            module['name'] = 'module'
+            module['src'] = 'test.sh'
             
             # set download() return value
             def down():
@@ -1763,48 +1514,24 @@ echo "test"
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1832,13 +1559,13 @@ echo "test"
         try:
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
             
             # make .so file
             so = self.make_shared_lib()
@@ -1854,48 +1581,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -1918,7 +1621,7 @@ def Test():
             printer('Test exe.runmodule(): with linked libraries')
 
 
-    def test_50_runtray(self):    
+    def test_50_runtray(self):
         """Test runtray"""
         try:
             # create the tray object
@@ -1927,21 +1630,21 @@ def Test():
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # make .so file
             so = self.make_shared_lib()
@@ -1965,48 +1668,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -2035,26 +1714,26 @@ def Test():
         try:
             # create the tray object
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            tray.iterations = 3
+            tray['name'] = 'tray'
+            tray['iterations'] = 3
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # make .so file
             so = self.make_shared_lib()
@@ -2078,48 +1757,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -2158,24 +1813,24 @@ def Test():
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
             
             # make .so file
             so = self.make_shared_lib()
@@ -2199,48 +1854,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -2276,49 +1907,49 @@ def Test():
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
             
             # create the tray object
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray2'
+            tray['name'] = 'tray2'
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
             
             # make .so file
             so = self.make_shared_lib()
@@ -2342,48 +1973,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -2420,50 +2027,50 @@ def Test():
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
             
             # create the tray object
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray2'
-            tray.iterations = 3
+            tray['name'] = 'tray2'
+            tray['iterations'] = 3
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.Test'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'test.Test'
+            module['src'] = 'test.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
             
             # make .so file
             so = self.make_shared_lib()
@@ -2487,48 +2094,24 @@ def Test():
             # check that validate, resource_url, debug are in options
             options = {}
             if 'validate' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'validate'
-                o.value = str(True)
-                options['validate'] = o
+                options['validate'] = True
             if 'resource_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'resource_url'
-                o.value = 'http://x2100.icecube.wisc.edu/downloads'
-                options['resource_url'] = o
+                options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
             if 'debug' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'debug'
-                o.value = str(False)
-                options['debug'] = o
+                options['debug'] = False
             
             # make sure some basic options are set
             if 'data_url' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'data_url'
-                o.value = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-                options['data_url'] = o
+                options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
             if 'svn_repository' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'svn_repository'
-                o.value = 'http://code.icecube.wisc.edu/svn/'
-                options['svn_repository'] = o
+                options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
             if 'job_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'job_temp'
-                o.value = os.path.join(self.test_dir,'job_temp')
-                options['job_temp'] = o
+                options['job_temp'] = os.path.join(self.test_dir,'job_temp')
             if 'local_temp' not in options:
-                o = iceprod.core.dataclasses.Parameter()
-                o.name = 'local_temp'
-                o.value = os.path.join(self.test_dir,'local_temp')
-                options['local_temp'] = o
+                options['local_temp'] = os.path.join(self.test_dir,'local_temp')
             
             # set testing data directory
-            o = iceprod.core.dataclasses.Parameter()
-            o.name = 'data_directory'
-            o.value = os.path.join(self.test_dir,'data')
-            options['data_directory'] = o 
+            options['data_directory'] = os.path.join(self.test_dir,'data')
             
             # set env
             env = {'parameters': options}
@@ -2701,7 +2284,7 @@ def Test():
                     return ret
             jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
             jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            iceprod.core.exe.config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id',task_id)
+            iceprod.core.exe.config['options']['task_id'] = task_id
             
             try:
                 iceprod.core.exe.finishtask(stats)
@@ -2748,7 +2331,7 @@ def Test():
                     return ret
             jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
             jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            iceprod.core.exe.config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id',task_id)
+            iceprod.core.exe.config['options']['task_id'] = task_id
             
             stillrunning.ret = True
             try:
@@ -2769,8 +2352,8 @@ def Test():
             else:
                 raise Exception('exception not thrown')
                 raise
-            if 'DBkill' not in iceprod.core.exe.config.options:
-                raise Exception('DBkill not in config.options')
+            if 'DBkill' not in iceprod.core.exe.config['options']:
+                raise Exception('DBkill not in config["options"]')
             
             stillrunning.ret = Exception('sql error')
             try:
@@ -2788,8 +2371,8 @@ def Test():
         else:
             printer('Test exe.stillrunning()')
         finally:
-            if 'DBkill' in iceprod.core.exe.config.options:
-                del iceprod.core.exe.config.options['DBkill']
+            if 'DBkill' in iceprod.core.exe.config['options']:
+                del iceprod.core.exe.config['options']['DBkill']
     
     def test_94_taskerror(self):
         """Test taskerror"""
@@ -2817,7 +2400,7 @@ def Test():
                     return ret
             jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
             jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            iceprod.core.exe.config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id',task_id)
+            iceprod.core.exe.config['options']['task_id'] = task_id
             
             try:
                 iceprod.core.exe.taskerror()
@@ -2862,7 +2445,7 @@ def Test():
                     return ret
             jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
             jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(fun,func_name=a))
-            iceprod.core.exe.config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id',task_id)
+            iceprod.core.exe.config['options']['task_id'] = task_id
             
             data = ''.join([str(random.randint(0,10000)) for _ in xrange(100)])
             
