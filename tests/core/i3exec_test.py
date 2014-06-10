@@ -29,22 +29,22 @@ import iceprod.core.logger
 from iceprod.core import jsonUtil
 
 # mock the logger so we don't overwrite the root logger
-from logging import getLogger as realLogger
-class fakeLogger:
-    def __init__(self):
-        self.handlers = []
-def log(*args,**kwargs):
-    if not args and not kwargs:
-        # return fake root logger
-        return fakeLogger()
-    else:
-        # passthrough
-        return realLogger(*args,**kwargs)
-logging.getLogger = log
-def log2(*args,**kwargs):
-    pass
-iceprod.core.logger.setlogger = log2
-import i3exec
+#from logging import getLogger as realLogger
+#class fakeLogger:
+#    def __init__(self):
+#        self.handlers = []
+#def log(*args,**kwargs):
+#    if not args and not kwargs:
+#        # return fake root logger
+#        return fakeLogger()
+#    else:
+#        # passthrough
+#        return realLogger(*args,**kwargs)
+#logging.getLogger = log
+#def log2(*args,**kwargs):
+#    pass
+#iceprod.core.logger.setlogger = log2
+#import i3exec
 
 from flexmock import flexmock
 
@@ -909,6 +909,6 @@ class Test(IPBaseClass):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(i3exec_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,i3exec_test))
+    #alltests = glob_tests(loader.getTestCaseNames(i3exec_test))
+    #suite.addTests(loader.loadTestsFromNames(alltests,i3exec_test))
     return suite

@@ -30,10 +30,15 @@ logger = logging.getLogger('serialization')
 
 class SerializationError(Exception):
     """An exception that occurs during serialization."""
-    def __init__(self, value):
+    def __init__(self, value=''):
         self.value = value
+    def __str__(self):
+        return self.__repr__()
     def __repr__(self):
-        return 'SerializationError(%r)'%(self.value)
+        if self.value:
+            return 'SerializationError(%r)'%(self.value)
+        else:
+            return 'SerializationError()'
     def __reduce__(self):
         return (SerializationError,(self.value,))
 
@@ -58,12 +63,16 @@ else:
         """
         Serialize a dataset config to json.
         """
-        def dump(self, obj, filename, **kwargs):
+        @staticmethod
+        def dump(obj, filename, **kwargs):
             return _json.dump(obj, open(filename,'w'), **kwargs)
-        def dumps(self, obj, **kwargs):
+        @staticmethod
+        def dumps(obj, **kwargs):
             return _json.dumps(obj, **kwargs)
-        def load(self, filename, **kwargs):
+        @staticmethod
+        def load(filename, **kwargs):
             return dict_to_dataclasses(_json.load(open(filename), **kwargs))
-        def loads(self, str, **kwargs):
-            return dict_to_dataclasses(_json.loads(str, **kwargs))
+        @staticmethod
+        def loads(obj, **kwargs):
+            return dict_to_dataclasses(_json.loads(obj, **kwargs))
             
