@@ -42,8 +42,6 @@ class functions_test(unittest.TestCase):
     def setUp(self):
         super(functions_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        if not os.path.exists(self.test_dir):
-            os.mkdir(self.test_dir)
         
         # mock the PycURL interface
         self.put_error = None

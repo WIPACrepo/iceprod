@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-  Server process for running remote batch jobs.
-
-  copyright (c) 2013 the icecube collaboration
+Server process for running remote batch jobs.
 """
 
 import os
@@ -22,13 +20,6 @@ try:
 except ImportError:
     print('Could not import procname module')
 import iceprod.core.logger
-
-
-#try:
-#   import ldap
-#   ldap_installed = True
-#except ImportError:
-#   ldap_installed = False
 
 
 def load_config(cfgfile):

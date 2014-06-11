@@ -55,7 +55,7 @@ def parseValue(value,env={}):
     :param env: The environment to use, optional
     :returns: The parsed value
     """
-    if isinstance(value,str):
+    if isinstance(value,dataclasses.String):
         return os.path.expandvars(parseObj.parse(value,config,env))
     else:
         return value
@@ -65,7 +65,7 @@ def parseObject(obj,env):
     ret = copy.copy(obj)
     for attr in obj.keys():
         tmp = obj[attr]
-        if isinstance(tmp,str):
+        if isinstance(tmp,dataclasses.String):
             ret[attr] = parseValue(tmp,env)
     return ret
 
@@ -320,7 +320,7 @@ def setupClass(env,class_obj):
                          class_obj['resource_name'],class_obj['name'])
         else:
             local = env['files'][class_obj['resource_name']]
-            if not isinstance(local,str):
+            if not isinstance(local,dataclasses.String):
                 local = local[0]
             if (class_obj['src'] and 
                 os.path.exists(os.path.join(local,class_obj['src']))):
@@ -332,7 +332,7 @@ def setupClass(env,class_obj):
         i = 0
         while True:
             url = class_obj['src']
-            if functions.isurl(url):
+            if url and functions.isurl(url):
                 i = 10 # skip repeat download attempts
             else:
                 if i == 0:
@@ -384,7 +384,7 @@ def setupClass(env,class_obj):
                 pass
             else:
                 # check if we extracted a tarfile
-                if isinstance(files,str):
+                if isinstance(files,dataclasses.String):
                     local = files
                 elif isinstance(files,list):
                     dirname = os.path.join(local_temp,os.path.commonprefix(files))
@@ -750,7 +750,7 @@ def run_module(env,module,queue):
                     mod = mod.split('.',2)[2]
             try:
                 logger.warn('attempt to import module %s with class %s',mod,cl)
-                if not isinstance(mod,str):
+                if not isinstance(mod,dataclasses.String):
                     logger.info('mod already loaded')
                     x = mod
                 elif (mod in env['projects'] and cl in 
@@ -814,7 +814,7 @@ def run_module(env,module,queue):
                     args = json_decode(args)
                 if not args:
                     ret = clas()
-                elif isinstance(args,basestring):
+                elif isinstance(args,dataclasses.String):
                     ret = clas(args)
                 elif isinstance(args,list):
                     ret = clas(*args)
@@ -836,7 +836,7 @@ def run_module(env,module,queue):
                 if args[0] in ('{','['):
                     # args is json
                     args = json_decode(args)
-                if isinstance(args,basestring):
+                if isinstance(args,dataclasses.String):
                     args = args.split(' ')
                 elif isinstance(args,list):
                     pass

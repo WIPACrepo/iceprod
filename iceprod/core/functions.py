@@ -1256,7 +1256,10 @@ def isurl(url):
     try:
         return url.startswith(prefixes)
     except:
-        return reduce(lambda a,b: a or url.startswith(b), prefixes, False)
+        try:
+            return reduce(lambda a,b: a or url.startswith(b), prefixes, False)
+        except:
+            return False
 
 def _getcachedir(options={}):
     # get cache directory

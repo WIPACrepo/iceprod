@@ -30,8 +30,6 @@ The building blocks of how datasets, jobs, and tasks are configured.
 .. autoclass:: Module
    :show-inheritance:
 
-.. autoclass:: Parameter
-
 .. autoclass:: Class
 
 .. autoclass:: Project

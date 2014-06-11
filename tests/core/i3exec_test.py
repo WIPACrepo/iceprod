@@ -11,6 +11,7 @@ logger = logging.getLogger('i3exec')
 
 import os, sys, time
 import shutil
+import tempfile
 import random
 import string
 import subprocess
@@ -24,6 +25,7 @@ except ImportError:
 from iceprod.core import to_log
 import iceprod.core.dataclasses
 import iceprod.core.functions
+import iceprod.core.serialization
 import iceprod.core.logger
 from iceprod.core import jsonUtil
 
@@ -43,7 +45,7 @@ from iceprod.core import jsonUtil
 #def log2(*args,**kwargs):
 #    pass
 #iceprod.core.logger.setlogger = log2
-#import i3exec
+from iceprod.core import i3exec
 
 from flexmock import flexmock
 
@@ -166,9 +168,7 @@ class i3exec_test(unittest.TestCase):
     def setUp(self):
         super(i3exec_test,self).setUp()
         
-        self.test_dir = os.path.join(os.getcwd(),'test')
-        if not os.path.exists(self.test_dir):
-            os.mkdir(self.test_dir)
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
             
         # mock the iceprod.core.functions.download function
         self.download_called = False
@@ -278,7 +278,7 @@ class i3exec_test(unittest.TestCase):
             so_file = so_file[1:]
         
         with open(so_file+'.c','w') as f:
-            f.write("""#include <Python.h>
+            f.write("""#include <python2.7/Python.h>
 
 static PyObject* say_hello(PyObject* self, PyObject* args)
 {
@@ -326,49 +326,37 @@ inithello(void)
     def make_config(self):
         # create basic config file
         config = iceprod.core.dataclasses.Job()
-        job_temp = iceprod.core.dataclasses.Parameter()
-        job_temp.name = 'job_temp'
-        job_temp.value = os.path.join(self.test_dir,'job_temp')
-        config.options['job_temp'] = job_temp
-        local_temp = iceprod.core.dataclasses.Parameter()
-        local_temp.name = 'local_temp'
-        local_temp.value = os.path.join(self.test_dir,'local_temp')
-        config.options['local_temp'] = local_temp
-        data_directory = iceprod.core.dataclasses.Parameter()
-        data_directory.name = 'data_directory'
-        data_directory.value = os.path.join(self.test_dir,'data')
-        config.options['data_directory'] = data_directory
-        loglevel = iceprod.core.dataclasses.Parameter()
-        loglevel.name = 'loglevel'
-        loglevel.value = 'info'
-        config.options['loglevel'] = loglevel
-        config.steering = iceprod.core.dataclasses.Steering()
+        config['options']['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        config['options']['local_temp'] = os.path.join(self.test_dir,'local_temp')
+        config['options']['data_directory'] = os.path.join(self.test_dir,'data')
+        config['options']['loglevel'] = 'info'
+        config['steering'] = iceprod.core.dataclasses.Steering()
         return config
     
     def test_01(self):
         """Test basic i3exec functionality"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -376,8 +364,8 @@ class Test(IPBaseClass):
 """
             self.download_return = down
                 
-            # write xml to file
-            iceprod.core.xml.writeXML(cfgfile,config)
+            # write configuration to file
+            iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
             validate = False
@@ -429,26 +417,26 @@ class Test(IPBaseClass):
         """Test debug mode"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -456,8 +444,8 @@ class Test(IPBaseClass):
 """
             self.download_return = down
                 
-            # write xml to file
-            iceprod.core.xml.writeXML(cfgfile,config)
+            # write configuration to file
+            iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
             validate = False
@@ -483,26 +471,26 @@ class Test(IPBaseClass):
         """Test specifying tasks to run"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -510,8 +498,8 @@ class Test(IPBaseClass):
 """
             self.download_return = down
                 
-            # write xml to file
-            iceprod.core.xml.writeXML(cfgfile,config)
+            # write configuration to file
+            iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
             validate = False
@@ -537,65 +525,65 @@ class Test(IPBaseClass):
         """Test multiple tasks"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
                 
             # create the task object
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
+            task['name'] = 'task'
             
-            config.tasks[task.name] = task
-            
-            # create the tray object
-            tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            
-            # create the module object
-            module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
-            
-            c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
-            
-            # create another module object
-            module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
-            
-            # add tray to task
-            task.trays[tray.name] = tray
+            config['tasks'].append(task)
             
             # create the tray object
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray2'
-            tray.iterations = 3
+            tray['name'] = 'tray'
             
             # create the module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module'
-            module.running_class = 'iceprod_test.Test'
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.MyTest'
             
             c = iceprod.core.dataclasses.Class()
-            c.name = 'test'
-            c.src = 'test.tar.gz'
-            module.classes.append(c)
-            tray.modules[module.name] = module
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
             
             # create another module object
             module = iceprod.core.dataclasses.Module()
-            module.name = 'module2'
-            module.running_class = 'test.Test'
-            module.src = 'test.py'
-            tray.modules[module.name] = module
+            module['name'] = 'module2'
+            module['running_class'] = 'mytest.MyTest'
+            module['src'] = 'mytest.py'
+            tray['modules'].append(module)
             
             # add tray to task
-            task.trays[tray.name] = tray
+            task['trays'].append(tray)
+            
+            # create the tray object
+            tray = iceprod.core.dataclasses.Tray()
+            tray['name'] = 'tray2'
+            tray['iterations'] = 3
+            
+            # create the module object
+            module = iceprod.core.dataclasses.Module()
+            module['name'] = 'module'
+            module['running_class'] = 'iceprod_test.MyTest'
+            
+            c = iceprod.core.dataclasses.Class()
+            c['name'] = 'test'
+            c['src'] = 'test.tar.gz'
+            module['classes'].append(c)
+            tray['modules'].append(module)
+            
+            # create another module object
+            module = iceprod.core.dataclasses.Module()
+            module['name'] = 'module2'
+            module['running_class'] = 'mytest.MyTest'
+            module['src'] = 'mytest.py'
+            tray['modules'].append(module)
+            
+            # add tray to task
+            task['trays'].append(tray)
             
             # make .so file
             so = self.make_shared_lib()
@@ -605,19 +593,19 @@ class Test(IPBaseClass):
                 if self.download_args['url'].endswith('test.tar.gz'):
                     return {'iceprod_test.py':"""
 import hello
-def Test():
+def MyTest():
     return hello.say_hello('Tester')
 """,
                                     'hello.so':so}
                 else:
                     return """
-def Test():
+def MyTest():
     return 'Tester2'
 """
             self.download_return = dw
             
-            # write xml to file
-            iceprod.core.xml.writeXML(cfgfile,config)
+            # write configuration to file
+            iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             
             # set some default values
@@ -645,26 +633,26 @@ def Test():
         """Test failing task i3exec functionality"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -672,8 +660,8 @@ class Test(IPBaseClass):
 """
             self.download_return = down
                 
-            # write xml to file
-            iceprod.core.xml.writeXML(cfgfile,config)
+            # write configuration to file
+            iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
             validate = False
@@ -702,27 +690,27 @@ class Test(IPBaseClass):
         """Test online i3exec functionality"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
-            config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id','task_id')
+            config['options']['task_id'] = 'task_id'
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -739,8 +727,8 @@ class Test(IPBaseClass):
             http = server(port,online_rpc)
             
             try:
-                # write xml to file
-                iceprod.core.xml.writeXML(cfgfile,config)
+                # write configuration to file
+                iceprod.core.serialization.serialize_json.dump(config,cfgfile)
                 
                 # set some default values
                 validate = False
@@ -774,27 +762,27 @@ class Test(IPBaseClass):
         """Test online pilot i3exec functionality"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
-            config.options['task_id'] = iceprod.core.dataclasses.Parameter('task_id','task_id')
+            task['name'] = 'task'
+            config['tasks'].append(task)
+            config['options']['task_id'] = 'task_id'
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'MyTest'
+            mod['src'] = 'mytest.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down():
-                if self.download_args['url'].endswith('test.py'):
+                if self.download_args['url'].endswith('mytest.py'):
                     return """
 from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
+class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
@@ -847,19 +835,19 @@ class Test(IPBaseClass):
         """Test calling externally"""
         try:
             # create basic config file
-            cfgfile = os.path.join(self.test_dir,'test_steering.xml')
+            cfgfile = os.path.join(self.test_dir,'test_steering.json')
             config = self.make_config()
             task = iceprod.core.dataclasses.Task()
-            task.name = 'task'
-            config.tasks[task.name] = task
+            task['name'] = 'task'
+            config['tasks'].append(task)
             tray = iceprod.core.dataclasses.Tray()
-            tray.name = 'tray'
-            task.trays[tray.name] = tray
+            tray['name'] = 'tray'
+            task['trays'].append(tray)
             mod = iceprod.core.dataclasses.Module()
-            mod.name = 'mod'
-            mod.running_class = 'Test'
-            mod.src = 'test.py'
-            tray.modules[mod.name] = mod
+            mod['name'] = 'mod'
+            mod['running_class'] = 'Test'
+            mod['src'] = 'test.py'
+            tray['modules'].append(mod)
                 
             # set download() return value
             def down(url):
@@ -876,8 +864,8 @@ class Test(IPBaseClass):
             http = server(port,down)
             
             try:
-                # write xml to file
-                iceprod.core.xml.writeXML(cfgfile,config)
+                # write configuration to file
+                iceprod.core.serialization.serialize_json.dump(config,cfgfile)
                 
                 # set some default values
                 validate = False
@@ -908,6 +896,6 @@ class Test(IPBaseClass):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    #alltests = glob_tests(loader.getTestCaseNames(i3exec_test))
-    #suite.addTests(loader.loadTestsFromNames(alltests,i3exec_test))
+    alltests = glob_tests(loader.getTestCaseNames(i3exec_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,i3exec_test))
     return suite
