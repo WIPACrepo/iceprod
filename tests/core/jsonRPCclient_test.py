@@ -30,7 +30,7 @@ import pycurl
 
 from flexmock import flexmock
 
-import iceprod.core.dataclasses
+import iceprod.core.util
 import iceprod.core.jsonUtil
 import iceprod.core.jsonRPCclient
 
@@ -45,16 +45,16 @@ class jsonRPCclient_test(unittest.TestCase):
         # mock the PycURL interface
         self.put_called = False
         self.put_args = ([],{})
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('put').replace_with(self.put)
+        flexmock(iceprod.core.util.PycURL).should_receive('put').replace_with(self.put)
         self.fetch_body = ''
         self.fetch_called = False
         self.fetch_args = ([],{})
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('fetch').replace_with(self.fetch)
+        flexmock(iceprod.core.util.PycURL).should_receive('fetch').replace_with(self.fetch)
         self.post_headers = []
         self.post_body = ''
         self.post_called = False
         self.post_args = ([],{})
-        flexmock(iceprod.core.dataclasses.PycURL).should_receive('post').replace_with(self.post)
+        flexmock(iceprod.core.util.PycURL).should_receive('post').replace_with(self.post)
     
     def tearDown(self):
         shutil.rmtree(self.test_dir)

@@ -5,7 +5,7 @@ import multiprocessing
 class CoverageProcess(multiprocessing.Process):
     def run(self):
         import coverage
-        cov = coverage.coverage(data_suffix=True)
+        cov = coverage.coverage(data_suffix=True,source='iceprod')
         cov.start()
         super(CoverageProcess,self).run()
         cov.stop()

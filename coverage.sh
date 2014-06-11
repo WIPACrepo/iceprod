@@ -4,4 +4,4 @@ coverage erase;
 coverage run --source iceprod -m tests $@;
 coverage combine;
 echo generating html coverage in 'htmlcov';
-coverage html -i --omit=\*test\* --omit=\*flexmock\*;
+coverage html -i;
