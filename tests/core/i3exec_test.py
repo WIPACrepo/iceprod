@@ -22,7 +22,6 @@ except ImportError:
     import unittest
 
 from iceprod.core import to_log
-import iceprod.core.xml
 import iceprod.core.dataclasses
 import iceprod.core.functions
 import iceprod.core.logger
