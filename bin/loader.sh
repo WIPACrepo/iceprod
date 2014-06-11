@@ -198,7 +198,7 @@ export LD_LIBRARY_PATH=$PWD/resource_libs:$PWD/env/lib:$PWD/env/lib64:$LD_LIBRAR
 export DYLD_LIBRARY_PATH=$PWD/resource_libs:$PWD/env/lib:$PWD/env/lib64:$DYLD_LIBRARY_PATH
 
 # run i3exec
-cmd="$PYBIN env/bin/i3exec.py --url=$DOWNLOAD_URL $@"
+cmd="$PYBIN -m iceprod.core.i3exec --url=$DOWNLOAD_URL $@"
 echo $cmd
 exec $cmd
 
