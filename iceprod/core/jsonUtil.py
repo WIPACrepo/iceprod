@@ -100,6 +100,19 @@ class var_converter:
             setattr(ret,k,obj[k])
         return ret
 
+# convert the IFace
+from iceprod.core import util
+
+class iface_converter:
+    @staticmethod
+    def dumps(obj):
+        return obj.__dict__
+    @staticmethod
+    def loads(obj,name=None):
+        ret = util.IFace()
+        for k in obj:
+            setattr(ret,k,obj[k])
+        return ret
 
 # do some default conversions
 # for things like OrderedDict
@@ -132,6 +145,7 @@ JSONConverters = {
     'bytearray':bytearray_converter,
     'OrderedDict':repr_converter,
     'set':set_converter,
+    'IFace':iface_converter,
 }
 import inspect
 for k in dict(inspect.getmembers(dataclasses,inspect.isclass)):

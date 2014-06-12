@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 from tests.util import printer, glob_tests
 
 import logging
-logger = logging.getLogger('i3exec')
+logger = logging.getLogger('i3exec_test')
 
 import os, sys, time
 import shutil
@@ -29,22 +29,11 @@ import iceprod.core.serialization
 import iceprod.core.logger
 from iceprod.core import jsonUtil
 
-# mock the logger so we don't overwrite the root logger
-#from logging import getLogger as realLogger
-#class fakeLogger:
-#    def __init__(self):
-#        self.handlers = []
-#def log(*args,**kwargs):
-#    if not args and not kwargs:
-#        # return fake root logger
-#        return fakeLogger()
-#    else:
-#        # passthrough
-#        return realLogger(*args,**kwargs)
-#logging.getLogger = log
-#def log2(*args,**kwargs):
-#    pass
-#iceprod.core.logger.setlogger = log2
+# mock the logger methods so we don't overwrite the root logger
+def log2(*args,**kwargs):
+    pass
+iceprod.core.logger.setlogger = log2
+iceprod.core.logger.removestdout = log2
 from iceprod.core import i3exec
 
 from flexmock import flexmock
@@ -60,14 +49,14 @@ def server(port,cb):
             self.send_header("Content-type", "text")
             self.end_headers()
         def do_GET(self):
-            logging.warn('got GET request %s'%self.path)
+            logger.warn('got GET request %s'%self.path)
             self.send_response(200)
             self.end_headers()
             ret = cb(self.path)
             self.wfile.write(ret)
             self.wfile.close()
         def do_POST(self):
-            logging.warn('got POST request %s'%self.path)
+            logger.warn('got POST request %s'%self.path)
             self.send_response(200)
             self.end_headers()
             input = None
@@ -368,7 +357,7 @@ class MyTest(IPBaseClass):
             iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = False
             passkey = 'pass'
@@ -376,7 +365,7 @@ class MyTest(IPBaseClass):
             
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 raise
                 
@@ -392,7 +381,7 @@ class MyTest(IPBaseClass):
         try:              
             # set some default values
             cfgfile = None
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = True
             passkey = 'pass'
@@ -400,7 +389,7 @@ class MyTest(IPBaseClass):
                 
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 pass
             else:
@@ -448,7 +437,7 @@ class MyTest(IPBaseClass):
             iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = True
             passkey = 'pass'
@@ -456,7 +445,7 @@ class MyTest(IPBaseClass):
             
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 raise
                 
@@ -502,7 +491,7 @@ class MyTest(IPBaseClass):
             iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = False
             passkey = 'pass'
@@ -510,7 +499,7 @@ class MyTest(IPBaseClass):
             
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 raise
                 
@@ -609,7 +598,7 @@ def MyTest():
             
             
             # set some default values
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = False
             passkey = 'pass'
@@ -617,7 +606,7 @@ def MyTest():
             
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 raise
                 
@@ -664,7 +653,7 @@ class MyTest(IPBaseClass):
             iceprod.core.serialization.serialize_json.dump(config,cfgfile)
             
             # set some default values
-            validate = False
+            logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://x2100.icecube.wisc.edu/downloads'
             debug = False
             passkey = 'pass'
@@ -672,7 +661,7 @@ class MyTest(IPBaseClass):
             
             # try to run the config
             try:
-                i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
             except:
                 pass
             else:
@@ -731,7 +720,7 @@ class MyTest(IPBaseClass):
                 iceprod.core.serialization.serialize_json.dump(config,cfgfile)
                 
                 # set some default values
-                validate = False
+                logfile = logging.getLogger().handlers[0].stream.name
                 url = 'http://localhost:%d'%port
                 debug = False
                 passkey = 'pass'
@@ -739,7 +728,7 @@ class MyTest(IPBaseClass):
                 
                 # try to run the config
                 try:
-                    i3exec.main(cfgfile,validate,url,debug,passkey,offline)
+                    i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
                 except:
                     raise
                 if 'new_task' in online_rpc.called_methods:
@@ -800,7 +789,7 @@ class MyTest(IPBaseClass):
             
             try:
                 # set some default values
-                validate = False
+                logfile = logging.getLogger().handlers[0].stream.name
                 url = 'http://localhost:%d'%port
                 debug = False
                 passkey = 'pass'
@@ -809,7 +798,7 @@ class MyTest(IPBaseClass):
                 
                 # try to run the config
                 try:
-                    i3exec.main(None,validate,url,debug,passkey,offline,
+                    i3exec.main(None,logfile,url,debug,passkey,offline,
                                 gridspec=gridspec)
                 except:
                     raise
@@ -868,19 +857,18 @@ class Test(IPBaseClass):
                 iceprod.core.serialization.serialize_json.dump(config,cfgfile)
                 
                 # set some default values
-                validate = False
+                logfile = logging.getLogger().handlers[0].stream.name
                 url = 'http://localhost:%d'%port
                 debug = False
                 passkey = 'pass'
                 offline = True
                 
                 # try to run the config
-                if subprocess.call('coverage run -p bin/i3exec.py '
-                                   '--cfgfile=%s --validate=%s --url=%s '
-                                   '--passkey=%s --offline'%(
-                                       cfgfile, str(validate), url, passkey),
-                                   shell=True):
-                    raise Exception('Error returned')
+                subprocess.check_call('coverage run -m iceprod.core.i3exec '
+                                      '--cfgfile=%s --logfile=%s --url=%s '
+                                      '--passkey=%s --offline'%(
+                                         cfgfile, str(logfile), url, passkey),
+                                      shell=True)
             
             finally:
                 http.shutdown()

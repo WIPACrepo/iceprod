@@ -25,7 +25,6 @@ class Scheduler(Thread):
     
     def __init__(self,num_threads=5):
         super(Scheduler,self).__init__()
-        self.tp = ThreadPoolDeque(5)
         self.end = Event()
         self.sched = [] # heap of things to run on
         self.running = set() # the ids of currently running jobs, so we don't get duplicates
@@ -43,6 +42,7 @@ class Scheduler(Thread):
     
     def run(self):
         """run the scheduler"""
+        tp = ThreadPoolDeque(5)
         while True:
             waittime = Scheduler.MAXWAIT
             
@@ -53,7 +53,7 @@ class Scheduler(Thread):
                     if id not in self.running:
                         # start task
                         self.running.add(id)
-                        self.tp.add_task(partial(self._wrapper,id,task))
+                        tp.add_task(partial(self._wrapper,id,task))
                     if recurring is not None:
                         # check for when to next run task
                         nextrun = Scheduler.parsecron(recurring,tasktime)
@@ -81,6 +81,7 @@ class Scheduler(Thread):
                 break # got stop signal
             # if ret is None, task is ready to run
             # if ret is False, new task has been added so re-evaluate next time
+        tp.finish()
     
     def start(self,*args,**kwargs):
         self.end.clear()

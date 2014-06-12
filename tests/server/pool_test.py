@@ -1,30 +1,12 @@
-﻿#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-"""
-  Test script for thread pools
-
-  copyright (c) 2011 the icecube collaboration
-
-  @version: $Revision: $
-  @date: $Date: $
-  @author: David Schultz <david.schultz@icecube.wisc.edu>
-  
+﻿"""
+Test script for thread pools
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
 import logging
-try:
-    from server_tester import printer, glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig()
 logger = logging.getLogger('pool_test')
 import os, sys, time
     

@@ -39,7 +39,7 @@ def handler(signum, frame):
     logger.warn('Exiting...')
     os._exit(0)
 
-def main(cfgfile=None, validate=True, url=None, debug=False,
+def main(cfgfile=None, logfile=None, url=None, debug=False,
          passkey='', offline=False, gridspec=None):
     """Main task runner for iceprod"""
     global logger
@@ -52,7 +52,10 @@ def main(cfgfile=None, validate=True, url=None, debug=False,
             logl = 'INFO'
         else:
             logl = 'WARNING'
-        logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
+        if logfile:
+            logf = logfile
+        else:
+            logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
         iceprod.core.logger.setlogger('i3exec',
                                       None,
                                       loglevel=logl,
@@ -68,7 +71,7 @@ def main(cfgfile=None, validate=True, url=None, debug=False,
         
         if offline is True:
             # run in offline mode
-            runner(cfgfile,validate,url,debug,offline)
+            runner(cfgfile,url,debug,offline)
             return
         
         # setup jsonRPC
@@ -76,7 +79,7 @@ def main(cfgfile=None, validate=True, url=None, debug=False,
         
         if cfgfile is not None:
             # default configuration - a single task
-            runner(cfgfile,validate,url,debug)
+            runner(cfgfile,url,debug)
         elif gridspec is None:
             logger.critical('There is no cfgfile and no gridspec')
         else:
@@ -95,7 +98,7 @@ def main(cfgfile=None, validate=True, url=None, debug=False,
                     break # assuming server wants client to exit
                 else:
                     try:
-                        runner(cfgfile,validate,url,debug)
+                        runner(cfgfile,url,debug)
                     except Exception as e:
                         logger.error('%r',e)
                         errors += 1
@@ -104,7 +107,7 @@ def main(cfgfile=None, validate=True, url=None, debug=False,
                 logger.error('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
     
-def runner(cfgfile,validate,url,debug=False,offline=False):
+def runner(cfgfile,url,debug=False,offline=False):
     """Run a config"""
     # load config
     config = None
@@ -138,9 +141,7 @@ def runner(cfgfile,validate,url,debug=False,offline=False):
         except Exception as e:
             logger.warn('failed to set a new log level: %r',e)
     
-    # check that validate, resource_url, debug are in options
-    if 'validate' not in config['options']:
-        config['options']['validate'] = validate
+    # check that resource_url and debug are in options
     if 'resource_url' not in config['options']:
         config['options']['resource_url'] = str(url)+'/download'
     if 'debug' not in config['options']:
@@ -262,8 +263,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='IceProd Core')
     parser.add_argument('-f','--cfgfile', type=str,
                         help='Specify config file')
-    parser.add_argument('-v','--validate', type=str, default='True',
-                        help='Specify if the config file should be validated')
     parser.add_argument('-u','--url', type=str,
                         help='URL of the iceprod server')
     parser.add_argument('-p','--passkey', type=str,
@@ -274,6 +273,8 @@ if __name__ == '__main__':
                         help='Enable offline mode (don\'t talk with server)')
     parser.add_argument('--gridspec', type=str,
                         help='specify gridspec for pilot jobs')
+    parser.add_argument('--logfile', type=str, default=None,
+                        help='Specify the logfile to use')
 
     args = vars(parser.parse_args())
     print args
@@ -284,11 +285,6 @@ if __name__ == '__main__':
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
-    # check validate
-    if args['validate'] in ('True','true','1'):
-        args['validate'] = True
-    else:
-        args['validate'] = False
     
     # start iceprod
     main(**args)

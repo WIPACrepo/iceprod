@@ -1,24 +1,13 @@
 """
-  Test script for schedule
-
-  copyright (c) 2013 the icecube collaboration
+Test script for schedule
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
 import logging
-try:
-    from server_tester import printer, glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig()
-logger = logging.getLogger('schedule')
+logger = logging.getLogger('schedule_test')
 
 import os, sys, time, random
 from datetime import datetime,timedelta
@@ -35,6 +24,7 @@ except ImportError:
 
 import iceprod.server
 from iceprod.server import schedule
+from iceprod.core import to_log
 
 
 class schedule_test(unittest.TestCase):
