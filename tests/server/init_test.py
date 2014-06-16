@@ -1,28 +1,17 @@
-#! /usr/bin/env python
 """
-  Test script for server init scripts
-
-  copyright (c) 2011 the icecube collaboration  
+Test script for server init scripts
 """
 
-from __future__ import print_function
-try:
-    from server_tester import printer, glob_tests, logger
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    import logging
-    logging.basicConfig()
-    logger = logging.getLogger('server_tester')
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
+import logging
+logger = logging.getLogger('server_init_test')
 
 import os, sys, time
 import shutil
+import tempfile
 import random
     
 try:
@@ -36,10 +25,7 @@ import iceprod.server
 class init_test(unittest.TestCase):
     def setUp(self):
         super(init_test,self).setUp()
-        
-        # make test dir
-        self.test_dir = os.path.join(os.getcwd(),'test')
-        os.mkdir(self.test_dir)
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
     
     def tearDown(self):
         shutil.rmtree(self.test_dir)

@@ -39,80 +39,6 @@ def run_module(name,args):
     x = __import__(name,globals(),locals(),[class_name])
     return (getattr(x,class_name))(args)
 
-def locateconfig():
-    """Locate a config file"""
-    hostname = os.uname()[1].split('.')[0]
-    if 'I3PROD' in os.environ:
-        cfgpath = os.path.expandvars('$I3PROD')
-    elif 'I3PREFIX' in os.environ:
-        cfgpath = os.path.expandvars('$I3PREFIX')
-    else:
-        cfgpath = os.getcwd()
-    # try for an etc directory
-    if os.path.isdir(os.path.join(cfgpath,'etc')):
-        cfgpath = os.path.join(cfgpath,'etc')
-        # try for an iceprod directory
-        if os.path.isdir(os.path.join(cfgpath,'iceprod')):
-            cfgpath = os.path.join(cfgpath,'iceprod')
-    # try common file names
-    if os.path.isfile(os.path.join(cfgpath,'iceprod.cfg')):
-        cfgpath = os.path.join(cfgpath,'iceprod.cfg')
-    elif os.path.isfile(os.path.join(cfgpath,hostname+'.cfg')):
-        cfgpath = os.path.join(cfgpath,hostname+'.cfg')
-    else:
-        raise Exception('cfgpath is not a valid path')
-    return cfgpath
-
-def getconfig(cfgpath,abort_on_error=True):
-    """Parse the config file with configobj"""
-    from configobj import ConfigObj
-    from validate import Validator
-    configspec = ConfigObj(os.path.expandvars('$I3PREFIX/etc/iceprod/validation.cfg'),
-                           interpolation=False,
-                           list_values=False,
-                           _inspec=True)
-    cfgpath = os.path.expanduser(os.path.expandvars(cfgpath))
-    if not os.path.isfile(cfgpath):
-        try:
-            cfgpath = locateconfig()
-        except:
-            if abort_on_error is True:
-                raise Exception('cfgpath is not a valid path')
-            else:
-                # load config from template
-                config = ConfigObj(configspec=configspec, interpolation=False)
-                validator = Validator()
-                config.validate(validator)
-                return config
-
-    # load config
-    config = ConfigObj(cfgpath, configspec=configspec, interpolation=False)
-    validator = Validator()
-    result = config.validate(validator)
-    if result != True:
-        logging.warn('config file errors: %r',result)
-        raise Exception('Config file validation failed!')
-    return config
-
-def saveconfig(cfgpath,cfg):
-    """Save the config file with configobj"""
-    from configobj import ConfigObj
-    from validate import Validator
-    configspec = ConfigObj(os.path.expandvars('$I3PREFIX/etc/iceprod/validation.cfg'),
-                           interpolation=False,
-                           list_values=False,
-                           _inspec=True)
-    cfgpath = os.path.expandvars(cfgpath)
-    
-    # load config
-    config = ConfigObj(cfgpath, configspec=configspec, interpolation=False)
-    validator = Validator()
-    result = config.validate(validator)
-    
-    # overwrite values with supplied cfg
-    config.update(cfg)
-    config.write()
-
 
 class GlobalID(object):
     """Global ID configuration and generation"""
@@ -134,7 +60,7 @@ class GlobalID(object):
         out = ''
         while i >= 0:
             out += cls.CHARS[i%cls.CHARS_LEN]
-            i = i/cls.CHARS_LEN - 1
+            i = i//cls.CHARS_LEN - 1
         return out[::-1]
         
     @classmethod
@@ -180,7 +106,7 @@ class GlobalID(object):
     @classmethod
     def siteID_ret(cls,id,type='str'):
         """Retrieve a site id from a global id"""
-        ret = cls.char2int(id) / cls.MAXLOCALID
+        ret = cls.char2int(id) // cls.MAXLOCALID
         if type == 'str':
             ret = cls.int2char(ret)
         return ret

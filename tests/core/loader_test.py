@@ -7,10 +7,11 @@ from __future__ import absolute_import, division, print_function
 from tests.util import printer, glob_tests
 
 import logging
-logger = logging.getLogger('loader')
+logger = logging.getLogger('loader_test')
 
 import os, sys, time
 import shutil
+import tempfile
 import random
 import string
 import subprocess
@@ -86,9 +87,7 @@ class loader_test(unittest.TestCase):
         
         self.orig_dir = os.path.abspath(os.path.expandvars(os.getcwd()))
         
-        self.test_dir = os.path.join(self.orig_dir,'test')
-        if not os.path.exists(self.test_dir):
-            os.mkdir(self.test_dir)
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         
         self.real_loader = os.path.join(self.orig_dir,'bin','loader.sh')
         
