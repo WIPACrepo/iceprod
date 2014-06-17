@@ -1,7 +1,5 @@
 """
-  Interface for configuring modules
-
-  copyright (c) 2012 the icecube collaboration
+Interface for configuring modules
 """
 
 from __future__ import print_function

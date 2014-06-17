@@ -74,6 +74,24 @@ class config_test(unittest.TestCase):
             raise
         else:
             printer('Test config.IceProdConfig')
+    
+    def test_02_IceProdConfig(self):
+        """Test config.IceProdConfig()"""
+        try:
+            os.chdir(self.test_dir)
+            try:
+                cfg = iceprod.server.config.IceProdConfig(filename='test.json')
+                if cfg.filename != 'test.json':
+                    raise Exception('did not use given filename')
+            finally:
+                os.chdir('..')
+            
+        except Exception as e:
+            logger.error('Error running config.IceProdConfig filename test - %s',str(e))
+            printer('Test config.IceProdConfig filename',False)
+            raise
+        else:
+            printer('Test config.IceProdConfig filename')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

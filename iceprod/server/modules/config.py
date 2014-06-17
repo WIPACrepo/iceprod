@@ -1,5 +1,8 @@
 """
-config module
+The config module stores and shares configuration settings with the rest of 
+iceprod server. Other modules may request an updated config or make a change 
+to the current config. If a change is made, the new config is BROADCAST to 
+all modules.
 """
 
 import logging
@@ -60,8 +63,10 @@ class ConfigService(module.Service):
         self.mod.config[key] = value
         if callback:
             callback()
+            self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
     
     def delete(self,key,callback=None):
         del self.mod.config[key]
         if callback:
             callback()
+            self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)

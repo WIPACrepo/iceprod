@@ -51,6 +51,9 @@ class BasicConfig(object):
         self.website = True
         self.config = True
         
+        # start order
+        self.start_order = ['config','db','proxy','website','schedule','queue']
+        
         # messaging server url
         self.messaging_url = os.path.join('ipc://',os.getcwd(),'unix_socket.sock')
     

@@ -13,12 +13,15 @@ import logging
 import logging.config
 import signal
 
+try:
+    from setproctitle import setproctitle
+except ImportError:
+    setproctitle = None
+    print('Could not import setproctitle module')
+
 import iceprod
 import iceprod.server
-try:
-    import iceprod.procname
-except ImportError:
-    print('Could not import procname module')
+import iceprod.server.basic_config
 import iceprod.core.logger
 
 
@@ -27,7 +30,7 @@ def load_config(cfgfile):
     if isinstance(cfgfile,str):
         # Read config file
         logging.warn('loading new cfg from file %s'%cfgfile)
-        return iceprod.server.getconfig(cfgfile)
+        return iceprod.server.basic_config.BasicConfig(cfgfile)
     else:
         # assume we were passed cfg data directly
         logging.warn('loading new cfg directly'%cfgfile)
@@ -45,11 +48,11 @@ class server_module():
     """Manage a server module"""
     process_class = multiprocessing.Process
     
-    def __init__(self,mod_name,cfg):
+    def __init__(self,mod_name,url):
         self.mod_name = mod_name
         self.process = server_module.process_class(
                 target=iceprod.server.run_module,
-                args=[mod_name,cfg])
+                args=[mod_name,url])
         self.process.daemon = True
     
     def start(self):
@@ -87,20 +90,33 @@ def main(cfgfile,cfgdata=None):
     logger = logging.getLogger('iceprod_server')
     
     # Change name of process for ps
-    try:
-        iceprod.procname.setprocname('iceprod_server.main')
-    except:
-        logger.warn("Could not import procname module.")
-        logger.warn("Will not be able to set process name for daemon")
+    if setproctitle:
+        try:
+            setproctitle('iceprod_server.main')
+        except Exception:
+            logger.warn("could not rename process")
+    
+    def module_start(mod):
+        logger.warn('starting %s',mod)
+        rmod = server_module(mod,cfg.messaging_url)
+        rmod.start()
+        return rmod
     
     # start messaging
     class Respond():
-        def __init__(self,shutdown_event):
+        def __init__(self,shutdown_event,running_modules):
             self.shutdown_event = shutdown_event
+            self.running_modules = running_modules
         def start(self,mod=None,callback=None):
             logger.warn('START %s',mod if mod else '')
             if mod:
-                getattr(messaging,mod).start(asyc=True)
+                if '.' not in mod:
+                    mod = 'iceprod.server.modules.'+mod
+                mod_name = mod.rsplit('.',1)[-1]
+                if mod_name in self.running_modules:
+                    getattr(messaging,mod_name).start(asyc=True)
+                else:
+                    self.running_modules[mod_name] = module_start(mod)
             else:
                 messaging.BROADCAST.start(async=True)
             if callback:
@@ -108,7 +124,10 @@ def main(cfgfile,cfgdata=None):
         def stop(self,mod=None,callback=None):
             logger.warn('STOP %s',mod if mod else '')
             if mod:
+                mod_name = mod.rsplit('.',1)[-1]
                 getattr(messaging,mod).stop(asyc=True)
+                if mod_name in self.running_modules:
+                    del self.running_modules[mod_name]
             else:
                 messaging.BROADCAST.stop(async=True)
             if callback:
@@ -124,7 +143,13 @@ def main(cfgfile,cfgdata=None):
         def kill(self,mod=None,callback=None):
             logger.warn('KILL %s',mod if mod else '')
             if mod:
+                mod_name = mod.rsplit('.',1)[-1]
                 getattr(messaging,mod).stop(asyc=True)
+                if mod_name in self.running_modules:
+                    self.running_modules[mod_name].process.join(1)
+                    if self.running_modules[mod_name].process.is_alive():
+                        self.running_modules[mod_name].kill()
+                    del self.running_modules[mod_name]
                 if callback:
                     callback()
             else:
@@ -146,9 +171,10 @@ def main(cfgfile,cfgdata=None):
             shutdown.set()
     shutdown = Event()
     shutdown.clear()
-    kwargs = {'address':self.cfg['messaging']['address'],
+    running_modules = {}
+    kwargs = {'address':cfg.messaging_url,
               'service_name':'daemon',
-              'service_class':Respond(shutdown),
+              'service_class':Respond(shutdown,running_modules),
              }
     messaging = RPCinternal.RPCService(**kwargs)
     messaging.start()
@@ -158,10 +184,9 @@ def main(cfgfile,cfgdata=None):
     
     # get modules
     available_modules = iceprod.server.listmodules('iceprod.server.modules')
-    running_modules = []
 
     # start modules specified in cfg
-    start_order = cfg['server_modules']['start_order']
+    start_order = cfg.start_order
     def start_order_cmp(a,b):
         try:
             a_pos = start_order.index(a.rsplit('.')[1])
@@ -171,15 +196,17 @@ def main(cfgfile,cfgdata=None):
             return cmp(a,b)
     for mod in sorted(available_modules,cmp=start_order_cmp):
         mod_name = mod.rsplit('.',1)[1]
-        if mod_name in cfg['server_modules'] and cfg['server_modules'][mod_name] is True:
-            logger.warn('starting %s',mod_name)
-            rmod = server_module(mod)
-            rmod.start()
-            running_modules.append(rmod)
+        if getattr(cfg,mod_name) is True:
+            running_modules[mod_name] = start_module(mod)
             time.sleep(1) # wait 1 second between starts
     
     # idle until we need to shutdown
     shutdown.wait()
+    messaging.stop()
+    
+    # terminate all modules
+    for mod in running_modules:
+        mod.kill()
 
 if __name__ == '__main__':
     import argparse
@@ -195,11 +222,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.file:
-        if args.daemon and args.action == 'reload':
-            raise Exception('Cannot change cfgfile path on reload. Try restarting.')
         cfgfile = os.path.expanduser(os.path.expandvars(args.file))
     else:
-        cfgfile = iceprod.server.locateconfig()
+        cfgfile = iceprod.server.basic_config.locateconfig()
     cfgdata = None
     
     # start iceprod

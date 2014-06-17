@@ -23,8 +23,11 @@ class IceProdConfig(dict):
     
     Note that this class is not thread-safe.
     """
-    def __init__(self):
-        self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
+    def __init__(self, filename=None):
+        if filename:
+            self.filename = filename
+        else:
+            self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
         self.loading = False
         self.load()
     
