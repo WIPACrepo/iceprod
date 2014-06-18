@@ -15,38 +15,47 @@ class proxy(module.module):
     Run the proxy module, which runs a squid proxy
     """
     
-    def __init__(self,cfg):
-        super(proxy,self).__init__(cfg)
-        self.squid = Squid(**self._getargs())
+    def __init__(self,*args,**kwargs):
+        super(proxy,self).__init__(*args,**kwargs)
+        self.squid = None
         self.service_class = ProxyService(self)
         self.start()
     
     def _getargs(self):
-        kwargs = self.cfg['proxy'].copy()
-        kwargs['username'] = self.cfg['http_username']
-        kwargs['password'] = self.cfg['http_password']
-        return kwargs
+        if 'proxy' in self.cfg:
+            kwargs = self.cfg['proxy'].copy()
+            kwargs['username'] = self.cfg['http_username']
+            kwargs['password'] = self.cfg['http_password']
+            return kwargs
+        else:
+            return {}
     
     def start(self):
         """Start proxy if not already running"""
+        super(proxy,self).start(callback=self._start)
+    def _start(self):
+        # after module is started, start squid
+        self.squid = Squid(**self._getargs())
         self.squid.start()
-        super(proxy,self).start()
         
     def stop(self):
         """Stop proxy"""
-        self.squid.stop()
+        if self.squid:
+            self.squid.stop()
         super(proxy,self).stop()
     
     def kill(self):
         """Kill proxy"""
-        self.squid.kill()
+        if self.squid:
+            self.squid.kill()
         super(proxy,self).stop()
         
     def update_cfg(self,newcfg):
         """Update the cfg, making any necessary changes"""
         self.cfg = newcfg
-        self.squid.update(**self._getargs())
-        self.squid.restart()
+        if self.squid:
+            self.squid.update(**self._getargs())
+            self.squid.restart()
 
 class ProxyService(module.Service):
     """

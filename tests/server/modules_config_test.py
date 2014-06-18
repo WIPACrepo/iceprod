@@ -99,8 +99,8 @@ class modules_config_test(unittest.TestCase):
             flexmock(config).should_receive('start').replace_with(start)
             start.called = False
             
-            cfg = {}
-            q = config(cfg)
+            url = 'localhost'
+            q = config(url)
             if not q:
                 raise Exception('did not return config object')
             if start.called != True:
@@ -121,6 +121,59 @@ class modules_config_test(unittest.TestCase):
             raise
         else:
             printer('Test modules.config init')
+    
+    def test_02_save(self):
+        """Test save"""
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(config).should_receive('start').replace_with(start)
+            start.called = False
+            
+            url = 'localhost'
+            q = config(url)
+            q.config.filename = os.path.join(self.test_dir,'test.json')
+            q.config['test'] = 1
+            q.messaging = _messaging()
+            
+            def cb(ret=None):
+                cb.ret = ret
+            
+            cb.ret = None
+            q.service_class.get(callback=cb)
+            if cb.ret != {'test':1}:
+                raise Exception('get() did not return config')
+            
+            cb.ret = None
+            q.service_class.get(key='test',callback=cb)
+            if cb.ret != 1:
+                raise Exception('get(key="test") did not return 1')
+            
+            cb.ret = None
+            q.service_class.set(key='test',value=2,callback=cb)
+            if q.config['test'] != 2:
+                raise Exception('set(key="test",2) did not set to 2')
+            
+            txt = open(q.config.filename).read()
+            if txt != '{"test":2}':
+                raise Exception('set() did not save to file')
+            
+            cb.ret = None
+            q.service_class.delete(key='test',callback=cb)
+            if 'test' in q.config:
+                raise Exception('delete(key="test") did not delete')
+            
+            txt = open(q.config.filename).read()
+            if txt != '{}':
+                raise Exception('delete() did not save to file')
+            
+        except Exception as e:
+            logger.error('Error running modules.config save test - %s',str(e))
+            printer('Test modules.config save',False)
+            raise
+        else:
+            printer('Test modules.config save')
 
 
 def load_tests(loader, tests, pattern):

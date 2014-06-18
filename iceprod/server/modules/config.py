@@ -16,9 +16,9 @@ class config(module.module):
     Run the config module, which handles iceprod configuration settings.
     """
     
-    def __init__(self,cfg):
+    def __init__(self,*args,**kwargs):
         # run default init
-        super(config,self).__init__(cfg)
+        super(config,self).__init__(*args,**kwargs)
         self.service_class = ConfigService(self)
         
         self.config = IceProdConfig()

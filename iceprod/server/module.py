@@ -19,11 +19,9 @@ import iceprod.core.logger
 
 from iceprod.server.RPCInternal import RPCService
 
-logger = None
-
 def handler(signum, frame):
-   logger.warn('Signal handler called with signal %s' % signum)
-   logger.warn('This is a child process. Signal will be ignored')
+   logging.warn('Signal handler called with signal %s' % signum)
+   logging.warn('This is a child process. Signal will be ignored')
 
 class module(object):
     """
@@ -31,11 +29,12 @@ class module(object):
     
     At the end of every subclass's __init__(), self.start() should be called.
     
-    :param cfg: Initial config file data, loaded from daemon.
+    :param messaging_url: The url for the messaging server.
     """
-    def __init__(self,cfg):
+    def __init__(self,messaging_url):
         # set some variables
-        self.cfg = cfg
+        self.cfg = {}
+        self.messaging_url = messaging_url
         self.messaging = None
         
         # Provide a default listener for basic start,stop events.
@@ -48,13 +47,13 @@ class module(object):
         signal.signal(signal.SIGINT, handler)
         
         # start logging
+        module_name = 'iceprod_server.'+self.__class__.__name__
         logging.basicConfig()
-        global logger
-        logger = logging.getLogger('iceprod_server.'+self.__class__.__name__)
+        self.logger = logging.getLogger(module_name)
         if ('logging' in self.cfg and 
-            logger.name not in self.cfg['logging']):
-            self.cfg['logging'][logger.name] = self.__class__.__name__+'.log'
-        iceprod.core.logger.setlogger(logger.name,self.cfg)
+            self.logger.name not in self.cfg['logging']):
+            self.cfg['logging'][self.logger.name] = self.__class__.__name__+'.log'
+        iceprod.core.logger.setlogger(self.logger.name,self.cfg)
         
         # remove stdout logging handler
         iceprod.core.logger.removestdout()
@@ -62,19 +61,27 @@ class module(object):
         # Change name of process for ps
         if setproctitle:
             try:
-                setproctitle(logger.name)
+                setproctitle(self.logger.name)
             except Exception:
-                logger.warn('could not set proctitle')
+                self.logger.warn('could not set proctitle')
     
-    def start(self,blocking=True):
+    def start(self,blocking=True,callback=None):
         """Start the messaging service"""
-        kwargs = {'address':self.cfg['messaging']['address'],
+        kwargs = {'address':self.messaging_url,
                   'blocking':blocking,
                  }
         if self.service_name and self.service_class:
             kwargs['service_name'] = self.service_name
             kwargs['service_class'] = self.service_class
         self.messaging = RPCService(**kwargs)
+        def cb(ret=None):
+            if ret and isinstance(ret,dict):
+                self.cfg = ret
+            else:
+                self.logger.error('failed to get cfg settings: %r',ret)
+            if callback:
+                callback()
+        self.messaging.config.get(callback=cb)
         self.messaging.start()
         # if blocking is True, messaging will block the thread until closed
     
