@@ -240,7 +240,6 @@ class modules_proxy_test(unittest.TestCase):
             raise
         else:
             printer('Test modules.proxy start_stop')
-
     
     def test_04_proxyservice(self):
         """Test ProxyService"""

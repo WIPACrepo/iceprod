@@ -8,6 +8,8 @@ Note that large grids should probably configure and use their own proxy
 infrastructure instead of running this module.
 """
 
+from __future__ import absolute_import, division, print_function
+
 import time
 from threading import Thread,Event,Condition
 import logging

@@ -3,7 +3,7 @@ A helper to auto-configure a `Squid Cache <http://www.squid-cache.org/>`_
 server and control starts, stops, and reloads.
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import os
 import time

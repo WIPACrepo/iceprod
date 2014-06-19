@@ -52,7 +52,6 @@ import iceprod.server
 import iceprod.core.logger
 from iceprod.server import module
 from iceprod.server.modules.website import website
-from iceprod.server.dbclient import MetaDB,DB
 from iceprod.server.nginx import Nginx
 from iceprod.server import openssl
 try:

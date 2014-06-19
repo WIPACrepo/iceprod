@@ -24,7 +24,6 @@ import tornado.web
 import tornado.httpserver
 
 from iceprod.server import module
-from iceprod.server.dbclient import DB
 from iceprod.server.nginx import Nginx
 import iceprod.core.functions
 
