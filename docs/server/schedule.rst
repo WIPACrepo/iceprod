@@ -1,9 +1,7 @@
 .. index:: schedule
 .. _schedule:
 
-
-
 Schedule
 ========
 
-.. automodule:: iceprod.server.schedule
+.. autoclass:: iceprod.server.schedule.Scheduler

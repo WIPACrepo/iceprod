@@ -1,6 +1,9 @@
 """
-  schedule module
+The schedule module is a basic cron for IceProd, executing tasks
+at various intervals or fixed times.
 """
+
+from __future__ import absolute_import, division, print_function
 
 import time
 from threading import Thread,Event,Condition
@@ -14,7 +17,7 @@ from iceprod.server.schedule import Scheduler
 
 class schedule(module.module):
     """
-    Run the schedule module, which handles periodic tasks
+    Run the schedule module, which handles periodic tasks.
     """
     
     def __init__(self,cfg):
@@ -28,6 +31,8 @@ class schedule(module.module):
     
     def start(self):
         """Start schedule"""
+        super(schedule,self).start(callback=self._start)
+    def _start(self):
         if not self.scheduler:
             # make Scheduler
             self.scheduler = Scheduler()
@@ -35,22 +40,23 @@ class schedule(module.module):
         
         # start things
         self.scheduler.start()
-        super(schedule,self).start()
     
     def stop(self):
         """Stop schedule"""
-        self.scheduler.finish()
-        self.scheduler.join(10) # wait up to 10 seconds for scheduler to finish
-        if self.scheduler.isAlive():
-            module.logger.warn('scheduler still running after 10 seconds')
-        self.scheduler = None
+        if self.scheduler:
+            self.scheduler.finish()
+            self.scheduler.join(10) # wait up to 10 seconds for scheduler to finish
+            if self.scheduler.is_alive():
+                module.logger.warn('scheduler still running after 10 seconds')
+            self.scheduler = None
         super(schedule,self).stop()
     
     def kill(self):
         """Kill thread"""
-        self.scheduler.finish()
-        self.scheduler.join(0.01) # wait only a very short amount of time
-        self.scheduler = None
+        if self.scheduler:
+            self.scheduler.finish()
+            self.scheduler.join(0.01) # wait only a very short amount of time
+            self.scheduler = None
         super(schedule,self).kill()
     
     def _make_schedule(self):

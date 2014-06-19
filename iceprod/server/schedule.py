@@ -2,6 +2,8 @@
 Scheduler
 """
 
+from __future__ import absolute_import, division, print_function
+
 from threading import Thread,Event,RLock
 from functools import partial
 import heapq,time
@@ -11,6 +13,7 @@ import logging
 
 from iceprod.server.pool import ThreadPoolDeque
 
+logger = logging.getLogger('schedule')
 
 class Scheduler(Thread):
     """
@@ -103,13 +106,17 @@ class Scheduler(Thread):
     
     @staticmethod
     def parsecron(cron,prevtime,new=False):
-        """Find next time based on cron string and previous time
-        cron string:
-          English-like format:
+        """
+        Find next time based on cron string and previous time.
+        
+        The cron string format is based on the `Google schedule format 
+        <https://developers.google.com/appengine/docs/python/config/cron?csw=1#Python_app_yaml_The_schedule_format>`_::
+        
             ("every"|ordinal) [N] (hours|mins|minutes|days) ["of" (monthspec)] (time|["from" (time) "to" (time)]|"synchronized")
-          http://code.google.com/appengine/docs/python/config/cron.html#The_Schedule_Format
-        prevtime: last runtime or now
-        new: if this is the first run, set to True
+        
+        :param cron: String with scheduling info in an English-like format.
+        :param prevtime: last runtime or now.
+        :param new: if this is the first run, set to True.
         """
         # some definitions
         daysofweek = ('monday','tuesday','wednesday','thursday','friday','saturday','sunday')        
@@ -392,10 +399,10 @@ class Scheduler(Thread):
                     now = now + timedelta(minutes=incmin)
             if flag is False:
                 # no match, return None
-                return None            
-        except Exception, e:
+                return None
+        except Exception as e:
             # invalid cron
-            print 'Invalid cron:',e
+            logger.warn('Invalid cron',exc_info=True)
             return None
         else:
             # return time
