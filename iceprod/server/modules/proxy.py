@@ -1,5 +1,11 @@
 """
-proxy module
+The proxy module is a convenience module for starting and stopping a 
+proxy server with IceProd. It currently uses 
+`Squid <http://www.squid-cache.org/>`_, which requires installation before
+use. The module will auto-configure `Squid`, so a default install suffices.
+
+Note that large grids should probably configure and use their own proxy
+infrastructure instead of running this module.
 """
 
 import time
@@ -24,8 +30,10 @@ class proxy(module.module):
     def _getargs(self):
         if 'proxy' in self.cfg:
             kwargs = self.cfg['proxy'].copy()
-            kwargs['username'] = self.cfg['http_username']
-            kwargs['password'] = self.cfg['http_password']
+            if 'http_username' in self.cfg:
+                kwargs['username'] = self.cfg['http_username']
+            if 'http_password' in self.cfg:
+                kwargs['password'] = self.cfg['http_password']
             return kwargs
         else:
             return {}

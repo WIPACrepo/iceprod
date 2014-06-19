@@ -1,7 +1,6 @@
 """
-  squid class
-
-  copyright (c) 2013 the icecube collaboration  
+A helper to auto-configure a `Squid Cache <http://www.squid-cache.org/>`_
+server and control starts, stops, and reloads.
 """
 
 from __future__ import print_function
@@ -24,11 +23,11 @@ logger = logging.getLogger('squid')
 
 
 class Squid(KwargConfig):
-    """Wrapper around the Squid Cache server.
-       Squid is used to proxy and cache web requests."""
-        
+    """
+    Wrapper around the `Squid` server. `Squid` is used to proxy and 
+    cache web requests by IceProd running on worker nodes.
+    """
     def __init__(self, *args, **kwargs):
-        """Set up Squid"""
         # defaults
         self._cfg = {
             'username': None,
