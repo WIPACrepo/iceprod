@@ -1,10 +1,11 @@
 """
-  nginx class
-
-  copyright (c) 2012 the icecube collaboration  
+Nginx is used to handle static content and proxy all other requests to 
+the `website module <iceprod.server.modules.website>`_. It also handles 
+most of the web security as a SSL/TLS front-end and more generally as 
+a hardened attack surface.
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import os
 import time
@@ -40,12 +41,12 @@ def deleteoldlogs(filename,days=30):
             os.remove(file)
 
 class Nginx(object):
-    """Wrapper around the Nginx webserver.
-       Nginx is used to handle static content and uploads, 
-       and proxy all other requests to tornado."""
-        
+    """Wrapper around the Nginx webserver."""
     def __init__(self, *args, **kwargs):
         """Set up Nginx"""
+        # make sure nginx exists
+        subprocess.check_call(['which','nginx'])
+        
         # defaults
         self._cfg = {
             'username': None,

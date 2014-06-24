@@ -20,6 +20,8 @@ class ZmqProcess(object):
 
         self.ioloop = io_loop
         """PyZMQ's event loop (:class:`~zmq.eventloop.ioloop.IOLoop`)."""
+        
+        self._restart = False
 
     def setup(self):
         """
@@ -32,7 +34,14 @@ class ZmqProcess(object):
 
     def run(self):
         self.ioloop.start()
+        while self._restart:
+            self._restart = False
+            self.ioloop.start()
         self.ioloop.close()
+    
+    def restart(self):
+        self._restart = True
+        self.ioloop.stop()
     
     def stop(self):
         self.ioloop.stop()

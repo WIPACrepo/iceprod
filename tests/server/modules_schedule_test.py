@@ -1,5 +1,5 @@
 """
-Test script for schedule module
+Test script for the schedule module.
 """
 
 from __future__ import absolute_import, division, print_function

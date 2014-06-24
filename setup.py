@@ -25,7 +25,7 @@ with open('README.rst') as f:
 
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
-    install_requires = ['tornado>=2.4', 'jsonrpclib', 'pyzmq']
+    install_requires = ['tornado>=3.0', 'jsonrpclib', 'pyzmq']
     extras_require = {
         'utils': ['setproctitle', 'pycurl', 'lxml'],
         'docs': ['sphinx'],

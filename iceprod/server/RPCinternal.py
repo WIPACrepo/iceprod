@@ -341,15 +341,17 @@ class Client(Base):
         self.service_name = service_name
         self.service_callback = service_callback
     
-    def start(self,*args,**kwargs):
-        """Start the Client"""
-        super(Client,self).start(*args,**kwargs)
-        
+    def _register_service(self):
         if self.service_name and self.service_callback:
             data = {'method':'register_service',
                     'params':{'service_name':self.service_name},
                    }
             self.send(data,None,MessageFactory.MESSAGE_TYPE.SERVER)
+    
+    def start(self,*args,**kwargs):
+        """Start the Client"""
+        self._register_service()
+        self.run()
     
     def stop(self):
         """Stop the Client"""
@@ -420,8 +422,11 @@ class Client(Base):
             else:
                 logger.warn('invalid message type: %s',msg_type)
 
-class ThreadedClient(Client,Thread):
-    pass
+class ThreadedClient(Thread,Client):
+    def start(self,*args,**kwargs):
+        """Start the Client"""
+        self._register_service()
+        super(Client,self).start(*args,**kwargs)
 
 class Server(Base):
     """
