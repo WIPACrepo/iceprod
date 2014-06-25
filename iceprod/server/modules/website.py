@@ -28,6 +28,8 @@ from contextlib import contextmanager
 from functools import partial
 from urlparse import urlparse
 
+from concurrent.futures import ThreadPoolExecutor
+
 # override tornado json encoder and decoder so we can use dataclasses objects
 import iceprod.core.jsonUtil
 import tornado.escape
@@ -146,7 +148,10 @@ class website(module.module):
             log_method("%d %s %.2fms", handler.get_status(),
                     handler._request_summary(), request_time)
         #UploadHandler.upload_prefix = '/upload'
-        handler_args = {'messaging':self.messaging}
+        handler_args = {
+            'messaging':self.messaging,
+            'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
+        }
         lib_args = handler_args.copy()
         lib_args['prefix'] = '/lib/'
         lib_args['directory'] = os.path.expanduser(os.path.expandvars(
@@ -205,13 +210,15 @@ class JSONRPCHandler(tornado.web.RequestHandler):
     
        Call DB methods using RPC over json.
     """
-    def initialize(self, messaging):
+    def initialize(self, messaging, fileio):
         """
         Get some params from the website module
         
         :param messaging: the messaging handle
+        :param fileio: AsyncFileIO object
         """
         self.messaging = messaging
+        self.fileio = fileio
         
     def get(self):
         """GET is invalid and returns an error"""
@@ -337,15 +344,17 @@ class LibHandler(tornado.web.RequestHandler):
        These are straight http downloads like normal.
     """
     
-    def initialize(self, messaging, prefix, directory):
+    def initialize(self, messaging, fileio, prefix, directory):
         """
         Get some params from the website module
         
         :param messaging: the messaging handle
+        :param fileio: AsyncFileIO object
         :param prefix: library url prefix
         :param directory: library directory on disk
         """
         self.messaging = messaging
+        self.fileio = fileio
         self.prefix = prefix
         self.directory = directory
     
@@ -363,26 +372,28 @@ class LibHandler(tornado.web.RequestHandler):
             # TODO: make this work better for multi-site
             filename = os.path.join(self.directory,url)
             # open the file and send it
-            file = yield AsyncFileIO.open(filename)
+            file = yield self.fileio.open(filename)
             num = 65536
-            data = yield AsyncFileIO.read(file,bytes=num)
+            data = yield self.fileio.read(file,bytes=num)
             self.write(data)
             self.flush()
             while len(data) >= num:
-                data = yield AsyncFileIO.read(file,bytes=num)
+                data = yield self.fileio.read(file,bytes=num)
                 self.write(data)
                 self.flush()
-            yield AsyncFileIO.close(file)
+            yield self.fileio.close(file)
 
 class MainHandler(tornado.web.RequestHandler):
     """Handler for public facing website"""
-    def initialize(self, messaging):
+    def initialize(self, messaging, fileio):
         """
         Get some params from the website module
         
         :param messaging: the messaging handle
+        :param fileio: AsyncFileIO object
         """
         self.messaging = messaging
+        self.fileio = fileio
     
     def render_handle(self,*args,**kwargs):
         """Handle renderer exceptions properly"""

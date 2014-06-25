@@ -1,8 +1,8 @@
 """
 A `Futures <https://docs.python.org/dev/library/concurrent.futures.html>`_-based 
 file IO library using the Tornado 
-`concurrent.return_future <http://tornado.readthedocs.org/en/latest/concurrent.html#tornado.concurrent.return_future>`_
-decorator.
+`concurrent.run_on_executor <http://tornado.readthedocs.org/en/latest/concurrent.html#tornado.concurrent.run_on_executor>`_
+decorator. Requires either Python >= 3.2 or the `futures` package from pip.
 
 Tornado applications should be able to use it directly in a 
 `gen.coroutine <http://tornado.readthedocs.org/en/latest/gen.html#tornado.gen.coroutine>`_
@@ -12,8 +12,9 @@ decorator, like so::
     class MyHandler(tornado.web.RequestHandler):
         @tornado.gen.coroutine
         def get(self):
-            file = yield AsyncFileIO.open('my_file.txt')
-            data = yield AsyncFileIO.read(file)
+            io = AsyncFileIO()
+            file = yield io.open('my_file.txt')
+            data = yield io.read(file)
             self.write(data)
             yield AsyncFileIO.close(file)
 """
@@ -22,14 +23,27 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import shutil
-from tornado.concurrent import return_future
 
-class AsyncFileIO:
-    # put things in a class so we don't override the built-in functions
+from concurrent.futures import ThreadPoolExecutor
+
+from tornado.concurrent import run_on_executor
+from tornado.ioloop import IOLoop
+
+class AsyncFileIO(object):
+    """
+    Async File IO hidden behind threads using concurrent.futures.
     
-    @staticmethod
-    @return_future
-    def open(filename, mode=None, callback=None):
+    :param executor: A concurrent.futures.Executor object, optional.
+            Defaults to a 1 thread Executor.
+    :param io_loop: A tornado.ioloop.IOLoop object, optional.
+            Defaults to the current IOLoop.
+    """
+    def __init__(self, executor=None, io_loop=None):
+        self.executor = executor or ThreadPoolExecutor(1)
+        self.io_loop = io_loop or IOLoop.current()
+    
+    @run_on_executor
+    def open(self, filename, mode=None):
         """
         Open a file.
         
@@ -39,13 +53,12 @@ class AsyncFileIO:
         :raises: IOError if file cannot be opened.
         """
         if mode:
-            callback(open(filename, mode))
+            return open(filename, mode)
         else:
-            callback(open(filename))
+            return open(filename)
     
-    @staticmethod
-    @return_future
-    def read(file, bytes=None, callback=None):
+    @run_on_executor
+    def read(self, file, bytes=None, callback=None):
         """
         Read from an open file object.
         
@@ -56,11 +69,10 @@ class AsyncFileIO:
         """
         if bytes is None:
             bytes = 65536
-        callback(file.read(bytes))
+        return file.read(bytes)
     
-    @staticmethod
-    @return_future
-    def readline(file, callback=None):
+    @run_on_executor
+    def readline(self, file):
         """
         Read a line from an open file object.
         
@@ -68,11 +80,21 @@ class AsyncFileIO:
         :returns: A line from the file.
         :raises: IOError if file cannot be read from.
         """
-        callback(file.readline())
+        return file.readline()
     
-    @staticmethod
-    @return_future
-    def close(file, callback=None):
+    @run_on_executor
+    def write(self, file, data):
+        """
+        Write some data to an open file object.
+        
+        :param file: Open file object.
+        :param data: Some data to write.
+        :raises: IOError if file cannot be written to.
+        """
+        file.write(data)
+    
+    @run_on_executor
+    def close(self, file):
         """
         Close an open file object.
         
@@ -80,4 +102,3 @@ class AsyncFileIO:
         :raises: IOError if file cannot be closed.
         """
         file.close()
-        callback()

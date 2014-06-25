@@ -18,4 +18,6 @@ File IO
       
       .. automethod:: readline(file)
       
+      .. automethod:: write(file, data)
+      
       .. automethod:: close(file)
