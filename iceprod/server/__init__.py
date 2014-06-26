@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import logging
+from pkgutil import get_loader
 
 try:
     # do a monkey patching of tornado json library
@@ -173,3 +174,17 @@ def mktar(libdir,outfile):
     os.system("zip -q -r %s.zip %s -i \*.py" % (outfile,os.path.split(libdir)[-1]))
     os.chdir(curdir)
 
+def get_pkgdata_filename(package, resource):
+    loader = get_loader(package)
+    if loader is None or not hasattr(loader, 'get_data'):
+        return None
+    mod = sys.modules.get(package) or loader.load_module(package)
+    if mod is None or not hasattr(mod, '__file__'):
+        return None
+
+    # Modify the resource name to be compatible with the loader.get_data
+    # signature - an os.path format "filename" starting with the dirname of
+    # the package's __file__
+    parts = resource.split('/')
+    parts.insert(0, os.path.dirname(mod.__file__))
+    return os.path.join(*parts)

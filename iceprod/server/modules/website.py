@@ -41,6 +41,7 @@ import tornado.web
 import tornado.httpserver
 import tornado.gen
 
+from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
 from iceprod.server.nginx import Nginx
 from iceprod.server.file_io import AsyncFileIO
@@ -105,6 +106,14 @@ class website(module.module):
                 except:
                     pass
         
+        # get package data
+        static_path = get_pkgdata_filename('iceprod.server','data/www')
+        if static_path is None:
+            raise Exception('bad static path')
+        template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
+        if template_path is None:
+            raise Exception('bad template path')
+        
         # configure nginx
         kwargs = {'request_timeout': self.cfg['webserver']['proxy_request_timeout'],
                   'download_dir': self.cfg['webserver']['proxycache_dir'],
@@ -119,8 +128,7 @@ class website(module.module):
             kwargs['cacert'] = self.cfg['system']['ssl_cacert']
         kwargs['port'] = self.cfg['webserver']['port']
         kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
-        kwargs['static_dir'] = self.cfg['webserver']['static_dir']
-        kwargs['upload_dir'] = self.cfg['webserver']['tmp_upload_dir']
+        kwargs['static_dir'] = static_path
         
         # start nginx
         try:
@@ -156,10 +164,6 @@ class website(module.module):
         lib_args['prefix'] = '/lib/'
         lib_args['directory'] = os.path.expanduser(os.path.expandvars(
                 self.cfg['webserver']['lib_dir']))
-        static_path = os.path.expanduser(os.path.expandvars(
-                self.cfg['webserver']['static_dir']))
-        template_path = os.path.expanduser(os.path.expandvars(
-                self.cfg['webserver']['template_dir']))
         self.application = tornado.web.Application([
             (r"/jsonrpc", JSONRPCHandler, handler_args),
             (r"/lib/.*", LibHandler, lib_args),
@@ -395,6 +399,11 @@ class MainHandler(tornado.web.RequestHandler):
         self.messaging = messaging
         self.fileio = fileio
     
+    @tornado.concurrent.return_future
+    def db_call(self,func_name,**kwargs):
+        """Turn a DB messaging call into a `Futures` object"""
+        getattr(self.messaging.db,func_name)(**kwargs)
+    
     def render_handle(self,*args,**kwargs):
         """Handle renderer exceptions properly"""
         try:
@@ -403,106 +412,80 @@ class MainHandler(tornado.web.RequestHandler):
             logger.error('render error',exc_info=True)
             self.send_error(message='render error')
     
-    @tornado.web.asynchronous
+    @tornado.gen.coroutine
     def get(self):
         # get correct template
         url = self.request.uri[1:]
         url_parts = [x for x in url.split('/') if x]
-        if url.startswith('submit'):
-            self.messaging.db.new_passkey(callback=self.display_submit)
+        if not url:
+            status = yield self.db_call('get_datasets_by_status')
+            if isinstance(status,Exception):
+                raise status
+            self.render_handle('main.html',status=status)
+        elif url.startswith('submit'):
+            passkey = yield self.db_call('new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+            gridspec = yield self.db_call('get_gridspec')
+            if isinstance(gridspec,Exception):
+                raise gridspec
+            self.render_handle('submit.html',passkey=passkey,gridspec=gridspec)
         elif url.startswith('dataset'):
             status = self.get_argument('status',default=None)
             if len(url_parts) > 1:
                 dataset_id = url_parts[1]
-                cb = partial(self.dataset_detail,dataset_id=dataset_id)
-                self.messaging.db.get_datasets_details(dataset_id=dataset_id,callback=cb)
+                ret = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
+                if isinstance(ret,Exception):
+                    raise ret
+                if ret:
+                    dataset = ret.values()[0]
+                else:
+                    dataset = None
+                tasks = yield self.db_call('get_tasks_by_status',dataset_id=dataset_id)
+                if isinstance(tasks,Exception):
+                    raise tasks
+                self.render_handle('dataset_detail.html',dataset_id=dataset_id,
+                                   dataset=dataset,tasks=tasks)
             elif status:
-                self.messaging.db.get_datasets_details(status=status,callback=self.dataset_browse)
+                dataset = yield self.db_call('get_datasets_details',status=status)
+                if isinstance(dataset,Exception):
+                    raise dataset
+                self.render_handle('dataset_browse.html',dataset=dataset)
             else:
-                self.messaging.db.get_datasets_by_status(callback=self.display_dataset_status)
+                status = yield self.db_call('get_datasets_by_status')
+                if isinstance(status,Exception):
+                    raise status
+                self.render_handle('main.html',status=status)
         elif url.startswith('task'):
             dataset_id = self.get_argument('dataset_id',default=None)
             status = self.get_argument('status',default=None)
             if len(url_parts) > 1:
                 task_id = url_parts[1]
-                cb = partial(self.task_detail,task_id=task_id)
-                self.messaging.db.get_tasks_details(task_id=task_id,dataset_id=dataset_id,
-                                     callback=cb)
+                ret = yield self.db_call('get_tasks_details',task_id=task_id,
+                                         dataset_id=dataset_id)
+                if isinstance(ret,Exception):
+                    raise ret
+                if ret:
+                    task_details = ret.values()[0]
+                else:
+                    task_details = None
+                logs = yield self.db_call('get_logs',task_id=task_id,lines=20) #TODO: make lines adjustable
+                if isinstance(logs,Exception):
+                    raise logs
+                self.render_handle('task_detail.html',task=task_details,logs=logs)
             elif status:
-                self.messaging.db.get_tasks_details(status=status,dataset_id=dataset_id,
-                                     callback=self.task_browse)
+                tasks = yield self.db_call('get_tasks_details',status=status,
+                                           dataset_id=dataset_id)
+                if isinstance(tasks,Exception):
+                    raise tasks
+                self.render_handle('task_browse.html',tasks=tasks)
             else:
-                self.messaging.db.get_tasks_by_status(dataset_id=dataset_id,
-                                       callback=self.display_task_status)
+                status = yield self.db_call('get_tasks_by_status',dataset_id=dataset_id)
+                if isinstance(status,Exception):
+                    raise status
+                self.render_handle('tasks.html',status=status)
         else:
-            self.messaging.db.get_datasets_by_status(callback=self.display_dataset_status)
-    def display_dataset_status(self,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_datasets_by_status: %r',ret)
-            self.send_error(message='self.messaging.db.get_datasets_by_status error') #DEBUG
-        else:
-            self.render_handle('main.html',status=ret)
-    def display_task_status(self,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_tasks_by_status: %r',ret)
-            self.send_error(message='self.messaging.db.get_tasks_by_status error') #DEBUG
-        else:
-            self.render_handle('tasks.html',status=ret)
-    def display_submit(self,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.new_passkey: %r',ret)
-            self.send_error(message='self.messaging.db.new_passkey error') #DEBUG
-        else:
-            cb = partial(self.display_submit2,passkey=ret)
-            self.messaging.db.get_gridspec(callback=cb)
-    def display_submit2(self,ret,passkey=None):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_gridspec: %r',ret)
-            self.send_error(message='self.messaging.db.get_gridspec error') #DEBUG
-        else:
-            self.render_handle('submit.html',passkey=passkey,gridspec=ret)
-    def dataset_detail(self,ret,dataset_id=''):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_datasets_details: %r',ret)
-            self.send_error(message='self.messaging.db.get_datasets_details error') #DEBUG
-        else:
-            if ret:
-                ret = ret.values()[0]
-            cb = partial(self.dataset_detail2,dataset_id=dataset_id,dataset=ret)
-            self.messaging.db.get_tasks_by_status(dataset_id=dataset_id,callback=cb)
-    def dataset_detail2(self,ret,dataset_id='',dataset={}):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_tasks_by_status: %r',ret)
-            self.send_error(message='self.messaging.db.get_tasks_by_status error') #DEBUG
-        else:
-            self.render_handle('dataset_detail.html',dataset_id=dataset_id,dataset=dataset,tasks=ret)
-    def dataset_browse(self,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_datasets_details: %r',ret)
-            self.send_error(message='self.messaging.db.get_datasets_details error') #DEBUG
-        else:
-            self.render_handle('dataset_browse.html',dataset=ret)
-    def task_detail(self,ret,task_id=None):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_tasks_details: %r',ret)
-            self.send_error(message='self.messaging.db.get_tasks_details error') #DEBUG
-        else:
-            if ret:
-                ret = ret.values()[0]
-            cb = partial(self.task_detail2,ret)
-            self.messaging.db.get_logs(task_id=task_id,lines=20,callback=cb) #TODO: make lines adjustable
-    def task_detail2(self,task_details,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_logs: %r',ret)
-            self.send_error(message='self.messaging.db.get_logs error') #DEBUG
-        else:
-            self.render_handle('task_detail.html',task=task_details,logs=ret)
-    def task_browse(self,ret):
-        if isinstance(ret,Exception):
-            logging.error('error in self.messaging.db.get_tasks_details: %r',ret)
-            self.send_error(message='self.messaging.db.get_tasks_details error') #DEBUG
-        else:
-            self.render_handle('task_browse.html',tasks=ret)
+            self.set_status(404)
     
     def write_error(self,status_code=500,**kwargs):
         self.set_status(status_code)

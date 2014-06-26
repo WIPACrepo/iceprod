@@ -120,10 +120,6 @@ class modules_website_test(unittest.TestCase):
         self.cfg = {'webserver':{'tornado_port':random.randint(10000,32000),
                                  'port':random.randint(10000,32000),
                                  'numcpus':1,
-                                 'tmp_upload_dir':os.path.join(self.test_dir,'tmpupload'),
-                                 'upload_dir':os.path.join(self.test_dir,'upload'),
-                                 'static_dir':os.path.join(self.test_dir,'static'),
-                                 'template_dir':os.path.join(self.test_dir,'template'),
                                  'lib_dir':os.path.join(self.test_dir,'lib'),
                                  'proxycache_dir':os.path.join(self.test_dir,'proxy'),
                                  'proxy_request_timeout':10,
@@ -317,9 +313,6 @@ class modules_website_test(unittest.TestCase):
             url = 'localhost'
             web = website(url)
             web.messaging = _messaging()
-            web.messaging.ret = {'db':{'authorize_task':True,
-                                       'echo':'e',
-                                       'rpc_test':'testing'}}
             web.cfg = self.cfg
             web._start()
             
@@ -382,6 +375,173 @@ class modules_website_test(unittest.TestCase):
             raise
         else:
             printer('Test modules.website LibHandler')
+    
+    def test_30_MainHandler(self):
+        """Test MainHandler"""
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(website).should_receive('start').replace_with(start)
+            start.called = False
+            
+            gridspec = 'thegrid'
+            passkey = 'key'
+            datasets = {'d1':1,'d2':2}
+            dataset_details = {'a':1,'b':2}
+            tasks = {'task_1':3,'task_2':4}
+            task_details = {'waiting':{'c':1,'d':2}}
+            tasks_status = {'waiting':10,'queued':30}
+            
+            url = 'localhost'
+            web = website(url)
+            web.messaging = _messaging()
+            web.messaging.ret = {'db':{'new_passkey':passkey,
+                                       'get_gridspec':gridspec,
+                                       'get_datasets_details':dataset_details,
+                                       'get_tasks_by_status':tasks,
+                                       'get_datasets_by_status':datasets,
+                                       'get_tasks_details':task_details,
+                                       'get_tasks_by_status':tasks_status,
+                                }}
+            web.cfg = self.cfg
+            web._start()
+            
+            # actual start
+            ioloop = tornado.ioloop.IOLoop.instance()
+            t = threading.Thread(target=ioloop.start)
+            t.start()
+            
+            
+            pycurl_handle = util.PycURL()
+            try:
+                
+                address = 'localhost:%d/'%(
+                          self.cfg['webserver']['port'])
+                logger.info('try connecting directly to tornado at %s',address)
+                
+                ssl_opts = {}
+                outfile = os.path.join(self.test_dir,
+                                       str(random.randint(0,10000)))
+                
+                # main site
+                pycurl_handle.fetch(address,outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('main: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in datasets):
+                    raise Exception('main: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # submit
+                pycurl_handle.fetch(address+'submit',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('submit: file not fetched')
+                data = open(outfile).read()
+                if gridspec not in data:
+                    raise Exception('submit: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # dataset
+                pycurl_handle.fetch(address+'dataset',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('dataset: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in datasets):
+                    raise Exception('dataset: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # dataset by status
+                dataset_browse = {'waiting':{'d1':1,'d2':2}}
+                web.messaging.ret['db']['get_datasets_details'] = dataset_browse
+                pycurl_handle.fetch(address+'dataset?status=waiting',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('dataset by status: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in dataset_browse['waiting']):
+                    raise Exception('dataset by status: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # dataset by dataset_id
+                dataset_details = {'waiting':{'d1':1,'d2':2}}
+                web.messaging.ret['db']['get_datasets_details'] = dataset_details
+                pycurl_handle.fetch(address+'dataset/1234',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('dataset by id: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in dataset_details['waiting']):
+                    raise Exception('dataset by id: fetched file data incorrect')
+                if any(k not in data for k in tasks_status):
+                    logger.info(data)
+                    raise Exception('dataset by id: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # task
+                pycurl_handle.fetch(address+'task',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('task: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in tasks_status):
+                    raise Exception('task: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # task by status
+                task_browse = {'waiting':{'d1':1,'d2':2}}
+                web.messaging.ret['db']['get_tasks_details'] = task_browse
+                pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('task by status: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in task_browse['waiting']):
+                    logger.info(data)
+                    raise Exception('task by status: fetched file data incorrect')
+                os.unlink(outfile)
+                
+                # task by task_id
+                task_details = {'waiting':{'d1':1,'d2':2}}
+                logs = {'err':'this is a log','out':'output'}
+                web.messaging.ret['db']['get_tasks_details'] = task_details
+                web.messaging.ret['db']['get_logs'] = logs
+                pycurl_handle.fetch(address+'task/1234',outfile,**ssl_opts)
+                if not os.path.exists(outfile):
+                    raise Exception('task by id: file not fetched')
+                data = open(outfile).read()
+                if any(k not in data for k in task_details['waiting']):
+                    logger.info(data)
+                    raise Exception('task by id: fetched task_details')
+                if any(logs[k] not in data for k in logs):
+                    raise Exception('task by id: no log in file data')
+                os.unlink(outfile)
+                
+                # test for bad page
+                try:
+                    pycurl_handle.fetch(address+'bad_page',outfile,**ssl_opts)
+                except:
+                    pass
+                else:
+                    raise Exception('did not raise exception when testing bad page')
+                
+                # test internal error
+                task_browse = None
+                web.messaging.ret['db']['get_tasks_details'] = task_browse
+                try:
+                    pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
+                except:
+                    pass
+                else:
+                    raise Exception('did not raise exception when testing internal error')
+                
+                time.sleep(0.1)
+                
+            finally:
+                ioloop.stop()
+            
+        except Exception as e:
+            logger.error('Error running modules.website MainHandler test - %s',str(e))
+            printer('Test modules.website MainHandler',False)
+            raise
+        else:
+            printer('Test modules.website MainHandler')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
