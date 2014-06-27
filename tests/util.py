@@ -47,3 +47,52 @@ def listmodules(package_name=''):
             tmp = os.path.splitext(module)[0] 
             ret.append(package_name+'.'+tmp)
     return ret
+
+
+class _messaging(object):
+    """
+    A fake :class:`iceprod.server.RPCinternal.Service` object.
+    Designed to replace module.messaging.
+    """
+    def __init__(self):
+        self.called = []
+        self.args = []
+        self.ret = None
+    def start(self):
+        pass
+    def stop(self):
+        pass
+    def kill(self):
+        pass
+    def __request(self, service, method, args, kwargs):
+        self.called.append([service,method,args,kwargs])
+        logging.info(self.called[-1])
+        if 'callback' in kwargs:
+            if self.ret and service in self.ret and method in self.ret[service]:
+                kwargs['callback'](self.ret[service][method])
+            else:
+                kwargs['callback']()
+        elif 'async' in kwargs and kwargs['async'] is False:
+            if self.ret and service in self.ret and method in self.ret[service]:
+                return self.ret[service][method]
+    def __getattr__(self,name):
+        class _Method:
+            def __init__(self,send,service,name):
+                self.__send = send
+                self.__service = service
+                self.__name = name
+            def __getattr__(self,name):
+                return _Method(self.__send,self.__service,
+                               "%s.%s"%(self.__name,name))
+            def __call__(self,*args,**kwargs):
+                return self.__send(self.__service,self.__name,args,kwargs)
+        class _Service:
+            def __init__(self,send,service):
+                self.__send = send
+                self.__service = service
+            def __getattr__(self,name):
+                return _Method(self.__send,self.__service,name)
+            def __call__(self,**kwargs):
+                raise Exception('Service %s, method name not specified'%(
+                                self.__service))
+        return _Service(self.__request,name)

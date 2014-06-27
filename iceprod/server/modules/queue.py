@@ -15,14 +15,16 @@ import iceprod.core.functions
 class StopException(Exception):
     pass
 
+logger = logging.getLogger('modules_queue')
+
 class queue(module.module):
     """
     Run the queue module, which queues jobs onto the local grid system(s).
     """
     
-    def __init__(self,cfg):
+    def __init__(self,*args,**kwargs):
         # run default init
-        super(queue,self).__init__(cfg)
+        super(queue,self).__init__(*args,**kwargs)
         
         # set up local variables
         self.queue_stop = Event()
@@ -90,23 +92,23 @@ class queue(module.module):
         time.sleep(5)
         
         # get site_id
-        site_id = self.messaging.config.site_id(async=False)
+        site_id = self.cfg['site_id']
         
         # some setup
         plugins = []
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
         plugin_cfg = [self.cfg['queue'][x] for x in plugin_names]
         plugin_types = [x['type'] for x in plugin_cfg]
-        module.logger.info('queueing plugins in cfg: %r',{x:y for x,y in izip(plugin_names,plugin_types)})
+        logger.info('queueing plugins in cfg: %r',{x:y for x,y in izip(plugin_names,plugin_types)})
         if not plugin_names:
-            module.logger.debug('%r',self.cfg['queue'])
-            module.logger.warn('no queueing plugins found. deactivating queue')
+            logger.debug('%r',self.cfg['queue'])
+            logger.warn('no queueing plugins found. deactivating queue')
             self.stop()
             return
         
         # try to find plugins
         raw_types = iceprod.server.listmodules('iceprod.server.plugins')
-        module.logger.info('available modules: %r',raw_types)
+        logger.info('available modules: %r',raw_types)
         plugins_tmp = []
         for i,t in enumerate(plugin_types):
             t = t.lower()
@@ -115,43 +117,43 @@ class queue(module.module):
                 r_name = r.rsplit('.',1)[1].lower()
                 if r_name == t:
                     # exact match
-                    module.logger.debug('exact plugin match - %s',r)
+                    logger.debug('exact plugin match - %s',r)
                     p = r
                     break
                 elif t.startswith(r_name):
                     # partial match
                     if p is None:
-                        module.logger.debug('partial plugin match - %s',r)
+                        logger.debug('partial plugin match - %s',r)
                         p = r
                     else:
                         name2 = p.rsplit('.',1)[1]
                         if len(r_name) > len(name2):
-                            module.logger.debug('better plugin match - %s',r)
+                            logger.debug('better plugin match - %s',r)
                             p = r
             if p is not None:
                 plugins_tmp.append((p,plugin_names[i],plugin_cfg[i]))
             else:
-                module.logger.error('Cannot find plugin for grid %s of type %s',plugin_names[i],t)
+                logger.error('Cannot find plugin for grid %s of type %s',plugin_names[i],t)
         
         # instantiate all plugins that are required
         gridspec_types = {}
         for p,p_name,p_cfg in plugins_tmp:
-            module.logger.warn('queueing plugin found: %s = %s',p_name,p_cfg['type'])
+            logger.warn('queueing plugin found: %s = %s',p_name,p_cfg['type'])
             # try instantiating the plugin
             args = (site_id+'.'+p_name, p_cfg, self.cfg,
-                    self.check_run, self.db)
+                    self.check_run, self.messaging.db)
             try:
                 plugins.append(iceprod.server.run_module(p,args))
             except Exception as e:
-                module.logger.error('Error importing plugin',exc_info=True)
+                logger.error('Error importing plugin',exc_info=True)
             else:
                 gridspec_types[site_id+'.'+p_name] = [p_cfg['type'],p_cfg['description']]
         
         # add gridspec and types to the db
         try:
-            self.db.set_site_queues(site_id,gridspec_types,async=False)
+            self.messaging.db.set_site_queues(site_id,gridspec_types,async=False)
         except:
-            module.logger.warn('error setting site queues',exc_info=True)
+            logger.warn('error setting site queues',exc_info=True)
         
         # the queueing loop
         # give 10 second initial delay to let the rest of iceprod start
@@ -164,7 +166,7 @@ class queue(module.module):
                         try:
                             p.check_and_clean()
                         except Exception as e:
-                            module.logger.error('plugin %s.check_and_clean() raised exception',
+                            logger.error('plugin %s.check_and_clean() raised exception',
                                                 p.__class__.__name__,exc_info=True)
                 
                 with self.check_run():
@@ -177,7 +179,7 @@ class queue(module.module):
                     try:
                         self.buffer_jobs_tasks(gridspecs)
                     except Exception as e:
-                        module.logger.error('error buffering jobs and tasks',
+                        logger.error('error buffering jobs and tasks',
                                             exc_info=True)
                 
                 # queue tasks to grids
@@ -186,7 +188,7 @@ class queue(module.module):
                         try:
                             p.queue()
                         except Exception as e:
-                            module.logger.error('plugin %s.queue() raised exception',
+                            logger.error('plugin %s.queue() raised exception',
                                                 p.__class__.__name__,exc_info=True)
                 
                 with self.check_run():
@@ -201,7 +203,7 @@ class queue(module.module):
         except StopException:
             pass
         except Exception as e:
-            module.logger.warn('queue_loop stopped because of exception',
+            logger.warn('queue_loop stopped because of exception',
                                exc_info=True)
     
     def check_proxy(self):
@@ -214,6 +216,6 @@ class queue(module.module):
         buffer = self.cfg['queue']['task_buffer']
         if buffer <= 0:
             buffer = 200
-        ret = self.db.buffer_jobs_tasks(gridspecs,buffer,async=False)
+        ret = self.messaging.db.buffer_jobs_tasks(gridspecs,buffer,async=False)
         if isinstance(ret,Exception):
             raise ret

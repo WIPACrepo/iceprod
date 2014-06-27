@@ -2,8 +2,6 @@
   Interface for configuring and submitting jobs on a computing cluster. 
   Do not use this class directly. Instead use one of the implementations
   that inherit from this class.
-  
-  copyright (c) 2012 the icecube collaboration
 """
 
 import os
@@ -14,7 +12,9 @@ import logging
 from io import BytesIO
 from datetime import datetime,timedelta
 
-from iceprod.core import dataclasses,functions,xml
+from iceprod.core import dataclasses
+from iceprod.core import functions
+from iceprod.core import serialization
 from iceprod.server import GlobalID
 from iceprod.server import module
 
@@ -31,7 +31,7 @@ class grid(object):
     GRID_STATES = ('queued','processing','completed','error','unknown')
     
     def __init__(self,args):
-        if not isinstance(args,(list,tuple)) or len(args) < 4:
+        if not isinstance(args,(list,tuple)) or len(args) < 5:
             raise Exception('Bad args - not enough of them')
         self.gridspec = args[0]
         (self.grid_id,self.name) = self.gridspec.split('.')
@@ -40,19 +40,7 @@ class grid(object):
         self.check_run = args[3]
         if not callable(self.check_run):
             raise Exception('Bad args - check_run (args[3]) is not a function')
-        if len(args) >= 5:
-            self.db = args[4]
-        else:
-            # link to database
-            if self.cfg['db']['ssl']:
-                ssl_opts = {
-                    'keyfile':self.cfg['system']['ssl_key'],
-                    'certfile':self.cfg['system']['ssl_cert'],
-                    'ca_certs':self.cfg['system']['ssl_cacert'],
-                }
-                self.db = module.get_db_handle(self.cfg['db']['address'],ssl_opts)
-            else:
-                self.db = module.get_db_handle(self.cfg['db']['address'])
+        self.db = args[4]
         
         self.submit_dir = os.path.expanduser(os.path.expandvars(
                 self.cfg['queue']['submit_dir']))
@@ -458,31 +446,25 @@ class grid(object):
             logger.error('error getting task cfg for task_id %r',
                          task['task_id'])
             raise ret
-        config = xml.loadXML(BytesIO(ret.encode('utf-8')),False)
+        config = serialization.serialize_json.loads(ret)
         
         # add server options
-        config.options['task_id'] = dataclasses.Parameter('task_id',
-                                                          task['task_id'])
-        config.options['task'] = dataclasses.Parameter('task',task['name'])
-        config.options['stillrunninginterval'] = dataclasses.Parameter(
-            'stillrunninginterval',self.queue_cfg['ping_interval'])
-        config.options['debug'] = dataclasses.Parameter('debug',task['debug'],
-                                                        'bool')
-        config.options['upload'] = dataclasses.Parameter('upload','logging')
+        config['options']['task_id'] = task['task_id']
+        config['options']['task'] = task['name']
+        config['options']['stillrunninginterval'] = self.queue_cfg['ping_interval']
+        config['options']['debug'] = task['debug']
+        config['options']['upload'] = 'logging'
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
             and self.cfg['download']['http_username']):
-            config.options['http_username'] = dataclasses.Parameter(
-                'http_username',self.cfg['download']['http_username'])
+            config['options']['http_username'] = self.cfg['download']['http_username']
         if ('download' in self.cfg and 'http_password' in self.cfg['download']
             and self.cfg['download']['http_password']):
-            config.options['http_password'] = dataclasses.Parameter(
-                'http_password',self.cfg['download']['http_password'])
+            config['options']['http_password'] = self.cfg['download']['http_password']
         if self.x509:
-            config.options['x509'] = dataclasses.Parameter('x509',self.x509)
+            config['options']['x509'] = self.x509
         
         # write to file
-        with open(filename,'w') as f:
-            f.write(xml.toXMLstring(config))
+        serialization.serialize_json.dump(config,filename)
         
         return config
     

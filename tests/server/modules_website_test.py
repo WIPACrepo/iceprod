@@ -4,7 +4,7 @@ Test script for the website module.
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import printer, glob_tests
+from tests.util import printer, glob_tests, _messaging
 
 import logging
 logger = logging.getLogger('modules_website_test')
@@ -37,49 +37,6 @@ try:
 except ImportError:
     openssl = None
 
-
-class _messaging(object):
-    def __init__(self):
-        self.called = False
-        self.args = []
-        self.ret = None
-    def start(self):
-        pass
-    def stop(self):
-        pass
-    def kill(self):
-        pass
-    def __request(self, service, method, args, kwargs):
-        self.called = [service,method,args,kwargs]
-        logger.info(self.called)
-        if 'callback' in kwargs:
-            if self.ret and service in self.ret and method in self.ret[service]:
-                kwargs['callback'](self.ret[service][method])
-            else:
-                kwargs['callback']()
-        elif 'async' in kwargs and kwargs['async'] is False:
-            return ret
-    def __getattr__(self,name):
-        class _Method:
-            def __init__(self,send,service,name):
-                self.__send = send
-                self.__service = service
-                self.__name = name
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,
-                               "%s.%s"%(self.__name,name))
-            def __call__(self,*args,**kwargs):
-                return self.__send(self.__service,self.__name,args,kwargs)
-        class _Service:
-            def __init__(self,send,service):
-                self.__send = send
-                self.__service = service
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,name)
-            def __call__(self,**kwargs):
-                raise Exception('Service %s, method name not specified'%(
-                                self.__service))
-        return _Service(self.__request,name)
 
 class _Nginx(object):
     def __init__(self,*args,**kwargs):
