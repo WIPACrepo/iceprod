@@ -125,7 +125,7 @@ class modules_website_test(unittest.TestCase):
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return website object')
-            if start.called != True:
+            if start.called is not True:
                 raise Exception('init did not call start')
             
             new_cfg = {'new':1}

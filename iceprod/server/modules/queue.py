@@ -1,5 +1,6 @@
 """
-queue module
+The queue module is responsible for interacting with the local batch or
+queueing system, putting tasks on the queue and removing them as necessary.
 """
 
 import time
@@ -36,15 +37,8 @@ class queue(module.module):
     
     def start(self):
         """Start thread if not already running"""
-        if self.queue_thread is None or not self.queue_thread.is_alive():
-            # start queueing thread
-            self.queue_stop.clear()
-            self.thread_running = 0
-            self.queue_thread = Thread(target=self.queue_loop)
-            self.queue_thread.start()
-        
         # start messaging
-        super(queue,self).start()
+        super(queue,self).start(callback=self._start)
     
     def stop(self):
         """Stop queue loop"""
@@ -70,6 +64,14 @@ class queue(module.module):
         # stop messaging
         super(queue,self).kill()
     
+    def _start(self):
+        if self.queue_thread is None or not self.queue_thread.is_alive():
+            # start queueing thread
+            self.queue_stop.clear()
+            self.thread_running = 0
+            self.queue_thread = Thread(target=self.queue_loop)
+            self.queue_thread.start()
+    
     @contextmanager
     def check_run(self):
         """A context manager which keeps track of # of running threads"""
@@ -88,9 +90,6 @@ class queue(module.module):
     
     def queue_loop(self):
         """Run the queueing loop"""
-        # wait for messaging to start
-        time.sleep(5)
-        
         # get site_id
         site_id = self.cfg['site_id']
         
@@ -158,6 +157,8 @@ class queue(module.module):
         # the queueing loop
         # give 10 second initial delay to let the rest of iceprod start
         timeout = 10
+        if 'queue' in self.cfg and 'init_queue_interval' in self.cfg['queue']:
+            timeout = self.cfg['queue']['init_queue_interval']
         try:
             while not self.queue_stop.wait(timeout):
                 # check and clean grids
@@ -165,31 +166,34 @@ class queue(module.module):
                     with self.check_run():
                         try:
                             p.check_and_clean()
-                        except Exception as e:
+                        except Exception:
                             logger.error('plugin %s.check_and_clean() raised exception',
-                                                p.__class__.__name__,exc_info=True)
+                                         p.__class__.__name__,exc_info=True)
                 
                 with self.check_run():
                     # check proxy cert
-                    self.check_proxy()
+                    try:
+                        self.check_proxy()
+                    except Exception:
+                        logger.error('error checking proxy',exc_info=True)
                 
                 with self.check_run():
                     # make sure active datasets have jobs and tasks defined
                     gridspecs = [p.gridspec for p in plugins]
                     try:
                         self.buffer_jobs_tasks(gridspecs)
-                    except Exception as e:
+                    except Exception:
                         logger.error('error buffering jobs and tasks',
-                                            exc_info=True)
+                                     exc_info=True)
                 
                 # queue tasks to grids
                 for p in plugins:
                     with self.check_run():
                         try:
                             p.queue()
-                        except Exception as e:
+                        except Exception:
                             logger.error('plugin %s.queue() raised exception',
-                                                p.__class__.__name__,exc_info=True)
+                                         p.__class__.__name__,exc_info=True)
                 
                 with self.check_run():
                     # do global queueing
@@ -201,7 +205,7 @@ class queue(module.module):
                 if timeout <= 0:
                     timeout = 300
         except StopException:
-            pass
+            logger.info('queue_loop stopped normally')
         except Exception as e:
             logger.warn('queue_loop stopped because of exception',
                                exc_info=True)
