@@ -27,7 +27,7 @@ if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['tornado>=3.0', 'jsonrpclib', 'pyzmq']
     extras_require = {
-        'utils': ['setproctitle', 'pycurl', 'lxml'],
+        'utils': ['setproctitle', 'pycurl', 'openssl', 'pyasn1'],
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']
     }

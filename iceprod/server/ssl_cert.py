@@ -1,7 +1,5 @@
 """
-  openssl functions
-
-  copyright (c) 2012 the icecube collaboration  
+Functions relating to OpenSSL certificates.
 """
 
 import os
@@ -17,7 +15,7 @@ from pyasn1.codec.der import encoder
 
 from iceprod.core import functions
 
-logger = logging.getLogger('openssl')
+logger = logging.getLogger('ssl_cert')
 
 
 def create_ca(cert_filename,key_filename,days=365,hostname=None):

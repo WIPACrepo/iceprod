@@ -1,23 +1,12 @@
 """
-  Test script for module
-
-  copyright (c) 2013 the icecube collaboration
+Test script for module
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests, _messaging
+
 import logging
-try:
-    from server_tester import printer, glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig()
 logger = logging.getLogger('module_test')
 
 import os
@@ -28,6 +17,7 @@ from datetime import datetime,timedelta
 from contextlib import contextmanager
 from functools import partial
 import shutil
+import tempfile
 import subprocess
 import signal
 import threading
@@ -47,112 +37,55 @@ from flexmock import flexmock
 
 from iceprod.server import module
 import iceprod.core.logger
-try:
-    import iceprod.procname
-except ImportError:
-    pass
 
 class module_test(unittest.TestCase):
     def setUp(self):
         super(module_test,self).setUp()
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         
-        self.test_dir = os.path.join(os.getcwd(),'test')
-        os.mkdir(self.test_dir)
-        
+        def sig(*args):
+            sig.args = args
+        flexmock(signal).should_receive('signal').replace_with(sig)
+        def basicConfig(*args,**kwargs):
+            pass
+        flexmock(logging).should_receive('basicConfig').replace_with(basicConfig)
+        def setLogger(*args,**kwargs):
+            pass
+        flexmock(iceprod.core.logger).should_receive('setlogger').replace_with(setLogger)
+        def removestdout(*args,**kwargs):
+            pass
+        flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
     
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(module_test,self).tearDown()
     
     
-    def test_01_module(self):
-        """Test module"""
+    def test_01_init(self):
+        """Test init"""
         try:
-            def sig(*args):
-                sig.args = args
-            flexmock(signal).should_receive('signal').replace_with(sig)
-            def basicConfig(*args,**kwargs):
-                pass
-            flexmock(logging).should_receive('basicConfig').replace_with(basicConfig)
-            def setLogger(*args,**kwargs):
-                pass
-            flexmock(iceprod.core.logger).should_receive('setlogger').replace_with(setLogger)
-            def removestdout(*args,**kwargs):
-                pass
-            flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
-            def setprocname(*args,**kwargs):
-                pass
-            try:
-                flexmock(iceprod.procname).should_receive('setprocname').replace_with(setprocname)
-            except:
-                pass
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(module.module).should_receive('start').replace_with(start)
+            start.called = False
             
-            def test_mod(args):
-                test_mod.called = True
-                test_mod.args = args
-                cfg,queue,pipe,pqueue = args
-                while True:
-                    ret = queue.get()
-                    if ret == 'pipe':
-                        test_mod.obj = pipe.recv()
-                        continue
-                    elif ret == 'stop':
-                        break
-                    test_mod.ret = ret
-                    pqueue.put(ret)
+            url = 'localhost'
+            q = module.module(url)
+            if not q:
+                raise Exception('did not return module object')
             
-            cfg = {'logging':{'iceprod_server.module':'m'}}
-            queue = multiprocessing.Queue()
-            mypipe,pipe = multiprocessing.Pipe()
-            pqueue = multiprocessing.Queue()
-            args = [cfg,queue,pipe,pqueue]
-            m = module.module(args)
+            q.start()
+            if start.called is not True:
+                raise Exception('init did not call start')
             
-            if (m.cfg != cfg or m.queue != queue or m.pipe != pipe or
-                m.pqueue != pqueue):
-                raise Exception('args is wrong')
-            
-            t = threading.Thread(target=test_mod,args=(args,))
-            t.daemon = True
-            t.start()
-            
-            queue.put('test')
-            time.sleep(0.1)
-            tmp = pqueue.get(False)
-            if tmp != 'test':
-                raise Exception('put_message fails')
-            
-            m.put_message('module',module='mod')
-            time.sleep(0.1)
-            tmp = pqueue.get(False)
-            if tmp != 'mod|module':
-                raise Exception('put_message module fails')
-            
-            queue.put('stop')
-            time.sleep(0.1)
-            
-            try:
-                m.handle_message('test')
-            except Exception:
-                pass
-            else:
-                raise Exception('handle_message did not raise Exception')
-            
-            t = threading.Thread(target=m.message_handling_loop)
-            t.daemon = True
-            t.start()
-            
-            newcfg = {'test2':2}
-            mypipe.send(newcfg)
-            queue.put('newcfg')
-            time.sleep(0.1)
-            if m.cfg != newcfg:
-                raise Exception('message_handling newcfg fails')
-            
-            queue.put('stop')
-            time.sleep(0.1)
-            if t.is_alive():
-                raise Exception('message_handling stop fails')
+            q.messaging = _messaging()
+            new_cfg = {'new':1}
+            q.messaging.BROADCAST.reload(cfg=new_cfg)
+            if not q.messaging.called:
+                raise Exception('init did not call messaging')
+            if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
+                raise Exception('init did not call correct message')
             
         except Exception as e:
             logger.error('Error running module test - %s',str(e))
@@ -161,6 +94,188 @@ class module_test(unittest.TestCase):
         else:
             printer('Test module')
 
+    def test_02_stop(self):
+        """Test stop"""
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(module.module).should_receive('start').replace_with(start)
+            
+            url = 'localhost'
+            q = module.module(url)
+            q.messaging = _messaging()
+            if not q:
+                raise Exception('did not return module object')
+            
+            q.start()
+            
+            try:
+                q.stop()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('module stop and exception raised')
+            if q.messaging._local_called != ['stop']:
+                raise Exception('module did not call stop')
+            
+        except Exception as e:
+            logger.error('Error running module stop test - %s',str(e))
+            printer('Test module stop',False)
+            raise
+        else:
+            printer('Test module stop')
+
+    def test_03_kill(self):
+        """Test kill"""
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(module.module).should_receive('start').replace_with(start)
+            
+            url = 'localhost'
+            q = module.module(url)
+            q.messaging = _messaging()
+            if not q:
+                raise Exception('did not return module object')
+            
+            q.start()
+            
+            try:
+                q.kill()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('module kill and exception raised')
+            if q.messaging._local_called != ['stop']:
+                raise Exception('module did not call kill')
+            
+        except Exception as e:
+            logger.error('Error running module kill test - %s',str(e))
+            printer('Test module kill',False)
+            raise
+        else:
+            printer('Test module kill')
+
+    def test_10_service(self):
+        """Test service"""
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(module.module).should_receive('start').replace_with(start)
+            start.called = False
+            
+            def stop():
+                stop.called = True
+            flexmock(module.module).should_receive('stop').replace_with(stop)
+            stop.called = False
+            
+            def kill():
+                kill.called = True
+            flexmock(module.module).should_receive('kill').replace_with(kill)
+            kill.called = False
+            
+            url = 'localhost'
+            q = module.module(url)
+            q.messaging = _messaging()
+            if not q:
+                raise Exception('did not return module object')
+            
+            if not isinstance(q.service_class,module.Service):
+                raise Exception('Service class not in use')
+            
+            if q.service_class.mod != q:
+                raise Exception('service_class.mod != module')
+            
+            q.service_class.start()
+            if not start.called:
+                raise Exception('did not start module')
+            
+            q.service_class.stop()
+            if not stop.called:
+                raise Exception('did not stop module')
+            
+            q.service_class.kill()
+            if not kill.called:
+                raise Exception('did not kill module')
+            
+            start.called = False
+            stop.called = False
+            q.service_class.restart()
+            if not stop.called:
+                raise Exception('did not stop module on restart')
+            if not start.called:
+                raise Exception('did not start module on restart')
+            
+            start.called = False
+            stop.called = False
+            cfg = {'test':1}
+            q.service_class.reload(cfg)
+            if not stop.called:
+                raise Exception('did not stop module on reload')
+            if not start.called:
+                raise Exception('did not start module on reload')
+            if q.cfg != cfg:
+                raise Exception('did not set cfg on reload')
+            
+            # and now with callbacks
+            def cb():
+                cb.called = True
+            cb.called = False
+            start.called = False
+            q.service_class.start(callback=cb)
+            if not start.called:
+                raise Exception('did not start module')
+            if not cb.called:
+                raise Exception('start did not call callback')
+            
+            cb.called = False
+            stop.called = False
+            q.service_class.stop(callback=cb)
+            if not stop.called:
+                raise Exception('did not stop module')
+            if not cb.called:
+                raise Exception('stop did not call callback')
+            
+            cb.called = False
+            kill.called = False
+            q.service_class.kill(callback=cb)
+            if not kill.called:
+                raise Exception('did not kill module')
+            if not cb.called:
+                raise Exception('kill did not call callback')
+            
+            cb.called = False
+            start.called = False
+            stop.called = False
+            q.service_class.restart(callback=cb)
+            if not stop.called:
+                raise Exception('did not stop module on restart')
+            if not start.called:
+                raise Exception('did not start module on restart')
+            if not cb.called:
+                raise Exception('restart did not call callback')
+            
+            cb.called = False
+            start.called = False
+            stop.called = False
+            cfg = {'test':1}
+            q.service_class.reload(cfg,callback=cb)
+            if not stop.called:
+                raise Exception('did not stop module on reload')
+            if not start.called:
+                raise Exception('did not start module on reload')
+            if not cb.called:
+                raise Exception('reload did not call callback')
+            if q.cfg != cfg:
+                raise Exception('did not set cfg on reload')
+            
+        except Exception as e:
+            logger.error('Error running module Service test - %s',str(e))
+            printer('Test module Service',False)
+            raise
+        else:
+            printer('Test module Service')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

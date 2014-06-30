@@ -70,7 +70,6 @@ class queue_test(unittest.TestCase):
         shutil.rmtree(self.test_dir)
         super(queue_test,self).tearDown()
     
-    
     def _listmodules(self,package_name=''):
         self.listmodules_called = True
         if package_name and package_name in self.listmodules_ret:
@@ -87,27 +86,6 @@ class queue_test(unittest.TestCase):
         else:
             self.run_module_exception = True
             raise Exception('could not run module')
-    
-    class _db(object):
-        def __init__(self):
-            self.called = False
-            self.func_name = []
-            self.args = []
-            self.ret = {}
-        def run(self):
-            pass
-        def stop(self):
-            pass
-        def __getattr__(self,name):
-            def fun(*args,**kwargs):
-                self.args.append((args,kwargs))
-                if name in self.ret:
-                    return self.ret[name]
-                else:
-                    raise Exception('db error')
-            self.called = True
-            self.func_name.append(name)
-            return fun
     
     def test_01_init(self):
         """Test init"""

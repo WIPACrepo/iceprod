@@ -40,12 +40,31 @@ def deleteoldlogs(filename,days=30):
         if datetime.now()-filedate > timedelta(days=days):
             os.remove(file)
 
+def find_nginx():
+    """Locate nginx, if possible."""
+    try:
+        return subprocess.check_output(['which','nginx'])
+    except Exception:
+        # not on PATH, so search some likely places
+        for p in ('/usr/sbin','/usr/local/sbin','/sbin'):
+            pp = os.path.join(p,'nginx')
+            if os.path.isfile(pp):
+                return pp
+    raise Exception('Cannot find nginx. Is it installed?')
+
 class Nginx(object):
     """Wrapper around the Nginx webserver."""
     def __init__(self, *args, **kwargs):
         """Set up Nginx"""
         # make sure nginx exists
-        subprocess.check_call(['which','nginx'])
+        nginx_path = find_nginx()
+        
+        if 'prefix' in kwargs:
+            prefix = os.path.abspath(os.path.expandvars(kwargs.pop('prefix')))
+        elif 'I3PROD' in os.environ:
+            prefix = os.path.abspath(os.path.expandvars('$I3PROD'))
+        else:
+            prefix = os.getcwd()
         
         # defaults
         self._cfg = {
@@ -53,17 +72,17 @@ class Nginx(object):
             'password': None,
             'sslcert': None,
             'sslkey': None,
-            'cacert': os.path.expandvars('$I3PREFIX/etc/cacerts.crt'),
+            'cacert': os.path.join(prefix,'/etc/cacerts.crt'),
             'request_timeout': 10000,
-            'upload_dir': os.path.expandvars('$I3PROD/var/www_uploads'),
-            'static_dir': os.path.expandvars('$I3PROD/var/www'),
+            'static_dir': os.path.join(prefix,'var/www'),
             'port': 8080,
             'proxy_port':8081,
-            'pid_file': os.path.expandvars('$I3PROD/var/run/nginx.pid'),
-            'cfg_file': os.path.expandvars('$I3PROD/conf/nginx.conf'),
-            'access_log': os.path.expandvars('$I3PROD/var/log/nginx/access.log'),
-            'error_log': os.path.expandvars('$I3PROD/var/log/nginx/error.log'),
-            'nginx_bin': os.path.expandvars('$I3PREFIX/sbin/nginx'),
+            'pid_file': os.path.join(prefix,'var/run/nginx.pid'),
+            'cfg_file': os.path.join(prefix,'conf/nginx.conf'),
+            'access_log': os.path.join(prefix,'var/log/nginx/access.log'),
+            'error_log': os.path.join(prefix,'var/log/nginx/error.log'),
+            'nginx_bin': nginx_path,
+            'mimetypes_file':None,
         }
         self._cfg_types = {
             'username': 'str',
@@ -72,7 +91,6 @@ class Nginx(object):
             'sslkey': 'file',
             'cacert': 'file',
             'request_timeout': 'int',
-            'upload_dir': 'dir',
             'static_dir': 'dir',
             'port': 'int',
             'proxy_port': 'int',
@@ -81,6 +99,7 @@ class Nginx(object):
             'access_log': 'file',
             'error_log': 'file',
             'nginx_bin': 'file',
+            'mimetypes_file': 'file',
         }
         
         # setup cfg variables
@@ -92,10 +111,10 @@ class Nginx(object):
                 logger.warn('%s is not a valid arg',s)
                 continue
             t = self._cfg_types[s]
-            if t in ('str','file'):
+            if t in ('str','file','dir'):
                 if not isinstance(v,str):
                     raise Exception('%s is not a string'%(str(s)))
-                if t == 'file':
+                if t in ('file','dir'):
                     v = os.path.expanduser(os.path.expandvars(v))
                     if not ('_file' in s or '_log' in s):
                         try:
@@ -148,16 +167,18 @@ class Nginx(object):
             p('events {')
             p('  worker_connections 1024;')
             p('}')
+            p('error_log {} error;'.format(self._cfg['error_log']))
             # http options
             p('http {')
-            p('  include {};'.format(os.path.abspath(os.path.expandvars('$I3PROD/conf/mime.types'))))
+            if (self._cfg['mimetypes_file'] and 
+                os.path.exists(self._cfg['mimetypes_file'])):
+                p('  include {};'.format(self._cfg['mimetypes_file']))
             p('  default_type application/octet-stream;')
             p('  ignore_invalid_headers on;')
             p('  keepalive_timeout 300;')
             # logging
             p('  log_format main  \'$remote_addr $host $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"\';')
             p('  access_log {} main buffer=32k;'.format(self._cfg['access_log']))
-            p('  error_log {} error;'.format(self._cfg['error_log']))
             # gzip if possible
             p('  gzip on;')
             p('  gzip_vary on;')
@@ -198,41 +219,6 @@ class Nginx(object):
             p('    location / {')
             p('      proxy_pass http://localhost:{:d};'.format(self._cfg['proxy_port']))
             p('    }')
-            # upload proxy
-            p('    location /upload {')
-            if self.auth_basic is True:
-                p('      auth_basic "iceprod";')
-                p('      auth_basic_user_file {};'.format(self.authbasicfile))
-            p('      proxy_pass http://localhost:{:d};'.format(self._cfg['proxy_port']))
-            p('    }')
-            p('    location /uploadauth {')
-            p('      proxy_pass http://localhost:{:d};'.format(self._cfg['proxy_port']))
-            p('      proxy_pass_request_body off;')
-            p('      proxy_set_header Content-Length "";')
-            p('      proxy_set_header X-Original-URI $request_uri;')
-            p('      client_max_body_size 10g;')
-            p('    }')
-            p('    location @after_upload {')
-            p('      proxy_pass http://localhost:{:d};'.format(self._cfg['proxy_port']))
-            p('    }')
-            p('    location /upload/ {')
-            if self.auth_basic is True:
-                p('      auth_basic "iceprod";')
-                p('      auth_basic_user_file {};'.format(self.authbasicfile))
-            p('      auth_request /uploadauth;')
-            p('      keepalive_disable msie6 safari;')
-            p('      client_max_body_size 10g;')
-            p('      upload_pass @after_upload;')
-            p('      upload_buffer_size 1048576;') # set buffer to 1M
-            p('      upload_store {}/;'.format(self._cfg['upload_dir']))
-            p('      upload_store_access user:r;')
-            p('      upload_set_form_field name "$upload_file_name";')
-            p('      upload_set_form_field content_type "$upload_content_type";')
-            p('      upload_set_form_field path "$upload_tmp_path";')
-            p('      upload_cleanup 400 403 404 499 500-505;')
-            #if self.ssl is True:
-            #    p('      error_page 497   error.html;')
-            p('    }')
             p('  }')
             p('}')
         
@@ -257,7 +243,7 @@ class Nginx(object):
             self.process = None
             time.sleep(0.5)
         else:
-            raise Exception('Nginx not running')
+            logger.warn('Nginx not running')
     
     def kill(self):
         """Stop server"""
@@ -266,7 +252,7 @@ class Nginx(object):
             self.process.send_signal(signal.SIGTERM)
             self.process = None
         else:
-            raise Exception('Nginx not running')
+            logger.warn('Nginx not running')
 
     def logrotate(self):
         """Rotate log files"""

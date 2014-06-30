@@ -58,12 +58,13 @@ class _messaging(object):
         self.called = []
         self.args = []
         self.ret = None
+        self._local_called = []
     def start(self):
-        pass
+        self._local_called.append('start')
     def stop(self):
-        pass
+        self._local_called.append('stop')
     def kill(self):
-        pass
+        self._local_called.append('kill')
     def __request(self, service, method, args, kwargs):
         self.called.append([service,method,args,kwargs])
         logging.info(self.called[-1])
