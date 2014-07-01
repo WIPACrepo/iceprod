@@ -18,7 +18,7 @@ class ZmqProcess(object):
         self.context = None
         """The ZeroMQ :class:`~zmq.Context` instance."""
 
-        self.ioloop = io_loop
+        self.io_loop = io_loop
         """PyZMQ's event loop (:class:`~zmq.eventloop.ioloop.IOLoop`)."""
         
         self._restart = False
@@ -29,22 +29,22 @@ class ZmqProcess(object):
 
         """
         self.context = zmq.Context()
-        if not self.ioloop:
-            self.ioloop = ioloop.IOLoop.instance()
+        if not self.io_loop:
+            self.io_loop = ioloop.IOLoop.current()
 
     def run(self):
-        self.ioloop.start()
+        self.io_loop.start()
         while self._restart:
             self._restart = False
-            self.ioloop.start()
-        self.ioloop.close()
+            self.io_loop.start()
+        self.io_loop.close()
     
     def restart(self):
         self._restart = True
-        self.ioloop.stop()
+        self.io_loop.stop()
     
     def stop(self):
-        self.ioloop.stop()
+        self.io_loop.stop()
 
     def make_stream(self, sock_type, addr, bind, callback=None, subscribe=b''):
         """

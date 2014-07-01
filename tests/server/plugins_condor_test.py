@@ -1,24 +1,13 @@
 """
-  Test script for condor plugin
-
-  copyright (c) 2013 the icecube collaboration  
+Test script for condor plugin
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
 import logging
-try:
-    from server_tester import printer, glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig()
-logger = logging.getLogger('condor_test')
+logger = logging.getLogger('plugins_condor_test')
 
 import os
 import sys
@@ -43,11 +32,12 @@ except ImportError:
 from flexmock import flexmock
 
 import iceprod.server
-from iceprod.server.tests import grid
 from iceprod.server.plugins.condor import condor
 from iceprod.core import dataclasses
 
-class condor_test(grid.grid_test):
+from tests.server import grid_test
+
+class plugins_condor_test(grid_test.grid_test):
     
     def test_100_generate_submit_file(self):
         """Test generate_submit_file"""
@@ -58,18 +48,19 @@ class condor_test(grid.grid_test):
             gridspec = site+'.'+name
             submit_dir = os.path.join(self.test_dir,'submit_dir')
             os.mkdir(submit_dir)
-            cfg = {'queue':{'max_resets':5,
+            cfg = {'site_id':site,
+                   'queue':{'max_resets':5,
                             'submit_dir':submit_dir,
                             name:{'platform':None,
                                   'batchopts':{},
                                   'monitor_address':None,
                                   }},
                    'download':{'http_username':None,'http_password':None},
-                   
                    'db':{'address':None,'ssl':False}}
             
             # init
-            args = (gridspec,cfg['queue'][name],cfg,self._check_run,self.db)
+            args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                    getattr(self.messaging,'db'))
             g = condor(args)
             if not g:
                 raise Exception('init did not return grid object')
@@ -124,8 +115,8 @@ class condor_test(grid.grid_test):
             
             # add batch opt
             cfg = dataclasses.Job()
-            cfg.steering = dataclasses.Steering()
-            cfg.steering.batchsys['condor'] = {'+GPU_JOB':'true',
+            cfg['steering'] = dataclasses.Steering()
+            cfg['steering']['batchsys']['condor'] = {'+GPU_JOB':'true',
                     'Requirements':'Target.Has_GPU == True'}
             g.generate_submit_file(task,cfg=cfg)
             if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
@@ -147,8 +138,8 @@ class condor_test(grid.grid_test):
             
             # add batch opt
             cfg = dataclasses.Job()
-            cfg.tasks['1'] = dataclasses.Task()
-            cfg.tasks['1'].batchsys['condor'] = {'+GPU_JOB':'true',
+            cfg['tasks'].append(dataclasses.Task())
+            cfg['tasks'][0]['batchsys']['condor'] = {'+GPU_JOB':'true',
                     'Requirements':'Target.Has_GPU == True'}
             g.generate_submit_file(task,cfg=cfg)
             if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
@@ -196,18 +187,19 @@ class condor_test(grid.grid_test):
             gridspec = site+'.'+name
             submit_dir = os.path.join(self.test_dir,'submit_dir')
             os.mkdir(submit_dir)
-            cfg = {'queue':{'max_resets':5,
+            cfg = {'site_id':site,
+                   'queue':{'max_resets':5,
                             'submit_dir':submit_dir,
                             name:{'platform':None,
                                   'batchopts':{},
                                   'monitor_address':None,
                                   }},
                    'download':{'http_username':None,'http_password':None},
-                   
                    'db':{'address':None,'ssl':False}}
             
             # init
-            args = (gridspec,cfg['queue'][name],cfg,self._check_run,self.db)
+            args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                    getattr(self.messaging,'db'))
             g = condor(args)
             if not g:
                 raise Exception('init did not return grid object')
@@ -249,6 +241,6 @@ class condor_test(grid.grid_test):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(condor_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,condor_test))
+    alltests = glob_tests(loader.getTestCaseNames(plugins_condor_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,plugins_condor_test))
     return suite

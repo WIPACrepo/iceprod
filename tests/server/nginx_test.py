@@ -126,7 +126,7 @@ class nginx_test(unittest.TestCase):
         ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,hostname=hostname)
     
     def tearDown(self):
-        #shutil.rmtree(self.test_dir)
+        shutil.rmtree(self.test_dir)
         super(nginx_test,self).tearDown()
     
     def test_01_init(self):

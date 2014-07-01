@@ -1,7 +1,5 @@
 """
-  The Condor plugin.  Allows submission to Condor.
-  
-  copyright (c) 2013 the icecube collaboration
+The Condor plugin.  Allows submission to Condor.
 """
 from __future__ import print_function
 import os
@@ -13,7 +11,8 @@ from datetime import datetime,timedelta
 import subprocess
 from functools import partial
 
-from iceprod.core import dataclasses,functions,xml
+from iceprod.core import dataclasses
+from iceprod.core import functions
 from iceprod.server import GlobalID
 from iceprod.server import grid
 
@@ -50,42 +49,37 @@ class condor(grid.grid):
             else:
                 batch_opts[b] = self.queue_cfg['batchopts'][b]
         if cfg:
-            if cfg.steering:
-                for b in cfg.steering.batchsys:
+            if cfg['steering']:
+                for b in cfg['steering']['batchsys']:
                     if b.lower().startswith(self.__class__.__name__):
                         # these settings apply to this batchsys
-                        for bb in cfg.steering.batchsys[b]:
-                            value = cfg.steering.batchsys[b][bb]
-                            if isinstance(value,dataclasses.Parameter):
-                                value = value.value
+                        for bb in cfg['steering']['batchsys'][b]:
+                            value = cfg['steering']['batchsys'][b][bb]
                             if bb.lower() == 'requirements':
                                 requirements.append(value)
                             else:
                                 batch_opts[bb] = value
-            if 'task' in cfg.options:
-                t = cfg.options['task'].value
-                if t in cfg.tasks:
-                    alltasks = [cfg.tasks[t]]
+            if 'task' in cfg['options']:
+                t = cfg['options']['task']
+                if t in cfg['tasks']:
+                    alltasks = [cfg['tasks'][t]]
                 else:
                     alltasks = []
                     try:
-                        t = int(t)
-                        for i,tt in enumerate(cfg.tasks.values()):
-                            if t == i:
+                        for tt in cfg['tasks']:
+                            if t == tt['name']:
                                 alltasks.append(tt)
                     except:
                         logger.warn('error finding specified task to run for %r',
                                     task,exc_info=True)
             else:
-                alltasks = cfg.tasks.values()
+                alltasks = cfg['tasks']
             for t in alltasks:
-                for b in t.batchsys:
+                for b in t['batchsys']:
                     if b.lower().startswith(self.__class__.__name__):
                         # these settings apply to this batchsys
-                        for bb in t.batchsys[b]:
-                            value = t.batchsys[b][bb]
-                            if isinstance(value,dataclasses.Parameter):
-                                value = value.value
+                        for bb in t['batchsys'][b]:
+                            value = t['batchsys'][b][bb]
                             if bb.lower() == 'requirements':
                                 requirements.append(value)
                             else:

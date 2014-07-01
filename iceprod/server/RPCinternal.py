@@ -83,7 +83,7 @@ class MessageFactory():
         :param msg_type: the message type
         :param service_name: the service name, optional
         :param serialized: Is the data already serialized? optional,
-                defaults to True
+                defaults to False
         :returns: binary string
         """
         if not serialized:
@@ -106,8 +106,8 @@ class MessageFactory():
         
         header = cls.ctypes.create_string_buffer(header_size)
         cls.struct.pack_into(header_fmt[:-1],header,0,*args)
-        headerChk = cls.getChecksum(header[:cls.HEADERSIZE-4])
-        cls.struct.pack_into('!L',header,cls.HEADERSIZE-4,headerChk)
+        header_chk = cls.getChecksum(header[:header_size-4])
+        cls.struct.pack_into('!L',header,header_size-4,header_chk)
         return [header.raw,data]
     
     @classmethod
@@ -119,19 +119,19 @@ class MessageFactory():
         :returns: {sequence_number, body_length, body_checksum, message_type,
                    service_name}
         """
-        if not headerData or len(headerData) < cls.HEADERSIZE:
+        if not header or len(header) < cls.HEADERSIZE:
             raise Exception('header data size too small')
-        parts = cls.struct.unpack_from(cls.HEADERFMT[:-1], headerData)
+        parts = cls.struct.unpack_from(cls.HEADERFMT[:-1], header)
         id,ver,seq,body_len,body_chk,msg_type = parts
         if id != cls.ID_TAG or ver != cls.PROTOCOL_VERSION:
             raise Exception('invalid data or unsupported protocol version')
         
         service = None
         if msg_type == cls.MESSAGE_TYPE.SERVICE:
-            service_len = cls.struct.unpack_from('!B',headerData,
+            service_len = cls.struct.unpack_from('!B',header,
                                                  cls.HEADERSIZE-4)[0]
             header_size = cls.struct.calcsize(cls.HEADERFMT_SERVICE%service_len)
-            service = cls.struct.unpack_from('!%ds'%service_len,headerData,
+            service = cls.struct.unpack_from('!%ds'%service_len,header,
                                              cls.HEADERSIZE-3)[0]
         elif msg_type <= cls.MESSAGE_TYPE.RESPONSE:
             header_size = cls.HEADERSIZE
@@ -139,8 +139,8 @@ class MessageFactory():
             raise Exception('invalid message type')
         
         # check header checksum
-        headerChk = cls.struct.unpack_from('!L',headerData,header_size-4)[0]
-        expectedHChk = cls.getChecksum(headerData[:header_size-4])
+        headerChk = cls.struct.unpack_from('!L',header,header_size-4)[0]
+        expectedHChk = cls.getChecksum(header[:header_size-4])
         if headerChk != expectedHChk:
             raise Exception('header checksum mismatch: expected %s but got %s'%(expectedHChk,headerChk))
         return {'sequence_number':seq,
@@ -163,10 +163,8 @@ class MessageFactory():
             raise Exception('body data not given')
         if not header:
             raise Exception('header is empty')
-        if not header or len(header) != 5: # check header data validity
+        if len(header) != 5: # check header data validity
             raise Exception('invalid header data')
-        if not body:
-            raise Exception('bodyData missing')
         if len(body) < header['body_length']:
             raise Exception('body data size mismatch: expected %s but got %s'%(
                             header['body_length'],len(body)))
@@ -192,10 +190,12 @@ class Base(AsyncSendReceive):
         self.send_history_lock = RLock()
         self.recv_seq_history = OrderedDict()
         self.recv_seq_history_lock = RLock()
+        
+        super(Base,self).setup()
     
     def send(self, data, serialized=False, seq=None, timeout=60.0,
              client_id=None, type=MessageFactory.MESSAGE_TYPE.SERVICE,
-             callback=None):
+             service=None, callback=None):
         """
         Send a message.
         
@@ -205,6 +205,7 @@ class Base(AsyncSendReceive):
         :param timeout: The timeout for retrying, optional
         :param client_id: The client id to send to, optional
         :param type: The type of message to send, optional
+        :param service: The service name, optional
         :param callback: The callback function, optional
         """
         # check stream
@@ -234,6 +235,11 @@ class Base(AsyncSendReceive):
         elif type in (MessageFactory.MESSAGE_TYPE.SERVICE,
                       MessageFactory.MESSAGE_TYPE.SERVER,
                       MessageFactory.MESSAGE_TYPE.BROADCAST):
+            kwargs = {'serialized':serialized}
+            if type == MessageFactory.MESSAGE_TYPE.SERVICE:
+                if not service:
+                    raise Exception('need a service name')
+                kwargs['service_name'] = service
             # set timeout
             if not isinstance(timeout,(int,float)):
                 timeout = 60.0
@@ -251,8 +257,7 @@ class Base(AsyncSendReceive):
                     # hit history length, so kill FIFO message
                     old_request = self.send_history.popitem(last=False)
             # format data for sending
-            message.extend(MessageFactory.createMessage(data,seq,type,
-                                                        serialized=serialized))
+            message.extend(MessageFactory.createMessage(data,seq,type,**kwargs))
         
         # send message (make sure we're on the ioloop thread)
         self.io_loop.add_callback(partial(super(Base,self).send,message))
@@ -340,13 +345,22 @@ class Client(Base):
         # set some variables
         self.service_name = service_name
         self.service_callback = service_callback
+        if service_name and not service_callback:
+            raise Exception('service name, but no callback')
     
     def _register_service(self):
-        if self.service_name and self.service_callback:
+        if self.service_name:
             data = {'method':'register_service',
                     'params':{'service_name':self.service_name},
                    }
-            self.send(data,None,MessageFactory.MESSAGE_TYPE.SERVER)
+            def cb(ret=None):
+                if ret and isinstance(ret,Exception):
+                    logger.error('failed to register service name %s',
+                                 self.service_name, exc_info=True)
+                    # TODO: figure out what to do in this case
+            self.send(data,type=MessageFactory.MESSAGE_TYPE.SERVER,
+                      timeout=1.0,
+                      callback=cb)
     
     def start(self,*args,**kwargs):
         """Start the Client"""
@@ -355,15 +369,18 @@ class Client(Base):
     
     def stop(self):
         """Stop the Client"""
-        if self.service_name and self.service_callback:
+        if self.service_name:
             data = {'method':'unregister_service',
                     'params':{'service_name':self.service_name},
                    }
-            self.send(data,None,MessageFactory.MESSAGE_TYPE.SERVER,
+            def cb(*args,**kwargs):
+                logger.info('callback to stop()')
+                super(Client,self).stop()
+            self.send(data,type=MessageFactory.MESSAGE_TYPE.SERVER,
                       timeout=0.5,
-                      callback=super(Client,self).stop)
+                      callback=cb)
         else:
-            super(Client.self).stop()
+            super(Client,self).stop()
     
     def _get_response(self,frames):
         # decode message
@@ -382,7 +399,7 @@ class Client(Base):
                 if (not header['service_name'] or 
                     header['service_name'] != self.service_name):
                     cb({'error':'service name does not match'})
-                else:
+                elif self.service_callback:
                     self.service_callback(data,callback=cb)
                 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
@@ -423,10 +440,18 @@ class Client(Base):
                 logger.warn('invalid message type: %s',msg_type)
 
 class ThreadedClient(Thread,Client):
+    def __init__(self,**kwargs):
+        Thread.__init__(self)
+        Client.__init__(self,**kwargs)
+    
     def start(self,*args,**kwargs):
         """Start the Client"""
         self._register_service()
-        super(Client,self).start(*args,**kwargs)
+        Thread.start(self)
+    
+    def run(self,*args,**kwargs):
+        """Thread runner"""
+        Client.run(self)
 
 class Server(Base):
     """
