@@ -188,8 +188,8 @@ class Base(AsyncSendReceive):
         self.history_length = history_length
         self.send_history = OrderedDict()
         self.send_history_lock = RLock()
-        self.recv_seq_history = OrderedDict()
-        self.recv_seq_history_lock = RLock()
+        self.recv_history = OrderedDict()
+        self.recv_history_lock = RLock()
         
         super(Base,self).setup()
     
@@ -349,6 +349,7 @@ class Client(Base):
             raise Exception('service name, but no callback')
     
     def _register_service(self):
+        logger.info('_register_service: %r',self.service_name)
         if self.service_name:
             data = {'method':'register_service',
                     'params':{'service_name':self.service_name},
@@ -395,7 +396,7 @@ class Client(Base):
             if header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVICE:
                 # handle service request
                 cb = partial(self.send,seq=header['sequence_number'],
-                             msg_type=MessageFactory.MESSAGE_TYPE.RESPONSE)
+                             type=MessageFactory.MESSAGE_TYPE.RESPONSE)
                 if (not header['service_name'] or 
                     header['service_name'] != self.service_name):
                     cb({'error':'service name does not match'})
@@ -413,20 +414,20 @@ class Client(Base):
                 # response to one of our messages
                 try:
                     with self.send_history_lock:
-                        callback,tt = self.send_history.pop(seq)
+                        callback,tt = self.send_history.pop(header['sequence_number'])
                 except KeyError as e:
                     logger.warn('RESPONSE: sequence number not valid: %s',
-                                str(seq))
+                                str(header['sequence_number']))
                 except Exception as e:
                     # generic error
                     logger.warn('RESPONSE: unknown error. sequence number: %s',
                                 str(e))
                     self._handle_stream_error()
                 else:
-                    logger.debug('RESPONSE: got msg for seq: %d'%seq)
+                    logger.debug('RESPONSE: got msg for seq: %d'%header['sequence_number'])
                     try:
                         logger.debug('RESPONSE: removing timeout for seq %d',
-                                     seq)
+                                     header['sequence_number'])
                         self.io_loop.remove_timeout(tt)
                     except:
                         pass
@@ -490,10 +491,10 @@ class Server(Base):
                     pass
                 callback({'result':'success'})
             elif msg['method'] == 'service_list':
-                callback({'result':services.keys()})
+                callback({'result':self.services.keys()})
             elif msg['method'] == 'stop':
                 callback({'result':'success'})
-                time.sleep(1)
+                time.sleep(0.1)
                 self.stop()
             elif msg['method'] == 'kill':
                 callback({'result':'success'})
@@ -521,7 +522,7 @@ class Server(Base):
                 # forward to service
                 cb = partial(self.send,seq=header['sequence_number'],
                              client_id=client_id,
-                             msg_type=MessageFactory.MESSAGE_TYPE.RESPONSE)
+                             type=MessageFactory.MESSAGE_TYPE.RESPONSE)
                 try:
                     service_id = self.services[header['service_name']]
                 except KeyError:
@@ -529,28 +530,29 @@ class Server(Base):
                 else:
                     self.send(frames[2], serialized=True,
                               client_id=service_id, callback=cb,
-                              msg_type=MessageFactory.MESSAGE_TYPE.SERVICE)
+                              type=MessageFactory.MESSAGE_TYPE.SERVICE,
+                              service=header['service_name'])
                 
             elif (header['message_type'] == MessageFactory.MESSAGE_TYPE.RESPONSE
                   or header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
                 # response to one of our messages
                 try:
                     with self.send_history_lock:
-                        callback,tt = self.send_history.pop(seq)
+                        callback,tt = self.send_history.pop(header['sequence_number'])
                 except KeyError as e:
                     logger.warn('RESPONSE: sequence number not valid: %s',
-                                str(seq))
+                                str(header['sequence_number']))
                 except Exception as e:
                     # generic error
                     logger.warn('RESPONSE: unknown error. sequence number: %s',
                                 str(e))
                     self._handle_stream_error()
                 else:
-                    logger.debug('RESPONSE: got msg for seq: %d'%seq)
+                    logger.debug('RESPONSE: got msg for seq: %d'%header['sequence_number'])
                     
                     try:
                         logger.debug('RESPONSE: removing timeout for seq %d',
-                                     seq)
+                                     header['sequence_number'])
                         self.io_loop.remove_timeout(tt)
                     except:
                         pass
@@ -564,9 +566,10 @@ class Server(Base):
                 # broadcast to all registered services
                 for service_id in self.services.values():
                     self.send(frames[2], serialized=True, client_id=service_id,
-                              msg_type=MessageFactory.MESSAGE_TYPE.BROADCAST)
+                              type=MessageFactory.MESSAGE_TYPE.BROADCAST)
                 self.send({'result':'ack'},seq=header['sequence_number'],
-                          msg_type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
+                          client_id=client_id,
+                          type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
                 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVER:
                 # a message for us, so decode it
@@ -577,11 +580,11 @@ class Server(Base):
                 else:
                     cb = partial(self.send,seq=header['sequence_number'],
                                  client_id=client_id,
-                                 msg_type=MessageFactory.MESSAGE_TYPE.RESPONSE)
+                                 type=MessageFactory.MESSAGE_TYPE.RESPONSE)
                     self._server_handler(client_id,data,cb)
                 
             else:
-                logger.warn('invalid message type: %s',msg_type)
+                logger.warn('invalid message type: %s',header['message_type'])
 
 
 class RPCService():
@@ -669,13 +672,13 @@ class RPCService():
             # error unpacking data
             if callback:
                 callback({'error':'invalid message format'})
-            logger.warning('error unpacking data from message. %s',str(e))
+            logger.warning('error unpacking data from message',exc_info=True)
         else:
             # check method name for bad characters
             if methodname[0] == '_':
                 if callback:
                     callback({'error':'Cannot use RPC for private methods'})
-                logger.warning('cannot use RPC for private methods. %s',str(e))
+                logger.warning('cannot use RPC for private methods')
                 return
             
             # check for function
@@ -700,9 +703,9 @@ class RPCService():
                 logger.warning('error calling function specified',exc_info=True)
             else:
                 if ret is not None:
-                    callback({'result':data})
+                    callback({'result':ret})
     
-    def __response(self,data,callback=None):
+    def __response(self,data=None,callback=None):
         """Pack data into RPC format"""
         if isinstance(data,Exception):
             logger.warning('error calling function specified: %r',data)
@@ -715,7 +718,9 @@ class RPCService():
         """Parse response from server and send to callback"""
         logger.debug('__callback %r',data)
         if callback is not None:
-            if 'result' not in data:
+            if isinstance(data,Exception):
+                callback(data)
+            elif 'result' not in data:
                 logger.warning('data does not contain a result')
                 callback(Exception('data does not contain a result'))
             callback(data['result'])
@@ -731,17 +736,20 @@ class RPCService():
         try:
             callback = kwargs.pop('callback')
             callback = partial(self.__callback,callback)
+            logger.info('callback available')
         except:
             callback = None
+            logger.info('no callback')
         
         # check what type of request we're making
-        request_args = {timeout:self.timeout,
-                        callback:callback}
+        request_args = {'timeout':self.timeout,
+                        'callback':callback}
         if service == 'SERVER':
             request_args['type'] = MessageFactory.MESSAGE_TYPE.SERVER
         elif service == 'BROADCAST':
             request_args['type'] = MessageFactory.MESSAGE_TYPE.BROADCAST
         else:
+            request_args['type'] = MessageFactory.MESSAGE_TYPE.SERVICE
             request_args['service'] = service
         if callback is None:
             # test for async keyword
@@ -765,10 +773,16 @@ class RPCService():
                 # wait until just after timeout for request to finish
                 if not cb.event.wait(self.timeout+10):
                     raise Exception('request timed out')
+                if isinstance(cb.ret,Exception):
+                    raise cb.ret
                 return cb.ret
         
         # make async request to server
         self._cl.send({'method':methodname,'params':kwargs}, **request_args)
+        logger.info('sent method %s with params %r',methodname,kwargs)
+    
+    def __nonzero__(self):
+        return not not self._cl
     
     def __getattr__(self,name):
         class _Method:
