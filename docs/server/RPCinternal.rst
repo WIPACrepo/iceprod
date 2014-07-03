@@ -1,5 +1,5 @@
-.. index:: RPCInternal
-.. _RPCInternal:
+.. index:: RPCinternal
+.. _RPCinternal:
 
 RPC Internal
 ============

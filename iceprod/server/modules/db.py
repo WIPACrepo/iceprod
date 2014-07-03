@@ -1,7 +1,5 @@
 """
-  Database server module
-
-  copyright (c) 2013 the icecube collaboration
+Database server module
 """
 
 from threading import Thread, Event, Condition
@@ -13,46 +11,71 @@ from functools import partial
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable
 
-from iceprod.server.RPCinternal import RPCServer
 from iceprod.server.pool import PriorityThreadPool,SingleGrouping
 from iceprod.server import module
 from iceprod.server import dbmethods
 from iceprod.server import GlobalID
 
+logger = logging.getLogger('modules_db')
+
 class db(module.module):
     """
     Handle all interaction with the local database
     """
-    def __init__(self,args):
+    def __init__(self,*args,**kwargs):
         # run default init
-        super(db,self).__init__(args)
-        
+        super(db,self).__init__(*args,**kwargs)
+        self.service_class = DBService(self)
+        self.db = None
+        self.start(callback=self._start)
+    
+    def _start(self):
         t = self.cfg['db']['type']
         if t.lower() == 'mysql':
             self.db = MySQL(self.cfg)
         elif t.lower() == 'sqlite':
             self.db = SQLite(self.cfg)
         else:
-            module.logger.critical('Unknown database type: %s',t)
+            logger.critical('Unknown database type: %s',t)
             raise Exception('Unknown database type: %s'%t)
-        
-        # start message loop
-        self.message_handling_loop()
+        self.db.start()
 
-    def update_cfg(self,new_cfg):
-        self.db.update_cfg(new_cfg)
-
-    def handle_message(self,msg):
-        """Handle a non-default message"""
-        if msg == 'stop':
+    def stop(self):
+        if self.db:
             self.db.stop()
-        elif msg == 'kill':
-            self.db.stop(force=True)          
-        elif msg == 'start':
-            self.db.start()
-        elif msg == 'backup':
-            self.db.backup()
+        super(db,self).stop()
+    
+    def kill(self):
+        if self.db:
+            self.db.stop(force=True)
+        super(db,self).kill()
+    
+    def update_cfg(self,new_cfg):
+        self.cfg = new_cfg
+        if self.db:
+            self.db.update_cfg(new_cfg)
 
+class DBService(module.Service):
+    """
+    Override the basic :class:`Service` handler to provide a more
+    effecient reload method and a backup method. Other methods
+    that are not defined are assumed to be DB-specific and are routed
+    appropriately.
+    """
+    def reload(self,cfg,callback=None):
+        self.mod.update_cfg(cfg)
+        if callback:
+            callback()
+    def backup(self,callback=None):
+        if self.mod.db:
+            self.mod.db.backup()
+        if callback:
+            callback()
+    def __getattr__(self,name):
+        if self.mod.db and self.mod.db.dbmethods:
+            return getattr(self.mod.db.dbmethods,name)
+        else:
+            raise Exception('db is not running')
 
 class Text(str):
     """Define a text type for long strings up to 2^16 char"""
@@ -145,8 +168,8 @@ class DBAPI(object):
                                      ]),
               'config':OrderedDict([('config_id',str),
                                     ('dataset_id',str),
-                                    ('config_xml',MediumText), # xml
-                                    ('difplus_xml',MediumText), # xml
+                                    ('config_data',MediumText), # serialized
+                                    ('difplus_data',MediumText), # serialized
                                    ]),
               'data':OrderedDict([('data_id',str),
                                   ('task_id',str),
@@ -281,8 +304,6 @@ class DBAPI(object):
         
         # set up status variables
         self.backup_in_progress = False
-        self.rpc_stop = Event()
-        self.rpc_stop.clear()
         
         self._setup_tables()
         try:
@@ -298,13 +319,9 @@ class DBAPI(object):
         
         # set up RPCServer
         self.dbmethods = partial(dbmethods.DBMethods,self)
-        self.rpc_stop.clear()
-        self._start_rpc()
         
     def stop(self,force=False):
-        self.rpc_stop.set() # stop new rpc requests
         self._stop_db(force=force)
-        self._stop_rpc()
     
     def backup(self):
         if not self.backup_in_progress:
@@ -325,21 +342,8 @@ class DBAPI(object):
         if (self.cfg['db']['numthreads'] != newcfg['db']['numthreads']):
             # change in number of threads
             stop = 'dbpools'
-        if (self.cfg['db']['address'] != newcfg['db']['address']
-            or self.cfg['db']['ssl'] != newcfg['db']['ssl']
-            or self.cfg['system']['ssl_cert'] != newcfg['system']['ssl_cert']
-            or self.cfg['system']['ssl_key'] != newcfg['system']['ssl_key']
-            or self.cfg['system']['ssl_cacert'] != newcfg['system']['ssl_cacert']
-            or self.cfg['system']['ssl_ciphers'] != newcfg['system']['ssl_ciphers']):
-            # fundamental RPC change, need to restart RPC
-            stop = 'rpc'
         
-        if stop == 'rpc':
-            # full restart
-            self.stop()
-            self.cfg = self.newcfg
-            self.start()
-        elif stop == 'db':
+        if stop == 'db':
             # db pause and resume for read and write pool
             self.write_pool.pause()
             self.read_pool.pause()
@@ -442,15 +446,6 @@ class DBAPI(object):
         self.non_blocking_pool.add_task(func,*args,**kwargs)
     
     
-    ### Context Managers ###
-    
-    @contextmanager
-    def rpc_task(self):
-        if self.rpc_stop.is_set():
-            raise Exception('RPC shutdown')
-        yield
-    
-    
     ### Functions that can be overwritten in subclasses ###
     
     def _start_db(self):
@@ -473,29 +468,11 @@ class DBAPI(object):
         self.non_blocking_pool.disable_output_queue()
         self.non_blocking_pool.start()
     
-    def _start_rpc(self):
-        dbaddress   = self.cfg['db']['address'] # including port if needed
-        dbssl       = self.cfg['db']['ssl']
-        kwargs = {'address':dbaddress,'context':self.rpc_task}
-        if dbssl:
-            # setup ssl options
-            kwargs['ssl_options'] = {
-                'keyfile':self.cfg['system']['ssl_key'],
-                'certfile':self.cfg['system']['ssl_cert'],
-                'ca_certs':self.cfg['system']['ssl_cacert'],
-                'ciphers':self.cfg['system']['ssl_ciphers'],
-            }
-        self.rpc = RPCServer(self.dbmethods,**kwargs)
-        self.rpc.run()
-    
     def _stop_db(self,force=False):
         self.write_pool.finish(not force)
         self.read_pool.finish(not force)
         self.blocking_pool.finish(not force)
         self.non_blocking_pool.finish(not force)
-        
-    def _stop_rpc(self):
-        self.rpc.stop()
     
     
     ### Functions that must be overwritten in subclasses ###

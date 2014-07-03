@@ -1,7 +1,5 @@
 """
-  Database methods
-
-  copyright (c) 2012 the icecube collaboration
+Database methods
 """
 
 import os
@@ -16,7 +14,7 @@ import shutil
 from io import BytesIO
 
 import iceprod.core.functions
-from iceprod.core import xml
+from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
 logger = logging.getLogger('dbmethods')
@@ -668,8 +666,8 @@ class DBMethods():
         conn,archive_conn = self.db._dbsetup()
         now = datetime2str(datetime.utcnow())
         
-        # get dataset xml
-        sql = 'select dataset_id,config_xml from config where dataset_id in '
+        # get dataset config
+        sql = 'select dataset_id,config_data from config where dataset_id in '
         sql += '('+(','.join(['?' for _ in need_to_buffer]))+')'
         bindings = tuple(need_to_buffer)
         try:
@@ -681,8 +679,7 @@ class DBMethods():
             return
         for d,c in ret:
             try:
-                bytes = BytesIO(c.encode('utf-8'))
-                possible_datasets[d]['config'] = xml.loadXML(bytes,False)
+                possible_datasets[d]['config'] = serialization.serialize_json.loads(c)
             except:
                 logger.info('config for dataset %s not loaded',d,exc_info=True)
         
@@ -714,7 +711,7 @@ class DBMethods():
             task_names = []
             task_depends = []
             if 'config' in possible_datasets[dataset]:
-                tt = possible_datasets[dataset]['config'].tasks
+                tt = possible_datasets[dataset]['config']['tasks']
                 if len(tt) != tasks_per_job:
                     logger.warn('config tasks len != tasks_per_job for '
                                  'dataset %s. ignoring...',dataset)
@@ -722,11 +719,11 @@ class DBMethods():
                         task_names.append(str(t))
                         task_depends.append([])
                 else:
-                    task_names = [t.name for t in tt.values()]
+                    task_names = [t['name'] for t in tt]
                     try:
-                        for t in tt.values():
+                        for t in tt:
                             task_depends.append([task_names.index(d) 
-                                                 for d in t.depends])
+                                                 for d in t['depends']])
                     except ValueError:
                         logger.error('task dependency not in tasks for '
                                      'dataset %s. skipping dataset',dataset)
@@ -921,7 +918,7 @@ class DBMethods():
         """Get a cfg for a dataset"""
         if not dataset_id:
             raise Exception('bad datset_id')
-        sql = 'select config_id,config_xml from config where dataset_id = ?'
+        sql = 'select config_id,config_data from config where dataset_id = ?'
         bindings = (dataset_id,)
         cb = partial(self._get_cfg_for_dataset_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
@@ -933,12 +930,12 @@ class DBMethods():
         else:
             logger.debug('config for dataset: %r',ret)
             values = {}
-            for config_id,config_xml in ret:
+            for config_id,config_data in ret:
                 values = {'config_id':config_id,
-                          'config_xml':config_xml,
+                          'config_data':config_data,
                          }
-            if 'config_xml' in values:
-                callback(values['config_xml'])
+            if 'config_data' in values:
+                callback(values['config_data'])
             else:
                 callback(None)
     
@@ -1121,12 +1118,13 @@ class DBMethods():
             callback(ret)
             return
         elif ret and len(ret) == tasks_per_job:
+            logger.debug('tasks_per_job = %d, len(ret) = %d',tasks_per_job,len(ret))
             # require that all tasks for this job are in our db
             # means that distributed jobs can only complete at the master
             for t,s in ret:
                 task_statuses.add(s)
         job_status = None
-        if not task_statuses&{'waiting','queued','processing','resume','reset'}:
+        if task_statuses and not task_statuses&{'waiting','queued','processing','resume','reset'}:
             if not task_statuses-{'complete'}:
                 job_status = 'complete'
             elif not task_statuses-{'complete','failed'}:
@@ -1264,35 +1262,33 @@ class DBMethods():
             else:
                 callback(False)
     
-    def rpc_submit_dataset(self,xml,difplus='',description='',gridspec='',
+    def rpc_submit_dataset(self,data,difplus='',description='',gridspec='',
                            njobs=1,stat_keys=[],debug=False,
                            callback=None):
         """Submit a dataset"""
-        cb = partial(self._rpc_submit_dataset_blocking,xml,difplus,description,
+        cb = partial(self._rpc_submit_dataset_blocking,data,difplus,description,
                      gridspec,njobs,stat_keys,debug,
                      callback=callback)
         self.db.blocking_task(cb)
-    def _rpc_submit_dataset_blocking(self,config_xml,difplus,description,gridspec,
+    def _rpc_submit_dataset_blocking(self,config_data,difplus,description,gridspec,
                                      njobs,stat_keys,debug,
                                      callback=None):
         conn,archive_conn = self.db._dbsetup()
         dataset_id = self.db._increment_id_helper('dataset',conn)
         config_id = self.db._increment_id_helper('config',conn)
-        bytes = BytesIO(config_xml.encode('utf-8'))
-        config = xml.loadXML(bytes,False)
+        config = serialization.serialize_json.loads(config_data)
         try:
             njobs = int(njobs)
-            ntasks = len(config.tasks)*njobs
-            ntrays = sum([len(x.trays) for x in config.tasks.values()])
+            ntasks = len(config['tasks'])*njobs
+            ntrays = sum(len(x['trays']) for x in config['tasks'])
         except Exception as e:
-            logger.info('error reading ntasks and ntrays from submitting xml',
+            logger.info('error reading ntasks and ntrays from submitting config',
                         exc_info=True)
             callback(e)
             return
-        config_xml = xml.toXMLstring(config)
-        sql = 'insert into config (config_id,dataset_id,config_xml,difplus_xml)'
+        sql = 'insert into config (config_id,dataset_id,config_data,difplus_data)'
         sql += ' values (?,?,?,?)'
-        bindings = (config_id,dataset_id,config_xml,difplus)
+        bindings = (config_id,dataset_id,config_data,difplus)
         try:
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:

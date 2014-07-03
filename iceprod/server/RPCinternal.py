@@ -475,7 +475,7 @@ class Server(Base):
     
     def start(self):
         # start the server
-        logger.warning("starting RPCInternal.Server(%s)",self.address)
+        logger.warning("starting RPCinternal.Server(%s)",self.address)
         self.run()
     
     def _server_handler(self,client_id,msg,callback=None):

@@ -26,6 +26,7 @@ except ImportError:
 from flexmock import flexmock
 import tornado.ioloop
 
+import iceprod.core.logger
 from iceprod.core import functions
 from iceprod.core import util
 import iceprod.core.jsonRPCclient
@@ -132,15 +133,15 @@ class modules_website_test(unittest.TestCase):
             q.messaging.BROADCAST.reload(cfg=new_cfg)
             if not q.messaging.called:
                 raise Exception('init did not call messaging')
-            if q.messaging.called != ['BROADCAST','reload',(),{'cfg':new_cfg}]:
+            if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
                 raise Exception('init did not call correct message')
             
         except Exception as e:
-            logger.error('Error running website init test - %s',str(e))
-            printer('Test website init',False)
+            logger.error('Error running modules.website init test - %s',str(e))
+            printer('Test modules.website init',False)
             raise
         else:
-            printer('Test website init')
+            printer('Test modules.website init')
     
     def test_02_start_stop(self):
         """Test start_stop"""
@@ -250,11 +251,11 @@ class modules_website_test(unittest.TestCase):
                 ioloop.stop()
             
         except Exception as e:
-            logger.error('Error running website JSONRPCHandler test - %s',str(e))
-            printer('Test website JSONRPCHandler',False)
+            logger.error('Error running modules.website JSONRPCHandler test - %s',str(e))
+            printer('Test modules.website JSONRPCHandler',False)
             raise
         else:
-            printer('Test website JSONRPCHandler')
+            printer('Test modules.website JSONRPCHandler')
     
     def test_20_LibHandler(self):
         """Test LibHandler"""

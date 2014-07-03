@@ -1,5 +1,5 @@
-.. index:: RPCInternal_Details
-.. _RPCInternal_Details:
+.. index:: RPCinternal_Details
+.. _RPCinternal_Details:
 
 RPC Internal Details
 ====================
@@ -182,4 +182,4 @@ Class Documentation
 
 .. autoclass:: iceprod.server.RPCinternal.Base
 
-For other class documentation, see :ref:`RPCInternal`.
+For other class documentation, see :ref:`RPCinternal`.

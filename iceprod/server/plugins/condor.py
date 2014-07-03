@@ -1,5 +1,8 @@
 """
-The Condor plugin.  Allows submission to Condor.
+The Condor plugin.  Allows submission to 
+`HTCondor <http://research.cs.wisc.edu/htcondor/>`_.
+
+Note: Condor was renamed to HTCondor in 2012.
 """
 from __future__ import print_function
 import os

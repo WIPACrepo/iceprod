@@ -17,7 +17,7 @@ except ImportError:
     print('Could not import setproctitle module')
 import iceprod.core.logger
 
-from iceprod.server.RPCInternal import RPCService
+from iceprod.server.RPCinternal import RPCService
 
 def handler(signum, frame):
    logging.warn('Signal handler called with signal %s' % signum)

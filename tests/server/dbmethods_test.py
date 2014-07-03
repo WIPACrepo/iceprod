@@ -1,27 +1,17 @@
 """
-  Test script for dbmethods
-
-  copyright (c) 2013 the icecube collaboration
+Test script for dbmethods
 """
 
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from tests.util import printer, glob_tests
+
 import logging
-try:
-    from server_tester import printer, glob_tests
-except:
-    def printer(s,passed=True):
-        if passed:
-            s += ' passed'
-        else:
-            s += ' failed'
-        print(s)
-    def glob_tests(x):
-        return x
-    logging.basicConfig()
 logger = logging.getLogger('dbmethods_test')
 
 import os, sys, time
 import shutil
+import tempfile
 import random
 import stat
 import StringIO
@@ -68,9 +58,7 @@ class DB():
 class dbmethods_test(unittest.TestCase):
     def setUp(self):
         super(dbmethods_test,self).setUp()
-        
-        self.test_dir = os.path.join(os.getcwd(),'test')
-        os.mkdir(self.test_dir)
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         
         # get hostname
         hostname = functions.gethostname()
@@ -1841,15 +1829,20 @@ class dbmethods_test(unittest.TestCase):
                     ('name','0'),
                     ('task_status','queued'),
                    ])
-            config_xml = """<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE configuration PUBLIC "-//W3C//DTD XML 1.0 Strict//EN" "http://x2100.icecube.wisc.edu/dtd/iceprod.v3.dtd">
-<configuration xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='config.xsd' version='3.0' iceprod_version='2.0' parentid='0'>
-  <task name="task1">
-    <tray name="Corsika">
-      <module name="generate_corsika" class="generators.CorsikaIC" />
-    </tray>
-  </task>
-</configuration>
+            config_data = """
+{"version":3,
+ "parent_id":0,
+ "tasks":[
+    {"name":"task1",
+     "trays":[
+        {"name":"Corsika",
+         "modules":[
+            {"name":"generate_corsika",
+             "class":"generators.CorsikaIC"
+            }
+        ]}
+    ]}
+]}
 """
             
             # return values for first two callbacks
@@ -1871,7 +1864,7 @@ class dbmethods_test(unittest.TestCase):
             }
             # return values for blocking
             _db_read.task_ret = {
-                dataset['dataset_id']:[[dataset['dataset_id'],config_xml]]
+                dataset['dataset_id']:[[dataset['dataset_id'],config_data]]
             }
             increment_id.ret = {'job':'newjob',
                                 'task':'newtask',
@@ -1934,11 +1927,11 @@ class dbmethods_test(unittest.TestCase):
             # return values for blocking
             _db_read.task_ret = {
                 dataset['dataset_id']:
-                    [[dataset['dataset_id'],config_xml],
-                     [dataset['dataset_id']+'l',config_xml]],
+                    [[dataset['dataset_id'],config_data],
+                     [dataset['dataset_id']+'l',config_data]],
                 dataset['dataset_id']+'l':
-                    [[dataset['dataset_id'],config_xml],
-                     [dataset['dataset_id']+'l',config_xml]]
+                    [[dataset['dataset_id'],config_data],
+                     [dataset['dataset_id']+'l',config_data]]
             }
             increment_id.ret = {'job':'newjob',
                                 'task':'newtask',
@@ -1990,11 +1983,11 @@ class dbmethods_test(unittest.TestCase):
             # return values for blocking
             _db_read.task_ret = {
                 dataset['dataset_id']:
-                    [[dataset['dataset_id'],config_xml],
-                     [dataset['dataset_id']+'l',config_xml]],
+                    [[dataset['dataset_id'],config_data],
+                     [dataset['dataset_id']+'l',config_data]],
                 dataset['dataset_id']+'l':
-                    [[dataset['dataset_id'],config_xml],
-                     [dataset['dataset_id']+'l',config_xml]]
+                    [[dataset['dataset_id'],config_data],
+                     [dataset['dataset_id']+'l',config_data]]
             }
             increment_id.ret = {'job':'newjob',
                                 'task':'newtask',
@@ -2047,16 +2040,6 @@ class dbmethods_test(unittest.TestCase):
                     ('name','0'),
                     ('task_status','queued'),
                    ])
-            config_xml = """<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE configuration PUBLIC "-//W3C//DTD XML 1.0 Strict//EN" "http://x2100.icecube.wisc.edu/dtd/iceprod.v3.dtd">
-<configuration xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='config.xsd' version='3.0' iceprod_version='2.0' parentid='0'>
-  <task name="task1">
-    <tray name="Corsika">
-      <module name="generate_corsika" class="generators.CorsikaIC" />
-    </tray>
-  </task>
-</configuration>
-"""
             
             # return values for first two callbacks
             sql_read_task.task_ret = {
@@ -2077,7 +2060,7 @@ class dbmethods_test(unittest.TestCase):
             }
             # return values for blocking
             _db_read.task_ret = {
-                dataset['dataset_id']:[[dataset['dataset_id'],config_xml]]
+                dataset['dataset_id']:[[dataset['dataset_id'],config_data]]
             }
             increment_id.ret = {'job':'newjob',
                                 'task':'newtask',
@@ -2126,16 +2109,6 @@ class dbmethods_test(unittest.TestCase):
                     ('name','0'),
                     ('task_status','waiting'),
                    ])
-            config_xml = """<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE configuration PUBLIC "-//W3C//DTD XML 1.0 Strict//EN" "http://x2100.icecube.wisc.edu/dtd/iceprod.v3.dtd">
-<configuration xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='config.xsd' version='3.0' iceprod_version='2.0' parentid='0'>
-  <task name="task1">
-    <tray name="Corsika">
-      <module name="generate_corsika" class="generators.CorsikaIC" />
-    </tray>
-  </task>
-</configuration>
-"""
             
             # return values for first two callbacks
             sql_read_task.task_ret = {
@@ -2156,7 +2129,7 @@ class dbmethods_test(unittest.TestCase):
             }
             # return values for blocking
             _db_read.task_ret = {
-                dataset['dataset_id']:[[dataset['dataset_id'],config_xml]]
+                dataset['dataset_id']:[[dataset['dataset_id'],config_data]]
             }
             increment_id.ret = {'job':'newjob',
                                 'task':'newtask',
@@ -2572,7 +2545,7 @@ class dbmethods_test(unittest.TestCase):
             _db_write.sql = []
             _db_write.bindings = []
             _db_write.task_ret = {'processing':[]}
-            sql_read_task.task_ret = {search['dataset_id']:[['configid','somexml']]}
+            sql_read_task.task_ret = {search['dataset_id']:[['configid','somedata']]}
             
             self._db.rpc_new_task(gridspec=search['gridspec'],
                                   platform='platform',
@@ -2582,7 +2555,7 @@ class dbmethods_test(unittest.TestCase):
             
             if cb.called is False:
                 raise Exception('everything working: callback not called')
-            ret_should_be = 'somexml'
+            ret_should_be = 'somedata'
             if cb.ret != ret_should_be:
                 logger.error('cb.ret = %r',cb.ret)
                 logger.error('ret should be = %r',ret_should_be)
