@@ -53,14 +53,6 @@ Python libraries:
 
 * tornado
 
-* jsonrpclib
-
-* tornadorpc
-
-* lxml
-
-* configobj
-
 There are two types of database interface available:
 * sqlite:  depends on apsw: http://code.google.com/p/apsw/
 * mysql:   depends on mysqldb: https://pypi.python.org/pypi/MySQL-python
@@ -73,14 +65,11 @@ Other non-essential dependencies:
 * perl 5.10 + modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
               (a globus dependency)
 * globus      (for gridftp)
-* git         (for something?)
 
 Python non-essentials:
 * pyasn1      (for generating ssl certs)
 * pyopenssl   (for generating ssl certs)
 * setproctitle(for setting a process name)
-* pyuv        (for async file operations)
-* pyuv_tornado(for async file operations)
 * pygridftp   (for gridftp-python integration)
 * sphinx      (for generating documentation)
 * coverage    (for tests)
@@ -121,8 +110,7 @@ Install the main dependencies::
     brew install dsschult/iceprod/p7zip
     brew install nginx
     brew install apsw
-    brew install tornadorpc
-    pip install pycurl tornado jsonrpclib lxml configobj
+    pip install pycurl tornado
 
 Install optional dependencies::
 
@@ -138,9 +126,7 @@ Install optional dependencies::
     echo "export GLOBUS_LOCATION=~/.linuxbrew" >> ~/.bash_profile
     export GLOBUS_LOCATION=~/.linuxbrew
     brew install globus-ca-certs
-    brew install git
     brew install squid
-    pip install pyasn1 pyopenssl pyuv sphinx coverage flexmock
-    brew install pyuv_tornado
+    pip install pyasn1 pyopenssl sphinx coverage flexmock
     brew install python-gridftp
 

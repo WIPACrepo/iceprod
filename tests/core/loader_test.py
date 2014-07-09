@@ -115,20 +115,22 @@ class loader_test(unittest.TestCase):
                     f.write(line+'\n')
             
             # make test tarball
-            extras = os.path.join(self.test_dir,'extras')
-            os.mkdir(extras)
-            os.mkdir(os.path.join(extras,'bin'))
+            env = os.path.join(self.test_dir,'env')
+            os.mkdir(env)
+            os.mkdir(os.path.join(env,'bin'))
             for i in range(10):
-                with open(os.path.join(extras,str(i)),'w') as f:
+                with open(os.path.join(env,str(i)),'w') as f:
                     f.write(str(i))
-            subprocess.check_output('tar -zc -C '+self.test_dir+' -f '+extras+'.tar.gz extras',
+            subprocess.check_output('tar -zc -C '+self.test_dir+' -f '+env+'.tar.gz env',
                                     shell=True,stderr=subprocess.STDOUT)
             
             def down(url,input=''):
-                if 'extras' in url:
-                    return open(extras+'.tar.gz').read()
+                if 'env' in url:
+                    e = open(env+'.tar.gz','rb').read()
+                    logger.info('env: %r',e)
+                    return e
             
-            # make server to host extras tarball
+            # make server to host env tarball
             port = random.randint(16000,32000)
             http = server(port,down)
             
@@ -162,11 +164,33 @@ class loader_test(unittest.TestCase):
                 if proc.returncode:
                     logger.info(out)
                     raise Exception('main: error raised')
-                if 'i3exec.py' not in out:
+                if 'i3exec' not in out:
                     logger.info(out)
                     raise Exception('main: did not echo cmd')
                 
-                # test extras caching
+                # test cvmfs
+                cvmfs_dir = os.path.join(self.test_dir,'cvmfs')
+                os.mkdir(cvmfs_dir)
+                os.mkdir(os.path.join(cvmfs_dir,'standard'))
+                with open(os.path.join(cvmfs_dir,'standard/setup.sh'),'w') as f:
+                    f.write('#!/bin/sh\necho "export PYTHOPATH=$PWD/lib/python2.7/site-pacakges"\n')
+                
+                cmd = '/bin/sh %s -d localhost:%d -c %s'%(test_loader,port+1,cvmfs_dir)
+                proc = subprocess.Popen(cmd,shell=True,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+                out = proc.communicate()[0]
+                if proc.returncode:
+                    logger.info(out)
+                    raise Exception('main: error raised')
+                if 'CVMFS' not in out:
+                    logger.info(out)
+                    raise Exception('main: did not echo CVMFS')
+                if 'i3exec' not in out:
+                    logger.info(out)
+                    raise Exception('env cache: did not echo cmd')
+                
+                # test env caching
                 cmd = '/bin/sh %s -d localhost:%d'%(test_loader,port)
                 proc = subprocess.Popen(cmd,shell=True,
                                        stdout=subprocess.PIPE,
@@ -174,14 +198,14 @@ class loader_test(unittest.TestCase):
                 out = proc.communicate()[0]
                 if proc.returncode:
                     logger.info(out)
-                    raise Exception('extras cache: error raised')
-                if 'i3exec.py' not in out:
+                    raise Exception('env cache: error raised')
+                if 'i3exec' not in out:
                     logger.info(out)
-                    raise Exception('extras cache: did not echo cmd')
+                    raise Exception('env cache: did not echo cmd')
                 
                 # explicitly set platform
                 platform = 'test'
-                extras_name = 'extras.'+platform+'.tar.gz'
+                env_name = 'env.'+platform+'.tar.gz'
                 cmd = '/bin/sh %s -d localhost:%d -m %s'
                 cmd = cmd%(test_loader,port,platform)
                 proc = subprocess.Popen(cmd,shell=True,
@@ -191,30 +215,30 @@ class loader_test(unittest.TestCase):
                 if proc.returncode:
                     logger.info(out)
                     raise Exception('platform: error raised')
-                if 'i3exec.py' not in out:
+                if 'i3exec' not in out:
                     logger.info(out)
                     raise Exception('platform: did not echo cmd')
-                if not os.path.exists(extras_name):
+                if not os.path.exists(env_name):
                     logger.info(out)
                     raise Exception('platform: did not set correctly')
                 
-                # explicitly set extras filename
-                extras_name = 'extras.test.tar.gz'
+                # explicitly set env filename
+                env_name = 'env.test.tar.gz'
                 cmd = '/bin/sh %s -d localhost:%d -e %s'
-                cmd = cmd%(test_loader,port,extras_name)
+                cmd = cmd%(test_loader,port,env_name)
                 proc = subprocess.Popen(cmd,shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT)
                 out = proc.communicate()[0]
                 if proc.returncode:
                     logger.info(out)
-                    raise Exception('extras filename: error raised')
-                if 'i3exec.py' not in out:
+                    raise Exception('env filename: error raised')
+                if 'i3exec' not in out:
                     logger.info(out)
-                    raise Exception('extras filename: did not echo cmd')
-                if not os.path.exists(extras_name):
+                    raise Exception('env filename: did not echo cmd')
+                if not os.path.exists(env_name):
                     logger.info(out)
-                    raise Exception('extras filename: did not set correctly')
+                    raise Exception('env filename: did not set correctly')
                 
                 # test username,password
                 username = 'user'
@@ -228,7 +252,7 @@ class loader_test(unittest.TestCase):
                 if proc.returncode:
                     logger.info(out)
                     raise Exception('username,password: error raised')
-                if 'i3exec.py' not in out:
+                if 'i3exec' not in out:
                     logger.info(out)
                     raise Exception('username,password: did not echo cmd')
                 
@@ -243,7 +267,7 @@ class loader_test(unittest.TestCase):
                 if proc.returncode:
                     logger.info(out)
                     raise Exception('x509: error raised')
-                if 'i3exec.py' not in out:
+                if 'i3exec' not in out:
                     logger.info(out)
                     raise Exception('x509: did not echo cmd')
                 
@@ -269,7 +293,7 @@ class loader_test(unittest.TestCase):
                 if proc.returncode:
                     logger.info(out)
                     raise Exception('argument passthrough: error raised')
-                if 'i3exec.py' not in out:
+                if 'i3exec' not in out:
                     logger.info(out)
                     raise Exception('argument passthrough: did not echo cmd')
                 if arg not in out:
