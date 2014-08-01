@@ -72,7 +72,8 @@ class basic_config_test(unittest.TestCase):
                 cfg.schedule is not True or
                 cfg.website is not True or
                 cfg.config is not True or
-                cfg.messaging_url != os.path.join('ipc://',os.getcwd(),'unix_socket.sock')):
+                cfg.messaging_url != os.path.join('ipc://',os.getcwd(),'unix_socket.sock') or
+                cfg.logging != {'logfile':'iceprod.log'}):
                 raise Exception('failed default check')
             
         except Exception as e:
@@ -114,7 +115,7 @@ class basic_config_test(unittest.TestCase):
             
             # create incorrect file
             with open(filename,'w') as f:
-                f.write('[modules]\n  queue=testing\n')
+                f.write('[modules]\nqueue=testing\n')
             
             try:
                 cfg = iceprod.server.basic_config.BasicConfig()
@@ -141,7 +142,43 @@ class basic_config_test(unittest.TestCase):
             raise
         else:
             printer('Test basic_config.read_file')
+    
+    def test_04_logging(self):
+        """Test basic_config.BasicConfig logging options"""
+        try:
+            # create valid file
+            filename = os.path.join(self.test_dir,'test.cfg')
+            with open(filename,'w') as f:
+                f.write('[logging]\nlevel=info\nsize=1000000\nlogfile=test.log')
+            
+            try:
+                cfg = iceprod.server.basic_config.BasicConfig()
+                cfg.read_file(filename)
+            except Exception as e:
+                logger.error('read_file returned exception: %r',e,exc_info=True)
+                raise Exception('valid cfgfile returned exception')
+            if ('level' not in cfg.logging or cfg.logging['level'] != 'info' or
+                'size' not in cfg.logging or cfg.logging['size'] != 1000000 or
+                'logfile' not in cfg.logging or cfg.logging['logfile'] != 'test.log'):
+                raise Exception('valid cfgfile mistake')
+            
+            # create incorrect but ignored param
+            with open(filename,'w') as f:
+                f.write('[logging]\nother=testing\n')
+            
+            try:
+                cfg = iceprod.server.basic_config.BasicConfig()
+                cfg.read_file(filename)
+            except Exception:
+                logger.info('incorrect but ignored param',exc_info=True)
+                raise Exception('error parsing cfgfile')
 
+        except Exception as e:
+            logger.error('Error running basic_config.logging test - %s',str(e))
+            printer('Test basic_config.logging',False)
+            raise
+        else:
+            printer('Test basic_config.logging')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

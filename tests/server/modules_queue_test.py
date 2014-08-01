@@ -35,6 +35,7 @@ from flexmock import flexmock
 import iceprod.server
 import iceprod.core.logger
 from iceprod.server import module
+from iceprod.server import basic_config
 from iceprod.server.modules.queue import queue
 
 class queue_test(unittest.TestCase):
@@ -96,8 +97,9 @@ class queue_test(unittest.TestCase):
             flexmock(queue).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             if not q:
                 raise Exception('did not return queue object')
             if start.called is not True:
@@ -150,8 +152,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.cfg = cfg
             if not q:
@@ -222,8 +225,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.cfg = cfg
             if not q:
@@ -294,8 +298,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.cfg = cfg
             if not q:
@@ -361,8 +366,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
             q.cfg = cfg
@@ -437,8 +443,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1.dag','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
             q.cfg = cfg
@@ -526,8 +533,9 @@ class queue_test(unittest.TestCase):
                             'plugin1':{'type':'Test1dag','description':'d'},
                            }
                   }
-            url = 'localhost'
-            q = queue(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
             q.messaging = _messaging()
             q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
             q.cfg = cfg

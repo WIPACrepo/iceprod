@@ -29,6 +29,7 @@ from flexmock import flexmock
 import iceprod.server
 import iceprod.core.logger
 from iceprod.server import module
+from iceprod.server import basic_config
 from iceprod.server.modules.schedule import schedule
 
 
@@ -126,8 +127,9 @@ class modules_schedule_test(unittest.TestCase):
             flexmock(schedule).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = schedule(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = schedule(bcfg)
             if not q:
                 raise Exception('did not return schedule object')
             if start.called != True:
@@ -158,8 +160,9 @@ class modules_schedule_test(unittest.TestCase):
             flexmock(schedule).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = schedule(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = schedule(bcfg)
             q.messaging = _messaging()
             
             q.scheduler = _Schedule()
@@ -183,8 +186,9 @@ class modules_schedule_test(unittest.TestCase):
             flexmock(schedule).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = schedule(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = schedule(bcfg)
             q.messaging = _messaging()
             sch = _Schedule()
             q.scheduler = sch

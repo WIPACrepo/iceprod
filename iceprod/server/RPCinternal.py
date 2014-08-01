@@ -179,9 +179,10 @@ class Base(AsyncSendReceive):
     ZMQ messaging base.
     
     :param history_length: Amount of history to keep track of, optional
+    :param immediate_setup: Setup socket immediately
     :param address: Address to connect to
     """
-    def __init__(self,history_length=10000,**kwargs):
+    def __init__(self,history_length=10000,immediate_setup=True,**kwargs):
         super(Base,self).__init__(**kwargs)
         
         # set some variables
@@ -191,7 +192,8 @@ class Base(AsyncSendReceive):
         self.recv_history = OrderedDict()
         self.recv_history_lock = RLock()
         
-        super(Base,self).setup()
+        if immediate_setup:
+            super(Base,self).setup()
     
     def send(self, data, serialized=False, seq=None, timeout=60.0,
              client_id=None, type=MessageFactory.MESSAGE_TYPE.SERVICE,
@@ -335,6 +337,7 @@ class Client(Base):
         Function signature must be fn( data, callback=writer(msg) )
     
     :param address: Address to connect to
+    :param immediate_setup: Setup socket immediately, optional
     :param history_length: Amount of history to keep track of, optional
     """
     def __init__(self,service_name=None,service_callback=None,**kwargs):
@@ -383,6 +386,10 @@ class Client(Base):
         else:
             super(Client,self).stop()
     
+    def kill(self):
+        """Kill the Client, skipping the unregister step."""
+        super(Client,self).stop()
+    
     def _get_response(self,frames):
         # decode message
         try:
@@ -393,6 +400,7 @@ class Client(Base):
             # is this error unrecoverable? probably not
             #self._handle_stream_error()
         else:
+            logger.debug('got message %r, %r',header,data)
             if header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVICE:
                 # handle service request
                 cb = partial(self.send,seq=header['sequence_number'],
@@ -406,7 +414,7 @@ class Client(Base):
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
                 # handle broadcast request, send an ACK back
                 cb = partial(self.send,seq=header['sequence_number'],
-                             msg_type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
+                             type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
                 self.service_callback(data,callback=cb)
                 
             elif (header['message_type'] == MessageFactory.MESSAGE_TYPE.RESPONSE
@@ -463,6 +471,7 @@ class Server(Base):
     TODO: handle case of 2+ instances of same service
     
     :param history_length: Amount of history to keep track of
+    :param immediate_setup: Setup socket immediately, optional
     :param address: Address to bind to
     """
     def __init__(self,**kwargs):
@@ -503,6 +512,7 @@ class Server(Base):
             else:
                 callback({'error':'invalid method'})
         except KeyError:
+            logger.info('_server_handler bad message format',exc_info=True)
             callback({'error':'bad message format'})
         except Exception as e:
             logger.info('general _server_handler error',exc_info=True)
@@ -510,6 +520,9 @@ class Server(Base):
     
     def _get_response(self,frames):
         # decode message
+        if not frames:
+            logger.error('frames input is empty!')
+            return
         client_id = frames[0]
         try:
             header = MessageFactory.parseMessageHeader(frames[1])
@@ -518,6 +531,7 @@ class Server(Base):
             # is this error unrecoverable? probably not
             #self._handle_stream_error()
         else:
+            logger.debug('_get_response header %r',header)
             if header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVICE:
                 # forward to service
                 cb = partial(self.send,seq=header['sequence_number'],
@@ -526,8 +540,12 @@ class Server(Base):
                 try:
                     service_id = self.services[header['service_name']]
                 except KeyError:
+                    logger.info('SERVICE not registered %r',
+                                header['service_name'])
                     cb({'error':'service not registered'})
                 else:
+                    logger.info('SERVICE message from %r to %r',
+                                client_id,service_id)
                     self.send(frames[2], serialized=True,
                               client_id=service_id, callback=cb,
                               type=MessageFactory.MESSAGE_TYPE.SERVICE,
@@ -564,6 +582,7 @@ class Server(Base):
                 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
                 # broadcast to all registered services
+                logger.info('BROADCAST message from %r',client_id)
                 for service_id in self.services.values():
                     self.send(frames[2], serialized=True, client_id=service_id,
                               type=MessageFactory.MESSAGE_TYPE.BROADCAST)
@@ -573,6 +592,7 @@ class Server(Base):
                 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVER:
                 # a message for us, so decode it
+                logger.info('SERVER message from %r',client_id)
                 try:
                     data = MessageFactory.getMessage(frames[2], header)
                 except Exception as e:
@@ -628,10 +648,11 @@ class RPCService():
     :param service_class: The RPC service class, optional
     :param context: A context manager for service calls, optional
     :param history_length: Amount of history to keep track of, optional
+    :param immediate_setup: Setup socket immediately, optional
     """
     def __init__(self, address=None, block=True, timeout=60.0, io_loop=None,
                  service_name=None, service_class=None, context=None,
-                 history_length=None):
+                 history_length=None,immediate_setup=None):
         if address is None: # set default here in case we actually get a None address from the user
             address = os.path.join('ipc://',os.getcwd(),'unix_socket.sock')
         self.timeout = timeout
@@ -645,16 +666,24 @@ class RPCService():
             kwargs['service_callback'] = self.__service_handler
         if history_length:
             kwargs['history_length'] = history_length
+        if immediate_setup:
+            kwargs['immediate_setup'] = immediate_setup
         if block:
             self._cl = Client(**kwargs)
         else:
             self._cl = ThreadedClient(**kwargs)
+    
+    def setup(self):
+        self._cl.setup()
     
     def start(self):
         self._cl.start()
     
     def stop(self):
         self._cl.stop()
+    
+    def kill(self):
+        self._cl.kill()
 
     def __repr__(self):
         return ("<RPC Client to %s>" % (str(self._cl.address)))
@@ -742,7 +771,10 @@ class RPCService():
             logger.info('no callback')
         
         # check what type of request we're making
-        request_args = {'timeout':self.timeout,
+        timeout = self.timeout
+        if 'timeout' in kwargs:
+            timeout = kwargs.pop('timeout')
+        request_args = {'timeout':timeout,
                         'callback':callback}
         if service == 'SERVER':
             request_args['type'] = MessageFactory.MESSAGE_TYPE.SERVER
@@ -771,7 +803,7 @@ class RPCService():
                 self._cl.send({'method':methodname,'params':kwargs},
                               **request_args)
                 # wait until just after timeout for request to finish
-                if not cb.event.wait(self.timeout+10):
+                if not cb.event.wait(timeout+0.1 if timeout < 5 else timeout+1):
                     raise Exception('request timed out')
                 if isinstance(cb.ret,Exception):
                     raise cb.ret

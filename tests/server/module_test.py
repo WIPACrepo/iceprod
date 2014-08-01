@@ -36,6 +36,7 @@ except ImportError:
 from flexmock import flexmock
 
 from iceprod.server import module
+from iceprod.server import basic_config
 import iceprod.core.logger
 
 class module_test(unittest.TestCase):
@@ -70,8 +71,9 @@ class module_test(unittest.TestCase):
             flexmock(module.module).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = module.module(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = module.module(cfg)
             if not q:
                 raise Exception('did not return module object')
             
@@ -102,8 +104,9 @@ class module_test(unittest.TestCase):
                 start.called = True
             flexmock(module.module).should_receive('start').replace_with(start)
             
-            url = 'localhost'
-            q = module.module(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = module.module(cfg)
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return module object')
@@ -133,8 +136,9 @@ class module_test(unittest.TestCase):
                 start.called = True
             flexmock(module.module).should_receive('start').replace_with(start)
             
-            url = 'localhost'
-            q = module.module(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = module.module(cfg)
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return module object')
@@ -175,8 +179,9 @@ class module_test(unittest.TestCase):
             flexmock(module.module).should_receive('kill').replace_with(kill)
             kill.called = False
             
-            url = 'localhost'
-            q = module.module(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = module.module(cfg)
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return module object')

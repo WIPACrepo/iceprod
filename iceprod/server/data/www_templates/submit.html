@@ -18,7 +18,34 @@
 {% end %}
 
 {% block body_scripts %}
+<script id="LoopTmpl" type="text/x-jsrender">
+<div class="indent {\{:~key}\}">
+    <span class="path">{\{:~concat(~path,#index,~key)}\}</span>
+    {^{props ~path=~concat(~path,#index,~key) tmpl="#EditTmpl" /}}
+</div>
+</script>
+<script id="EditTmpl" type="text/x-jsrender">
+{\{if ~isArray(prop) }\}
+    <div class="header key">{\{keyToHtml:key}\}</div>
+    {^{for prop ~key=key tmpl="#LoopTmpl" /}\}
+    <div class="add">Add <span class="key">{\{singular:key}\}</span></div>
+{\{else ~isNotPrivate(key) }\}
+    {^{if ~editable(key,~path)}\}
+    <div class="editing"><span class="key">{\{keyToHtml:key}\}</span>: <input type="text" data-link="prop" /></div>
+    {\{else}\}
+    <div class="editable"><span class="key">{\{keyToHtml:key}\}</span>: {\{:prop}\}</div>
+    {\{/if}\}
+{\{/if}\}
+</script>
+<script id="AdvTmpl" type="text/x-jsrender">
+<span class="header key">Job</span>
+<div class="indent">
+    <span class="path"></span>
+    {^{props ~path="" tmpl="#EditTmpl" /}\}
+</div>
+</script>
 <script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript" src="/static/dataclasses.js"></script>
 <script type="text/javascript" src="/static/submit.js"></script>
 <script type="text/javascript">
 jQuery(document).ready(function() {

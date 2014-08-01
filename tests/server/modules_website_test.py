@@ -32,6 +32,7 @@ from iceprod.core import util
 import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
 import iceprod.server
+from iceprod.server import basic_config
 from iceprod.server.modules.website import website
 try:
     from iceprod.server import openssl
@@ -121,8 +122,9 @@ class modules_website_test(unittest.TestCase):
             flexmock(website).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = website(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = website(bcfg)
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return website object')
@@ -152,8 +154,9 @@ class modules_website_test(unittest.TestCase):
             flexmock(website).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = website(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = website(bcfg)
             q.messaging = _messaging()
             ngx = _Nginx()
             q.nginx = ngx
@@ -202,8 +205,9 @@ class modules_website_test(unittest.TestCase):
             
             passkey = 'key'
             
-            url = 'localhost'
-            web = website(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            web = website(bcfg)
             web.messaging = _messaging()
             web.messaging.ret = {'db':{'authorize_task':True,
                                        'echo':'e',
@@ -268,8 +272,9 @@ class modules_website_test(unittest.TestCase):
             
             passkey = 'key'
             
-            url = 'localhost'
-            web = website(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            web = website(bcfg)
             web.messaging = _messaging()
             web.cfg = self.cfg
             web._start()
@@ -351,8 +356,9 @@ class modules_website_test(unittest.TestCase):
             task_details = {'waiting':{'c':1,'d':2}}
             tasks_status = {'waiting':10,'queued':30}
             
-            url = 'localhost'
-            web = website(url)
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            web = website(bcfg)
             web.messaging = _messaging()
             web.messaging.ret = {'db':{'new_passkey':passkey,
                                        'get_gridspec':gridspec,

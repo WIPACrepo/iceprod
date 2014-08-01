@@ -29,6 +29,7 @@ from flexmock import flexmock
 import iceprod.server
 import iceprod.core.logger
 from iceprod.server import module
+from iceprod.server import basic_config
 from iceprod.server.modules.proxy import proxy
 
 
@@ -125,8 +126,9 @@ class modules_proxy_test(unittest.TestCase):
             flexmock(proxy).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = proxy(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = proxy(cfg)
             if not q:
                 raise Exception('did not return proxy object')
             if start.called != True:
@@ -157,8 +159,9 @@ class modules_proxy_test(unittest.TestCase):
             flexmock(proxy).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = proxy(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = proxy(cfg)
             q.messaging = _messaging()
             q.cfg = {}
             ret = q._getargs()
@@ -195,8 +198,9 @@ class modules_proxy_test(unittest.TestCase):
             flexmock(proxy).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = proxy(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = proxy(cfg)
             q.messaging = _messaging()
             q.squid = _Squid()
             
@@ -250,8 +254,9 @@ class modules_proxy_test(unittest.TestCase):
             flexmock(proxy).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = proxy(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = proxy(cfg)
             q.messaging = _messaging()
             q.cfg = {}
             

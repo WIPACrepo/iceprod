@@ -1,7 +1,5 @@
 /*!
  * a json-rpc client
- *
- * Copyright 2013, IceCube Collaboration
  */
 
 var RPCclient = (function($){

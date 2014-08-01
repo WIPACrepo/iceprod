@@ -24,6 +24,7 @@ except ImportError:
 import iceprod
 import iceprod.server
 import iceprod.server.basic_config
+import iceprod.server.RPCinternal
 import iceprod.core.logger
 
 
@@ -32,13 +33,15 @@ def load_config(cfgfile):
     if isinstance(cfgfile,str):
         # Read config file
         logging.warn('loading new cfg from file %s'%cfgfile)
-        return iceprod.server.basic_config.BasicConfig(cfgfile)
+        cfg = iceprod.server.basic_config.BasicConfig()
+        cfg.read_file(cfgfile)
+        return cfg
     else:
         # assume we were passed cfg data directly
         logging.warn('loading new cfg directly'%cfgfile)
         return cfgfile
 
-def set_logger():
+def set_logger(cfg):
     """Setup the root logger"""
     iceprod.core.logger.setlogger('logfile',cfg)
     
@@ -50,11 +53,11 @@ class server_module():
     """Manage a server module"""
     process_class = multiprocessing.Process
     
-    def __init__(self,mod_name,url):
+    def __init__(self,mod_name,cfg):
         self.mod_name = mod_name
         self.process = server_module.process_class(
                 target=iceprod.server.run_module,
-                args=[mod_name,url])
+                args=[mod_name,cfg])
         self.process.daemon = True
     
     def start(self):
@@ -63,20 +66,18 @@ class server_module():
     def kill(self):
         self.process.terminate()
 
-def handle_stop(msg, signum, frame):
+def handle_stop(obj, signum, frame):
     logging.warn('Signal handle_stop called with signal %s' % signum)
     logging.warn('Stopping...')
-    msg.BROADCAST.stop()
-    time.sleep(1)
-    msg.SERVER.stop()
-def handle_kill(msg, signum, frame):
+    obj.stop()
+def handle_kill(obj, signum, frame):
     logging.warn('Signal handle_kill called with signal %s' % signum)
     logging.warn('Killing...')
-    msg.BROADCAST.kill()
+    obj.kill()
 
-def set_signals(msg):
-    signal.signal(signal.SIGINT, partial(handle_stop,msg))
-    signal.signal(signal.SIGQUIT, partial(handle_kill,msg))
+def set_signals(obj):
+    signal.signal(signal.SIGINT, partial(handle_stop,obj))
+    signal.signal(signal.SIGQUIT, partial(handle_kill,obj))
 
 def main(cfgfile,cfgdata=None):
     
@@ -88,7 +89,7 @@ def main(cfgfile,cfgdata=None):
         cfg = load_config(cfgfile)
     
     # set logger
-    set_logger()
+    set_logger(cfg)
     logger = logging.getLogger('iceprod_server')
     
     # Change name of process for ps
@@ -100,16 +101,22 @@ def main(cfgfile,cfgdata=None):
     
     def module_start(mod):
         logger.warn('starting %s',mod)
-        rmod = server_module(mod,cfg.messaging_url)
+        rmod = server_module(mod,cfg)
         rmod.start()
         return rmod
     
     # start messaging
     class Respond():
-        def __init__(self,shutdown_event,running_modules):
-            self.shutdown_event = shutdown_event
+        def __init__(self,running_modules):
             self.running_modules = running_modules
+            self.broadcast_ignore = set()
+        
         def start(self,mod=None,callback=None):
+            if 'START' in self.broadcast_ignore:
+                self.broadcast_ignore.remove('START')
+                if callback:
+                    callback()
+                return
             logger.warn('START %s',mod if mod else '')
             if mod:
                 if '.' not in mod:
@@ -120,107 +127,175 @@ def main(cfgfile,cfgdata=None):
                 else:
                     self.running_modules[mod_name] = module_start(mod)
             else:
+                self.broadcast_ignore.add('START')
                 messaging.BROADCAST.start(async=True)
             if callback:
                 callback()
+        
         def stop(self,mod=None,callback=None):
+            if 'STOP' in self.broadcast_ignore:
+                self.broadcast_ignore.remove('STOP')
+                if callback:
+                    callback()
+                return
             logger.warn('STOP %s',mod if mod else '')
             if mod:
                 mod_name = mod.rsplit('.',1)[-1]
                 getattr(messaging,mod).stop(asyc=True)
                 if mod_name in self.running_modules:
                     del self.running_modules[mod_name]
+                if callback:
+                    callback()
             else:
-                messaging.BROADCAST.stop(async=True)
-            if callback:
-                callback()
+                self.broadcast_ignore.add('STOP')
+                if callback:
+                    callback()
+                def cb(*args):
+                    logger.debug('joining stopped modules')
+                    try:
+                        for mod in self.running_modules:
+                            if mod == 'messaging':
+                                continue
+                            self.running_modules[mod].process.join(1)
+                            if self.running_modules[mod].process.is_alive():
+                                getattr(messaging,mod).kill(asyc=True)
+                            else:
+                                del self.running_modules[mod]
+                        for mod in self.running_modules:
+                            if mod == 'messaging':
+                                continue
+                            self.running_modules[mod].process.join(.1)
+                            del self.running_modules[mod]
+                    except Exception:
+                        logger.warn('error joining modules',exc_info=True)
+                    finally:
+                        messaging.SERVER.stop(timeout=1,callback=cb2)
+                def cb2(*args):
+                    logger.debug('joining messaging module')
+                    try:
+                        if 'messaging' in self.running_modules:
+                            self.running_modules['messaging'].process.join(.5)
+                            del self.running_modules['messaging']
+                    except Exception:
+                        logger.warn('error joining messaging module',exc_info=True)
+                    finally:
+                        logger.debug('kill messaging')
+                        messaging.kill()
+                messaging.BROADCAST.stop(timeout=1,callback=cb)
+        
         def restart(self,mod=None,callback=None):
+            if 'RESTART' in self.broadcast_ignore:
+                self.broadcast_ignore.remove('RESTART')
+                if callback:
+                    callback()
+                return
             logger.warn('RESTART %s',mod if mod else '')
             if mod:
                 getattr(messaging,mod).restart(asyc=True)
             else:
+                self.broadcast_ignore.add('RESTART')
                 messaging.BROADCAST.restart(async=True)
             if callback:
                 callback()
+        
         def kill(self,mod=None,callback=None):
+            if 'KILL' in self.broadcast_ignore:
+                self.broadcast_ignore.remove('KILL')
+                if callback:
+                    callback()
+                return
             logger.warn('KILL %s',mod if mod else '')
             if mod:
                 mod_name = mod.rsplit('.',1)[-1]
-                getattr(messaging,mod).stop(asyc=True)
+                getattr(messaging,mod).kill(asyc=False,timeout=0.1)
                 if mod_name in self.running_modules:
-                    self.running_modules[mod_name].process.join(1)
+                    self.running_modules[mod_name].process.join(.1)
                     if self.running_modules[mod_name].process.is_alive():
                         self.running_modules[mod_name].kill()
                     del self.running_modules[mod_name]
                 if callback:
                     callback()
             else:
-                messaging.BROADCAST.stop()
-                time.sleep(1)
-                messaging.SERVER.stop()
-                time.sleep(0.1)
+                self.broadcast_ignore.add('KILL')
                 if callback:
                     callback()
-                shutdown.set()
-        def shutdown(self,callback=None):
-            logger.warn('SHUTDOWN')
-            messaging.BROADCAST.stop()
-            time.sleep(1)
-            messaging.SERVER.stop()
-            time.sleep(0.1)
-            if callback:
-                callback()
-            shutdown.set()
-    shutdown = Event()
-    shutdown.clear()
+                def cb(*args):
+                    logger.debug('joining killed modules')
+                    try:
+                        for mod in self.running_modules:
+                            if mod == 'messaging':
+                                continue
+                            self.running_modules[mod].process.join(.1)
+                            del self.running_modules[mod]
+                    except Exception:
+                        logger.warn('error joining modules',exc_info=True)
+                    finally:
+                        messaging.SERVER.kill(timeout=0.1,callback=cb2)
+                def cb2(*args):
+                    logger.debug('joining messaging module')
+                    try:
+                        if 'messaging' in self.running_modules:
+                            self.running_modules['messaging'].process.join(.05)
+                            del self.running_modules['messaging']
+                    except Exception:
+                        logger.warn('error joining messaging module',exc_info=True)
+                    finally:
+                        logger.debug('kill messaging')
+                        messaging.kill()
+                messaging.BROADCAST.kill(timeout=0.1,callback=cb)
+    
     running_modules = {}
-    kwargs = {'address':cfg.messaging_url,
-              'service_name':'daemon',
-              'service_class':Respond(shutdown,running_modules),
-             }
-    messaging = RPCinternal.RPCService(**kwargs)
-    messaging.start()
+    respond_obj = Respond(running_modules)
     
     # set signal handlers
-    set_signals(messaging)
+    set_signals(respond_obj)
+    
+    # setup messaging
+    kwargs = {'address':cfg.messaging_url,
+              'service_name':'daemon',
+              'service_class':respond_obj,
+              'immediate_setup':False,
+             }
+    messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
     
     # get modules
-    available_modules = iceprod.server.listmodules('iceprod.server.modules')
+    available_modules = {}
+    for mod in iceprod.server.listmodules('iceprod.server.modules'):
+        mod_name = mod.rsplit('.',1)[1]
+        available_modules[mod_name] = mod
+    logger.info('available modules: %s',available_modules.keys())
 
     # start modules specified in cfg
-    start_order = cfg.start_order
-    def start_order_cmp(a,b):
-        try:
-            a_pos = start_order.index(a.rsplit('.')[1])
-            b_pos = start_order.index(a.rsplit('.')[1])
-            return cmp(a_pos,b_pos)
-        except:
-            return cmp(a,b)
-    for mod in sorted(available_modules,cmp=start_order_cmp):
-        mod_name = mod.rsplit('.',1)[1]
-        if getattr(cfg,mod_name) is True:
-            running_modules[mod_name] = start_module(mod)
+    for mod in cfg.start_order:
+        if mod in available_modules and getattr(cfg,mod) is True:
+            running_modules[mod] = module_start(available_modules[mod])
             time.sleep(1) # wait 1 second between starts
     
-    # idle until we need to shutdown
-    shutdown.wait()
-    messaging.stop()
+    # wait for messages
+    messaging.setup()
+    messaging.start()
     
     # terminate all modules
-    for mod in running_modules:
+    for mod in running_modules.values():
         mod.kill()
+    
+    logger.warn('shutdown')
 
 if __name__ == '__main__':
     import argparse
 
     # Override values with cmdline options
     parser = argparse.ArgumentParser(description='IceProd Server')
-    parser.add_argument('-f','--file',dest='file',type=str,default=None)
-    parser.add_argument('-d','--daemon',dest='daemon',action='store_true')
+    parser.add_argument('-f','--file',dest='file',type=str,default=None,
+                        help='Path to config file')
+    parser.add_argument('-d','--daemon',dest='daemon',action='store_true',
+                        help='Daemonize?')
     parser.add_argument('action',nargs='?',type=str,default='start',
                         choices=['start','stop','kill','hardkill','restart'])
-    parser.add_argument('--pidfile',type=str,default='$I3PROD/var/run/iceprod.pid')
-    parser.add_argument('--umask',type=int,default=077)
+    parser.add_argument('--pidfile',type=str,default='$I3PROD/var/run/iceprod.pid',
+                        help='PID lockfile')
+    parser.add_argument('--umask',type=int,default=077,
+                        help='File creation umask')
     args = parser.parse_args()
     
     if args.file:

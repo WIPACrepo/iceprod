@@ -52,6 +52,23 @@ class Job(dict):
         self['categories']  = []
         super(Job,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'tasks':
+                ret[n] = [self[n],'Task']
+            elif n == 'difplus':
+                ret[n] = [self[n],'DifPlus']
+            elif n == 'steering':
+                ret[n] = [self[n],'Steering']
+            elif n == 'categories':
+                ret[n] = [self[n],'']
+            else:
+                ret[n] = self[n]
+        return ret
+    
     def convert(self):
         if (self['steering'] is not None and 
             not isinstance(self['steering'],Steering)):
@@ -107,6 +124,21 @@ class Steering(dict):
         self['resources']  = []
         self['data']       = []
         super(Steering,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'resources':
+                ret[n] = [self[n],'Resource']
+            elif n == 'data':
+                ret[n] = [self[n],'Data']
+            elif n == 'batchsys':
+                ret[n] = [self[n],{}]
+            else:
+                ret[n] = self[n]
+        return ret
     
     def convert(self):
         for i,r in enumerate(self['resources']):
@@ -206,6 +238,29 @@ class Task(_TaskCommon):
         self['trays']    = []
         super(Task,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'resources':
+                ret[n] = [self[n],'Resource']
+            elif n == 'data':
+                ret[n] = [self[n],'Data']
+            elif n == 'classes':
+                ret[n] = [self[n],'Class']
+            elif n == 'projects':
+                ret[n] = [self[n],'Project']
+            elif n == 'depends':
+                ret[n] = [self[n],'']
+            elif n == 'batchsys':
+                ret[n] = [self[n],{}]
+            elif n == 'trays':
+                ret[n] = [self[n],'Tray']
+            else:
+                ret[n] = self[n]
+        return ret
+    
     def convert(self):
         super(Task,self).convert()
         for i,t in enumerate(self['trays']):
@@ -237,6 +292,25 @@ class Tray(_TaskCommon):
         self['iterations'] = 1
         self['modules']    = []
         super(Tray,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'resources':
+                ret[n] = [self[n],'Resource']
+            elif n == 'data':
+                ret[n] = [self[n],'Data']
+            elif n == 'classes':
+                ret[n] = [self[n],'Class']
+            elif n == 'projects':
+                ret[n] = [self[n],'Project']
+            elif n == 'modules':
+                ret[n] = [self[n],'Module']
+            else:
+                ret[n] = self[n]
+        return ret
     
     def convert(self):
         super(Tray,self).convert()
@@ -270,6 +344,23 @@ class Module(_TaskCommon):
         self['args']          = None
         super(Module,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'resources':
+                ret[n] = [self[n],'Resource']
+            elif n == 'data':
+                ret[n] = [self[n],'Data']
+            elif n == 'classes':
+                ret[n] = [self[n],'Class']
+            elif n == 'projects':
+                ret[n] = [self[n],'Project']
+            else:
+                ret[n] = self[n]
+        return ret
+    
     def convert(self):
         super(Module,self).convert()
     
@@ -302,6 +393,14 @@ class Class(dict):
         self['env_vars']      = None
         super(Class,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            ret[n] = self[n]
+        return ret
+    
     def convert(self):
         pass
     
@@ -328,6 +427,14 @@ class Project(dict):
         self['name']       = None
         self['class_name'] = None # required
         super(Project,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            ret[n] = self[n]
+        return ret
     
     def convert(self):
         pass
@@ -380,6 +487,14 @@ class Resource(_ResourceCommon):
         self['arch'] = None
         super(Resource,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            ret[n] = self[n]
+        return ret
+    
     def convert(self):
         pass
     
@@ -405,6 +520,19 @@ class Data(_ResourceCommon):
         self['type']     = None
         self['movement'] = None
         super(Data,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'type':
+                ret[n] = [self[n],self.type_options]
+            elif n == 'movement':
+                ret[n] = [self[n],self.movement_options]
+            else:
+                ret[n] = self[n]
+        return ret
     
     def convert(self):
         pass
@@ -449,6 +577,19 @@ class DifPlus(dict):
         self['dif']  = None
         self['plus'] = None
         super(DifPlus,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'dif':
+                ret[n] = [self[n],'Dif']
+            elif n == 'plus':
+                ret[n] = [self[n],'Plus']
+            else:
+                ret[n] = self[n]
+        return ret
     
     def convert(self):
         if self['dif'] and not isinstance(self['dif'],Dif):
@@ -548,6 +689,17 @@ class Dif(dict):
         self['dif_creation_date'] = time.strftime("%Y-%m-%d")
         super(Dif,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'personnel':
+                ret[n] = [self[n],'Personnel']
+            else:
+                ret[n] = self[n]
+        return ret
+    
     def convert(self):
         for i,p in enumerate(self['personnel']):
             if not isinstance(p,Personnel):
@@ -576,7 +728,6 @@ class Dif(dict):
                    )
         except Exception:
             return False
-
 
 class Plus(dict):
     """
@@ -630,6 +781,17 @@ class Plus(dict):
         self['command_line'] = None
         super(Plus,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'project':
+                ret[n] = [self[n],{}]
+            else:
+                ret[n] = self[n]
+        return ret
+    
     def convert(self):
         pass
     
@@ -680,6 +842,14 @@ class Personnel(dict):
         self['email']      = None
         super(Personnel,self).__init__(*args,**kwargs)
     
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            ret[n] = self[n]
+        return ret
+    
     def convert(self):
         pass
     
@@ -710,6 +880,17 @@ class DataCenter(dict):
         self['name']      = None
         self['personnel'] = []
         super(DataCenter,self).__init__(*args,**kwargs)
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            if n == 'personnel':
+                ret[n] = [self[n],'Personnel']
+            else:
+                ret[n] = self[n]
+        return ret
     
     def convert(self):
         for i,p in enumerate(self['personnel']):

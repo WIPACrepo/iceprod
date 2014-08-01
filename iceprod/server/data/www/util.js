@@ -1,7 +1,5 @@
 /*!
  * Util functions
- *
- * Copyright 2013, IceCube Collaboration
  */
 
 var convertToAssociative = function( arr ) {
@@ -27,6 +25,24 @@ var isAssociativeEmpty = function( obj ) {
 var isInt = function( val ) {
     return /^[\-0-9]+$/.test(val);
 }
+
+var pprint_json = function(obj) {
+    var ret = '', parts = JSON.stringify(obj,null,'\n').split('\n'), prev_part = '',part='';
+    for (var i=0;i<parts.length;i++) {
+        part = parts[i]
+        if (part == '')
+            if (prev_part in {'[':1,'{':1,']':1})
+                part = prev_part;
+            else if (prev_part == '')
+                ret += '&nbsp;&nbsp;';
+            else
+                ret += '<br />';
+        else
+            ret += part;
+        prev_part = part;
+    }
+    return ret;
+};
 
 var popup = (function( $ ){
     var state = null;

@@ -29,6 +29,7 @@ from flexmock import flexmock
 import iceprod.server
 import iceprod.core.logger
 from iceprod.server import module
+from iceprod.server import basic_config
 from iceprod.server.modules.config import config
 
 
@@ -99,8 +100,9 @@ class modules_config_test(unittest.TestCase):
             flexmock(config).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = config(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = config(cfg)
             if not q:
                 raise Exception('did not return config object')
             if start.called != True:
@@ -131,8 +133,9 @@ class modules_config_test(unittest.TestCase):
             flexmock(config).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = config(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = config(cfg)
             q.config.filename = os.path.join(self.test_dir,'test.json')
             q.config['test'] = 1
             q.messaging = _messaging()

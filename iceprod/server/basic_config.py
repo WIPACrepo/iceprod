@@ -12,6 +12,8 @@ try:
 except ImportError:
     import ConfigParser as configparser
 
+from iceprod.server import get_pkgdata_filename
+
 def locateconfig():
     """Locate a config file"""
     hostname = os.uname()[1].split('.')[0]
@@ -20,7 +22,9 @@ def locateconfig():
     elif 'I3PREFIX' in os.environ:
         cfgpath = os.path.expandvars('$I3PREFIX')
     else:
-        cfgpath = os.getcwd()
+        cfgpath = get_pkgdata_filename('iceprod.server','data')
+        if not cfgpath:
+            cfgpath = os.getcwd()
     # try for an etc directory
     if os.path.isdir(os.path.join(cfgpath,'etc')):
         cfgpath = os.path.join(cfgpath,'etc')
@@ -50,12 +54,18 @@ class BasicConfig(object):
         self.schedule = True
         self.website = True
         self.config = True
+        self.messaging = True
         
         # start order
-        self.start_order = ['config','db','proxy','website','schedule','queue']
+        self.start_order = ['messaging','config','db','proxy','website',
+                            'schedule','queue']
         
         # messaging server url
+        # TODO: better directory for this
         self.messaging_url = os.path.join('ipc://',os.getcwd(),'unix_socket.sock')
+        
+        # logging
+        self.logging = {'logfile':'iceprod.log'}
     
     def read_file(self, filename):
         if not os.path.isfile(filename):
@@ -67,13 +77,22 @@ class BasicConfig(object):
         
         for option_spec in self.CONFIG_FILE_OPTIONS:
             self.set_attr_from_config_option(cp, *option_spec)
+        self.messaging_url = os.path.expandvars(self.messaging_url)
     
     def set_attr_from_config_option(self, cp, attr, where, type_=''):
         """Set an attribute on self if it exists in the ConfigParser."""
         section, option = where.split(":")
         if cp.has_option(section, option):
             method = getattr(cp, 'get'+type_)
-            setattr(self, attr, method(section, option))
+            val = method(section, option)
+            if '|' in attr:
+                parts = [x for x in attr.split('|') if x]
+                d = getattr(self,parts.pop(0))
+                while len(parts) > 1:
+                    d = d[parts.pop(0)]
+                d[parts[-1]] = val
+            else:
+                setattr(self, attr, val)
     
     CONFIG_FILE_OPTIONS = [
         # [modules]
@@ -83,7 +102,15 @@ class BasicConfig(object):
         ('schedule', 'modules:schedule', 'boolean'),
         ('website', 'modules:website', 'boolean'),
         ('config', 'modules:config', 'boolean'),
+        ('messaging', 'modules:messaging', 'boolean'),
         
         # [messaging]
-        ('messaging_url', 'messaging:url')
+        ('messaging_url', 'messaging:url'),
+        
+        # [logging]
+        ('logging|level', 'logging:level'),
+        ('logging|format', 'logging:format'),
+        ('logging|size', 'logging:size', 'int'),
+        ('logging|num', 'logging:num', 'int'),
+        ('logging|logfile', 'logging:logfile'),
     ]

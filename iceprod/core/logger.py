@@ -21,30 +21,28 @@ setlevel = {
 
 host = os.uname()[1].split(".")[0]
 
-def setlogger(loggername,cfg=None,loglevel='WARN',logfile='sys.stdout',
+def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
               logsize=1048576,lognum=4):
     """Add an output to the root logger"""
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
     
     if cfg:
-        if 'level' in cfg['logging']:
-            loglevel  = cfg['logging']['level']
-        if 'format' in cfg['logging']:
-            logformat=cfg['logging']['format']
-        if 'size' in cfg['logging']:
-            logsize  = cfg['logging']['size']
-        if 'num' in cfg['logging']:
-            lognum  = cfg['logging']['num']
+        if 'level' in cfg.logging and cfg.logging['level'].upper() in setlevel:
+            loglevel  = cfg.logging['level']
+        if 'format' in cfg.logging:
+            logformat=cfg.logging['format']
+        if 'size' in cfg.logging:
+            logsize  = cfg.logging['size']
+        if 'num' in cfg.logging:
+            lognum  = cfg.logging['num']
         
-        if loggername in cfg['logging']:
-            logfile   = os.path.expandvars(cfg['logging'][loggername])
+        if loggername in cfg.logging:
+            logfile   = os.path.expandvars(cfg.logging[loggername])
         else:
-            logfile   = os.path.expandvars(cfg['logging']['logfile'])
+            logfile   = os.path.expandvars(cfg.logging['logfile'])
 
     rootLogger = logging.getLogger('')
-    if loglevel not in setlevel:
-        loglevel = 'WARN'
-    rootLogger.setLevel(setlevel[loglevel])
+    rootLogger.setLevel(setlevel[loglevel.upper()])
     
     if logfile.strip() != 'sys.stdout':
         if not logfile.startswith('/'):
@@ -62,6 +60,9 @@ def setlogger(loggername,cfg=None,loglevel='WARN',logfile='sys.stdout',
         rootLogger.addHandler(fileHandler)
     else:
         logging.basicConfig()
+    
+    rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
+                    loglevel,logfile,logsize,lognum)
 
 def removestdout():
     """Remove the stdout log output from the root logger"""

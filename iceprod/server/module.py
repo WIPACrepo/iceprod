@@ -29,13 +29,14 @@ class module(object):
     
     At the end of every subclass's __init__(), self.start() should be called.
     
-    :param messaging_url: The url for the messaging server.
+    :param basic_config: A :ref:`BasicConfig` object.
     """
-    def __init__(self,messaging_url):
+    def __init__(self,basic_cfg):
         # set some variables
-        self.cfg = {}
-        self.messaging_url = messaging_url
+        self.basic_config = basic_cfg
+        self.messaging_url = basic_cfg.messaging_url
         self.messaging = None
+        self.cfg = {}
         
         # Provide a default listener for basic start,stop events.
         # Feel free to override.
@@ -50,10 +51,9 @@ class module(object):
         module_name = 'iceprod_server.'+self.__class__.__name__
         logging.basicConfig()
         self.logger = logging.getLogger(module_name)
-        if ('logging' in self.cfg and 
-            self.logger.name not in self.cfg['logging']):
-            self.cfg['logging'][self.logger.name] = self.__class__.__name__+'.log'
-        iceprod.core.logger.setlogger(self.logger.name,self.cfg)
+        if self.logger.name not in self.basic_config.logging:
+            self.basic_config.logging[self.logger.name] = self.__class__.__name__+'.log'
+        iceprod.core.logger.setlogger(self.logger.name,self.basic_config)
         
         # remove stdout logging handler
         iceprod.core.logger.removestdout()
@@ -68,7 +68,7 @@ class module(object):
     def start(self,blocking=True,callback=None):
         """Start the messaging service"""
         kwargs = {'address':self.messaging_url,
-                  'blocking':blocking,
+                  'block':blocking,
                  }
         if self.service_name and self.service_class:
             kwargs['service_name'] = self.service_name
@@ -87,11 +87,13 @@ class module(object):
     
     def stop(self):
         """Stop the messaging service"""
-        self.messaging.stop()
+        if self.messaging:
+            self.messaging.stop()
     
     def kill(self):
         """Stop the messaging service"""
-        self.messaging.stop()
+        if self.messaging:
+            self.messaging.stop()
 
 class Service():
     """

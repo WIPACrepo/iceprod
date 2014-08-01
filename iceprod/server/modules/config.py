@@ -10,6 +10,7 @@ import logging
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.config import IceProdConfig
+from iceprod.server.RPCinternal import RPCService
 
 class config(module.module):
     """
@@ -24,10 +25,18 @@ class config(module.module):
         self.config = IceProdConfig()
         self.start()
     
-    def start(self):
-        """Start schedule"""
+    def start(self,blocking=True):
+        """Start the messaging service"""
         self.config.load()
-        super(config,self).start()
+        kwargs = {'address':self.messaging_url,
+                  'block':blocking,
+                 }
+        if self.service_name and self.service_class:
+            kwargs['service_name'] = self.service_name
+            kwargs['service_class'] = self.service_class
+        self.messaging = RPCService(**kwargs)
+        self.messaging.start()
+        # if blocking is True, messaging will block the thread until closed
     
     def stop(self):
         """Stop schedule"""

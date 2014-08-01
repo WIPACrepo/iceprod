@@ -26,6 +26,7 @@ from flexmock import flexmock
 import iceprod.core.logger
 from iceprod.core import functions
 from iceprod.server import module
+from iceprod.server import basic_config
 from iceprod.server.modules import db
 
 
@@ -108,8 +109,9 @@ class modules_db_test(unittest.TestCase):
             flexmock(db.db).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = db.db(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = db.db(cfg)
             q.messaging = _messaging()
             if not q:
                 raise Exception('did not return db object')
@@ -139,8 +141,9 @@ class modules_db_test(unittest.TestCase):
             flexmock(db.db).should_receive('start').replace_with(start)
             start.called = False
             
-            url = 'localhost'
-            q = db.db(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = db.db(cfg)
             q.messaging = _messaging()
             
             q.start()
@@ -193,8 +196,9 @@ class modules_db_test(unittest.TestCase):
                 cb.called = [args,kwargs]
             cb.called = None
             
-            url = 'localhost'
-            q = db.db(url)
+            cfg = basic_config.BasicConfig()
+            cfg.messaging_url = 'localhost'
+            q = db.db(cfg)
             q.messaging = _messaging()
             local_db = _DB()
             q.db = local_db

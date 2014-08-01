@@ -23,6 +23,20 @@ version = "2.0.dev1"
 with open('README.rst') as f:
     kwargs['long_description'] = f.read()
 
+try:
+    # make dataclasses.js from dataclasses.py
+    import inspect
+    import json
+    from iceprod.core import dataclasses
+    dcs = {}
+    for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
+        if name[0] != '_' and dict in inspect.getmro(obj):
+            dcs[name] = obj().output()
+    with open(os.path.join('iceprod','server','data','www','dataclasses.js'),'w') as f:
+        f.write('var dataclasses='+json.dumps(dcs,separators=(',',':'))+';')
+except Exception:
+    print('WARN: cannot make dataclasses.js')
+
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['tornado>=3.0', 'pyzmq']

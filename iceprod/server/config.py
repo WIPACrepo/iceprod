@@ -35,10 +35,11 @@ class IceProdConfig(dict):
         """Load config from file, overwriting current contents."""
         try:
             self.loading = True
-            text = open(self.filename).read()
-            obj = json_decode(text)
-            for key in obj:
-                self[key] = obj[key]
+            if os.path.exists(self.filename):
+                text = open(self.filename).read()
+                obj = json_decode(text)
+                for key in obj:
+                    self[key] = obj[key]
         except Exception:
             logger.warn('failed to load from config file %s',self.filename,
                         exc_info=True)

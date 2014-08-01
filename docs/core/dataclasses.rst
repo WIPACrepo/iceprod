@@ -9,8 +9,8 @@ Dataclasses
    :no-members:
    :no-undoc-members:
 
-XML Configuration Objects
--------------------------
+Configuration Objects
+---------------------
 
 The building blocks of how datasets, jobs, and tasks are configured.
 
@@ -43,8 +43,8 @@ The building blocks of how datasets, jobs, and tasks are configured.
    :show-inheritance:
 
 
-Metadata XML Objects
---------------------
+Metadata Objects
+----------------
 
 Metadata for NSF requirements
 
