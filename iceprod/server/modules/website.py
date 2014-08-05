@@ -47,8 +47,6 @@ from iceprod.server.nginx import Nginx
 from iceprod.server.file_io import AsyncFileIO
 import iceprod.core.functions
 
-ssl = False
-
 logger = logging.getLogger('website')
 
 class website(module.module):
@@ -115,16 +113,20 @@ class website(module.module):
             raise Exception('bad template path')
         
         # configure nginx
-        kwargs = {'request_timeout': self.cfg['webserver']['proxy_request_timeout'],
-                  'download_dir': self.cfg['webserver']['proxycache_dir'],
-                 }
-        if self.cfg['download']['http_username']:
+        kwargs = {'request_timeout': self.cfg['webserver']['request_timeout']}
+        if ('download' in self.cfg and 'http_username' in self.cfg['download']
+            and self.cfg['download']['http_username']):
             kwargs['username'] = self.cfg['download']['http_username']
-        if self.cfg['download']['http_password']:
+        if ('download' in self.cfg and 'http_password' in self.cfg['download']
+            and self.cfg['download']['http_password']):
             kwargs['password'] = self.cfg['download']['http_password']
-        if ssl is True:
+        if ('system' in self.cfg and 'ssl_cert' in self.cfg['system'] and
+            self.cfg['system']['ssl_cert'] and 'ssl_key' in self.cfg['system']
+            and self.cfg['system']['ssl_key']):
             kwargs['sslcert'] = self.cfg['system']['ssl_cert']
             kwargs['sslkey'] = self.cfg['system']['ssl_key']
+        if ('system' in self.cfg and 'ssl_cacert' in self.cfg['system'] and
+            self.cfg['system']['ssl_cacert']):
             kwargs['cacert'] = self.cfg['system']['ssl_cacert']
         kwargs['port'] = self.cfg['webserver']['port']
         kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
@@ -132,7 +134,7 @@ class website(module.module):
         
         # start nginx
         try:
-            self.nginx = Nginx(**nginx_kwargs)
+            self.nginx = Nginx(**kwargs)
         except Exception:
             logger.error('Nginx not present, running Tornado directly')
             logger.error('(Note that this mode is not very secure)')

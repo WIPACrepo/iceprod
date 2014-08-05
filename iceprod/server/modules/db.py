@@ -27,13 +27,19 @@ class db(module.module):
         super(db,self).__init__(*args,**kwargs)
         self.service_class = DBService(self)
         self.db = None
-        self.start(callback=self._start)
+        self.start()
+        
+    def start(self):
+        """Start thread"""
+        super(db,self).start(callback=self._start)
     
     def _start(self):
         t = self.cfg['db']['type']
         if t.lower() == 'mysql':
+            logger.info('attempting to start MySQL db')
             self.db = MySQL(self.cfg)
         elif t.lower() == 'sqlite':
+            logger.info('attempting to start SQLite db')
             self.db = SQLite(self.cfg)
         else:
             logger.critical('Unknown database type: %s',t)
@@ -71,10 +77,13 @@ class DBService(module.Service):
             self.mod.db.backup()
         if callback:
             callback()
+    def __nonzero__(self):
+        return True
     def __getattr__(self,name):
         if self.mod.db and self.mod.db.dbmethods:
             return getattr(self.mod.db.dbmethods,name)
         else:
+            logger.debug('getattr('+name+')')
             raise Exception('db is not running')
 
 class Text(str):
@@ -295,6 +304,7 @@ class DBAPI(object):
     def __init__(self, cfg):
         # set cfg
         self.cfg = cfg
+        self.dbmethods = None
         
         # thread pools
         self.write_pool = None
@@ -309,9 +319,8 @@ class DBAPI(object):
         try:
             self.init()
         except:
-            module.logger.error('settings table init failed',exc_info=True)
+            logger.error('settings table init failed',exc_info=True)
             raise
-        self.start()
     
     def start(self):
         # start thread pools
@@ -326,10 +335,10 @@ class DBAPI(object):
     def backup(self):
         if not self.backup_in_progress:
             self.backup_in_progress = True
-            module.logger.warn('Starting backup')
+            logger.warn('Starting backup')
             Thread(target=self._backup_worker).start()
         else:
-            module.logger.warn('Attempted to backup, but backup already in progress')
+            logger.warn('Attempted to backup, but backup already in progress')
     
     def update_cfg(self,newcfg):
         """Update config in real time"""
@@ -450,7 +459,11 @@ class DBAPI(object):
     
     def _start_db(self):
         # set up threadpools
-        numthreads = self.cfg['db']['numthreads']
+        numthreads = 1
+        if ('db' in self.cfg and 'numthreads' in self.cfg['db'] and
+            isinstance(self.cfg['db']['numthreads'],int)):
+            numthreads = self.cfg['db']['numthreads']
+        logger.info('start %d threadpools',int(numthreads))
         self.write_pool = SingleGrouping(init=self._dbsetup)
         self.write_pool.finish()
         self.write_pool.disable_output_queue()
@@ -532,11 +545,11 @@ else:
                             curcols.add(name)
                         if not curcols or len(curcols) < 1:
                             # table does not exist
-                            module.logger.info('create table '+table_name)
+                            logger.info('create table '+table_name)
                             cur.execute('create table '+table_name+sql_create)
                         elif curcols != scols:
                             # table not the same
-                            module.logger.info('modify table '+table_name)
+                            logger.info('modify table '+table_name)
                             
                             # get similar cols
                             keepcols = curcols & scols
@@ -550,10 +563,10 @@ else:
                             cur.execute(full_sql)
                         else:
                             # table is good
-                            module.logger.info('table '+table_name+' already exists')
+                            logger.info('table '+table_name+' already exists')
                     except apsw.Error, e:
                         # something went wrong
-                        module.logger.warning(e)
+                        logger.warning(e)
                         raise 
             
             for table_name in self.tables.keys():
@@ -589,23 +602,26 @@ else:
                     source.close()
                     db.close()
             except Exception as e:
-                module.logger.warning('backup failed with message %s',str(e))
+                logger.warning('backup failed with message %s',str(e))
             finally:
                 self.backup_in_progress = False
         
         def _dbsetup(self):
-            """Set up database connections.  Should return (conn,archive_conn)"""
+            """Set up database connections. Should return (conn,archive_conn)"""
             name = self.cfg['db']['name']
-            cache = self.cfg['db']['sqlite_cachesize']
+            kwargs = {}
+            if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
+                isinstance(self.cfg['db']['sqlite_cachesize'],int)):
+                kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
             conn = apsw.Connection(name,statementcachesize=cache)
-            archive_conn = apsw.Connection(name+'_archive',statementcachesize=cache)
+            archive_conn = apsw.Connection(name+'_archive',**kwargs)
             conn.setbusytimeout(1000)
             archive_conn.setbusytimeout(1000)
             return (conn,archive_conn)
         
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
-            module.logger.debug('running query %s',sql)
+            logger.debug('running query %s',sql)
             for i in xrange(27):
                 try:
                     if bindings is not None:
@@ -615,7 +631,7 @@ else:
                 except (apsw.BusyError,apsw.LockedError):
                     # try again for transient errors, but with random exponential backoff up to 134 sec
                     backoff = random.uniform(0.0,0.000001*(math.pow(2,i)-1))
-                    module.logger.debug('transient error, backoff %d')
+                    logger.debug('transient error, backoff %d')
                     time.sleep(backoff)
                     continue
                 except apsw.Error:
@@ -639,14 +655,14 @@ else:
                         ret = archive_cur.fetchall()
             except apsw.Error, e:
                 if sql is not None:
-                    module.logger.debug('sql: %r',sql)
-                    module.logger.debug('bindings: %r',bindings)
+                    logger.debug('sql: %r',sql)
+                    logger.debug('bindings: %r',bindings)
                 if archive_sql is not None:
-                    module.logger.debug('archive_sql: %r',archive_sql)
-                    module.logger.debug('archive_bindings: %r',archive_bindings)
-                module.logger.warning(e)
+                    logger.debug('archive_sql: %r',archive_sql)
+                    logger.debug('archive_bindings: %r',archive_bindings)
+                logger.warning(e)
                 return e
-            module.logger.debug('_db_read returns %r',ret)
+            logger.debug('_db_read returns %r',ret)
             return ret
         
         def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
@@ -686,12 +702,12 @@ else:
                         else:
                             raise Exception('archive_sql is an unknown type')
             except apsw.Error, e:
-                module.logger.debug('sql: %r',sql)
-                module.logger.debug('bindings: %r',bindings)
+                logger.debug('sql: %r',sql)
+                logger.debug('bindings: %r',bindings)
                 if archive_sql is not None:
-                    module.logger.debug('archive_sql: %r',archive_sql)
-                    module.logger.debug('archive_bindings: %r',archive_bindings)
-                module.logger.warning(e)
+                    logger.debug('archive_sql: %r',archive_sql)
+                    logger.debug('archive_bindings: %r',archive_bindings)
+                logger.warning(e)
                 raise
         
         def _increment_id_helper(self,table,conn=None):
@@ -772,11 +788,11 @@ else:
                             curdatatypes[name] = datatype
                         if not curcols or len(curcols) < 1:
                             # table does not exist
-                            module.logger.info('create table '+table_name)
+                            logger.info('create table '+table_name)
                             cur.execute('create table '+table_name+sql_create+' CHARACTER SET utf8 COLLATE utf8_general_ci')
                         elif curcols != scols:
                             # table not the same
-                            module.logger.info('modify table '+table_name)
+                            logger.info('modify table '+table_name)
                             
                             # differences
                             rmcols = curcols - scols
@@ -802,10 +818,10 @@ else:
                             cur.execute(full_sql)
                         else:
                             # table is good
-                            module.logger.info('table '+table_name+' already exists')
+                            logger.info('table '+table_name+' already exists')
                     except MySQLdb.MySQLError, e:
                         # something went wrong
-                        module.logger.warning(e)
+                        logger.warning(e)
                         raise
                 except:
                     try:
@@ -880,7 +896,7 @@ else:
                 backup_archive_conn = MySQLdb.Connection(**kwargs)
                 self._backup_worker_helper(archive_conn,backup_archive_conn)
             except Exception as e:
-                module.logger.warning('backup failed with message %s',str(e))
+                logger.warning('backup failed',exc_info=True)
             finally:
                 self.backup_in_progress = False
         
@@ -923,7 +939,7 @@ else:
                 
                 if curcols != scols:
                     # table not the same
-                    module.logger.info('modify table '+table)
+                    logger.info('modify table '+table)
                     
                     # differences
                     rmcols = curcols - scols
@@ -965,7 +981,7 @@ else:
                 # delete old rows
                 for d in gen(list(delids)):
                     backup_cursor.execute('delete from '+table+' where '+ind+' in ('+','.join(map(str,d))+')')
-                backup_conn.commit()                
+                backup_conn.commit()
                 
                 # insert new rows
                 for a in gen(list(addids)):
@@ -1113,7 +1129,7 @@ else:
                     else:
                         archive_conn.commit()
             except MySQLdb.MySQLError, e:
-                module.logger.warning(e)
+                logger.warning(e)
                 return e
             return ret
         
@@ -1180,7 +1196,7 @@ else:
                     else:
                         archive_conn.commit()
             except MySQLdb.MySQLError, e:
-                module.logger.warning(e)
+                logger.warning(e)
                 raise
         
         def _increment_id_helper(self,table,conn=None):

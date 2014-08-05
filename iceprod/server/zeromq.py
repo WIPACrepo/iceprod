@@ -118,12 +118,12 @@ class ZmqProcess(object):
             if not isinstance(addr,(list,tuple)):
                 addr = [addr]
             for a in addr:
-                if isinstance(a, str) and '://' not in a:
-                    a = a.split(':')
+                if isinstance(a, str):
+                    a = a.rsplit(':',1)
                     if len(a) == 2:
-                        a = 'tcp://%s:%s' % (a[0], a[1])
+                        a = '%s:%s' % (a[0], a[1])
                     else:
-                        a = 'tcp://%s' % (a[0],)
+                        a = '%s' % (a[0],)
                 sock.connect(a)
                 logger.debug('socket connected to %s',a)
 

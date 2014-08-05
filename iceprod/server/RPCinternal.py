@@ -452,6 +452,7 @@ class ThreadedClient(Thread,Client):
     def __init__(self,**kwargs):
         Thread.__init__(self)
         Client.__init__(self,**kwargs)
+        self.daemon = True
     
     def start(self,*args,**kwargs):
         """Start the Client"""
@@ -649,15 +650,17 @@ class RPCService():
     :param context: A context manager for service calls, optional
     :param history_length: Amount of history to keep track of, optional
     :param immediate_setup: Setup socket immediately, optional
+    :param async: Provide a default async value for RPC calls, optional
     """
     def __init__(self, address=None, block=True, timeout=60.0, io_loop=None,
                  service_name=None, service_class=None, context=None,
-                 history_length=None,immediate_setup=None):
+                 history_length=None,immediate_setup=None,async=None):
         if address is None: # set default here in case we actually get a None address from the user
             address = os.path.join('ipc://',os.getcwd(),'unix_socket.sock')
         self.timeout = timeout
         self.service_class = service_class
         self.context = context
+        self.async = async
         kwargs = {'address':address}
         if io_loop:
             kwargs['io_loop'] = io_loop
@@ -788,7 +791,10 @@ class RPCService():
             try:
                 async = kwargs.pop('async')
             except:
-                async = True
+                if self.async is not None:
+                    async = self.async
+                else:
+                    async = True
             if async is False:
                 # return like normal function
                 logger.debug('async request for %s',methodname)
