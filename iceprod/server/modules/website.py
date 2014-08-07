@@ -94,101 +94,105 @@ class website(module.module):
     
     def _start(self):
         """Run the website"""
-        # make sure directories are set up properly
-        for d in self.cfg['webserver']:
-            if '_dir' in d:
-                path = self.cfg['webserver'][d]
-                path = os.path.expanduser(os.path.expandvars(path))
-                try:
-                    os.makedirs(path)
-                except:
-                    pass
-        
-        # get package data
-        static_path = get_pkgdata_filename('iceprod.server','data/www')
-        if static_path is None:
-            raise Exception('bad static path')
-        template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
-        if template_path is None:
-            raise Exception('bad template path')
-        
-        # configure nginx
-        kwargs = {'request_timeout': self.cfg['webserver']['request_timeout']}
-        if ('download' in self.cfg and 'http_username' in self.cfg['download']
-            and self.cfg['download']['http_username']):
-            kwargs['username'] = self.cfg['download']['http_username']
-        if ('download' in self.cfg and 'http_password' in self.cfg['download']
-            and self.cfg['download']['http_password']):
-            kwargs['password'] = self.cfg['download']['http_password']
-        if ('system' in self.cfg and 'ssl_cert' in self.cfg['system'] and
-            self.cfg['system']['ssl_cert'] and 'ssl_key' in self.cfg['system']
-            and self.cfg['system']['ssl_key']):
-            kwargs['sslcert'] = self.cfg['system']['ssl_cert']
-            kwargs['sslkey'] = self.cfg['system']['ssl_key']
-        if ('system' in self.cfg and 'ssl_cacert' in self.cfg['system'] and
-            self.cfg['system']['ssl_cacert']):
-            kwargs['cacert'] = self.cfg['system']['ssl_cacert']
-        kwargs['port'] = self.cfg['webserver']['port']
-        kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
-        kwargs['static_dir'] = static_path
-        
-        # start nginx
         try:
-            self.nginx = Nginx(**kwargs)
-        except Exception:
-            logger.error('Nginx not present, running Tornado directly')
-            logger.error('(Note that this mode is not very secure)')
-            self.nginx = None
-        else:
+            # make sure directories are set up properly
+            for d in self.cfg['webserver']:
+                if '_dir' in d:
+                    path = self.cfg['webserver'][d]
+                    path = os.path.expanduser(os.path.expandvars(path))
+                    try:
+                        os.makedirs(path)
+                    except:
+                        pass
+            
+            # get package data
+            static_path = get_pkgdata_filename('iceprod.server','data/www')
+            if static_path is None:
+                raise Exception('bad static path')
+            template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
+            if template_path is None:
+                raise Exception('bad template path')
+            
+            # configure nginx
+            kwargs = {'request_timeout': self.cfg['webserver']['request_timeout']}
+            self.messaging.timeout = int(self.cfg['webserver']['request_timeout'])
+            if ('download' in self.cfg and 'http_username' in self.cfg['download']
+                and self.cfg['download']['http_username']):
+                kwargs['username'] = self.cfg['download']['http_username']
+            if ('download' in self.cfg and 'http_password' in self.cfg['download']
+                and self.cfg['download']['http_password']):
+                kwargs['password'] = self.cfg['download']['http_password']
+            if ('system' in self.cfg and 'ssl_cert' in self.cfg['system'] and
+                self.cfg['system']['ssl_cert'] and 'ssl_key' in self.cfg['system']
+                and self.cfg['system']['ssl_key']):
+                kwargs['sslcert'] = self.cfg['system']['ssl_cert']
+                kwargs['sslkey'] = self.cfg['system']['ssl_key']
+            if ('system' in self.cfg and 'ssl_cacert' in self.cfg['system'] and
+                self.cfg['system']['ssl_cacert']):
+                kwargs['cacert'] = self.cfg['system']['ssl_cacert']
+            kwargs['port'] = self.cfg['webserver']['port']
+            kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
+            kwargs['static_dir'] = static_path
+            
+            # start nginx
             try:
-                self.nginx.start()
+                self.nginx = Nginx(**kwargs)
             except Exception:
-                logger.critical('cannot start Nginx:',exc_info=True)
-                raise
-        
-        # configure tornado
-        def tornado_logger(handler):
-            if handler.get_status() < 400:
-                log_method = logger.debug
-            elif handler.get_status() < 500:
-                log_method = logger.warning
+                logger.error('Nginx not present, running Tornado directly')
+                logger.error('(Note that this mode is not very secure)')
+                self.nginx = None
             else:
-                log_method = logger.error
-            request_time = 1000.0 * handler.request.request_time()
-            log_method("%d %s %.2fms", handler.get_status(),
-                    handler._request_summary(), request_time)
-        #UploadHandler.upload_prefix = '/upload'
-        handler_args = {
-            'messaging':self.messaging,
-            'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
-        }
-        lib_args = handler_args.copy()
-        lib_args['prefix'] = '/lib/'
-        lib_args['directory'] = os.path.expanduser(os.path.expandvars(
-                self.cfg['webserver']['lib_dir']))
-        self.application = tornado.web.Application([
-            (r"/jsonrpc", JSONRPCHandler, handler_args),
-            (r"/lib/.*", LibHandler, lib_args),
-            (r"/.*", MainHandler, handler_args),
-        ],static_path=static_path,
-          template_path=template_path,
-          log_function=tornado_logger)
-        self.http_server = tornado.httpserver.HTTPServer(
-                self.application,
-                xheaders=True)
-        
-        # start tornado
-        if self.nginx is None:
-            tornado_port = self.cfg['webserver']['port']
-            tornado_address = '0.0.0.0' # bind to all
-        else:
-            tornado_port = self.cfg['webserver']['tornado_port']
-            tornado_address = 'localhost' # bind locally
-        numcpus = self.cfg['webserver']['numcpus']
-        logger.warn('tornado bound to port %d with %d cpus',tornado_port,numcpus)
-        self.http_server.bind(tornado_port,address=tornado_address)
-        self.http_server.start(numcpus)
-        logger.warn('tornado starting')
+                try:
+                    self.nginx.start()
+                except Exception:
+                    logger.critical('cannot start Nginx:',exc_info=True)
+                    raise
+            
+            # configure tornado
+            def tornado_logger(handler):
+                if handler.get_status() < 400:
+                    log_method = logger.debug
+                elif handler.get_status() < 500:
+                    log_method = logger.warning
+                else:
+                    log_method = logger.error
+                request_time = 1000.0 * handler.request.request_time()
+                log_method("%d %s %.2fms", handler.get_status(),
+                        handler._request_summary(), request_time)
+            #UploadHandler.upload_prefix = '/upload'
+            handler_args = {
+                'messaging':self.messaging,
+                'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
+            }
+            lib_args = handler_args.copy()
+            lib_args['prefix'] = '/lib/'
+            lib_args['directory'] = os.path.expanduser(os.path.expandvars(
+                    self.cfg['webserver']['lib_dir']))
+            self.application = tornado.web.Application([
+                (r"/jsonrpc", JSONRPCHandler, handler_args),
+                (r"/lib/.*", LibHandler, lib_args),
+                (r"/.*", MainHandler, handler_args),
+            ],static_path=static_path,
+              template_path=template_path,
+              log_function=tornado_logger)
+            self.http_server = tornado.httpserver.HTTPServer(
+                    self.application,
+                    xheaders=True)
+            
+            # start tornado
+            if self.nginx is None:
+                tornado_port = self.cfg['webserver']['port']
+                tornado_address = '0.0.0.0' # bind to all
+            else:
+                tornado_port = self.cfg['webserver']['tornado_port']
+                tornado_address = 'localhost' # bind locally
+            numcpus = self.cfg['webserver']['numcpus']
+            logger.warn('tornado bound to port %d with %d cpus',tornado_port,numcpus)
+            self.http_server.bind(tornado_port,address=tornado_address)
+            self.http_server.start(numcpus)
+            logger.warn('tornado starting')
+        except Exception:
+            logger.error('website startup error',exc_info=True)
     
     def logrotate(self):
         """Rotate the Nginx logs."""
@@ -404,7 +408,12 @@ class MainHandler(tornado.web.RequestHandler):
     @tornado.concurrent.return_future
     def db_call(self,func_name,**kwargs):
         """Turn a DB messaging call into a `Futures` object"""
-        getattr(self.messaging.db,func_name)(**kwargs)
+        logger.debug('db_call for %s',func_name)
+        try:
+            getattr(self.messaging.db,func_name)(**kwargs)
+        except Exception:
+            logger.warn('db_call error for %s',func_name,exc_info=True)
+            raise
     
     def render_handle(self,*args,**kwargs):
         """Handle renderer exceptions properly"""
@@ -425,13 +434,16 @@ class MainHandler(tornado.web.RequestHandler):
                 raise status
             self.render_handle('main.html',status=status)
         elif url.startswith('submit'):
-            passkey = yield self.db_call('new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
-            gridspec = yield self.db_call('get_gridspec')
-            if isinstance(gridspec,Exception):
-                raise gridspec
-            self.render_handle('submit.html',passkey=passkey,gridspec=gridspec)
+            try:
+                passkey = yield self.db_call('new_passkey')
+                if isinstance(passkey,Exception):
+                    raise passkey
+                gridspec = yield self.db_call('get_gridspec')
+                if isinstance(gridspec,Exception):
+                    raise gridspec
+                self.render_handle('submit.html',passkey=passkey,gridspec=gridspec)
+            except Exception:
+                self.write_error(500,message='error generating submit page')
         elif url.startswith('dataset'):
             status = self.get_argument('status',default=None)
             if len(url_parts) > 1:

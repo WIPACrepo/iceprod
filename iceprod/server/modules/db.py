@@ -34,17 +34,20 @@ class db(module.module):
         super(db,self).start(callback=self._start)
     
     def _start(self):
-        t = self.cfg['db']['type']
-        if t.lower() == 'mysql':
-            logger.info('attempting to start MySQL db')
-            self.db = MySQL(self.cfg)
-        elif t.lower() == 'sqlite':
-            logger.info('attempting to start SQLite db')
-            self.db = SQLite(self.cfg)
-        else:
-            logger.critical('Unknown database type: %s',t)
-            raise Exception('Unknown database type: %s'%t)
-        self.db.start()
+        try:
+            t = self.cfg['db']['type']
+            if t.lower() == 'mysql':
+                logger.info('attempting to start MySQL db')
+                self.db = MySQL(self.cfg)
+            elif t.lower() == 'sqlite':
+                logger.info('attempting to start SQLite db')
+                self.db = SQLite(self.cfg)
+            else:
+                logger.critical('Unknown database type: %s',t)
+                raise Exception('Unknown database type: %s'%t)
+            self.db.start()
+        except Exception:
+            logger.critical('failed to start db',exc_info=True)
 
     def stop(self):
         if self.db:
@@ -80,10 +83,13 @@ class DBService(module.Service):
     def __nonzero__(self):
         return True
     def __getattr__(self,name):
+        logger.debug('getattr('+name+')')
         if self.mod.db and self.mod.db.dbmethods:
-            return getattr(self.mod.db.dbmethods,name)
+            try:
+                return getattr(self.mod.db.dbmethods,name)
+            except AttributeError:
+                logger.warn('method %s not in dbmethods',name,exc_info=True)
         else:
-            logger.debug('getattr('+name+')')
             raise Exception('db is not running')
 
 class Text(str):
@@ -327,7 +333,8 @@ class DBAPI(object):
         self._start_db()
         
         # set up RPCServer
-        self.dbmethods = partial(dbmethods.DBMethods,self)
+        logger.info('setting dbmethods')
+        self.dbmethods = dbmethods.DBMethods(self)
         
     def stop(self,force=False):
         self._stop_db(force=force)
@@ -480,8 +487,10 @@ class DBAPI(object):
         self.non_blocking_pool.finish()
         self.non_blocking_pool.disable_output_queue()
         self.non_blocking_pool.start()
+        logger.debug('started threadpools')
     
     def _stop_db(self,force=False):
+        logger.info('stop threadpools')
         self.write_pool.finish(not force)
         self.read_pool.finish(not force)
         self.blocking_pool.finish(not force)
@@ -608,12 +617,13 @@ else:
         
         def _dbsetup(self):
             """Set up database connections. Should return (conn,archive_conn)"""
+            logger.debug('_dbsetup()')
             name = self.cfg['db']['name']
             kwargs = {}
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
-            conn = apsw.Connection(name,statementcachesize=cache)
+            conn = apsw.Connection(name,**kwargs)
             archive_conn = apsw.Connection(name+'_archive',**kwargs)
             conn.setbusytimeout(1000)
             archive_conn.setbusytimeout(1000)

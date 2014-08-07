@@ -55,7 +55,11 @@ def main(cfgfile):
     
     readline.set_completer(completer)
     readline.parse_and_bind("tab: complete")
-
+    
+    history_file = os.path.expandvars(os.path.join('$HOME','.iceprod_debug_history'))
+    if os.path.exists(history_file):
+        readline.read_history_file(history_file)
+    
     try:
         while True:
             a = raw_input("> ").strip()
@@ -69,6 +73,8 @@ def main(cfgfile):
                 print('bad input')
     except EOFError:
         pass
+    finally:
+        readline.write_history_file(history_file)
 
 if __name__ == '__main__':
     import argparse
