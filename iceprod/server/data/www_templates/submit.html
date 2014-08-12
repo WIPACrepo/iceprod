@@ -19,33 +19,58 @@
 
 {% block body_scripts %}
 <script id="LoopTmpl" type="text/x-jsrender">
-<div class="indent {\{:~key}\}">
-    <span class="path">{\{:~concat(~path,#index,~key)}\}</span>
+<div class="indent {{!:~key}}">
+    <span class="path">{{!:~concat(~path,#index,~key)}}</span>
     {^{props ~path=~concat(~path,#index,~key) tmpl="#EditTmpl" /}}
 </div>
 </script>
 <script id="EditTmpl" type="text/x-jsrender">
-{\{if ~isArray(prop) }\}
-    <div class="header key">{\{keyToHtml:key}\}</div>
-    {^{for prop ~key=key tmpl="#LoopTmpl" /}\}
-    <div class="add">Add <span class="key">{\{singular:key}\}</span></div>
-{\{else ~isNotPrivate(key) }\}
-    {^{if ~editable(key,~path)}\}
-    <div class="editing"><span class="key">{\{keyToHtml:key}\}</span>: <input type="text" data-link="prop" /></div>
-    {\{else}\}
-    <div class="editable"><span class="key">{\{keyToHtml:key}\}</span>: {\{:prop}\}</div>
-    {\{/if}\}
-{\{/if}\}
+{{!if ~isNull(prop)}}
+    <div class="header key">{{!keyToHtml:key}}: 
+        <div class="add null">Add <span class="key">{{!singular:key}}</span></div>
+    </div>
+{{!else ~isArray(prop)}}
+    <div class="header key">{{!keyToHtml:key}}</div>
+    {^{for prop ~key=key tmpl="#LoopTmpl" /}}
+    <div class="indent add array">Add <span class="key">{{!singular:key}}</span></div>
+{{!else ~isObject(prop)}}
+    <div class="header key">{{!keyToHtml:key}}</div>
+    <div class="indent">
+        {^{props prop ~path=~concat(~path,~key) ~keyeditable=true tmpl="#EditTmpl" }}
+        {{!else}}
+          <span class="empty"></span>
+        {{!/props}}
+    </div>
+    <div class="indent add object">Add <span class="key">{{!singular:key}}</span></div>
+{{!else ~isNotPrivate(key) }}
+    <div>
+    {{!if (~keyeditable && ~editable(key+"_key",~path)) }}
+        <span class="editing"><span class="key" style="display:none">{{!:key}}</span><input class="key" type="text" data-link="key" />: {{!:prop}}</span>
+    {^{else ~editable(key,~path)}}
+        <span class="editing"><span class="key">{{!keyToHtml:key}}</span>: <input type="text" data-link="{intToStr:prop:strToInt}" /></span>
+    {{!else}}
+        {{!if ~keyeditable}}
+        <span class="editable key_editable">
+        {{!else}}
+        <span class="editable">
+        {{!/if}}
+        <span class="key">{{!keyToHtml:key}}</span>: <span class="val">{{!:prop}}</span></span>
+    {{!/if}}
+    </div>
+{{!/if}}
 </script>
 <script id="AdvTmpl" type="text/x-jsrender">
-<span class="header key">Job</span>
+<div class="header key">Job</div>
 <div class="indent">
-    <span class="path"></span>
-    {^{props ~path="" tmpl="#EditTmpl" /}\}
+    {^{props ~path="" tmpl="#EditTmpl" }}
+    {{!else}}
+      <span class="empty"></span>
+    {{!/props}}
 </div>
 </script>
 <script type="text/javascript" src="/static/json-rpc.js"></script>
 <script type="text/javascript" src="/static/dataclasses.js"></script>
+<script type="text/javascript" src="/static/jsviews.min.js"></script>
 <script type="text/javascript" src="/static/submit.js"></script>
 <script type="text/javascript">
 jQuery(document).ready(function() {

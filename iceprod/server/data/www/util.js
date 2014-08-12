@@ -34,9 +34,9 @@ var pprint_json = function(obj) {
             if (prev_part in {'[':1,'{':1,']':1})
                 part = prev_part;
             else if (prev_part == '')
-                ret += '&nbsp;&nbsp;';
+                ret += '  ';
             else
-                ret += '<br />';
+                ret += '\n';
         else
             ret += part;
         prev_part = part;

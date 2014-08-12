@@ -11,13 +11,79 @@ var Submission = (function( $ ) {
         submit_data : {}
     };
     
+    function pluralize(value) {
+        var ret = "" + value;
+        if (ret == 'DifPlus')
+            return 'difplus';
+        else if (ret == 'steering')
+            return 'steering';
+        else if (ret == 'batchsys')
+            return 'batchsys';
+        else if (ret.charAt(ret.length-1) == 'y')
+            return ret.slice(0,-1)+'ies';
+        else
+            return ret+'s';
+    }
+    
     var private_methods = {
+        clean_json : function(j) {
+            var json = j;
+            if (j === undefined)
+                json = data.submit_data;
+            if ($.type(json) === 'array') {
+                for (var i=0;i<json.length;i++)
+                    json[i] = private_methods.clean_json(json[i]);
+            } else if ($.type(json) === 'object') {
+                for (var i in json) {
+                    if (i == '_type')
+                        continue;
+                    json[i] = private_methods.clean_json(json[i]);
+                }
+            }
+            if (j === undefined)
+                data.submit_data = json;
+            else
+                return json;
+        },
+        json_type_markup : function(j,t) {
+            var json = j;
+            if (j === null) {
+                console.log('markup null');
+                return j;
+            }
+            if (j === undefined && t === undefined) {
+                console.log('markup undefined');
+                json = data.submit_data;
+                console.log(json);
+                t = 'Job';
+            }
+            if ($.type(json) === 'array') {
+                for (var i=0;i<json.length;i++) {
+                    json[i] = private_methods.json_type_markup(json[i],t);
+                }
+            } else if ($.type(json) === 'object') {
+                if (t in dataclasses) {
+                    var parent = dataclasses[t];
+                    for (var i in json) {
+                        if (i in parent && $.type(parent[i]) === 'array')
+                            json[i] = private_methods.json_type_markup(json[i],parent[i][1]);
+                    }
+                    json['_type'] = t;
+                }
+            }
+            if (j === undefined)
+                data.submit_data = json;
+            else
+                return json;
+        },
         submit : function(num_jobs, gridspec) {
+            private_methods.clean_json();
             RPCclient('submit_dataset',{passkey:data.passkey,data:data.submit_data,njobs:num_jobs,gridspec:gridspec},callback=function(return_data){
                 $('#error').html('success');
             });
         },
         build_basic : function( ) {
+            private_methods.json_type_markup();
             var editing = (function(){
                 var keys = {};
                 var methods = {
@@ -32,14 +98,23 @@ var Submission = (function( $ ) {
                         if (path != null && path != undefined && path != '')
                             key = path+'.'+key;
                         keys[key] = val;
+                    },
+                    clearall: function() {
+                        keys = {};
                     }
                 };
                 return methods;
             })();
             $.views.helpers({
                 editable: editing.is,
+                isNull: function(input){
+                    return input === null;
+                },
                 isArray: function(input){
                     return $.type(input) === 'array';
+                },
+                isObject: function(input){
+                    return $.type(input) === 'object';
                 },
                 isNotPrivate: function(input){
                     return input.charAt(0) != '_';
@@ -62,17 +137,32 @@ var Submission = (function( $ ) {
             });
             $.views.converters({
                 intToStr: function(value) {
-                    return "" + value;
+                    if (value == null || value == undefined)
+                        return ""
+                    else
+                        return "" + value;
                 },
                 strToInt: function(value) {
-                    return parseInt(value);
+                    if (value != '' && !isNaN(value)) {
+                        if (value.indexOf('.') > -1)
+                            return parseFloat(value);
+                        else
+                            return parseInt(value);
+                    } else
+                        return value;
                 },
                 keyToHtml: function(value) {
                     return "" + value.replace('_',' ');
                 },
                 singular: function(value) {
                     var ret = "" + value;
-                    if (ret.charAt(ret.length-1) == 's')
+                    if (ret == 'difplus')
+                        return 'DifPlus';
+                    else if (ret == 'batchsys')
+                        return 'batchsys';
+                    else if (ret.slice(-3) == "ies")
+                        return ret.slice(0,-3)+"y";
+                    else if (ret.charAt(ret.length-1) == 's')
                         return ret.slice(0,-1);
                     else
                         return ret;
@@ -83,23 +173,50 @@ var Submission = (function( $ ) {
             });
             var id = '#basic_submit';
             $.link.AdvTmpl(id,data.submit_data)
-            .on('click','.editable',function(){
-                var element = $.view(this).data, parent = $(this).parent(),
-                    key = $(this).find('span.key').text().replace(' ','_'),
+            .on('click','.editable span',function(){
+                var parent = $(this).parent().parent(),
+                    key = $(this).parent().find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
-                editing.set(key,true,path);
+                if ($(this).hasClass('key') && $(this).parent().hasClass('key_editable'))
+                    editing.set(key+"_key",true,path);
+                else
+                    editing.set(key,true,path);
                 $.view(id, true, 'data').refresh();
                 window.setTimeout(function(){
-                    var input = $(id).find('.editing input');
+                    var input = $(id).find('.editing input').first();
                     input.focus();
                     var strLength = input.val().length;
                     input[0].setSelectionRange(strLength,strLength);
                 },100);
             })
             .on('blur','.editing',function(){
-                var parent = $(this).parent(), key = $(this).find('span.key').text().replace(' ','_'),
+                var parent = $(this).parent(), 
+                    key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
-                editing.set(key,false,path);
+                //editing.set(key,false,path);
+                editing.clearall();
+                $.view(id, true, 'data').refresh();
+            })
+            .on('blur','.editing_key',function(){
+                var parent = $(this).parent(), 
+                    key = $(this).find('span.key').text().replace(' ','_'),
+                    path = $(parent).children('span.path').text(),
+                    depths = path.split('.'), d = data.submit_data,
+                    c = 0, part = [], p = '';
+                if (path != null && path != undefined && path != '') {
+                    for (var i=0;i<depths.length;i++) {
+                        part = depths[i].split('_');
+                        p = part.slice(0,-1).join('_');
+                        c = parseInt(part.slice(part.length-1)[0],10);
+                        d = d[p][c];
+                    }
+                }
+                var newkey = $(this).find('input').val();
+                if (newkey != key) {
+                    d[newkey] = d[key];
+                    delete d[key];
+                }
+                editing.clearall();
                 $.view(id, true, 'data').refresh();
             })
             .on('click','.add',function(){
@@ -116,35 +233,66 @@ var Submission = (function( $ ) {
                         d = d[p][c];
                     }
                 }
-                $.observable(d[key+'s']).insert(private_methods.insert_dataclass(d,key);
+                var pkey = pluralize(key);
+                var obj = private_methods.insert_dataclass(d,pkey);
+                if ($(this).hasClass('null')) {
+                    console.log('add() null');
+                    console.log(d[pkey]);
+                    d[pkey] = obj;
+                    console.log(d[pkey]);
+                    $.view(id, true, 'data').refresh();
+                } else if ($(this).hasClass('array')) {
+                    console.log('add() array')
+                    $.observable(d[pkey]).insert(obj);
+                } else if ($(this).hasClass('object')) {
+                    console.log('add() object')
+                    d[pkey]['newkey'] = obj;
+                    $.view(id, true, 'data').refresh();
+                }
+            });
+            $('body').on('blur',function(){
+                editing.clearall();
             });
         },
-        new_dataclass : function( e ) {
-            if (!(e in dataclasses))
+        new_dataclass : function( t ) {
+            // return a new dataclass of type t
+            if (!(t in dataclasses)) {
+                console.log(t+' not in dataclasses');
                 return undefined;
-            var target = dataclasses[e], ret = {'_type':e};
+            }
+            console.log('making new dataclass: '+t);
+            var target = dataclasses[t], ret = {'_type':t};
             for (var k in target) {
                 if ($.type(target[k]) === 'array')
                     ret[k] = target[k][0];
                 else
                     ret[k] = target[k];
             }
+            console.log(ret);
             return ret;
         },
-        insert_dataclass : function( e, k ) {
+        insert_dataclass : function( parent, k ) {
+            // return a new dataclass for the key in parent
             var target = {};
-            if ($.type(e) === 'string')
-                target = dataclasses[e];
-            else if ('_type' in e)
-                target = e['_type'];
+            if (parent === 'option') {
+                console.log('making string')
+                return '';
+            } else if ($.type(parent) === 'string')
+                target = dataclasses[parent];
+            else if ('_type' in parent)
+                target = dataclasses[parent['_type']];
             if (k in target && $.type(target[k]) === 'array') {
                 var ret = target[k][1], t = $.type(ret);
-                if (t === 'string' && ret in dataclasses)
+                if (t === 'string' && ret in dataclasses) {
                     return private_methods.new_dataclass(ret);
-                else if (t === 'object')
+                } else if (t === 'object') {
+                    console.log('making new dict');
                     return $.extend(true,{},ret);
-                else
+                } else {
+                    console.log('making new ret');
+                    console.log(ret);
                     return ret;
+                }
             }
             return undefined;
         }
@@ -160,6 +308,7 @@ var Submission = (function( $ ) {
             data.passkey = args.passkey;
             data.element = $(args.element);
             data.submit_data = private_methods.new_dataclass('Job')
+            private_methods.clean_json();
             
             var html = '<div><button id="basic_button">Basic View</button> <button id="expert_button">Expert View</button></div></div>';
             html += '<div id="basic_submit" style="display:none">basic</div>';
@@ -193,8 +342,9 @@ var Submission = (function( $ ) {
             var goto_expert = function(){
                 if (data.state != 'expert') {
                     data.state = 'expert';
+                    //private_methods.clean_json();
                     $('#expert_submit').find('textarea')
-                    .on('blur',function(){data.submit_data = $(this).off().val();})
+                    .on('blur',function(){data.submit_data = JSON.parse($(this).off().val());})
                     .val(pprint_json(data.submit_data));
                     $('#basic_submit').hide();
                     $('#expert_submit').show();

@@ -170,7 +170,7 @@ class _TaskCommon(dict):
     """
     Holds common attributes used by task, tray, module.
     
-    :ivar name: None
+    :ivar name: ''
     :ivar resources: []
     :ivar data: [] 
     :ivar classes: []
@@ -178,7 +178,7 @@ class _TaskCommon(dict):
     :ivar parameters: {}
     """
     def __init__(self,*args,**kwargs):
-        self['name']       = None
+        self['name']       = ''
         self['resources']  = []
         self['data']       = []
         self['classes']    = []
@@ -210,7 +210,7 @@ class _TaskCommon(dict):
     
     def valid(self):
         try:
-            return ((self['name'] is None or isinstance(self['name'],String)) and
+            return (isinstance(self['name'],String) and
                     isinstance(self['resources'],list) and
                     all(isinstance(r,Resources) and r.valid() for r in self['resources']) and
                     isinstance(self['data'],list) and
@@ -339,9 +339,9 @@ class Module(_TaskCommon):
     :ivar args: None -- args to give to class or src if not an iceprod module
     """
     def __init__(self,*args,**kwargs):
-        self['running_class'] = None
-        self['src']           = None
-        self['args']          = None
+        self['running_class'] = ''
+        self['src']           = ''
+        self['args']          = ''
         super(Module,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -367,8 +367,9 @@ class Module(_TaskCommon):
     def valid(self):
         try:
             return (super(Module,self).valid() and
-                    (self['running_class'] is None or isinstance(self['running_class'],String)) and
-                    (self['src'] is None or isinstance(self['src'],String))
+                    isinstance(self['running_class'],String) and
+                    isinstance(self['src'],String) and
+                    isinstance(self['args'],String)
                    )
         except Exception:
             return False
@@ -385,12 +386,12 @@ class Class(dict):
     :ivar env_vars: None
     """
     def __init__(self,*args,**kwargs):
-        self['name']          = None
-        self['src']           = None
-        self['resource_name'] = None
+        self['name']          = ''
+        self['src']           = ''
+        self['resource_name'] = ''
         self['recursive']     = False
-        self['libs']          = None
-        self['env_vars']      = None
+        self['libs']          = ''
+        self['env_vars']      = ''
         super(Class,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -406,12 +407,12 @@ class Class(dict):
     
     def valid(self):
         try:
-            return ((self['name'] is None or isinstance(self['name'],String)) and
-                    (self['src'] is None or isinstance(self['src'],String)) and
-                    (self['resource_name'] is None or isinstance(self['resource_name'],String)) and
+            return (isinstance(self['name'],String) and
+                    isinstance(self['src'],String) and
+                    isinstance(self['resource_name'],String) and
                     (self['recursive'] is True or self['recursive'] is False) and
-                    (self['libs'] is None or isinstance(self['libs'],String)) and
-                    (self['env_vars'] is None or isinstance(self['env_vars'],String))
+                    isinstance(self['libs'],String) and
+                    isinstance(self['env_vars'],String)
                    )
         except Exception:
             return False
@@ -424,8 +425,8 @@ class Project(dict):
     :ivar name: None -- optional
     """
     def __init__(self,*args,**kwargs):
-        self['name']       = None
-        self['class_name'] = None # required
+        self['name']       = ''
+        self['class_name'] = '' # required
         super(Project,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -441,8 +442,8 @@ class Project(dict):
     
     def valid(self):
         try:
-            return ((self['name'] is None or isinstance(self['name'],String)) and
-                    (self['class_name'] is None or isinstance(self['class_name'],String))
+            return (isinstance(self['name'],String) and
+                    isinstance(self['class_name'],String)
                    )
         except Exception:
             return False
@@ -451,16 +452,16 @@ class _ResourceCommon(dict):
     """
     Holds common attributes used by Resource and Data.
     
-    :ivar remote: None
-    :ivar local: None
-    :ivar compression: None
+    :ivar remote: ''
+    :ivar local: ''
+    :ivar compression: False
     """
-    compression_options = ['none','gzip','gz','bzip','bz2','lzma']
+    compression_options = [False,True,'none','gzip','gz','bzip','bz2','lzma']
 
     def __init__(self,*args,**kwargs):
-        self['remote']      = None
-        self['local']       = None
-        self['compression'] = None
+        self['remote']      = ''
+        self['local']       = ''
+        self['compression'] = False
         super(_ResourceCommon,self).__init__(*args,**kwargs)
     
     def convert(self):
@@ -468,11 +469,9 @@ class _ResourceCommon(dict):
     
     def valid(self):
         try:
-            return ((self['remote'] is None or isinstance(self['remote'],String)) and
-                    (self['local'] is None or isinstance(self['local'],String)) and
-                    (self['compression'] is None or self['compression'] is True or
-                     self['compression'] is False or
-                     self['compression'] in self.compression_options)
+            return (isinstance(self['remote'],String) and
+                    isinstance(self['local'],String) and
+                    self['compression'] in self.compression_options
                    )
         except Exception:
             return False
@@ -492,6 +491,8 @@ class Resource(_ResourceCommon):
         new objects."""
         ret = {}
         for n in self:
+            if n == 'compression':
+                ret[n] = [self[n],self.compression_options]
             ret[n] = self[n]
         return ret
     
@@ -510,15 +511,15 @@ class Data(_ResourceCommon):
     """
     A data object, representing input and/or output of data.
     
-    :ivar type: None -- required
-    :ivar movement: None -- required
+    :ivar type: 'permanent' -- required
+    :ivar movement: 'both' -- required
     """
     type_options = ['permanent','tray_temp','task_temp','job_temp','dataset_temp','site_temp']
     movement_options = ['input','output','both']
     
     def __init__(self,*args,**kwargs):
-        self['type']     = None
-        self['movement'] = None
+        self['type']     = 'permanent'
+        self['movement'] = 'both'
         super(Data,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -526,7 +527,9 @@ class Data(_ResourceCommon):
         new objects."""
         ret = {}
         for n in self:
-            if n == 'type':
+            if n == 'compression':
+                ret[n] = [self[n],self.compression_options]
+            elif n == 'type':
                 ret[n] = [self[n],self.type_options]
             elif n == 'movement':
                 ret[n] = [self[n],self.movement_options]
@@ -540,8 +543,8 @@ class Data(_ResourceCommon):
     def valid(self):
         try:
             return (super(Data,self).valid() and
-                    (self['type'] is None or self['type'] in self.type_options) and
-                    (self['movement'] is None or self['movement'] in self.movement_options)
+                    self['type'] in self.type_option and
+                    self['movement'] in self.movement_options
                    )
         except Exception:
             return False

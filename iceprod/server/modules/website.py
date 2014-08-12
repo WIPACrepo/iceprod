@@ -58,7 +58,7 @@ class website(module.module):
     
     def __init__(self,*args,**kwargs):
         # run default init
-        super(website,self).__init__(*args,**kwargs)        
+        super(website,self).__init__(*args,**kwargs)
         self.service_class = WebsiteService(self)
         
         # set up local variables
@@ -80,6 +80,26 @@ class website(module.module):
         except Exception as e:
             logger.error('cannot stop Nginx: %r',e)
         super(website,self).stop()
+    
+    def restart(self):
+        """restart website"""
+        logger.warn('restarting website')
+        # stop nginx
+        try:
+            if self.nginx:
+                self.nginx.stop()
+        except Exception as e:
+            logger.error('cannot stop Nginx: %r',e)
+        try:
+            if self.http_server:
+                self.http_server.stop()
+            def cb(*args,**kwargs):
+                self._start()
+            t = time.time()+0.5
+            tornado.ioloop.IOLoop.current().add_timeout(t,cb)
+        except Exception:
+            logger.warn('error during restart',exc_info=True)
+            raise
     
     def kill(self):
         """Kill thread"""
@@ -114,8 +134,16 @@ class website(module.module):
                 raise Exception('bad template path')
             
             # configure nginx
-            kwargs = {'request_timeout': self.cfg['webserver']['request_timeout']}
-            self.messaging.timeout = int(self.cfg['webserver']['request_timeout'])
+            kwargs = {}
+            if (self.cfg and 'webserver' in self.cfg and
+                'request_timeout' in self.cfg['webserver']):
+                try:
+                    timeout = int(self.cfg['webserver']['request_timeout'])
+                except Exception:
+                    pass
+                else:
+                    kwargs['request_timeout'] = timeout
+                    self.messaging.timeout = timeout
             if ('download' in self.cfg and 'http_username' in self.cfg['download']
                 and self.cfg['download']['http_username']):
                 kwargs['username'] = self.cfg['download']['http_username']
@@ -209,6 +237,10 @@ class WebsiteService(module.Service):
     """
     Override the basic :class:`Service` handler.
     """
+    def restart(self,callback=None):
+        self.mod.restart()
+        if callback:
+            callback()
     def logrotate(self,callback=None):
         self.mod.logrotate()
         if callback:

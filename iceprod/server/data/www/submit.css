@@ -1,52 +1,49 @@
 #basic_submit {
     padding: 4px;
 }
-#basic_submit div.xml_basic_section {
-    border: 1px solid black;
-    margin: 4px;
-    padding: 4px;
+#basic_submit div.indent {
+    margin-left: 1em;
+    margin-top: 2px;
+    border-top: 1px solid blue;
 }
-#basic_submit div.xml_basic_section+div.xml_basic_section {
-    margin-top: 8px;
+#basic_submit div.indent.trays {
+    border-top: 1px solid cyan;
 }
-#basic_submit div.xml_basic_config {
-    margin: 0;
-    padding: 0;
+#basic_submit div.indent.modules {
+    border-top: 1px solid green;
 }
-#basic_submit div.xml_basic_task , #basic_submit div.xml_basic_tray{
-    border: 1px solid black;
-    margin: 0;
-    padding: 0;
+#basic_submit .key {
+    text-transform: capitalize;
 }
-#basic_submit div.xml_basic_header div {
+#basic_submit input.key {
+    text-transform: none;
+}
+#basic_submit .header {
+    font-weight: bold;
+}
+#basic_submit .path {
+    display:none;
+}
+#basic_submit .add {
+    color: blue;
+    cursor: pointer;
+}
+#basic_submit .null {
     display: inline-block;
-    width: 100px;
 }
-#basic_submit div.xml_basic h4 {
-    margin: 0 0 .2em;
-    padding: 0;
+#basic_submit .editable {
+    cursor: pointer;
 }
-#basic_submit div.xml_basic_header div, #basic_submit div.xml_basic_line input {
-    width: 150px;
-    min-width: 150px;
-    margin: auto 4px;
+#basic_submit span.val {
+    display: inline-block;
+    min-height: 1em;
+    min-width: 30px;
 }
-#basic_submit div.xml_basic_header div.xml_basic_src, #basic_submit div.xml_basic_line input.xml_basic_line_src,
-#basic_submit div.xml_basic_header div.xml_basic_local, #basic_submit div.xml_basic_line input.xml_basic_line_local,
-#basic_submit div.xml_basic_header div.xml_basic_remote, #basic_submit div.xml_basic_line input.xml_basic_line_remote {
-    width: 250px;
+#basic_submit span.empty {
+    height: .2em;
+    width: 100%;
+    border: 1px solid black;
 }
-#basic_submit div.xml_basic_params div.xml_basic_value, #basic_submit div.xml_basic_params input.xml_basic_line_value {
-    min-width: 350px;
-}
-#basic_submit div.xml_basic_params div.xml_basic_type, #basic_submit div.xml_basic_params input.xml_basic_line_type {
-    min-width: 100px;
-}
-#basic_submit div.xml_basic_class div.xml_basic_recursive, #basic_submit div.xml_basic_class input.xml_basic_line_recursive{
-    width: 50px;
-    min-width: 50px;
-}
-
 
 #advanced_submit div {
     vertical-align: top;
