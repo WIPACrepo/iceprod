@@ -36,7 +36,8 @@
 {{!else ~isObject(prop)}}
     <div class="header key">{{!keyToHtml:key}}</div>
     <div class="indent">
-        {^{props prop ~path=~concat(~path,~key) ~keyeditable=true tmpl="#EditTmpl" }}
+        <span class="path">{{!:~concat(~path,key)}}</span>
+        {^{props prop ~path=~concat(~path,key) ~keyeditable=true tmpl="#EditTmpl" }}
         {{!else}}
           <span class="empty"></span>
         {{!/props}}

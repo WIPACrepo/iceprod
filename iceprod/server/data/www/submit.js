@@ -88,15 +88,17 @@ var Submission = (function( $ ) {
                 var keys = {};
                 var methods = {
                     is: function(key,path) {
-                        if (path != null && path != undefined && path != '')
+                        if (!(path === undefined) && path != null && path != '')
                             key = path+'.'+key;
+                        console.log('editing.is() key='+key);
                         if (key in keys)
                             return keys[key];
                         return keys[key] = false;
                     },
                     set: function(key,val,path) {
-                        if (path != null && path != undefined && path != '')
+                        if (!(path === undefined) && path != null && path != '')
                             key = path+'.'+key;
+                        console.log('editing.set() key='+key);
                         keys[key] = val;
                     },
                     clearall: function() {
@@ -120,19 +122,16 @@ var Submission = (function( $ ) {
                     return input.charAt(0) != '_';
                 },
                 concat: function(a,b,c){
-                    if (a != undefined && a != null && a != '') {
-                        if (b != undefined) {
-                            if (c != undefined && c != null && c != '')
-                                ret = a+'.'+c+'_'+b;
-                            else
-                                ret = a+'.'+b;
-                        } else
-                            ret = a;
-                    } else if (b != undefined)
-                        ret = c+'_'+b;
-                    else
-                        ret = c;
-                    return ret;
+                    if (b === undefined)
+                        return a;
+                    else {
+                        if (a != '')
+                            a += '.';
+                        if (c === undefined || c === null || c == '')
+                            return a+b;
+                        else
+                            return a+c+'_'+b;
+                    }
                 }
             });
             $.views.converters({
@@ -174,7 +173,7 @@ var Submission = (function( $ ) {
             var id = '#basic_submit';
             $.link.AdvTmpl(id,data.submit_data)
             .on('click','.editable span',function(){
-                var parent = $(this).parent().parent(),
+                var parent = $(this).parent().parent().parent(),
                     key = $(this).parent().find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
                 if ($(this).hasClass('key') && $(this).parent().hasClass('key_editable'))
@@ -184,31 +183,37 @@ var Submission = (function( $ ) {
                 $.view(id, true, 'data').refresh();
                 window.setTimeout(function(){
                     var input = $(id).find('.editing input').first();
-                    input.focus();
-                    var strLength = input.val().length;
-                    input[0].setSelectionRange(strLength,strLength);
+                    if (input.length > 0) {
+                        input.focus();
+                        var strLength = input.val().length;
+                        input[0].setSelectionRange(strLength,strLength);
+                    } else {
+                        console.warn('no input for key:'+key);
+                    }
                 },100);
             })
             .on('blur','.editing',function(){
-                var parent = $(this).parent(), 
+                var parent = $(this).parent().parent(), 
                     key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
-                //editing.set(key,false,path);
                 editing.clearall();
                 $.view(id, true, 'data').refresh();
             })
             .on('blur','.editing_key',function(){
-                var parent = $(this).parent(), 
+                var parent = $(this).parent().parent(), 
                     key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text(),
                     depths = path.split('.'), d = data.submit_data,
                     c = 0, part = [], p = '';
-                if (path != null && path != undefined && path != '') {
+                if (!(path === undefined) && path != null && path != '') {
                     for (var i=0;i<depths.length;i++) {
                         part = depths[i].split('_');
-                        p = part.slice(0,-1).join('_');
-                        c = parseInt(part.slice(part.length-1)[0],10);
-                        d = d[p][c];
+                        if (part.length > 1) {
+                            p = part.slice(0,-1).join('_');
+                            c = parseInt(part.slice(part.length-1)[0],10);
+                            d = d[p][c];
+                        } else
+                            d = d[part[0]];
                     }
                 }
                 var newkey = $(this).find('input').val();
@@ -225,12 +230,15 @@ var Submission = (function( $ ) {
                     depths = path.split('.'), d = data.submit_data,
                     c = 0, part = [], p = '';
                 //console.log('add('+key+','+path+','+JSON.stringify(depths)+')');
-                if (path != null && path != undefined && path != '') {
+                if (!(path === undefined) && path != null && path != '') {
                     for (var i=0;i<depths.length;i++) {
                         part = depths[i].split('_');
-                        p = part.slice(0,-1).join('_');
-                        c = parseInt(part.slice(part.length-1)[0],10);
-                        d = d[p][c];
+                        if (part.length > 1) {
+                            p = part.slice(0,-1).join('_');
+                            c = parseInt(part.slice(part.length-1)[0],10);
+                            d = d[p][c];
+                        } else
+                            d = d[part[0]];
                     }
                 }
                 var pkey = pluralize(key);
