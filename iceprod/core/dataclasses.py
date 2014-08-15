@@ -10,6 +10,9 @@ into special `dataclasses` objects.
 
 The `valid` method of each class will test the validity of the data to be
 an actual dataset config.
+
+The `output` method of each class will create json with info on each
+dataclass, to be used in javascript.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -40,6 +43,7 @@ class Job(dict):
     :ivar description: ""
     :ivar categories: []
     """
+    plural = 'Jobs'
     def __init__(self,*args,**kwargs):
         self['dataset']     = 0
         self['parent_id']   = 0
@@ -117,6 +121,7 @@ class Steering(dict):
     :ivar resources: []
     :ivar data: []
     """
+    plural = 'Steering'
     def __init__(self,*args,**kwargs):
         self['parameters'] = {}
         self['batchsys']   = {}
@@ -232,6 +237,7 @@ class Task(_TaskCommon):
     :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
     :ivar trays: []
     """
+    plural = 'Tasks'
     def __init__(self,*args,**kwargs):
         self['depends']  = []
         self['batchsys'] = {}
@@ -288,6 +294,7 @@ class Tray(_TaskCommon):
     :ivar iterations: 1
     :ivar modules: []
     """
+    plural = 'Trays'
     def __init__(self,*args,**kwargs):
         self['iterations'] = 1
         self['modules']    = []
@@ -338,6 +345,7 @@ class Module(_TaskCommon):
     :ivar src: None -- src of class or script
     :ivar args: None -- args to give to class or src if not an iceprod module
     """
+    plural = 'Modules'
     def __init__(self,*args,**kwargs):
         self['running_class'] = ''
         self['src']           = ''
@@ -385,6 +393,7 @@ class Class(dict):
     :ivar libs: None -- if more than default lib directory
     :ivar env_vars: None
     """
+    plural = 'Classes'
     def __init__(self,*args,**kwargs):
         self['name']          = ''
         self['src']           = ''
@@ -424,6 +433,7 @@ class Project(dict):
     :ivar class_name: None -- required
     :ivar name: None -- optional
     """
+    plural = 'Projects'
     def __init__(self,*args,**kwargs):
         self['name']       = ''
         self['class_name'] = '' # required
@@ -482,8 +492,9 @@ class Resource(_ResourceCommon):
     
     :ivar arch: None
     """
+    plural = 'Resources'
     def __init__(self,*args,**kwargs):
-        self['arch'] = None
+        self['arch'] = ''
         super(Resource,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -502,7 +513,7 @@ class Resource(_ResourceCommon):
     def valid(self):
         try:
             return (super(Resource,self).valid() and
-                    (self['arch'] is None or isinstance(self['arch'],String))
+                    isinstance(self['arch'],String)
                    )
         except Exception:
             return False
@@ -514,6 +525,7 @@ class Data(_ResourceCommon):
     :ivar type: 'permanent' -- required
     :ivar movement: 'both' -- required
     """
+    plural = 'Data'
     type_options = ['permanent','tray_temp','task_temp','job_temp','dataset_temp','site_temp']
     movement_options = ['input','output','both']
     
@@ -576,6 +588,7 @@ class DifPlus(dict):
     :ivar dif: None
     :ivar plus: None
     """
+    plural = 'DifPlus'
     def __init__(self,*args,**kwargs):
         self['dif']  = None
         self['plus'] = None
@@ -631,6 +644,7 @@ class Dif(dict):
    :ivar source_name: 'SIMULATION'
    :ivar dif_creation_date: time.strftime("%Y-%m-%d")
     """
+    plural = 'Dif'
     # TODO: move these to the DB, or somewhere IceCube-specific
     valid_parameters = [ 
         "SPACE SCIENCE > Astrophysics > Neutrinos", 
@@ -748,6 +762,7 @@ class Plus(dict):
    :ivar log_file: None
    :ivar command_line: None
     """
+    plural = 'Plus'
     
     valid_category = [
         "unclassified",
@@ -838,6 +853,7 @@ class Personnel(dict):
    :ivar last_name: None
    :ivar email: None
     """
+    plural = 'Personnel'
     def __init__(self,*args,**kwargs):
         self['role']       = None
         self['first_name'] = None
@@ -877,6 +893,7 @@ class DataCenter(dict):
    :ivar name: None
    :ivar personnel: []
     """
+    plural = 'DataCenter'
     valid_names = ['UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison']
     
     def __init__(self,*args,**kwargs):

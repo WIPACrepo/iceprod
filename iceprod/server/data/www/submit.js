@@ -13,16 +13,40 @@ var Submission = (function( $ ) {
     
     function pluralize(value) {
         var ret = "" + value;
-        if (ret == 'DifPlus')
-            return 'difplus';
-        else if (ret == 'steering')
-            return 'steering';
-        else if (ret == 'batchsys')
-            return 'batchsys';
-        else if (ret.charAt(ret.length-1) == 'y')
-            return ret.slice(0,-1)+'ies';
+        if (ret in dataclasses['names'])
+            return dataclasses['names'][ret];
         else
-            return ret+'s';
+            return ret;
+    }
+    function singular(value) {
+        var ret = "" + value;
+        for (d in dataclasses['names']) {
+            if (ret == dataclasses['names'][d])
+                return d;
+        }
+        return ret;
+    }
+    function getDataclass(path,key) {
+        console.log('getDataclass('+path+' , '+key+')')
+        if (path === null || path == '')
+            path = key;
+        else if (key != null && key != '')
+            path = path + '.' + key;
+        var depths = path.split('.'), d = dataclasses['classes']['Job'],
+            part = [], p = '', c = null;
+        for (var i=0;i<depths.length;i++) {
+            part = depths[i].split('_');
+            if (part.length > 1) {
+                p = part.slice(0,-1).join('_');
+            } else
+                p = part[0]
+            if (p in d && $.type(d[p]) == 'array') {
+                c = d[p][1];
+                d = dataclasses['classes'][c]
+            } else
+                return null;
+        }
+        return c;
     }
     
     var private_methods = {
@@ -62,8 +86,8 @@ var Submission = (function( $ ) {
                     json[i] = private_methods.json_type_markup(json[i],t);
                 }
             } else if ($.type(json) === 'object') {
-                if (t in dataclasses) {
-                    var parent = dataclasses[t];
+                if (t in dataclasses['names']) {
+                    var parent = dataclasses['classes'][t];
                     for (var i in json) {
                         if (i in parent && $.type(parent[i]) === 'array')
                             json[i] = private_methods.json_type_markup(json[i],parent[i][1]);
@@ -96,8 +120,12 @@ var Submission = (function( $ ) {
                         return keys[key] = false;
                     },
                     set: function(key,val,path) {
+                        console.warn('editing.set('+key+' , '+val+' , '+path+')');
                         if (!(path === undefined) && path != null && path != '')
-                            key = path+'.'+key;
+                            if (key != null && key != '')
+                                key = path+'.'+key;
+                            else
+                                key = path;
                         console.log('editing.set() key='+key);
                         keys[key] = val;
                     },
@@ -107,19 +135,73 @@ var Submission = (function( $ ) {
                 };
                 return methods;
             })();
-            $.views.helpers({
+            var converters = {
+                intToStr: function(value) {
+                    if (value == null || value == undefined)
+                        return ""
+                    else
+                        return "" + value;
+                },
+                strToInt: function(value) {
+                    if (value.toLowerCase() == 'true')
+                        return true;
+                    else if (value.toLowerCase()  == 'false')
+                        return false;
+                    else if (value != '' && !isNaN(value)) {
+                        if (value.indexOf('.') > -1)
+                            return parseFloat(value);
+                        else
+                            return parseInt(value);
+                    } else
+                        return value;
+                },
+                keyToHtml: function(value) {
+                    return "" + value.replace('_',' ');
+                },
+                singular: singular
+            };
+            var helpers = {
                 editable: editing.is,
+                equal: function(a,b){
+                    var ret = (a == b);
+                    console.warn('equal('+a+','+b+'):'+ret);
+                    return ret;
+                },
                 isNull: function(input){
                     return input === null;
                 },
                 isArray: function(input){
                     return $.type(input) === 'array';
                 },
+                isBasicArray: function(input){
+                    ret =  (input.length > 0 && $.type(input[0]) !== 'object');
+                    console.log('isBasicArray '+ret)
+                    return ret;
+                },
                 isObject: function(input){
                     return $.type(input) === 'object';
                 },
                 isNotPrivate: function(input){
                     return input.charAt(0) != '_';
+                },
+                isEnum: function(path,key){
+                    var c = getDataclass(path);
+                    if (c === null || !(c in dataclasses['classes'])) {
+                        console.log('isEnum(): dataclass missing');
+                        return false;
+                    }
+                    c = dataclasses['classes'][c];
+                    if (!(key in c))
+                        return false;
+                    var ret= ($.type(c[key]) === 'array' && $.type(c[key][1] === 'array') && c[key][1].length > 0);
+                    console.log('isEnum(): '+ret);
+                    return ret;
+                },
+                getEnums: function(path,key){
+                    var c = getDataclass(path);
+                    if (c === null || !(c in dataclasses['classes']))
+                        return [];
+                    return dataclasses['classes'][c][key][1];
                 },
                 concat: function(a,b,c){
                     if (b === undefined)
@@ -132,45 +214,25 @@ var Submission = (function( $ ) {
                         else
                             return a+c+'_'+b;
                     }
-                }
-            });
-            $.views.converters({
-                intToStr: function(value) {
-                    if (value == null || value == undefined)
-                        return ""
-                    else
-                        return "" + value;
                 },
-                strToInt: function(value) {
-                    if (value != '' && !isNaN(value)) {
-                        if (value.indexOf('.') > -1)
-                            return parseFloat(value);
-                        else
-                            return parseInt(value);
-                    } else
-                        return value;
-                },
-                keyToHtml: function(value) {
-                    return "" + value.replace('_',' ');
-                },
-                singular: function(value) {
-                    var ret = "" + value;
-                    if (ret == 'difplus')
-                        return 'DifPlus';
-                    else if (ret == 'batchsys')
-                        return 'batchsys';
-                    else if (ret.slice(-3) == "ies")
-                        return ret.slice(0,-3)+"y";
-                    else if (ret.charAt(ret.length-1) == 's')
-                        return ret.slice(0,-1);
+                get_class: function(path,key){
+                    var ret = getDataclass(path,key);
+                    if (ret === null)
+                        return key;
                     else
                         return ret;
+                },
+                isDataclass: function(path,key){
+                    return !(getDataclass(path,key) === null);
                 }
-            });
+            };
+            $.views.helpers(helpers);
+            $.views.converters(converters);
             $.templates({
                 AdvTmpl:"#AdvTmpl"
             });
             var id = '#basic_submit';
+            $(id).off().empty();
             $.link.AdvTmpl(id,data.submit_data)
             .on('click','.editable span',function(){
                 var parent = $(this).parent().parent().parent(),
@@ -188,7 +250,12 @@ var Submission = (function( $ ) {
                         var strLength = input.val().length;
                         input[0].setSelectionRange(strLength,strLength);
                     } else {
-                        console.warn('no input for key:'+key);
+                        input = $(id).find('.editing select').first();
+                        if (input.length > 0) {
+                            input.focus();
+                        }
+                        else
+                            console.warn('no input for key:'+key);
                     }
                 },100);
             })
@@ -196,6 +263,44 @@ var Submission = (function( $ ) {
                 var parent = $(this).parent().parent(), 
                     key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
+                if ((key === null || key == '') && path != null && path != '')  {
+                    // this is a basic array
+                    var val = converters.strToInt($(this).find('input').val()),
+                        depths = path.split('.'), d = data.submit_data,
+                        c = 0, part = [], p = '', i = 0;
+                    for (;i<depths.length-1;i++) {
+                        part = depths[i].split('_');
+                        if (part.length > 1) {
+                            p = part.slice(0,-1).join('_');
+                            c = parseInt(part.slice(part.length-1)[0],10);
+                            d = d[p][c];
+                        } else
+                            d = d[part[0]];
+                    }
+                    part = depths[i].split('_');
+                    if (part.length > 1) {
+                        p = part.slice(0,-1).join('_');
+                        c = parseInt(part.slice(part.length-1)[0],10);
+                        d[p][c] = val;
+                    } else
+                        d[part[0]] = val;
+                } else if ($(this).find('select').length > 0) {
+                    // this is an enum
+                    var val = converters.strToInt($(this).find('select option:selected').text()),
+                        depths = path.split('.'), d = data.submit_data,
+                        c = 0, part = [], p = '', i = 0;
+                    for (;i<depths.length;i++) {
+                        part = depths[i].split('_');
+                        if (part.length > 1) {
+                            p = part.slice(0,-1).join('_');
+                            c = parseInt(part.slice(part.length-1)[0],10);
+                            d = d[p][c];
+                        } else
+                            d = d[part[0]];
+                    }
+                    d[key] = val;
+                }
+                // else, this is taken care of by jsviews
                 editing.clearall();
                 $.view(id, true, 'data').refresh();
             })
@@ -225,11 +330,10 @@ var Submission = (function( $ ) {
                 $.view(id, true, 'data').refresh();
             })
             .on('click','.add',function(){
-                var parent = $(this).parent(), key = $(this).find('span.key').text().replace(' ','_'),
+                var parent = $(this).parent().parent(), key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text(),
                     depths = path.split('.'), d = data.submit_data,
                     c = 0, part = [], p = '';
-                //console.log('add('+key+','+path+','+JSON.stringify(depths)+')');
                 if (!(path === undefined) && path != null && path != '') {
                     for (var i=0;i<depths.length;i++) {
                         part = depths[i].split('_');
@@ -241,20 +345,25 @@ var Submission = (function( $ ) {
                             d = d[part[0]];
                     }
                 }
-                var pkey = pluralize(key);
-                var obj = private_methods.insert_dataclass(d,pkey);
+                console.log('add() path='+path+'   key='+key);
+                console.log(d);
+                var obj = private_methods.insert_dataclass(d,key);
                 if ($(this).hasClass('null')) {
                     console.log('add() null');
-                    console.log(d[pkey]);
-                    d[pkey] = obj;
-                    console.log(d[pkey]);
+                    console.log(d[key]);
+                    d[key] = obj;
+                    console.log(d[key]);
                     $.view(id, true, 'data').refresh();
                 } else if ($(this).hasClass('array')) {
                     console.log('add() array')
-                    $.observable(d[pkey]).insert(obj);
+                    if (d[key].length < 1) {
+                        d[key].push(obj);
+                        $.view(id, true, 'data').refresh();
+                    } else
+                        $.observable(d[key]).insert(obj);
                 } else if ($(this).hasClass('object')) {
                     console.log('add() object')
-                    d[pkey]['newkey'] = obj;
+                    d[key]['newkey'] = obj;
                     $.view(id, true, 'data').refresh();
                 }
             });
@@ -264,12 +373,12 @@ var Submission = (function( $ ) {
         },
         new_dataclass : function( t ) {
             // return a new dataclass of type t
-            if (!(t in dataclasses)) {
+            if (!(t in dataclasses['names'])) {
                 console.log(t+' not in dataclasses');
                 return undefined;
             }
             console.log('making new dataclass: '+t);
-            var target = dataclasses[t], ret = {'_type':t};
+            var target = dataclasses['classes'][t], ret = {'_type':t};
             for (var k in target) {
                 if ($.type(target[k]) === 'array')
                     ret[k] = target[k][0];
@@ -286,12 +395,12 @@ var Submission = (function( $ ) {
                 console.log('making string')
                 return '';
             } else if ($.type(parent) === 'string')
-                target = dataclasses[parent];
+                target = dataclasses['classes'][parent];
             else if ('_type' in parent)
-                target = dataclasses[parent['_type']];
+                target = dataclasses['classes'][parent['_type']];
             if (k in target && $.type(target[k]) === 'array') {
                 var ret = target[k][1], t = $.type(ret);
-                if (t === 'string' && ret in dataclasses) {
+                if (t === 'string' && ret in dataclasses['names']) {
                     return private_methods.new_dataclass(ret);
                 } else if (t === 'object') {
                     console.log('making new dict');

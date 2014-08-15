@@ -24,15 +24,31 @@
     {^{props ~path=~concat(~path,#index,~key) tmpl="#EditTmpl" /}}
 </div>
 </script>
+<script id="LoopTmplBasic" type="text/x-jsrender">
+<div class="indent {{!:~key}}">
+    <span class="path">{{!:~concat(~path,#index,~key)}}</span>
+    <div>
+    {^{if ~editable(~concat(~path,#index,~key))}}
+        <span class="editing"><span class="key hide"></span><input type="text" data-link="{intToStr:#data:strToInt}" /></span>
+    {{!else}}
+        <span class="editable"><span class="key hide"></span><span class="val">{{!:#data}}</span></span>
+    {{!/if}}
+    </div>
+</div>
+</script>
 <script id="EditTmpl" type="text/x-jsrender">
 {{!if ~isNull(prop)}}
-    <div class="header key">{{!keyToHtml:key}}: 
-        <div class="add null">Add <span class="key">{{!singular:key}}</span></div>
+    <div class="key">{{!keyToHtml:key}}: 
+        <div class="add null"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div>
     </div>
 {{!else ~isArray(prop)}}
     <div class="header key">{{!keyToHtml:key}}</div>
-    {^{for prop ~key=key tmpl="#LoopTmpl" /}}
-    <div class="indent add array">Add <span class="key">{{!singular:key}}</span></div>
+    {{!if ~isBasicArray(prop)}}
+        {^{for prop ~key=key tmpl="#LoopTmplBasic" /}}
+    {{!else}}
+        {^{for prop ~key=key tmpl="#LoopTmpl" /}}
+    {{!/if}}
+    <div class="indent"><div class="add array"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div></div>
 {{!else ~isObject(prop)}}
     <div class="header key">{{!keyToHtml:key}}</div>
     <div class="indent">
@@ -42,13 +58,29 @@
           <span class="empty"></span>
         {{!/props}}
     </div>
-    <div class="indent add object">Add <span class="key">{{!singular:key}}</span></div>
+    {{!if !(~isDataclass(~path,key))}}
+    <div class="indent"><div class="add object"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div></div>
+    {{!/if}}
 {{!else ~isNotPrivate(key) }}
     <div>
     {{!if (~keyeditable && ~editable(key+"_key",~path)) }}
-        <span class="editing"><span class="key" style="display:none">{{!:key}}</span><input class="key" type="text" data-link="key" />: {{!:prop}}</span>
+        <span class="editing"><span class="key hide">{{!:key}}</span><input class="key" type="text" data-link="key" />: {{!:prop}}</span>
     {^{else ~editable(key,~path)}}
-        <span class="editing"><span class="key">{{!keyToHtml:key}}</span>: <input type="text" data-link="{intToStr:prop:strToInt}" /></span>
+        <span class="editing"><span class="key">{{!keyToHtml:key}}</span>: 
+        {{!if ~isEnum(~path,key)}}
+            <select required="true">
+            {{!for ~getEnums(~path,key) ~enumVal=prop}}
+                {{!if ~equal(~enumVal,#data)}}
+                <option selected>{{!:#data}}</option>
+                {{!else}}
+                <option>{{!:#data}}</option>
+                {{!/if}}
+            {{!/for}}
+            </select>
+        {{!else}}
+            <input type="text" data-link="{intToStr:prop:strToInt}" />
+        {{!/if}}
+        </span>
     {{!else}}
         {{!if ~keyeditable}}
         <span class="editable key_editable">

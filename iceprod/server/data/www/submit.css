@@ -1,3 +1,7 @@
+span.hide {
+    display:none;
+}
+
 #basic_submit {
     padding: 4px;
 }

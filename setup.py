@@ -29,11 +29,14 @@ try:
     import json
     from iceprod.core import dataclasses
     dcs = {}
+    names = {}
     for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
         if name[0] != '_' and dict in inspect.getmro(obj):
             dcs[name] = obj().output()
+            names[name] = obj.plural
+    data = {'classes':dcs,'names':names}
     with open(os.path.join('iceprod','server','data','www','dataclasses.js'),'w') as f:
-        f.write('var dataclasses='+json.dumps(dcs,separators=(',',':'))+';')
+        f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
 except Exception:
     print('WARN: cannot make dataclasses.js')
 
