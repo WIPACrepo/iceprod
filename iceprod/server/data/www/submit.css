@@ -43,9 +43,9 @@ span.hide {
     min-height: 1em;
     min-width: 30px;
 }
-#basic_submit span.empty {
+#basic_submit div.empty {
     height: .2em;
-    width: 100%;
+    width: 0;
     border: 1px solid black;
 }
 

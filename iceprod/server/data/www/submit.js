@@ -20,8 +20,10 @@ var Submission = (function( $ ) {
     }
     function singular(value) {
         var ret = "" + value;
+        if (value.toLowerCase() == 'categories' || value.toLowerCase() == 'category' || value == '')
+            console.warn('singular('+value+')');
         for (d in dataclasses['names']) {
-            if (ret == dataclasses['names'][d])
+            if (ret.toLowerCase() == dataclasses['names'][d].toLowerCase())
                 return d;
         }
         return ret;
@@ -46,6 +48,8 @@ var Submission = (function( $ ) {
             } else
                 return null;
         }
+        if (c == '')
+            return null;
         return c;
     }
     
@@ -86,7 +90,7 @@ var Submission = (function( $ ) {
                     json[i] = private_methods.json_type_markup(json[i],t);
                 }
             } else if ($.type(json) === 'object') {
-                if (t in dataclasses['names']) {
+                if (t in dataclasses['classes']) {
                     var parent = dataclasses['classes'][t];
                     for (var i in json) {
                         if (i in parent && $.type(parent[i]) === 'array')
@@ -222,8 +226,17 @@ var Submission = (function( $ ) {
                     else
                         return ret;
                 },
-                isDataclass: function(path,key){
-                    return !(getDataclass(path,key) === null);
+                canAddToObject: function(path,key){
+                    var c = getDataclass(path,key);
+                    if (c === null || !(c in dataclasses['classes']))
+                        return true;
+                    else {
+                        c = dataclasses['classes'][c];
+                        var keys = Object.keys(c);
+                        ret = (keys.length < 1 || (keys.length == 1 && '*' in c));
+                        console.warn('canAddToObject(): '+ret+' for '+JSON.stringify(keys));
+                        return ret;
+                    }
                 }
             };
             $.views.helpers(helpers);
@@ -348,6 +361,8 @@ var Submission = (function( $ ) {
                 console.log('add() path='+path+'   key='+key);
                 console.log(d);
                 var obj = private_methods.insert_dataclass(d,key);
+                if (obj === undefined || obj == null)
+                    obj = '';
                 if ($(this).hasClass('null')) {
                     console.log('add() null');
                     console.log(d[key]);
@@ -363,6 +378,7 @@ var Submission = (function( $ ) {
                         $.observable(d[key]).insert(obj);
                 } else if ($(this).hasClass('object')) {
                     console.log('add() object')
+                    console.log(obj)
                     d[key]['newkey'] = obj;
                     $.view(id, true, 'data').refresh();
                 }
@@ -373,7 +389,7 @@ var Submission = (function( $ ) {
         },
         new_dataclass : function( t ) {
             // return a new dataclass of type t
-            if (!(t in dataclasses['names'])) {
+            if (!(t in dataclasses['classes'])) {
                 console.log(t+' not in dataclasses');
                 return undefined;
             }
@@ -385,31 +401,35 @@ var Submission = (function( $ ) {
                 else
                     ret[k] = target[k];
             }
+            if ($.type(ret) === 'object' && '*' in ret) {
+                delete ret['*'];
+                delete ret['_type'];
+            }
             console.log(ret);
             return ret;
         },
         insert_dataclass : function( parent, k ) {
             // return a new dataclass for the key in parent
             var target = {};
-            if (parent === 'option') {
-                console.log('making string')
-                return '';
-            } else if ($.type(parent) === 'string')
+            if ($.type(parent) === 'string')
                 target = dataclasses['classes'][parent];
             else if ('_type' in parent)
                 target = dataclasses['classes'][parent['_type']];
+            if ('*' in target && !(k in target))
+                k = '*'
             if (k in target && $.type(target[k]) === 'array') {
                 var ret = target[k][1], t = $.type(ret);
-                if (t === 'string' && ret in dataclasses['names']) {
-                    return private_methods.new_dataclass(ret);
+                if (t === 'string' && ret in dataclasses['classes']) {
+                    ret = private_methods.new_dataclass(ret);
                 } else if (t === 'object') {
                     console.log('making new dict');
-                    return $.extend(true,{},ret);
-                } else {
-                    console.log('making new ret');
-                    console.log(ret);
-                    return ret;
+                    ret = $.extend(true,{},ret);
+                    if ('*' in ret)
+                        delete ret['*'];
                 }
+                console.log('making new:');
+                console.log(ret);
+                return ret;
             }
             return undefined;
         }

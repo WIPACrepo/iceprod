@@ -29,7 +29,7 @@ try:
     import json
     from iceprod.core import dataclasses
     dcs = {}
-    names = {}
+    names = dataclasses._plurals.copy()
     for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
         if name[0] != '_' and dict in inspect.getmro(obj):
             dcs[name] = obj().output()

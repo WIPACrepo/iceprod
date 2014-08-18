@@ -37,9 +37,9 @@
 </div>
 </script>
 <script id="EditTmpl" type="text/x-jsrender">
-{{!if ~isNull(prop)}}
+{{!if ~isNull(prop,~path,key)}}
     <div class="key">{{!keyToHtml:key}}: 
-        <div class="add null"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div>
+        <span class="add null"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span>
     </div>
 {{!else ~isArray(prop)}}
     <div class="header key">{{!keyToHtml:key}}</div>
@@ -48,18 +48,26 @@
     {{!else}}
         {^{for prop ~key=key tmpl="#LoopTmpl" /}}
     {{!/if}}
-    <div class="indent"><div class="add array"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div></div>
+    <div class="indent"><span class="add array"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span></div>
 {{!else ~isObject(prop)}}
-    <div class="header key">{{!keyToHtml:key}}</div>
+    {{!if ~canAddToObject(~path,key) }}
+        {{!if ~editable(key+'_key',~path) }}
+            <div><span class="editing"><span class="key hide">{{!:key}}</span><input type="text" data-link="{intToStr:key:strToInt}" /></span></div>
+        {{!else}}
+            <div class="header"><span class="editable key_editable"><span class="key">{{!keyToHtml:key}}</span></span></div>
+        {{!/if}}
+    {{!else}}
+        <div class="header key">{{!keyToHtml:key}}</div>
+    {{!/if}}
     <div class="indent">
         <span class="path">{{!:~concat(~path,key)}}</span>
         {^{props prop ~path=~concat(~path,key) ~keyeditable=true tmpl="#EditTmpl" }}
         {{!else}}
-          <span class="empty"></span>
+          <div class="empty"></div>
         {{!/props}}
     </div>
-    {{!if !(~isDataclass(~path,key))}}
-    <div class="indent"><div class="add object"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</div></div>
+    {{!if ~canAddToObject(~path,key)}}
+    <div class="indent"><span class="add object"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span></div>
     {{!/if}}
 {{!else ~isNotPrivate(key) }}
     <div>
@@ -97,7 +105,7 @@
 <div class="indent">
     {^{props ~path="" tmpl="#EditTmpl" }}
     {{!else}}
-      <span class="empty"></span>
+      <div class="empty"></div>
     {{!/props}}
 </div>
 </script>

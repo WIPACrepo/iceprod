@@ -26,6 +26,15 @@ try:
 except NameError:
     String = str
 
+# pluralizations for keys that are not classes here
+_plurals = {
+    'Option': 'Options',
+    'Category': 'Categories',
+    'Parameter': 'Parameters',
+    'System': 'System',
+    'Dependence': 'Depends'
+}
+
 class Job(dict):
     """
     Holds all information about a running job.
@@ -116,7 +125,7 @@ class Steering(dict):
     Holds all information that goes in the steering section of a configuration.
     
     :ivar parameters: {}
-    :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
+    :ivar batchsys: None
     :ivar system: {} -- just specialized parameters
     :ivar resources: []
     :ivar data: []
@@ -124,7 +133,7 @@ class Steering(dict):
     plural = 'Steering'
     def __init__(self,*args,**kwargs):
         self['parameters'] = {}
-        self['batchsys']   = {}
+        self['batchsys']   = None
         self['system']     = {}
         self['resources']  = []
         self['data']       = []
@@ -140,12 +149,17 @@ class Steering(dict):
             elif n == 'data':
                 ret[n] = [self[n],'Data']
             elif n == 'batchsys':
-                ret[n] = [self[n],{}]
+                ret[n] = [self[n],'Batchsys']
             else:
                 ret[n] = self[n]
         return ret
     
     def convert(self):
+        if (self['batchsys'] is not None and 
+            not isinstance(self['batchsys'],Batchsys)):
+            tmp = Batchsys(self['batchsys'])
+            tmp.convert()
+            self['batchsys'] = tmp
         for i,r in enumerate(self['resources']):
             if not isinstance(r,Resource):
                 tmp = Resource(r)
@@ -160,7 +174,7 @@ class Steering(dict):
     def valid(self):
         try:
             return (isinstance(self['parameters'],dict) and
-                    isinstance(self['batchsys'],dict) and
+                    isinstance(self['batchsys'],Batchsys) and
                     all(isinstance(b,dict) for b in self['batchsys']) and
                     isinstance(self['system'],dict) and
                     isinstance(self['resources'],list) and
@@ -168,6 +182,27 @@ class Steering(dict):
                     isinstance(self['data'],list) and
                     all(isinstance(d,Data) and d.valid() for d in self['data'])
                    )
+        except Exception:
+            return False
+
+class Batchsys(dict):
+    """
+    Holds information for running on grid/cluster types.
+    Designed as a dict of dicts, one for each grid/cluster type.
+    """
+    plural = "Batchsys"
+    
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        return {'*':{}}
+    
+    def convert(self):
+        pass
+    
+    def valid(self):
+        try:
+            return all(isinstance(v,dict) for v in self.values())
         except Exception:
             return False
 
@@ -234,13 +269,13 @@ class Task(_TaskCommon):
     Holds all information about a task.
     
     :ivar depends: [] -- a list of task names
-    :ivar batchsys: {} -- a dict of dicts of parameteres (one dict for each batchsys)
+    :ivar batchsys: None
     :ivar trays: []
     """
     plural = 'Tasks'
     def __init__(self,*args,**kwargs):
         self['depends']  = []
-        self['batchsys'] = {}
+        self['batchsys'] = None
         self['trays']    = []
         super(Task,self).__init__(*args,**kwargs)
     
@@ -260,7 +295,7 @@ class Task(_TaskCommon):
             elif n == 'depends':
                 ret[n] = [self[n],'']
             elif n == 'batchsys':
-                ret[n] = [self[n],{}]
+                ret[n] = [self[n],'Batchsys']
             elif n == 'trays':
                 ret[n] = [self[n],'Tray']
             else:
@@ -269,6 +304,11 @@ class Task(_TaskCommon):
     
     def convert(self):
         super(Task,self).convert()
+        if (self['batchsys'] is not None and 
+            not isinstance(self['batchsys'],Batchsys)):
+            tmp = Batchsys(self['batchsys'])
+            tmp.convert()
+            self['batchsys'] = tmp
         for i,t in enumerate(self['trays']):
             if not isinstance(t,Tray):
                 tmp = Tray(t)
