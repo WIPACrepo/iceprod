@@ -524,7 +524,7 @@ class DBAPI(object):
 
 try:
     import apsw
-except:
+except ImportError:
     logging.warn('Cannot import apsw. SQLite db not available')
 else:
     class SQLite(DBAPI):
@@ -751,8 +751,12 @@ else:
 
 try:
     import MySQLdb
-except:
-    logging.warn('Cannot import MySQLdb. MySQL db not available')
+except ImportError:
+    logging.warn('Cannot import MySQLdb. Trying pymyql')
+    try:
+        import pymysql as MySQLdb
+    except ImportError:
+        logging.warn('Cannot import pymysql. MySQL db not available')
 else:
     class MySQL(DBAPI):
         """MySQL 5 implementation of DBAPI"""

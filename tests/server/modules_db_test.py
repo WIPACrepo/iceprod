@@ -311,12 +311,12 @@ class dbapi_test(unittest.TestCase):
             newdb = self._dbclass(cfg)
             if not newdb:
                 raise Exception('init did not return db object')
-            elif start.called != True:
-                raise Exception('init did not call start')
             elif tables.called != True:
                 raise Exception('init did not call _setup_tables')
             elif init.called != True:
                 raise Exception('init did not call init')
+            elif start.called != False:
+                raise Exception('init called start when not supposed to')
             elif not newdb.cfg or 'test' not in newdb.cfg or newdb.cfg['test'] != 1:
                 raise Exception('init did not copy cfg properly')
             
@@ -354,7 +354,9 @@ class dbapi_test(unittest.TestCase):
             newdb = self._dbclass(cfg)
             if not newdb:
                 raise Exception('start_stop did not return db object')
-            elif _start_db.called != True:
+            
+            newdb.start()
+            if _start_db.called != True:
                 raise Exception('start_stop did not call _start_db')
             elif tables.called != True:
                 raise Exception('start_stop did not call _setup_tables')
