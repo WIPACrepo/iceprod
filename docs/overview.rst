@@ -25,6 +25,7 @@ Many Task Mode
 
 In this mode, IceProd downloads task config files from the server.  It will download a task, process it, then download another until the server tells it to stop.  This is a good mode for groups of tasks that have the same large dependencies; the dependency can be downloaded once and used multiple times.
 
+This mode can also be called "Pilot Mode" since it calls back to the server with the resources available, only matching those jobs that can likely run there.
 
 Server
 ------

@@ -9,8 +9,7 @@ tl;dr
 
 For the impatient::
 
-    configure
-    make install
+    python setup.py install --user
 
 
 Getting Started
@@ -18,35 +17,52 @@ Getting Started
 
 Welcome!  This guide will assume that you want to set up IceProd locally on a new machine.
 
-Download the Metaproject
-^^^^^^^^^^^^^^^^^^^^^^^^
+Download the Project
+^^^^^^^^^^^^^^^^^^^^
 
-To download the metaproject, check it out from svn::
+To download the project, check it out from svn::
 
-$ svn co http://code.icecube.wisc.edu/svn/metaprojects/iceprod/trunk src
+    $ svn co http://code.icecube.wisc.edu/svn/sandbox/dschultz/iceprod2 iceprod
 
 If you do not need to stay up to date, you may also get an exported version::
 
-$ svn export http://code.icecube.wisc.edu/svn/metaprojects/iceprod/trunk src
+    $ svn export http://code.icecube.wisc.edu/svn/sandbox/dschultz/iceprod2 iceprod
 
-Build the Metaproject
-^^^^^^^^^^^^^^^^^^^^^
+Build the Project
+^^^^^^^^^^^^^^^^^
 
-The IceProd metaproject uses autoconf tools to download and build all dependencies.  The basic steps are::
+The main requirement of IceProd is Python 2.7 or greater.  Python 3 is supported.
 
-$ ./configure
-$ make
-$ make install
+IceProd acts like a normal python project, and with the help of `setuptools`
+can download and install all required dependencies. If you do not have `setuptools`
+installed, you will need to install the dependencies yourself.
 
-This will install IceProd in the default directory of $HOME/iceprod.
+Required Dependencies
+"""""""""""""""""""""
 
-One key option is specifying a --prefix to confiure, telling it to build in a different directory than the default directory.  A standard setup will have the following directory structure::
+* tornado >= 3.0
+* pyzmq
 
-    /
-        src/
-        build/
+If using python < 3.2, the following is also required:
 
-You would then run configure from within the src directory like such::
+* futures
+* backports.ssl_match_hostname
 
-$ ./configure --prefix=../build
+Recommended Dependencies
+""""""""""""""""""""""""
+
+* setproctitle
+* pycurl
+* openssl
+* pyasn1
+
+Installation Example
+""""""""""""""""""""
+
+The easy way to install dependencies is with pip.  Then install IceProd::
+
+    $ pip install --user tornado pyzmq setproctitle pycurl openssl pyasn1
+    $ python setup.py install --user
+
+This will install IceProd and all dependencies into your home directory, under ``~/.local``.
 
