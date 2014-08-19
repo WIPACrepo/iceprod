@@ -1546,14 +1546,13 @@ class DBMethods():
         """Get the number of datasets in each state on this site and plugin, 
            returning {status:num}
         """
-        sql = 'select dataset.status, count(*) as num from search '
-        sql += ' join dataset on search.dataset_id = dataset.dataset_id '
+        sql = 'select dataset.status, count(*) as num from dataset '
         if gridspec:
-            sql += 'where search.gridspec like "%?%" '
+            sql += 'where gridspec like "%?%" '
             bindings = (gridspec,)
         else:
             bindings = None
-        sql += ' group by dataset.status '
+        sql += ' group by status '
         cb = partial(self._get_datasets_by_status_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
     def _get_datasets_by_status_callback(self,ret,callback=None):
@@ -1572,11 +1571,10 @@ class DBMethods():
         """Get the number of datasets in each state on this site and plugin, 
            returning {status:num}
         """
-        sql = 'select dataset.* from search '
-        sql += ' join dataset on search.dataset_id = dataset.dataset_id '
+        sql = 'select dataset.* from dataset '
         bindings = tuple()
         if dataset_id:
-            sql += ' where search.dataset_id = ? '
+            sql += ' where dataset.dataset_id = ? '
             bindings += (dataset_id,)
         if status:
             if 'where' not in sql:
@@ -1590,7 +1588,7 @@ class DBMethods():
                 sql += ' where '
             else:
                 sql += ' and '
-            sql += ' search.gridspec like ? '
+            sql += ' dataset.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
         cb = partial(self._get_datasets_details_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)

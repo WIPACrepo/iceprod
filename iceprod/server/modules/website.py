@@ -464,6 +464,8 @@ class MainHandler(tornado.web.RequestHandler):
             status = yield self.db_call('get_datasets_by_status')
             if isinstance(status,Exception):
                 raise status
+            if not status:
+                logger.info('no datasets to display: %r',status)
             self.render_handle('main.html',status=status)
         elif url.startswith('submit'):
             try:
