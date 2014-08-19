@@ -174,11 +174,12 @@ class Steering(dict):
     def valid(self):
         try:
             return (isinstance(self['parameters'],dict) and
-                    isinstance(self['batchsys'],Batchsys) and
-                    all(isinstance(b,dict) for b in self['batchsys']) and
+                    (self['batchsys'] is None or (
+                        isinstance(self['batchsys'],Batchsys) and
+                        self['batchsys'].valid())) and
                     isinstance(self['system'],dict) and
                     isinstance(self['resources'],list) and
-                    all(isinstance(r,Resources) and r.valid() for r in self['resources']) and
+                    all(isinstance(r,Resource) and r.valid() for r in self['resources']) and
                     isinstance(self['data'],list) and
                     all(isinstance(d,Data) and d.valid() for d in self['data'])
                    )
@@ -252,7 +253,7 @@ class _TaskCommon(dict):
         try:
             return (isinstance(self['name'],String) and
                     isinstance(self['resources'],list) and
-                    all(isinstance(r,Resources) and r.valid() for r in self['resources']) and
+                    all(isinstance(r,Resource) and r.valid() for r in self['resources']) and
                     isinstance(self['data'],list) and
                     all(isinstance(d,Data) and d.valid() for d in self['data']) and
                     isinstance(self['classes'],list) and
@@ -320,7 +321,9 @@ class Task(_TaskCommon):
             return (super(Task,self).valid() and
                     isinstance(self['depends'],list) and
                     all(isinstance(r,(String,Number)) for r in self['depends']) and
-                    isinstance(self['batchsys'],dict) and
+                    (self['batchsys'] is None or (
+                        isinstance(self['batchsys'],Batchsys) and
+                        self['batchsys'].valid())) and
                     isinstance(self['trays'],list) and
                     all(isinstance(t,Tray) and t.valid() for t in self['trays'])
                    )
@@ -595,7 +598,7 @@ class Data(_ResourceCommon):
     def valid(self):
         try:
             return (super(Data,self).valid() and
-                    self['type'] in self.type_option and
+                    self['type'] in self.type_options and
                     self['movement'] in self.movement_options
                    )
         except Exception:

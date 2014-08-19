@@ -56,9 +56,10 @@ def parseValue(value,env={}):
     :returns: The parsed value
     """
     if isinstance(value,dataclasses.String):
-        return os.path.expandvars(parseObj.parse(value,config,env))
-    else:
-        return value
+        value = parseObj.parse(value,config,env)
+        if isinstance(value,dataclasses.String):
+            value = os.path.expandvars(value)
+    return value
 
 def parseObject(obj,env):
     """Run :func:`parseValue` on all attributes of an object"""
@@ -80,6 +81,8 @@ def setupenv(obj,oldenv={}):
         
         if not obj:
             raise util.NoncriticalError('object to load environment from is empty')
+        if isinstance(obj,dataclasses.Steering) and not obj.valid():
+            raise Exception('object is not valid Steering')
         
         # make sure deletions for this env are clear (don't inherit)
         env['deletions'] = []

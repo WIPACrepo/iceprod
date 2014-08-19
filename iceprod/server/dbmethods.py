@@ -813,10 +813,11 @@ class DBMethods():
     
     def get_queueing_tasks(self,dataset_prios,gridspec,num=20,callback=None):
         """Get tasks to queue based on dataset priorities.
-        Expects dataset_prios = a dict of {dataset_id:priority} where sum(priorities)=1
-                gridspec = the grid to queue on
-                num = number of tasks to queue
-        Return {task_id:task}
+        
+        :param dataset_prios: a dict of {dataset_id:priority} where sum(priorities)=1
+        :param gridspec: the grid to queue on
+        :param num: number of tasks to queue
+        :returns: {task_id:task}
         """
         if callback is None:
             raise Exception('need a callback')
@@ -1276,7 +1277,23 @@ class DBMethods():
         conn,archive_conn = self.db._dbsetup()
         dataset_id = self.db._increment_id_helper('dataset',conn)
         config_id = self.db._increment_id_helper('config',conn)
-        config = serialization.serialize_json.loads(config_data)
+        if isinstance(config_data,dict):
+            config = config_data
+            try:
+                config_data = serialization.serialize_json.dumps(config)
+            except:
+                logger.info('error serializing config: %r', config,
+                            exc_info=True)
+                callback(e)
+                return
+        else:
+            try:
+                config = serialization.serialize_json.loads(config_data)
+            except Exception as e:
+                logger.info('error deserializing config: %r', config_data,
+                            exc_info=True)
+                callback(e)
+                return
         try:
             njobs = int(njobs)
             ntasks = len(config['tasks'])*njobs

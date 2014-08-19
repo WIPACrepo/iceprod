@@ -76,7 +76,7 @@ class ZmqProcess(object):
 
                 - the wild-card ``*``, meaning all available interfaces,
                 - the primary IPv4 address assigned to the interface, in its
-                numeric representation or
+                  numeric representation or
                 - the interface name as defined by the operating system.
 
                 If *bind* is ``False``, *host* may be:

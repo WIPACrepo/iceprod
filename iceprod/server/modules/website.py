@@ -315,12 +315,12 @@ class JSONRPCHandler(tornado.web.RequestHandler):
             site_id = params.pop('site_id')
             cb = partial(self.auth_callback,method,params,id,self.set_status,
                          self.write,self.finish,self.json_error)
-            self.messaging.db.authorize_site(site_id,passkey,callback=cb)
+            self.messaging.db.authorize_site(site=site_id,key=passkey,callback=cb)
         else:
             # authorize task
             cb = partial(self.auth_callback,method,params,id,self.set_status,
                          self.write,self.finish,self.json_error)
-            self.messaging.db.authorize_task(passkey=passkey,callback=cb)
+            self.messaging.db.authorize_task(key=passkey,callback=cb)
         
     def auth_callback(self,method,params,id,set_status,write,finish,
                       error,auth=False):

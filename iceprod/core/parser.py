@@ -164,7 +164,7 @@ class ExpParser:
         :param env: env dictionary, optional
         :returns: expanded string
         """
-        if not isinstance(input,str):
+        if not isinstance(input,str) or not input:
             return input
         input = ParseObj(input)
         # set job and env

@@ -11,11 +11,11 @@ IceProd can be reloaded to update a configuration variable.  This will only relo
 Configuration
 -------------
 
-Most of the config variables in the server are stored in plain text in a file in the etc/iceprod directory.  The main exception is the site_id, which is stored in the local database.
+The :ref:`BasicConfig` handles basic startup of IceProd, and has only the necessary things for that task.
+Mostly, this is which modules to start by default, the address of the internal RPC messaging server, and logging information.
 
-Variables are defined in sections and subsections. Variables are also validated against a template and gain type information in the process.  The end result is a dictionary of values that can be directly used.
-
-
+The rest of the configuration is in :ref:`config`, which are stored as a dictionary and dumped to a json file on every modification.  These can be accessed individually via internal RPC, but are usually locally cached in bulk during module startup.
+Updates are pushed out to all modules when changes occur.
 
 Queueing
 --------
@@ -36,7 +36,7 @@ IceProd stores most of its information in a database.  By default, it uses SQLit
 
 There is a primary database and an archive database, so as to keep current information small and fast while still providing access to older information.
 
-The database structure is given in :mod:`iceprod.server.modules.db`.
+The database structure is given in :ref:`dbtables`.
 
 
 Website
@@ -150,7 +150,7 @@ RPC that is internal to the server is handled by an RPC service created on top o
 .. toctree::
     :maxdepth: 3
 
-    zmq
+    zeromq
     rpcinternal
 
 Proxying

@@ -30,10 +30,12 @@ var Submission = (function( $ ) {
     }
     function getDataclass(path,key) {
         console.log('getDataclass('+path+' , '+key+')')
-        if (path === null || path == '')
+        if ((path === null || path == '') && !(key === undefined))
             path = key;
         else if (key != null && key != '')
             path = path + '.' + key;
+        if (path === null || path === undefined)
+            path = '';
         var depths = path.split('.'), d = dataclasses['classes']['Job'],
             part = [], p = '', c = null;
         for (var i=0;i<depths.length;i++) {
@@ -461,8 +463,8 @@ var Submission = (function( $ ) {
             $('#submit_box').val(pprint_json(data.submit_data));
             
             $('#submit_action').on('click',function(){
-                var njobs = ValueTypes.int.coerce($('#number_jobs').val());
-                if ( njobs == null || njobs == undefined ) {
+                var njobs = parseInt($('#number_jobs').val());
+                if ( njobs == null || njobs == undefined || isNaN(njobs)) {
                     $('#error').text('Must specify integer number of jobs');
                     return;
                 }

@@ -116,6 +116,7 @@ class plugins_condor_test(grid_test.grid_test):
             # add batch opt
             cfg = dataclasses.Job()
             cfg['steering'] = dataclasses.Steering()
+            cfg['steering']['batchsys'] = dataclasses.Batchsys()
             cfg['steering']['batchsys']['condor'] = {'+GPU_JOB':'true',
                     'Requirements':'Target.Has_GPU == True'}
             g.generate_submit_file(task,cfg=cfg)
@@ -139,6 +140,7 @@ class plugins_condor_test(grid_test.grid_test):
             # add batch opt
             cfg = dataclasses.Job()
             cfg['tasks'].append(dataclasses.Task())
+            cfg['tasks'][0]['batchsys'] = dataclasses.Batchsys()
             cfg['tasks'][0]['batchsys']['condor'] = {'+GPU_JOB':'true',
                     'Requirements':'Target.Has_GPU == True'}
             g.generate_submit_file(task,cfg=cfg)

@@ -214,7 +214,27 @@ class dataclasses_test(unittest.TestCase):
         else:
             printer('Test dataclasses.Data')
 
-    def test_10_difplus(self):
+    def test_10_batchsys(self):
+        """Test the Batchsys class"""
+        try:
+            b = iceprod.core.dataclasses.Batchsys()
+            
+            if not b.valid():
+                raise Exception('empty batchsys not valid')
+            
+            b.convert()
+            
+            if not b.valid():
+                raise Exception('converted empty batchsys not valid')
+            
+        except Exception as e:
+            logger.error('Error running Batchsys class test: %s',str(e))
+            printer('Test dataclasses.Batchsys',False)
+            raise
+        else:
+            printer('Test dataclasses.Batchsys')
+
+    def test_20_difplus(self):
         """Test the DifPlus class"""
         try:
             d = iceprod.core.dataclasses.DifPlus()
@@ -234,7 +254,7 @@ class dataclasses_test(unittest.TestCase):
         else:
             printer('Test dataclasses.DifPlus')
 
-    def test_11_dif(self):
+    def test_21_dif(self):
         """Test the Dif class"""
         try:
             d = iceprod.core.dataclasses.Dif()
@@ -254,7 +274,7 @@ class dataclasses_test(unittest.TestCase):
         else:
             printer('Test dataclasses.Dif')
 
-    def test_12_plus(self):
+    def test_22_plus(self):
         """Test the Plus class"""
         try:
             p = iceprod.core.dataclasses.Plus()
@@ -274,7 +294,7 @@ class dataclasses_test(unittest.TestCase):
         else:
             printer('Test dataclasses.Plus')
 
-    def test_13_personnel(self):
+    def test_23_personnel(self):
         """Test the Personnel class"""
         try:
             p = iceprod.core.dataclasses.Personnel()
@@ -294,7 +314,7 @@ class dataclasses_test(unittest.TestCase):
         else:
             printer('Test dataclasses.Personnel')
 
-    def test_14_datacenter(self):
+    def test_24_datacenter(self):
         """Test the DataCenter class"""
         try:
             d = iceprod.core.dataclasses.DataCenter()
