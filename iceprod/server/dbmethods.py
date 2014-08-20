@@ -1336,6 +1336,27 @@ class DBMethods():
         else:
             callback(True)
 
+    def rpc_update_dataset_config(self,dataset_id,data,callback=None):
+        """Update a dataset config"""
+        if isinstance(data,dict):
+            try:
+                data = serialization.serialize_json.dumps(data)
+            except:
+                logger.info('error serializing config: %r', config,
+                            exc_info=True)
+                callback(e)
+                return
+        
+        sql = 'update config set config_data = ? where dataset_id = ?'
+        bindings = (data,dataset_id)
+        cb = partial(self._rpc_update_dataset_config_callback,callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
+    def _rpc_update_dataset_config_callback(self,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            callback(True)
+
 
     ### upload functions ###
     

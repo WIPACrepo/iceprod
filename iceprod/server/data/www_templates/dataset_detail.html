@@ -5,6 +5,10 @@
 {% block page_title %}Dataset Details{% end %}
 
 {% block body %}
+<div style="margin-bottom:1em">
+  <a href="/config?dataset_id={{ dataset['dataset_id'] }}">View Config</a><span style="width:2.5em;display:inline-block"> </span>
+  <a href="/config?edit=1&dataset_id={{ dataset['dataset_id'] }}">Edit Config</a>
+</div>
 <div class="dataset_details">
 {% for k in dataset %}
 <div>

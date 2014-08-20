@@ -8,6 +8,8 @@ var Submission = (function( $ ) {
         element : null,
         state : 'expert',
         passkey : null,
+        edit : false,
+        dataset_id : null,
         submit_data : {}
     };
     
@@ -109,6 +111,12 @@ var Submission = (function( $ ) {
         submit : function(num_jobs, gridspec) {
             private_methods.clean_json();
             RPCclient('submit_dataset',{passkey:data.passkey,data:data.submit_data,njobs:num_jobs,gridspec:gridspec},callback=function(return_data){
+                $('#error').html('success');
+            });
+        },
+        update : function() {
+            private_methods.clean_json();
+            RPCclient('update_dataset_config',{passkey:data.passkey,data:data.submit_data,dataset_id:data.dataset_id},callback=function(return_data){
                 $('#error').html('success');
             });
         },
@@ -443,32 +451,58 @@ var Submission = (function( $ ) {
                 throw new Error('must supply args');
                 return;
             }
+            // think about storing state in a cookie
             data.state = 'expert';
-            data.passkey = args.passkey;
+            
+            data.edit = args.edit;
+            if ('dataset' in args)
+                data.dataset_id = args.dataset;
+            else
+                data.dataset_id = null;
+            if ('passkey' in args)
+                data.passkey = args.passkey;
+            else
+                data.gridspec = null;
+            if ('gridspec' in args)
+                data.gridspec = args.gridspec;
+            else
+                data.gridspec = null;
             data.element = $(args.element);
-            data.submit_data = private_methods.new_dataclass('Job')
+            if ('config' in args)
+                data.submit_data = JSON.parse(args.config);
+            else
+                data.submit_data = private_methods.new_dataclass('Job')
             private_methods.clean_json();
             
             var html = '<div><button id="basic_button">Basic View</button> <button id="expert_button">Expert View</button></div></div>';
             html += '<div id="basic_submit" style="display:none">basic</div>';
             html += '<div id="expert_submit"><textarea id="submit_box" style="width:90%;min-height:400px">'
             html += '</textarea></div>';
-            html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
-            for (var g in args.gridspec) {
-                html += '<option value="'+g+'">'+args.gridspec[g][1]+'</option>';
+            if (data.dataset_id == null) {
+                html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
+                for (var g in args.gridspec) {
+                    html += '<option value="'+g+'">'+args.gridspec[g][1]+'</option>';
+                }
+                html += '</select></div>';
+                html += '<button id="submit_action" style="padding:1em;margin:1em">Submit</button>';
+            } else if (data.edit) {
+                html += '<button id="submit_action" style="padding:1em;margin:1em">Update</button>';
             }
-            html += '</select></div>';
-            html += '<button id="submit_action" style="padding:1em;margin:1em">Submit</button>';
             $(data.element).html(html);
             $('#submit_box').val(pprint_json(data.submit_data));
             
             $('#submit_action').on('click',function(){
-                var njobs = parseInt($('#number_jobs').val());
-                if ( njobs == null || njobs == undefined || isNaN(njobs)) {
-                    $('#error').text('Must specify integer number of jobs');
-                    return;
-                }
-                private_methods.submit( njobs, $('#gridspec').val() );
+                if (data.state == 'expert')
+                    data.submit_data = JSON.parse($('#expert_submit').find('textarea').off().val());
+                if (data.dataset_id == null) {
+                    var njobs = parseInt($('#number_jobs').val());
+                    if ( njobs == null || njobs == undefined || isNaN(njobs)) {
+                        $('#error').text('Must specify integer number of jobs');
+                        return;
+                    }
+                    private_methods.submit( njobs, $('#gridspec').val() );
+                } else if (data.edit)
+                    private_methods.update(); // TODO: implement this method
             });
             var goto_basic = function(){
                 if (data.state != 'basic') {
@@ -481,7 +515,7 @@ var Submission = (function( $ ) {
             var goto_expert = function(){
                 if (data.state != 'expert') {
                     data.state = 'expert';
-                    //private_methods.clean_json();
+                    private_methods.clean_json();
                     $('#expert_submit').find('textarea')
                     .on('blur',function(){data.submit_data = JSON.parse($(this).off().val());})
                     .val(pprint_json(data.submit_data));

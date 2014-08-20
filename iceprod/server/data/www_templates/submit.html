@@ -116,9 +116,13 @@
 <script type="text/javascript">
 jQuery(document).ready(function() {
     // initalize the submission form
-    Submission("init",{passkey:"{{ passkey }}",
-                       element:"#submit_area",
-                       gridspec:{{ json_encode(gridspec) }}
+    Submission("init",{
+                     edit:{% if edit %} true {% else %} false {% end %},
+    {% if passkey %} passkey:"{{ passkey }}", {% end %}
+    {% if gridspec %} gridspec:{{ json_encode(gridspec) }}, {% end %}
+    {% if dataset %} dataset:"{{ dataset }}", {% end %}
+    {% if config %} config:{{ json_encode(config) }}, {% end %}
+                       element:"#submit_area"
                       });
 });
 </script>

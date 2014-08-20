@@ -261,12 +261,22 @@ class JSONRPCHandler(tornado.web.RequestHandler):
         """
         self.messaging = messaging
         self.fileio = fileio
+    
+    @tornado.concurrent.return_future
+    def db_call(self,func_name,**kwargs):
+        """Turn a DB messaging call into a `Futures` object"""
+        logger.debug('db_call for %s',func_name)
+        try:
+            getattr(self.messaging.db,func_name)(**kwargs)
+        except Exception:
+            logger.warn('db_call error for %s',func_name,exc_info=True)
+            raise
         
     def get(self):
         """GET is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
 
-    @tornado.web.asynchronous
+    @tornado.gen.coroutine
     def post(self):
         """Parses json in the jsonrpc format, returning results in
            jsonrpc format as well.
@@ -281,7 +291,7 @@ class JSONRPCHandler(tornado.web.RequestHandler):
         if 'jsonrpc' not in request or (request['jsonrpc'] != '2.0' and
             request['jsonrpc'] != 2.0):
             self.json_error({'code':-32600,'message':'Invalid Request',
-                'data':'jsonrpc is not 2.0'})
+                             'data':'jsonrpc is not 2.0'})
             return
         if 'method' not in request:
             self.json_error({'code':-32600,'message':'Invalid Request',
@@ -289,7 +299,7 @@ class JSONRPCHandler(tornado.web.RequestHandler):
             return
         if request['method'].startswith('_'):
             self.json_error({'code':-32600,'message':'Invalid Request',
-                'data':'method name cannot start with underscore'})
+                             'data':'method name cannot start with underscore'})
             return
             
         # add rpc_ to method name to prevent calling other DB methods
@@ -306,29 +316,20 @@ class JSONRPCHandler(tornado.web.RequestHandler):
         # check for auth
         if 'passkey' not in params:
             self.json_error({'code':403,'message':'Not Authorized',
-                'data':'missing passkey'})
+                             'data':'missing passkey'})
             return
         passkey = params.pop('passkey')
         
         if 'site_id' in params:
             # authorize site
             site_id = params.pop('site_id')
-            cb = partial(self.auth_callback,method,params,id,self.set_status,
-                         self.write,self.finish,self.json_error)
-            self.messaging.db.authorize_site(site=site_id,key=passkey,callback=cb)
+            auth = yield self.db_call('authorize_site',site=site_id,key=passkey)
         else:
             # authorize task
-            cb = partial(self.auth_callback,method,params,id,self.set_status,
-                         self.write,self.finish,self.json_error)
-            self.messaging.db.authorize_task(key=passkey,callback=cb)
-        
-    def auth_callback(self,method,params,id,set_status,write,finish,
-                      error,auth=False):
-        """Callback after perforing authorization on the request"""
+            auth = yield self.db_call('authorize_task',key=passkey)
         if isinstance(auth,Exception) or auth is not True:
-            error({'code':403,'message':'Not Authorized',
-                   'data':'passkey invalid'},
-                  set_status=set_status,write=write,finish=finish)
+            self.json_error({'code':403,'message':'Not Authorized',
+                             'data':'passkey invalid'})
             return
     
         # check for args and kwargs
@@ -339,45 +340,29 @@ class JSONRPCHandler(tornado.web.RequestHandler):
         
         # call method on DB if exists
         try:
-            func = getattr(self.messaging.db,method)
-        except:
-            error({'code':-32601,'message':'Method not found'},
-                  set_status=set_status,write=write,finish=finish)
-        else:
-            try:
-                params['callback'] = partial(self.callback,id,set_status,
-                                             write,finish,error)
-                func(*args,**params)
-            except Exception:
-                logger.info('error in DB method',exc_info=True)
-                error({'code':-32602,'message':'Invalid  params'},
-                      set_status=set_status,write=write,finish=finish)
-    
-    def callback(self,id,set_status,write,finish,error,ret):
-        """Callback after running the request"""
+            ret = yield self.db_call(method,*args,**params)
+        except AttributeError:
+            self.json_error({'code':-32601,'message':'Method not found'})
+            return
+        except Exception:
+            logger.info('error in DB method',exc_info=True)
+            self.json_error({'code':-32602,'message':'Invalid  params'})
+            return
         if isinstance(ret,Exception):
-            error({'code':-32602,'message':'Invalid  params','data':str(ret)},
-                  set_status=set_status,write=write,finish=finish)
+            self.json_error({'code':-32602,'message':'Invalid  params',
+                             'data':str(ret)})
         else:
             # return response
-            write({'jsonrpc':'2.0','result':ret,'id':id})
-            finish()
+            self.write({'jsonrpc':'2.0','result':ret,'id':id})
 
-    def json_error(self,error,status=400,id=None,set_status=None,
-                   write=None,finish=None):
+    def json_error(self,error,status=400,id=None):
         """Create a proper jsonrpc error message"""
-        if not set_status:
-            set_status = self.set_status
-        set_status(status)
-        if not write:
-            write = self.write
+        self.set_status(status)
         if isinstance(error,Exception):
             error = str(error)
         logger.info('json_error: %r',error)
-        write({'jsonrpc':'2.0','error':error,'id':id})
-        if not finish:
-            finish = self.finish
-        finish()
+        self.write({'jsonrpc':'2.0','error':error,'id':id})
+        self.finish()
 
 
 class LibHandler(tornado.web.RequestHandler):
@@ -475,9 +460,41 @@ class MainHandler(tornado.web.RequestHandler):
                 gridspec = yield self.db_call('get_gridspec')
                 if isinstance(gridspec,Exception):
                     raise gridspec
-                self.render_handle('submit.html',passkey=passkey,gridspec=gridspec)
+                render_args = {
+                    'passkey':passkey,
+                    'gridspec':gridspec,
+                    'edit':False,
+                    'dataset':None,
+                    'config':None,
+                }
+                self.render_handle('submit.html',**render_args)
             except Exception:
                 self.write_error(500,message='error generating submit page')
+        elif url.startswith('config'):
+            dataset = self.get_argument('dataset_id',default=None)
+            if not dataset:
+                self.write_error(400,message='must provide dataset_id')
+            edit = self.get_argument('edit',default=False)
+            try:
+                if edit:
+                    passkey = yield self.db_call('new_passkey')
+                    if isinstance(passkey,Exception):
+                        raise passkey
+                else:
+                    passkey = None
+                config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset)
+                if isinstance(config,Exception):
+                    raise config
+                render_args = {
+                    'edit':edit,
+                    'passkey':passkey,
+                    'gridspec':None,
+                    'dataset':dataset,
+                    'config':config,
+                }
+                self.render_handle('submit.html',**render_args)
+            except Exception:
+                self.write_error(500,message='error generating config page')
         elif url.startswith('dataset'):
             status = self.get_argument('status',default=None)
             if len(url_parts) > 1:
