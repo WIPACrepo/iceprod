@@ -1,15 +1,36 @@
-<html>
+<!doctype html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{% block title %}Default title{% end %}</title>
+    <meta name="description" content="IceProd: a grid middleware for submitting and tracking sets of jobs.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="icon" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/base.css" media="all" type="text/css" />
     {% block head_scripts %}{% end %}
   </head>
   <body>
-    <h1 id="site_title"><a href="/">IceProd 2.0a</a></h1>
-    <h2 id="page_title">{% block page_title %}{% end %}</h2>
-    {% block body %}The Body{% end %}
+<!--[if lt IE 9]>
+<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+    <header>
+        <nav class="menu">
+            <a href="#" id="menu-icon"><span> </span><span> </span><span> </span></a>
+            <ul>
+            <li{% if section == '' %} class="current"{% end %}><a href="/">Home</a></li>
+            <li{% if section == 'dataset' %} class="current"{% end %}><a href="/dataset">Datasets</a></li>
+            <li{% if section == 'grid' %} class="current"{% end %}><a href="/grid">Grids</a></li>
+            <li{% if section == 'util' %} class="current"{% end %}><a href="/util">Utilities</a></li>
+            {% if (not master) and master_url %}<li class="master"><a href="{{ master_url }}">Master</a></li>{% end %}
+        </nav>
+    </header>
+    <div class="body {{ section.lower().replace(' ','_') }}">
+        <h1 id="page_title">{% block page_title %}{{ section }}{% end %}</h1>
+        {% block body %}The Body{% end %}
+    </div>
+    <footer>{% block footer %}IceProd {{ version }}{% end %}</footer>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
     <script src="/static/util.js"></script>

@@ -6,6 +6,7 @@ There are three handlers:
 
 * Main website
     This is the external website users will see when interacting with IceProd.
+    It has been broken down into several sub-handlers for easier maintenance.
 
 * JSONRPC
     This is the machine-readable portion of the website. Jobs talk to the
@@ -41,6 +42,7 @@ import tornado.web
 import tornado.httpserver
 import tornado.gen
 
+import iceprod
 from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
 from iceprod.server.nginx import Nginx
@@ -189,9 +191,12 @@ class website(module.module):
                         handler._request_summary(), request_time)
             #UploadHandler.upload_prefix = '/upload'
             handler_args = {
+                'cfg':self.cfg,
                 'messaging':self.messaging,
                 'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
             }
+            if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
+                handler_args['debug'] = True
             lib_args = handler_args.copy()
             lib_args['prefix'] = '/lib/'
             lib_args['directory'] = os.path.expanduser(os.path.expandvars(
@@ -199,7 +204,12 @@ class website(module.module):
             self.application = tornado.web.Application([
                 (r"/jsonrpc", JSONRPCHandler, handler_args),
                 (r"/lib/.*", LibHandler, lib_args),
-                (r"/.*", MainHandler, handler_args),
+                (r"/", Default, handler_args),
+                (r"/submit", Submit, handler_args),
+                (r"/config", Config, handler_args),
+                (r"/dataset(/.*)?", Dataset, handler_args),
+                (r"/task(/.*)?", Task, handler_args),
+                (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
               log_function=tornado_logger)
@@ -246,21 +256,21 @@ class WebsiteService(module.Service):
         if callback:
             callback()
 
-
-class JSONRPCHandler(tornado.web.RequestHandler):
-    """JSONRPC 2.0 Handler.
-    
-       Call DB methods using RPC over json.
-    """
-    def initialize(self, messaging, fileio):
+class MyHandler(tornado.web.RequestHandler):
+    """Default Handler"""
+    def initialize(self, cfg, messaging, fileio, debug=False):
         """
         Get some params from the website module
         
+        :param cfg: the global config
         :param messaging: the messaging handle
         :param fileio: AsyncFileIO object
+        :param debug: debug flag (optional)
         """
+        self.cfg = cfg
         self.messaging = messaging
         self.fileio = fileio
+        self.debug = debug
     
     @tornado.concurrent.return_future
     def db_call(self,func_name,**kwargs):
@@ -275,7 +285,17 @@ class JSONRPCHandler(tornado.web.RequestHandler):
     def get(self):
         """GET is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
+        
+    def post(self):
+        """POST is invalid and returns an error"""
+        raise tornado.web.HTTPError(400,'POST is invalid.  Use GET')
 
+
+class JSONRPCHandler(MyHandler):
+    """JSONRPC 2.0 Handler.
+    
+       Call DB methods using RPC over json.
+    """
     @tornado.gen.coroutine
     def post(self):
         """Parses json in the jsonrpc format, returning results in
@@ -364,14 +384,13 @@ class JSONRPCHandler(tornado.web.RequestHandler):
         self.write({'jsonrpc':'2.0','error':error,'id':id})
         self.finish()
 
-
-class LibHandler(tornado.web.RequestHandler):
+class LibHandler(MyHandler):
     """Handler for iceprod library downloads.
     
        These are straight http downloads like normal.
     """
     
-    def initialize(self, messaging, fileio, prefix, directory):
+    def initialize(self, prefix, directory, **kwargs):
         """
         Get some params from the website module
         
@@ -380,8 +399,7 @@ class LibHandler(tornado.web.RequestHandler):
         :param prefix: library url prefix
         :param directory: library directory on disk
         """
-        self.messaging = messaging
-        self.fileio = fileio
+        super(LibHandler,self).initialize(**kwargs)
         self.prefix = prefix
         self.directory = directory
     
@@ -410,28 +428,8 @@ class LibHandler(tornado.web.RequestHandler):
                 self.flush()
             yield self.fileio.close(file)
 
-class MainHandler(tornado.web.RequestHandler):
+class PublicHandler(MyHandler):
     """Handler for public facing website"""
-    def initialize(self, messaging, fileio):
-        """
-        Get some params from the website module
-        
-        :param messaging: the messaging handle
-        :param fileio: AsyncFileIO object
-        """
-        self.messaging = messaging
-        self.fileio = fileio
-    
-    @tornado.concurrent.return_future
-    def db_call(self,func_name,**kwargs):
-        """Turn a DB messaging call into a `Futures` object"""
-        logger.debug('db_call for %s',func_name)
-        try:
-            getattr(self.messaging.db,func_name)(**kwargs)
-        except Exception:
-            logger.warn('db_call error for %s',func_name,exc_info=True)
-            raise
-    
     def render_handle(self,*args,**kwargs):
         """Handle renderer exceptions properly"""
         try:
@@ -440,65 +438,111 @@ class MainHandler(tornado.web.RequestHandler):
             logger.error('render error',exc_info=True)
             self.send_error(message='render error')
     
+    def get_template_namespace(self):
+        namespace = super(MyHandler,self).get_template_namespace()
+        namespace['version'] = iceprod.__version__
+        namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
+        namespace['master'] = ('master' in self.cfg and
+                               'status' in self.cfg['master'] and
+                               self.cfg['master']['status'])
+        namespace['master_url'] = ('master' in self.cfg and
+                                   'url' in self.cfg['master'] and
+                                   self.cfg['master']['url'])
+        return namespace
+    
+    def write_error(self,status_code=500,**kwargs):
+        """Write out custom error page."""
+        self.set_status(status_code)
+        if status_code >= 500:
+            self.write('<h2>Internal Error</h2>')
+        else:
+            self.write('<h2>Request Error</h2>')
+        if 'message' in kwargs:
+            self.write('<br />'.join(kwargs['message'].split('\n')))
+        self.finish()
+    
+    @contextmanager
+    def catch_error(self,message='Error generating page'):
+        """Context manager for catching, logging, and displaying errors."""
+        try:
+            yield
+        except Exception as e:
+            logger.warn('Error in public website',exc_info=True)
+            if self.debug:
+                message = message + '\n' + str(e)
+            self.write_error(500,message=message)
+
+class Default(PublicHandler):
+    """Handle / urls"""
     @tornado.gen.coroutine
     def get(self):
-        # get correct template
-        url = self.request.uri[1:]
-        url_parts = [x for x in url.split('/') if x]
-        if not url:
+        with self.catch_error():
             status = yield self.db_call('get_datasets_by_status')
             if isinstance(status,Exception):
                 raise status
             if not status:
                 logger.info('no datasets to display: %r',status)
             self.render_handle('main.html',status=status)
-        elif url.startswith('submit'):
-            try:
-                passkey = yield self.db_call('new_passkey')
-                if isinstance(passkey,Exception):
-                    raise passkey
-                gridspec = yield self.db_call('get_gridspec')
-                if isinstance(gridspec,Exception):
-                    raise gridspec
-                render_args = {
-                    'passkey':passkey,
-                    'gridspec':gridspec,
-                    'edit':False,
-                    'dataset':None,
-                    'config':None,
-                }
-                self.render_handle('submit.html',**render_args)
-            except Exception:
-                self.write_error(500,message='error generating submit page')
-        elif url.startswith('config'):
+
+class Submit(PublicHandler):
+    """Handle /submit urls"""
+    @tornado.gen.coroutine
+    def get(self):
+        with self.catch_error(message='error generating submit page'):
+            url = self.request.uri[1:]
+            passkey = yield self.db_call('new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+            gridspec = yield self.db_call('get_gridspec')
+            if isinstance(gridspec,Exception):
+                raise gridspec
+            render_args = {
+                'passkey':passkey,
+                'gridspec':gridspec,
+                'edit':False,
+                'dataset':None,
+                'config':None,
+            }
+            self.render_handle('submit.html',**render_args)
+
+class Config(PublicHandler):
+    """Handle /submit urls"""
+    @tornado.gen.coroutine
+    def get(self):
+        with self.catch_error(message='error generating config page'):
             dataset = self.get_argument('dataset_id',default=None)
             if not dataset:
                 self.write_error(400,message='must provide dataset_id')
+                return
             edit = self.get_argument('edit',default=False)
-            try:
-                if edit:
-                    passkey = yield self.db_call('new_passkey')
-                    if isinstance(passkey,Exception):
-                        raise passkey
-                else:
-                    passkey = None
-                config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset)
-                if isinstance(config,Exception):
-                    raise config
-                render_args = {
-                    'edit':edit,
-                    'passkey':passkey,
-                    'gridspec':None,
-                    'dataset':dataset,
-                    'config':config,
-                }
-                self.render_handle('submit.html',**render_args)
-            except Exception:
-                self.write_error(500,message='error generating config page')
-        elif url.startswith('dataset'):
+            if edit:
+                passkey = yield self.db_call('new_passkey')
+                if isinstance(passkey,Exception):
+                    raise passkey
+            else:
+                passkey = None
+            config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset)
+            if isinstance(config,Exception):
+                raise config
+            render_args = {
+                'edit':edit,
+                'passkey':passkey,
+                'gridspec':None,
+                'dataset':dataset,
+                'config':config,
+            }
+            self.render_handle('submit.html',**render_args)
+
+class Dataset(PublicHandler):
+    """Handle /dataset urls"""
+    @tornado.gen.coroutine
+    def get(self,url):
+        with self.catch_error(message='error generating dataset page'):
+            if url:
+                url_parts = [x for x in url.split('/') if x]
             status = self.get_argument('status',default=None)
-            if len(url_parts) > 1:
-                dataset_id = url_parts[1]
+            if url and url_parts:
+                dataset_id = url_parts[0]
                 ret = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
@@ -521,11 +565,18 @@ class MainHandler(tornado.web.RequestHandler):
                 if isinstance(status,Exception):
                     raise status
                 self.render_handle('main.html',status=status)
-        elif url.startswith('task'):
+
+class Task(PublicHandler):
+    """Handle /task urls"""
+    @tornado.gen.coroutine
+    def get(self,url):
+        with self.catch_error(message='error generating dataset page'):
+            if url:
+                url_parts = [x for x in url.split('/') if x]
             dataset_id = self.get_argument('dataset_id',default=None)
             status = self.get_argument('status',default=None)
-            if len(url_parts) > 1:
-                task_id = url_parts[1]
+            if url and url_parts:
+                task_id = url_parts[0]
                 ret = yield self.db_call('get_tasks_details',task_id=task_id,
                                          dataset_id=dataset_id)
                 if isinstance(ret,Exception):
@@ -549,17 +600,9 @@ class MainHandler(tornado.web.RequestHandler):
                 if isinstance(status,Exception):
                     raise status
                 self.render_handle('tasks.html',status=status)
-        else:
-            self.set_status(404)
-    
-    def write_error(self,status_code=500,**kwargs):
-        self.set_status(status_code)
-        self.write('<h2>Internal Error</h2>')
-        if 'message' in kwargs:
-            self.write('<br />'.join(kwargs['message'].split('\n')))
-        self.finish()
-    
-    def post(self):
-        #TODO: actually do something here
-        self.write("Hello, world")
+
+class Other(PublicHandler):
+    """Handle any other urls"""
+    def get(self):
+        self.write_error(404,message='Bad url: '+self.request.uri)
 
