@@ -303,7 +303,11 @@ class DBAPI(object):
     archive_tables = ('site','node','dataset','dataset_notes',
                       'dataset_stat','job','job_stat','task','task_stat',
                       'task_log','config','resource','data')
-    
+    status_options = {'dataset':{'processing', 'complete', 'suspended', 'errors'},
+                      'job':{'processing', 'complete', 'suspended', 'errors'},
+                      'task':{'waiting', 'queued', 'processing', 'complete',
+                              'suspended', 'failed', 'resume', 'reset'}
+                     }
     
     ### basic functions ###
     

@@ -2,30 +2,40 @@
 
 {% block title %}IceProd{% end %}
 
-{% block page_title %}Datasets by Status{% end %}
+{% block page_title %}Dataset Summary{% end %}
+
+{% block sidebar %}
+<div class="section">
+    <h3>Filters</h3>
+    <div class="indent">
+        <form action="/dataset" autocomplete="off" class="filters">
+        {% for f in filter_options %}
+        <h4>By {{ f }}:</h4>
+        <select name="{{ f }}" multiple class="chosen-select">
+            <option></option>
+            {% for option in filter_options[f] %}
+            <option{% if option in filter_results[f] %} selected{% end %}>{{ option }}</option>
+            {% end %}
+        </select>
+        {% end %}
+        <button>Update</button>
+    </div>
+</div>
+<div class="esc-separator"></div>
+<div class="section">
+    <h4><a href="/submit">Submit Dataset</a></h4>
+</div>
+{% end %}
 
 {% block body %}
+
 <table>
+<tr><th>Id</th><th>Name</th></tr>
+{% for dataset in datasets %}
 <tr>
-{% if len(dataset) > 0 %}
-  {%for k in dataset.values()[0] %}
-    <th>{{ k }}</th>
-  {% end %}
-{% end %}
-</tr>
-{% for t in dataset %}
-<tr>
-  {% for k in dataset[t] %}
-    <td>
-    {% if k == 'dataset_id' %}
-        <a href="/dataset/{{ t }}">{{ dataset[t][k] }}</a>
-    {% else %}
-        {{ dataset[t][k] }}
-    {% end %}
-    </td>
-  {% end %}
+  <td class="id"><a href="/dataset/{{ dataset[0] }}">{{ dataset[0] }}</a></td>
+  <td class="name">{{ dataset[1] }}</td>
 </tr>
 {% end %}
-</table>
 
 {% end %}

@@ -9,6 +9,7 @@
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="icon" href="/static/favicon.png">
     <link rel="stylesheet" href="/static/base.css" media="all" type="text/css" />
+    <link rel="stylesheet" href="/static/chosen.min.css" media="all" type="text/css" />
     {% block head_scripts %}{% end %}
   </head>
   <body>
@@ -16,6 +17,7 @@
 <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
 <![endif]-->
     <header>
+        <span class="title">IceProd</span>
         <nav class="menu">
             <a href="#" id="menu-icon"><span> </span><span> </span><span> </span></a>
             <ul>
@@ -27,13 +29,18 @@
         </nav>
     </header>
     <div class="body {{ section.lower().replace(' ','_') }}">
-        <h1 id="page_title">{% block page_title %}{{ section }}{% end %}</h1>
-        {% block body %}The Body{% end %}
+        <div class="sidebar">{% block sidebar %}{% end %}</div>
+        <div class="contents">
+            <h1 id="page_title">{% block page_title %}{{ section }}{% end %}</h1>
+            {% block body %}The Body{% end %}
+        </div>
     </div>
     <footer>{% block footer %}IceProd {{ version }}{% end %}</footer>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
     <script src="/static/util.js"></script>
+    <script src="/static/chosen.jquery.min.js"></script>
+    <script>$(function() {$(".chosen-select").chosen();});</script>
     {% block body_scripts %}{% end %}
   </body>
 </html>

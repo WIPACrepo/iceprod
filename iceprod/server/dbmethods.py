@@ -1563,28 +1563,49 @@ class DBMethods():
                         task_groups[status] = num
                 callback(task_groups)
     
-    def get_datasets_by_status(self,gridspec=None,callback=None):
+    def get_datasets(self,gridspec=None,groups=None,callback=None,**filters):
         """Get the number of datasets in each state on this site and plugin, 
            returning {status:num}
         """
-        sql = 'select dataset.status, count(*) as num from dataset '
-        if gridspec:
-            sql += 'where gridspec like "%?%" '
-            bindings = (gridspec,)
+        sql = 'select '
+        if groups:
+            sql += ','.join(groups) + ', count(*) as num '
         else:
-            bindings = None
-        sql += ' group by status '
-        cb = partial(self._get_datasets_by_status_callback,callback=callback)
+            sql += 'dataset_id, name '
+        sql += 'from dataset '
+        bindings = []
+        if gridspec or any(filters.values()):
+            sql += ' where '
+        if gridspec:
+            sql += ' gridspec like "%?%" '
+            bindings.append(gridspec)
+        for f in filters:
+            if filters[f]:
+                sql += ' '+f+' in ('
+                sql += ','.join('?' for _ in range(len(filters[f])))
+                sql += ') '
+                bindings.extend(filters[f])
+        if groups:
+            sql += ' group by ' + ','.join(groups)
+            cb = partial(self._get_datasets_callback,groups,callback=callback)
+        else:
+            cb = callback
         self.db.sql_read_task(sql,bindings,callback=cb)
-    def _get_datasets_by_status_callback(self,ret,callback=None):
+    @staticmethod
+    def _get_datasets_grouper(data,groups,val):
+        if len(groups) == 1:
+            data[groups[0]] = val
+        else:
+            self._get_datasets_grouper(data[groups[0]],groups[1:],val)
+    def _get_datasets_callback(self,groups,ret,callback=None):
         if callback:
             if isinstance(ret,Exception):
                 callback(ret)
             else:
                 dataset_groups = {}
                 if ret and ret[0]:
-                    for status,num in ret:
-                        dataset_groups[status] = num
+                    for row in ret:
+                        self._get_datasets_grouper(dataset_groups,groups,row[-1])
                 callback(dataset_groups)
     
     def get_datasets_details(self,dataset_id=None,status=None,gridspec=None,

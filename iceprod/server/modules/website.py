@@ -47,6 +47,7 @@ from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
 from iceprod.server.nginx import Nginx
 from iceprod.server.file_io import AsyncFileIO
+from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
 
 logger = logging.getLogger('website')
@@ -477,12 +478,12 @@ class Default(PublicHandler):
     @tornado.gen.coroutine
     def get(self):
         with self.catch_error():
-            status = yield self.db_call('get_datasets_by_status')
-            if isinstance(status,Exception):
-                raise status
-            if not status:
-                logger.info('no datasets to display: %r',status)
-            self.render_handle('main.html',status=status)
+            datasets = yield self.db_call('get_datasets',groups=['status'])
+            if isinstance(datasets,Exception):
+                raise datasets
+            if not datasets:
+                logger.info('no datasets to display: %r',datasets)
+            self.render_handle('main.html',datasets=datasets)
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
@@ -540,7 +541,8 @@ class Dataset(PublicHandler):
         with self.catch_error(message='error generating dataset page'):
             if url:
                 url_parts = [x for x in url.split('/') if x]
-            status = self.get_argument('status',default=None)
+            filter_options = {'status':DBAPI.status_options['dataset']}
+            filter_results = {n:self.get_arguments(n) for n in filter_options}
             if url and url_parts:
                 dataset_id = url_parts[0]
                 ret = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
@@ -555,16 +557,13 @@ class Dataset(PublicHandler):
                     raise tasks
                 self.render_handle('dataset_detail.html',dataset_id=dataset_id,
                                    dataset=dataset,tasks=tasks)
-            elif status:
-                dataset = yield self.db_call('get_datasets_details',status=status)
-                if isinstance(dataset,Exception):
-                    raise dataset
-                self.render_handle('dataset_browse.html',dataset=dataset)
             else:
-                status = yield self.db_call('get_datasets_by_status')
-                if isinstance(status,Exception):
-                    raise status
-                self.render_handle('main.html',status=status)
+                datasets = yield self.db_call('get_datasets',**filter_results)
+                if isinstance(datasets,Exception):
+                    raise datasets
+                self.render_handle('dataset_browse.html',datasets=datasets,
+                                   filter_options=filter_options,
+                                   filter_results=filter_results)
 
 class Task(PublicHandler):
     """Handle /task urls"""
