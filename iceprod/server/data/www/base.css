@@ -225,6 +225,10 @@ nav.menu li.master a:hover, nav.menu li.master a:active {
     #menu-icon {
         display: inline-block;
     }
+    nav.menu:hover, nav.menu:active {
+        margin: 0;
+        padding: 1em;
+    }
     nav.menu ul, nav.menu:active ul {
         display: none;
         position: absolute;
