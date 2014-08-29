@@ -1569,10 +1569,11 @@ class DBMethods():
         """
         sql = 'select '
         if groups:
+            groups = filtered_input(groups)
             sql += ','.join(groups) + ', count(*) as num '
         else:
-            sql += 'dataset_id, name '
-        sql += 'from dataset '
+            sql += ' * '
+        sql += ' from dataset '
         bindings = []
         if gridspec or any(filters.values()):
             sql += ' where '
@@ -1581,15 +1582,13 @@ class DBMethods():
             bindings.append(gridspec)
         for f in filters:
             if filters[f]:
-                sql += ' '+f+' in ('
+                sql += ' '+filtered_input(f)+' in ('
                 sql += ','.join('?' for _ in range(len(filters[f])))
                 sql += ') '
                 bindings.extend(filters[f])
         if groups:
             sql += ' group by ' + ','.join(groups)
-            cb = partial(self._get_datasets_callback,groups,callback=callback)
-        else:
-            cb = callback
+        cb = partial(self._get_datasets_callback,groups,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
     @staticmethod
     def _get_datasets_grouper(data,groups,val):
@@ -1601,12 +1600,14 @@ class DBMethods():
         if callback:
             if isinstance(ret,Exception):
                 callback(ret)
-            else:
+            elif groups:
                 dataset_groups = {}
                 if ret and ret[0]:
                     for row in ret:
                         self._get_datasets_grouper(dataset_groups,groups,row[-1])
                 callback(dataset_groups)
+            else:
+                callback([self._list_to_dict('dataset',x) for x in ret])
     
     def get_datasets_details(self,dataset_id=None,status=None,gridspec=None,
                           callback=None):

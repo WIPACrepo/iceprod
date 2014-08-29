@@ -28,14 +28,18 @@
 {% end %}
 
 {% block body %}
-
-<table>
-<tr><th>Id</th><th>Name</th></tr>
-{% for dataset in datasets %}
-<tr>
-  <td class="id"><a href="/dataset/{{ dataset[0] }}">{{ dataset[0] }}</a></td>
-  <td class="name">{{ dataset[1] }}</td>
-</tr>
-{% end %}
-
+<div class="browse">
+    {% for dataset in datasets %}
+    <div class="entry">
+        <div class="header">
+            <span class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset_id'] }}</a></span>
+            <span class="name">{{ dataset['name'] }}</span>
+            <span class="status">{{ dataset['status'] }}</span>
+            <div style="clear:right"></div>
+        </div>
+        <span class="description">{{ dataset['description'] }}</span>
+        <span class="gridspec">Grids: {{ dataset['gridspec'] }}</span>
+    </div>
+    {% end %}
+</div>
 {% end %}

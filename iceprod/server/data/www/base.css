@@ -102,6 +102,9 @@ a:hover {
 }
 
 /* page layout */
+body {
+    min-width: 22em;
+}
 header {
     width: 100%;
     height: 3.5em;
@@ -121,9 +124,9 @@ div.body {
 }
 div.sidebar {
     width: 10em;
+    float: left;
 }
 div.sidebar, div.contents {
-    display: inline-block;
     vertical-align: top;
 }
 div.sidebar .section {
@@ -135,10 +138,14 @@ div.sidebar .indent {
 div.sidebar button {
     margin: .5em 0 .2em;
 }
+div.contents {
+    margin-left: 10.5em;
+}
 footer {
     padding: .2em .4em;
     text-align:right;
     color: #cccccc;
+    clear: both;
 }
 #page_title {
     margin-bottom: .3em;
@@ -260,10 +267,35 @@ nav.menu li.master a:hover, nav.menu li.master a:active {
     padding: 0.2em 0;
 }
 
+table.browse th, table.browse td {
+    min-width: 10em;
+    text-align: center;
+    padding: .2em;
+}
+
 .dataset .settings {
     margin-left: .3em;
     margin-bottom: .5em;
     font-size: 1.05em;
+}
+.dataset .browse .entry {
+    margin: .5em;
+}
+.dataset .browse .entry .header {
+    background-color: #e5e5e2;
+    padding: .2em;
+    text-align:center;
+    font-family: sans-serif;
+}
+.dataset .browse .entry .id {
+    float:left;
+}
+.dataset .browse .entry .status {
+    float:right;
+    text-transform: uppercase;
+}
+.dataset .browse .entry>span {
+    margin: .1em .5em;
 }
 .filters select {
     width: 9.5em;
