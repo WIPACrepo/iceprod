@@ -8,6 +8,7 @@ import os
 import logging
 
 from iceprod.core.jsonUtil import json_encode, json_decode
+from iceprod.server import get_pkgdata_filename
 
 logger = logging.getLogger('config')
 
@@ -30,6 +31,28 @@ class IceProdConfig(dict):
             self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
         self.loading = False
         self.load()
+        self.defaults()
+    
+    def defaults(self):
+        """Set default values if unset."""
+        try:
+            self.loading = True
+            filename = get_pkgdata_filename('iceprod.server',
+                                            'data/etc/config_defaults.json')
+            text = open(filename).read()
+            obj = json_decode(text)
+            def setter(new_obj,self_obj):
+                for key in new_obj:
+                    if key not in self_obj:
+                        self_obj[key] = new_obj[key]
+                    elif isinstance(self_obj[key],dict):
+                        setter(new_obj[key],self_obj[key])
+            setter(obj,self)
+        except Exception:
+            logger.warn('failed to load from default config file %s',
+                        self.filename, exc_info=True)
+        finally:
+            self.loading = False
     
     def load(self):
         """Load config from file, overwriting current contents."""

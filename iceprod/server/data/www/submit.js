@@ -9,7 +9,7 @@ var Submission = (function( $ ) {
         state : 'expert',
         passkey : null,
         edit : false,
-        dataset_id : null,
+        dataset : null,
         submit_data : {}
     };
     
@@ -108,9 +108,9 @@ var Submission = (function( $ ) {
             else
                 return json;
         },
-        submit : function(num_jobs, gridspec) {
+        submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            RPCclient('submit_dataset',{passkey:data.passkey,data:data.submit_data,njobs:num_jobs,gridspec:gridspec},callback=function(return_data){
+            RPCclient('submit_dataset',{passkey:data.passkey,data:data.submit_data,njobs:num_jobs,gridspec:gridspec,description:description},callback=function(return_data){
                 $('#error').html('success');
             });
         },
@@ -456,20 +456,20 @@ var Submission = (function( $ ) {
             
             data.edit = args.edit;
             if ('dataset' in args)
-                data.dataset_id = args.dataset;
+                data.dataset = args.dataset;
             else
-                data.dataset_id = null;
+                data.dataset = null;
             if ('passkey' in args)
                 data.passkey = args.passkey;
             else
-                data.gridspec = null;
-            if ('gridspec' in args)
-                data.gridspec = args.gridspec;
+                data.passkey = null;
+            if ('grids' in args)
+                data.grids = args.grids;
             else
-                data.gridspec = null;
+                data.grids = null;
             data.element = $(args.element);
             if ('config' in args)
-                data.submit_data = JSON.parse(args.config);
+                data.submit_data = args.config;
             else
                 data.submit_data = private_methods.new_dataclass('Job')
             private_methods.clean_json();
@@ -478,15 +478,21 @@ var Submission = (function( $ ) {
             html += '<div id="basic_submit" style="display:none">basic</div>';
             html += '<div id="expert_submit"><textarea id="submit_box" style="width:90%;min-height:400px">'
             html += '</textarea></div>';
-            if (data.dataset_id == null) {
+            if (data.dataset == null) {
                 html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
-                for (var g in args.gridspec) {
-                    html += '<option value="'+g+'">'+args.gridspec[g][1]+'</option>';
+                for (var g in args.grids) {
+                    html += '<option value="'+g+'">'+args.grids[g][1]+'</option>';
                 }
                 html += '</select></div>';
+                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em"></textarea>';
                 html += '<button id="submit_action" style="padding:1em;margin:1em">Submit</button>';
-            } else if (data.edit) {
-                html += '<button id="submit_action" style="padding:1em;margin:1em">Update</button>';
+            } else {
+                html += '<span>Grids: '+data.dataset.gridspec+'</span>';
+                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
+                html += data.dataset.description + '</textarea>';
+                if (data.edit) {
+                    html += '<button id="submit_action" style="padding:1em;margin:1em">Update</button>';
+                }
             }
             $(data.element).html(html);
             $('#submit_box').val(pprint_json(data.submit_data));
@@ -500,7 +506,7 @@ var Submission = (function( $ ) {
                         $('#error').text('Must specify integer number of jobs');
                         return;
                     }
-                    private_methods.submit( njobs, $('#gridspec').val() );
+                    private_methods.submit( njobs, $('#gridspec').val(), $('#description').val() );
                 } else if (data.edit)
                     private_methods.update(); // TODO: implement this method
             });

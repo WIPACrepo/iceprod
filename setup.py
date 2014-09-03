@@ -65,7 +65,7 @@ setup(
         # data files need to be listed both here (which determines what gets
         # installed) and in MANIFEST.in (which determines what gets included
         # in the sdist tarball)
-        'iceprod.server':['data/www/*','data/www_templates/*'],
+        'iceprod.server':['data/etc/*','data/www/*','data/www_templates/*'],
         },
     author="IceCube Collaboration",
     author_email="simprod@icecube.wisc.edu", # TODO: better email address

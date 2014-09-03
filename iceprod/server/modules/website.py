@@ -449,6 +449,10 @@ class PublicHandler(MyHandler):
         namespace['master_url'] = ('master' in self.cfg and
                                    'url' in self.cfg['master'] and
                                    self.cfg['master']['url'])
+        namespace['site_id'] = (self.cfg['site_id'] if 'site_id' in self.cfg else None)
+        namespace['sites'] = (self.cfg['webserver']['sites'] if (
+                              'webserver' in self.cfg and
+                              'sites' in self.cfg['webserver']) else None)
         return namespace
     
     def write_error(self,status_code=500,**kwargs):
@@ -494,12 +498,12 @@ class Submit(PublicHandler):
             passkey = yield self.db_call('new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-            gridspec = yield self.db_call('get_gridspec')
-            if isinstance(gridspec,Exception):
-                raise gridspec
+            grids = yield self.db_call('get_gridspec')
+            if isinstance(grids,Exception):
+                raise grids
             render_args = {
                 'passkey':passkey,
-                'gridspec':gridspec,
+                'grids':grids,
                 'edit':False,
                 'dataset':None,
                 'config':None,
@@ -511,10 +515,16 @@ class Config(PublicHandler):
     @tornado.gen.coroutine
     def get(self):
         with self.catch_error(message='error generating config page'):
-            dataset = self.get_argument('dataset_id',default=None)
-            if not dataset:
+            dataset_id = self.get_argument('dataset_id',default=None)
+            if not dataset_id:
                 self.write_error(400,message='must provide dataset_id')
                 return
+            dataset = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
+            if isinstance(dataset,Exception):
+                raise dataset
+            if dataset_id not in dataset:
+                raise Exception('get_dataset_details does not have dataset_id '+dataset_id)
+            dataset = dataset[dataset_id]
             edit = self.get_argument('edit',default=False)
             if edit:
                 passkey = yield self.db_call('new_passkey')
@@ -522,17 +532,48 @@ class Config(PublicHandler):
                     raise passkey
             else:
                 passkey = None
-            config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset)
+            config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset_id)
             if isinstance(config,Exception):
                 raise config
             render_args = {
                 'edit':edit,
                 'passkey':passkey,
-                'gridspec':None,
+                'grids':None,
                 'dataset':dataset,
                 'config':config,
             }
             self.render_handle('submit.html',**render_args)
+
+class Site(PublicHandler):
+    """Handle /site urls"""
+    @tornado.gen.coroutine
+    def get(self,url):
+        with self.catch_error(message='error generating site page'):
+            if url:
+                url_parts = [x for x in url.split('/') if x]
+            filter_options = {}
+            filter_results = {n:self.get_arguments(n) for n in filter_options}
+            if url and url_parts:
+                site_id = url_parts[0]
+                ret = yield self.db_call('get_site_details',dataset_id=dataset_id)
+                if isinstance(ret,Exception):
+                    raise ret
+                if ret:
+                    site = ret.values()[0]
+                else:
+                    site = None
+                tasks = yield self.db_call('get_tasks_by_status',site_id=site_id)
+                if isinstance(tasks,Exception):
+                    raise tasks
+                self.render_handle('site_detail.html',site_id=site_id,
+                                   site=site,tasks=tasks)
+            else:
+                sites = yield self.db_call('get_sites',**filter_results)
+                if isinstance(sites,Exception):
+                    raise sites
+                self.render_handle('site_browse.html',sites=sites,
+                                   filter_options=filter_options,
+                                   filter_results=filter_results)
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""

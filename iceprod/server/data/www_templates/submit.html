@@ -119,9 +119,9 @@ jQuery(document).ready(function() {
     Submission("init",{
                      edit:{% if edit %} true {% else %} false {% end %},
     {% if passkey %} passkey:"{{ passkey }}", {% end %}
-    {% if gridspec %} gridspec:{{ json_encode(gridspec) }}, {% end %}
-    {% if dataset %} dataset:"{{ dataset }}", {% end %}
-    {% if config %} config:{{ json_encode(config) }}, {% end %}
+    {% if grids %} grids:{{ json_encode(grids) }}, {% end %}
+    {% if dataset %} dataset:{{ json_encode(dataset) }}, {% end %}
+    {% if config %} config:{{ config }}, {% end %}
                        element:"#submit_area"
                       });
 });

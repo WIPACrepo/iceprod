@@ -1,0 +1,19 @@
+{
+    "db":{
+        "type":"sqlite",
+        "name":"db",
+        "backup_name":"db_back"
+    },
+    "webserver":{
+        "request_timeout":10,
+        "lib_dir":"$PWD",
+        "port":8888,
+        "tornado_port":8889,
+        "numcpus":1,
+        "sites":null
+    },
+    "master":{
+        "status":null,
+        "url":null
+    }
+}
