@@ -146,11 +146,14 @@ class queue(module.module):
             except Exception as e:
                 logger.error('Error importing plugin',exc_info=True)
             else:
-                gridspec_types[site_id+'.'+p_name] = [p_cfg['type'],p_cfg['description']]
+                gridspec_types[site_id+'.'+p_name] = [p_cfg['type'],
+                        p_cfg['description'] if 'description' in p_cfg else '']
         
         # add gridspec and types to the db
         try:
-            self.messaging.db.set_site_queues(site_id,gridspec_types,async=False)
+            self.messaging.db.set_site_queues(site_id=site_id,
+                                              queues=gridspec_types,
+                                              async=False)
         except:
             logger.warn('error setting site queues',exc_info=True)
         
@@ -201,7 +204,8 @@ class queue(module.module):
                     pass
                 
                 # set timeout
-                timeout = self.cfg['queue']['queue_interval']
+                if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
+                    timeout = self.cfg['queue']['queue_interval']
                 if timeout <= 0:
                     timeout = 300
         except StopException:
@@ -220,6 +224,7 @@ class queue(module.module):
         buffer = self.cfg['queue']['task_buffer']
         if buffer <= 0:
             buffer = 200
-        ret = self.messaging.db.buffer_jobs_tasks(gridspecs,buffer,async=False)
+        ret = self.messaging.db.buffer_jobs_tasks(gridspec=gridspecs,
+                                                  num_tasks=buffer,async=False)
         if isinstance(ret,Exception):
             raise ret

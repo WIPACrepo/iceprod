@@ -15,6 +15,7 @@ from datetime import datetime,timedelta
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
+from iceprod.server import get_pkg_binary
 from iceprod.server import GlobalID
 from iceprod.server import module
 
@@ -102,7 +103,8 @@ class grid(object):
                 change = min(change,num_to_queue)
         
             # get queueing datasets from database
-            datasets = self.db.get_queueing_datasets(self.gridspec,async=False)
+            datasets = self.db.get_queueing_datasets(gridspec=self.gridspec,
+                                                     async=False)
             if isinstance(datasets,Exception):
                 raise datasets
             elif not datasets:
@@ -127,7 +129,9 @@ class grid(object):
             
         with self.check_run():
             # get tasks to queue
-            tasks = self.db.get_queueing_tasks(dataset_prios,self.gridspec,change,async=False)
+            tasks = self.db.get_queueing_tasks(dataset_prios=dataset_prios,
+                                               gridspec=self.gridspec,
+                                               num=change,async=False)
             if isinstance(tasks,Exception):
                 raise tasks
             if not tasks:
@@ -153,8 +157,8 @@ class grid(object):
                         # submit to queueing system
                         self.submit(tasks[t])
             # mark as queued
-            self.db.set_task_status([tasks[t]['task_id'] for t in tasks],
-                                    'queued',async=False)
+            self.db.set_task_status(task=[tasks[t]['task_id'] for t in tasks],
+                                    status='queued',async=False)
             self.tasks_queued += len(tasks)
 
 
@@ -162,7 +166,7 @@ class grid(object):
 
     def check_iceprod(self):
         """check if any task is in a state for too long"""
-        tasks = self.db.get_active_tasks(self.gridspec,async=False)
+        tasks = self.db.get_active_tasks(gridspec=self.gridspec,async=False)
         logger.debug('active tasks: %r',tasks)
         if tasks is None:
             raise Exception('db.get_active_tasks(%s) returned none'%self.gridspec)
@@ -304,7 +308,7 @@ class grid(object):
         reset_tasks = set()
         
         # get active tasks
-        active_tasks = self.db.get_active_tasks(self.gridspec,async=False)
+        active_tasks = self.db.get_active_tasks(gridspec=self.gridspec,async=False)
         if active_tasks is None:
             raise Exception('db.get_active_tasks(%s) returned none'%self.gridspec)
         elif isinstance(active_tasks,Exception):
@@ -378,7 +382,8 @@ class grid(object):
         
         if reset_tasks:
             # reset some tasks
-            ret = self.db.set_task_status(reset_tasks,'waiting',async=False)
+            ret = self.db.set_task_status(tasks=reset_tasks,status='waiting',
+                                          async=False)
             if isinstance(ret,Exception):
                 raise ret
 
@@ -394,8 +399,7 @@ class grid(object):
         task['submit_dir'] = task_dir
         
         # symlink or copy the .sh file
-        src = os.path.expanduser(os.path.expandvars(
-                  os.path.join('$I3PREFIX','bin','loader.sh')))
+        src = get_pkg_binary('iceprod','loader.sh')
         try:
             os.symlink(src,os.path.join(task_dir,'loader.sh'))
         except Exception as e:
@@ -410,7 +414,7 @@ class grid(object):
         expiration += timedelta(seconds=self.queue_cfg['max_task_queued_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_processing_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_reset_time'])
-        ret = self.db.new_passkey(expiration,async=False)
+        ret = self.db.new_passkey(expiration=expiration,async=False)
         if isinstance(ret,Exception):
             logger.error('error getting passkey for task_id %r',
                          task['task_id'])
@@ -424,7 +428,8 @@ class grid(object):
             
             # update DB
             logger.info('task %s has new submit_dir %s',task['task_id'],task_dir)
-            ret = self.db.set_submit_dir(task['task_id'],task_dir,async=False)
+            ret = self.db.set_submit_dir(task=task['task_id'],
+                                         submit_dir=task_dir,async=False)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with submit_dir')
                 raise ret
@@ -441,7 +446,7 @@ class grid(object):
         filename = os.path.join(task['submit_dir'],'task.cfg')
         
         # get config from database
-        ret = self.db.get_cfg_for_task(task['task_id'],async=False)
+        ret = self.db.get_cfg_for_task(task_id=task['task_id'],async=False)
         if isinstance(ret,Exception):
             logger.error('error getting task cfg for task_id %r',
                          task['task_id'])

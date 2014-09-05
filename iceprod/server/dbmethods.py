@@ -719,7 +719,7 @@ class DBMethods():
                         task_names.append(str(t))
                         task_depends.append([])
                 else:
-                    task_names = [t['name'] for t in tt]
+                    task_names = [t['name'] if t['name'] else i for i,t in enumerate(tt)]
                     try:
                         for t in tt:
                             task_depends.append([task_names.index(d) 
@@ -755,11 +755,13 @@ class DBMethods():
                         gs = possible_datasets[dataset]['gridspec']
                     else:
                         try:
-                            gs = possible_datasets[dataset]['gridspec'][name]
+                            gs = possible_datasets[dataset]['gridspec'][str(name)]
                         except:
                             logger.error('cannot find task name in dataset '
                                         'gridspec def: %r %r',dataset,name)
                             continue
+                    if isinstance(gs,(list,tuple)):
+                        gs = ','.join(gs)
                     search.append((task_id, job_id, dataset, gs,
                                    name, 'waiting'))
                     search_bindings.append(q_6)

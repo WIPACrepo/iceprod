@@ -1,4 +1,22 @@
 {
+    "queue":{
+        "max_resets":10,
+        "task_buffer":10,
+        "submit_dir":"$PWD/submit",
+        "*":{
+            "description":"generic grid plugin",
+            "tasks_on_queue":[1,10],
+            "max_task_queued_time":86400,
+            "max_task_processing_time":86400,
+            "max_task_reset_time":3600,
+            "ping_interval":7200,
+            "suspend_submit_dir_time":86400,
+            "queueing_factor_priority":1.0,
+            "queueing_factor_dataset":1.0,
+            "queueing_factor_tasks":1.0,
+            "batchopts":{ }
+        }
+    },
     "db":{
         "type":"sqlite",
         "name":"db",

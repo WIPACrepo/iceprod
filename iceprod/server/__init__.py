@@ -188,3 +188,26 @@ def get_pkgdata_filename(package, resource):
     parts = resource.split('/')
     parts.insert(0, os.path.dirname(mod.__file__))
     return os.path.join(*parts)
+
+def get_pkg_binary(package, binary):
+    # try finding the binary path based on the python package
+    try:
+        loader = get_loader(package)
+        f = loader.get_filename()
+        while f and 'lib' in f:
+            f = os.path.dirname(f)
+        filepath = os.path.join(f,'bin',binary)
+        if os.path.exists(filepath):
+            return filepath
+        filepath = os.path.join(f,'sbin',binary)
+        if os.path.exists(filepath):
+            return filepath
+    except Exception:
+        pass
+    
+    # try just asking the shell
+    try:
+        return subprocess.check_output(["which",binary]).strip('\n')
+    except Exception:
+        pass
+    return None

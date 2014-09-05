@@ -30,8 +30,11 @@ class IceProdConfig(dict):
         else:
             self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
         self.loading = False
+        
+        # load user input, apply defaults, and save
         self.load()
         self.defaults()
+        self.save()
     
     def defaults(self):
         """Set default values if unset."""
@@ -42,12 +45,24 @@ class IceProdConfig(dict):
             text = open(filename).read()
             obj = json_decode(text)
             def setter(new_obj,self_obj):
+                logger.debug('setter()')
+                orig_keys = self_obj.keys()
                 for key in new_obj:
-                    if key not in self_obj:
+                    logger.debug('key = %s',key)
+                    if key == '*':
+                        for key2 in orig_keys:
+                            logger.debug('key2=%s',key2)
+                            if isinstance(self_obj[key2],dict):
+                                setter(new_obj['*'],self_obj[key2])
+                    elif key not in self_obj:
+                        logger.debug('setting key')
                         self_obj[key] = new_obj[key]
                     elif isinstance(self_obj[key],dict):
                         setter(new_obj[key],self_obj[key])
+                logger.debug('~setter()')
+            logger.info('before defaults: %s',self)
             setter(obj,self)
+            logger.info('with defaults: %s',self)
         except Exception:
             logger.warn('failed to load from default config file %s',
                         self.filename, exc_info=True)

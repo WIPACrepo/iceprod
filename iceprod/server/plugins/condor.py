@@ -34,9 +34,11 @@ class condor(grid.grid):
         args = ['-d {}'.format(self.web_address)]
         if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
             args.append('-m {}'.format(self.queue_cfg['platform']))
-        if self.cfg['download']['http_username']:
+        if ('download' in self.cfg and 'http_username' in self.cfg['download']
+            and self.cfg['download']['http_username']):
             args.append('-u {}'.format(self.cfg['download']['http_username']))
-        if self.cfg['download']['http_password']:
+        if ('download' in self.cfg and 'http_password' in self.cfg['download']
+            and self.cfg['download']['http_password']):
             args.append('-p {}'.format(self.cfg['download']['http_password']))
         if self.x509:
             args.append('-x {}'.format(self.x509))
@@ -52,7 +54,8 @@ class condor(grid.grid):
             else:
                 batch_opts[b] = self.queue_cfg['batchopts'][b]
         if cfg:
-            if cfg['steering']:
+            if (cfg['steering'] and 'batchsys' in cfg['steering'] and
+                cfg['steering']['batchsys']):
                 for b in cfg['steering']['batchsys']:
                     if b.lower().startswith(self.__class__.__name__):
                         # these settings apply to this batchsys
