@@ -20,13 +20,16 @@ kwargs = {}
 
 version = "2.0.dev1"
 
-with open('README.rst') as f:
+current_path = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.join(current_path,'README.rst')) as f:
     kwargs['long_description'] = f.read()
 
 try:
     # make dataclasses.js from dataclasses.py
     import inspect
     import json
+    sys.path.append(current_path)
     from iceprod.core import dataclasses
     dcs = {}
     names = dataclasses._plurals.copy()
@@ -35,7 +38,7 @@ try:
             dcs[name] = obj().output()
             names[name] = obj.plural
     data = {'classes':dcs,'names':names}
-    with open(os.path.join('iceprod','server','data','www','dataclasses.js'),'w') as f:
+    with open(os.path.join(current_path,'iceprod','server','data','www','dataclasses.js'),'w') as f:
         f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
 except Exception:
     print('WARN: cannot make dataclasses.js')
@@ -44,7 +47,7 @@ if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['tornado>=3.0', 'pyzmq']
     extras_require = {
-        'utils': ['setproctitle', 'pycurl', 'openssl', 'pyasn1'],
+        'utils': ['setproctitle', 'pycurl', 'pyOpenSSL', 'pyasn1'],
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']
     }
@@ -59,7 +62,8 @@ setup(
     name='iceprod',
     version=version,
     scripts=glob.glob('bin/*'),
-    packages=['iceprod', 'iceprod.client', 'iceprod.core', 'iceprod.server',
+    packages=['iceprod', 'iceprod.client', 'iceprod.core', 
+              'iceprod.modules', 'iceprod.server',
               'iceprod.server.modules', 'iceprod.server.plugins'],
     package_data={
         # data files need to be listed both here (which determines what gets

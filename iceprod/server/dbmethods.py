@@ -1084,7 +1084,7 @@ class DBMethods():
             return
         
         # check if whole job is finished
-        sql = 'select dataset_id,job_id,jobs_submitted,tasks_submitted '
+        sql = 'select search.dataset_id,job_id,jobs_submitted,tasks_submitted '
         sql += ' from search '
         sql += ' join dataset on search.dataset_id = dataset.dataset_id '
         sql += ' where task_id = ?'
@@ -1173,33 +1173,51 @@ class DBMethods():
         elif not ret:
             callback(Exception('sql error in task_error'))
         else:
-            task = None
-            failures=0
-            for t,f in ret:
-                task = t
-                failures = f
-                break
-            failures += 1
-            if failures >= self.db.cfg['queue']['max_resets']:
-                status = 'failed'
-            else:
-                status = 'reset'
-            
-            now = datetime.utcnow()
-            sql = 'update search set task_status = ? '
-            sql += ' where task_id = ?'
-            bindings = (status,task)
-            sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
-            bindings2 = (status,failures,datetime2str(now),task)
+            sql = 'select search.task_id,debug from search '
+            sql += 'join dataset on search.dataset_id = dataset.dataset_id '
+            sql += 'where task_id = ?'
+            bindings = (task,)
             try:
-                ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
+                ret2 = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
+                ret2 = e
+            if isinstance(ret2,Exception):
+                callback(ret2)
+            elif not ret2:
+                callback(Exception('sql error in task_error'))
             else:
-                callback(True)
+                task = None
+                failures=0
+                for t,f in ret:
+                    task = t
+                    failures = f
+                    break
+                failures += 1
+                debug = False
+                for t,d in ret2:
+                    debug = (d == True)
+                if debug:
+                    status = 'suspended'
+                elif failures >= self.db.cfg['queue']['max_resets']:
+                    status = 'failed'
+                else:
+                    status = 'reset'
+                
+                now = datetime.utcnow()
+                sql = 'update search set task_status = ? '
+                sql += ' where task_id = ?'
+                bindings = (status,task)
+                sql2 = 'update task set prev_status = status, '
+                sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
+                bindings2 = (status,failures,datetime2str(now),task)
+                try:
+                    ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
+                except Exception as e:
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                else:
+                    callback(True)
     
     def rpc_upload_logfile(self,task,name,data,callback=None):
         """Uploading of a logfile from a task"""

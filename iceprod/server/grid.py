@@ -57,7 +57,7 @@ class grid(object):
             self.queue_cfg['monitor_address']):
             self.web_address = self.queue_cfg['monitor_address']
         else:
-            self.web_address = functions.gethostname()
+            self.web_address = 'http://'+functions.gethostname()
             if ('webserver' in self.cfg and 'port' in self.cfg['webserver'] and
                 self.cfg['webserver']['port']):
                 self.web_address += ':'+str(self.cfg['webserver']['port'])
@@ -502,6 +502,28 @@ class grid(object):
             logger.error('Dataset prio for dataset %s is <0',dataset['dataset_id'])
         return prio
     
+    def get_submit_args(self,task,cfg=None,passkey=None):
+        """Get the submit arguments to start the loader script."""
+        args = ['-d {}'.format(self.web_address)]
+        if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
+            args.append('-m {}'.format(self.queue_cfg['platform']))
+        if ('download' in self.cfg and 'http_username' in self.cfg['download']
+            and self.cfg['download']['http_username']):
+            args.append('-u {}'.format(self.cfg['download']['http_username']))
+        if ('download' in self.cfg and 'http_password' in self.cfg['download']
+            and self.cfg['download']['http_password']):
+            args.append('-p {}'.format(self.cfg['download']['http_password']))
+        if 'software_dir' in self.queue_cfg and self.queue_cfg['software_dir']:
+            args.append('-s {}'.format(self.queue_cfg['software_dir']))
+        if self.x509:
+            args.append('-x {}'.format(self.x509))
+        if passkey:
+            args.append('--passkey {}'.format(passkey))
+        if task['task_id'] != 'pilot':
+            args.append('--cfgfile task.cfg')
+        else:
+            args.append('--gridspec "{}"'.format(self.gridspec))
+        return args
     
     ### Plugin Overrides ###
     

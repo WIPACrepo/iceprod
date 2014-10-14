@@ -11,7 +11,7 @@ Iceprod core framework starter script.
 OPTIONS:
  -h        Show this message
  -d <arg>  Download URL (required)
- -c <arg>  CVMFS IceProd location
+ -s <arg>  IceProd software location
  -m <arg>  Platform
  -u <arg>  Download Username
  -p <arg>  Download Password
@@ -23,7 +23,7 @@ EOF
 
 # get args
 INC=0
-while getopts ":hd:c:m:u:p:e:x:" opt; do
+while getopts ":hd:s:m:u:p:e:x:" opt; do
     case $opt in
         h)
             usage
@@ -32,8 +32,8 @@ while getopts ":hd:c:m:u:p:e:x:" opt; do
         d)
             DOWNLOAD_URL=$OPTARG
             ;;
-        c)
-            CVMFS_DIR=$OPTARG
+        s)
+            SROOT=$OPTARG
             ;;
         m)
             PLATFORM=$OPTARG
@@ -92,10 +92,10 @@ fi
 echo "Platform: $PLATFORM"
 export PLATFORM
 
-if [ -z $CVMFS_DIR ]; then
-    CVMFS_DIR="/cvmfs/icecube.wisc.edu/iceprod"
+if [ -z $SROOT ]; then
+    SROOT="/cvmfs/icecube.wisc.edu/iceprod"
 fi
-if [ ! -d $CVMFS_DIR ]; then
+if [ ! -d $SROOT ]; then
     # Download env for this platform
     if [ -z $ENV ]; then
         ENV="env.$PLATFORM.tar.gz"
@@ -184,12 +184,19 @@ if [ ! -d $CVMFS_DIR ]; then
     
     # set rest of environment
     export PATH=$PWD/env/bin:$PATH
-    export PYTHONPATH=$PWD/env/lib/python2.7/site-packages:$PWD/env/lib/python2.7:$PWD/env/lib:$PYTHONPATH
     export LD_LIBRARY_PATH=$PWD/env/lib:$PWD/env/lib64:$LD_LIBRARY_PATH
     export DYLD_LIBRARY_PATH=$PWD/env/lib:$PWD/env/lib64:$DYLD_LIBRARY_PATH
+    export PYTHONPATH=$PWD/env/lib/python`python -c 'import sys;print(".".join([str(x) for x in sys.version_info[:2]]))'`/site-packages:$PWD/env/lib:$PYTHONPATH
 else
-    echo "Using CVMFS at $CVMFS_DIR"
-    eval `$CVMFS_DIR/standard/setup.sh`
+    echo "Using software at $SROOT"
+    if [ -f $SROOT/setup.sh ]; then
+        eval `$SROOT/setup.sh`
+    else
+        export PATH=$SROOT/bin:$PATH
+        export LD_LIBRARY_PATH=$SROOT/lib:$SROOT/lib64:$LD_LIBRARY_PATH
+        export DYLD_LIBRARY_PATH=$SROOT/lib:$SROOT/lib64:$DYLD_LIBRARY_PATH
+        export PYTHONPATH=$SROOT/lib/python`python -c 'import sys;print(".".join([str(x) for x in sys.version_info[:2]]))'`/site-packages:$SROOT/lib:$PYTHONPATH
+    fi
     PYBIN=python
 fi
 

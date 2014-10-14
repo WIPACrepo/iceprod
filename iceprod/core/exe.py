@@ -56,13 +56,15 @@ def parseValue(value,env={}):
     :returns: The parsed value
     """
     if isinstance(value,dataclasses.String):
+        logger.debug('parse before:%r| env=%r',value,env)
         value = parseObj.parse(value,config,env)
         if isinstance(value,dataclasses.String):
             value = os.path.expandvars(value)
+        logger.debug('parse after:%r',value)
     return value
 
 def parseObject(obj,env):
-    """Run :func:`parseValue` on all attributes of an object"""
+    """Run :func:`parseValue` on all values of a dict"""
     ret = copy.copy(obj)
     for attr in obj.keys():
         tmp = obj[attr]
@@ -812,16 +814,20 @@ def run_module(env,module,queue):
                 # unknown callable, just call it and hope that's all it needs
                 args = module['args']
                 logger.warn('unknown callable, args=%s',args)
-                if args and args[0] in ('{','['):
+                if (args and isinstance(args,dataclasses.String) and 
+                    args[0] in ('{','[')):
                     # args is json
                     args = json_decode(args)
                 if not args:
                     ret = clas()
                 elif isinstance(args,dataclasses.String):
+                    args = parseValue(args,env)
                     ret = clas(args)
                 elif isinstance(args,list):
+                    args = [parseValue(x,env) for x in args]
                     ret = clas(*args)
                 elif isinstance(args,dict):
+                    args = parseObject(args,env)
                     ret = clas(**args)
                 else:
                     raise Exception('args is unknown type')
@@ -836,14 +842,16 @@ def run_module(env,module,queue):
             if not args:
                 args = []
             else:
-                if args[0] in ('{','['):
+                if (args and isinstance(args,dataclasses.String) and 
+                    args[0] in ('{','[')):
                     # args is json
                     args = json_decode(args)
                 if isinstance(args,dataclasses.String):
-                    args = args.split(' ')
+                    args = parseValue(args,env).split(' ')
                 elif isinstance(args,list):
-                    pass
+                    args = [parseValue(x,env) for x in args]
                 elif isinstance(args,dict):
+                    args = parseObject(args,env)
                     def splitter(a,b):
                         ret = '-%s=%s' if len(str(a)) <= 1 else '--%s=%s'
                         return ret%(str(a),str(b))
@@ -898,7 +906,7 @@ def setupjsonRPC(url,passkey):
     """Setup the JSONRPC communications"""
     JSONRPC.start(address=url,passkey=passkey) # TODO: add ssl options
     try:
-        ret = JSONRPC.echo('e')
+        ret = JSONRPC.echo(value='e')
     except Exception as e:
         logger.error('error: %r',e)
         raise Exception('JSONRPC communcation did not start.  '
@@ -932,7 +940,7 @@ def processing():
     if 'task_id' not in config['options']:
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot update status')
-    ret = JSONRPC.set_processing(config['options']['task_id'])
+    ret = JSONRPC.set_processing(task=config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -949,7 +957,7 @@ def finishtask(stats={}):
         # filter stats
         stat_keys = set(json_decode(config['options']['stats']))
         outstats = {k:stats[k] for k in stats if k in stat_keys}
-    ret = JSONRPC.finish_task(config['options']['task_id'],stats=outstats)
+    ret = JSONRPC.finish_task(task=config['options']['task_id'],stats=outstats)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -959,7 +967,7 @@ def stillrunning():
     if 'task_id' not in config['options']:
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot finish task')
-    ret = JSONRPC.stillrunning(config['options']['task_id'])
+    ret = JSONRPC.stillrunning(task=config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -974,7 +982,7 @@ def taskerror():
                         'so cannot send error')
     if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't change status on a DB kill
-    ret = JSONRPC.task_error(config['options']['task_id'])
+    ret = JSONRPC.task_error(task=config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -984,7 +992,7 @@ def _upload_logfile(task_id,name,file):
     if 'DBkill' in config['options'] and config['options']['DBkill']:
         return # don't upload logs on a DB kill
     data = json_compressor.compress(open(file).read())
-    ret = JSONRPC.upload_logfile(task_id,name,data)
+    ret = JSONRPC.upload_logfile(task=task_id,name=name,data=data)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret

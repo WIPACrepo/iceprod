@@ -133,7 +133,7 @@ def runner(cfgfile,url,debug=False,offline=False):
 
     # set logging verbosity
     if 'debug' in config['options'] and 'loglevel' not in config['options']:
-        config['options']['loglevel'] = iceprod.core.dataclasses.Parameter('loglevel','INFO')
+        config['options']['loglevel'] = 'INFO'
     if ('loglevel' in config['options'] and 
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:

@@ -295,10 +295,13 @@ def check_sha512sum(file,sum):
 ### File and Directory Manipulation Functions ###
 
 def removedirs(path):
-    if os.path.isdir(path):
-        shutil.rmtree(path,True)
-    else:
-        os.remove(path)
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path,True)
+        else:
+            os.remove(path)
+    except Exception:
+        pass
 
 def copy(src,dest):
     parent_dir = os.path.dirname(dest)

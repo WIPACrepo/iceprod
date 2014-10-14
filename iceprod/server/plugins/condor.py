@@ -30,20 +30,7 @@ class condor(grid.grid):
     
     def generate_submit_file(self,task,cfg=None,passkey=None):
         """Generate queueing system submit file for task in dir."""
-        # get args
-        args = ['-d {}'.format(self.web_address)]
-        if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
-            args.append('-m {}'.format(self.queue_cfg['platform']))
-        if ('download' in self.cfg and 'http_username' in self.cfg['download']
-            and self.cfg['download']['http_username']):
-            args.append('-u {}'.format(self.cfg['download']['http_username']))
-        if ('download' in self.cfg and 'http_password' in self.cfg['download']
-            and self.cfg['download']['http_password']):
-            args.append('-p {}'.format(self.cfg['download']['http_password']))
-        if self.x509:
-            args.append('-x {}'.format(self.x509))
-        if passkey:
-            args.append('--passkey {}'.format(passkey))
+        args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
         
         # get requirements and batchopts
         requirements = []
@@ -105,9 +92,6 @@ class condor(grid.grid):
                 p('transfer_input_files = {}'.format(
                     os.path.join(task['submit_dir'],'task.cfg')))
                 p('should_transfer_files = always')
-                args.append('--cfgfile task.cfg')
-            else:
-                args.append('--gridspec "{}"'.format(self.gridspec))
             p('arguments = ',' '.join(args))
             
             for b in batch_opts:
