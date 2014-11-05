@@ -47,6 +47,7 @@ The website is the main way to communicate with IceProd, both from jobs and as a
 .. toctree::
     :maxdepth: 3
     
+    async
     website
     
 Internal RPC
