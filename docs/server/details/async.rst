@@ -39,6 +39,10 @@ Asynchronous programming refers to two related concepts:
   Thus the focus on explicit yield points, which grants "locks" on data without
   worrying about the complexities of thread safety.
 
+For IceProd, the first concept is the most important one.  Scalability is one
+of the primary goals, so making sure servers can handle thousands of requests 
+per second is important. The rest of this documentation will focus on that.
+
 Whatever the method of getting asynchronous, the goal is to allow the main 
 thread to continue processing additional requests while the current request is
 processed (or waiting) somewhere else. While this doesn't work well for
@@ -78,6 +82,24 @@ IceProd's main access to asynchronous I/O is through `Tornado <http://www.tornad
 This is the basic framework for the website, and provides utility functions 
 for asynchronous sockets that are used in several other places.  Tornado 
 also allows us to make http downloads asynchronously.
+
+A basic Hello World example is::
+
+    from functools import partial
+    from tornado.ioloop import IOLoop
+    
+    def hello_world(loop):
+        print('Hello World')
+        loop.stop()
+    
+    loop = IOLoop.instance()
+    
+    # Schedule a call to hello_world()
+    loop.add_callback(partial(hello_world,loop))
+    
+    # Blocking call interrupted by loop.stop()
+    loop.start()
+    loop.close()
 
 GridFTP
 '''''''
@@ -218,3 +240,25 @@ Or, if you already have an asynchronous function with a callback, you can use
 the function should be truly asynchronous, with no blocking before the 
 function returns. Good examples of this are network calls where you expect
 the result to be returned in the callback whenever it happens.
+
+AsyncIO
+-------
+
+Starting in python 3.4 an asynchronous I/O library has been included in
+python. This takes the place of ``tornado`` in some of the previous examples.
+A basic Hello World example is::
+
+    import asyncio
+    
+    def hello_world(loop):
+        print('Hello World')
+        loop.stop()
+    
+    loop = asyncio.get_event_loop()
+    
+    # Schedule a call to hello_world()
+    loop.call_soon(hello_world, loop)
+    
+    # Blocking call interrupted by loop.stop()
+    loop.run_forever()
+    loop.close()
