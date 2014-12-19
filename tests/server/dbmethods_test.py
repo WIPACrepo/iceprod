@@ -144,12 +144,13 @@ class dbmethods_test(unittest.TestCase):
 
     def test_004_list_to_dict(self):
         """Test list_to_dict"""
+        # special note: use DB.subclasses[0] because this is an _method
         try:
             alltables = {t:OrderedDict([(x,i) for i,x in enumerate(DB.tables[t])]) for t in DB.tables}
             
             # test all tables individually
             for t in alltables:
-                ret = self._db._list_to_dict(t,alltables[t].values())
+                ret = self._db.subclasses[0]._list_to_dict(t,alltables[t].values())
                 if ret != alltables[t]:
                     raise Exception('got %r but should be %r'%(ret,alltables[t]))
             
@@ -161,7 +162,7 @@ class dbmethods_test(unittest.TestCase):
             for t in alltables:
                 if not nleft:
                     if groupkeys:
-                        ret = self._db._list_to_dict(groupkeys,groupvalues)
+                        ret = self._db.subclasses[0]._list_to_dict(groupkeys,groupvalues)
                         if ret != groupans:
                             raise Exception('got %r but should be %r'%(ret,groupans))
                     nleft = random.randint(1,10)
@@ -169,7 +170,7 @@ class dbmethods_test(unittest.TestCase):
                 groupvalues.extend(alltables[t].values())
                 groupans.update(alltables[t])
             if groupkeys:
-                ret = self._db._list_to_dict(groupkeys,groupvalues)
+                ret = self._db.subclasses[0]._list_to_dict(groupkeys,groupvalues)
                 if ret != groupans:
                     raise Exception('got %r but should be %r'%(ret,groupans))
             
@@ -180,8 +181,8 @@ class dbmethods_test(unittest.TestCase):
         else:
             printer('Test dbmethods list_to_dict')
 
-    def test_010_get_site_auth(self):
-        """Test get_site_auth"""
+    def test_010_auth_get_site_auth(self):
+        """Test auth_get_site_auth"""
         try:
             data = {'site_id':1,'auth_key':'key'}
             
@@ -199,7 +200,7 @@ class dbmethods_test(unittest.TestCase):
             # normal site test
             sql_read_task.ret = [[data['site_id'],data['auth_key']]]
             
-            self._db.get_site_auth(callback=cb)
+            self._db.auth_get_site_auth(callback=cb)
             
             if cb.called is False:
                 raise Exception('normal site: callback not called')
@@ -210,7 +211,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             cb.called = False
             
-            self._db.get_site_auth(callback=cb)
+            self._db.auth_get_site_auth(callback=cb)
             
             if cb.called is False:
                 raise Exception('not in db: callback not called')
@@ -221,7 +222,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[1,2],[3,4]]
             cb.called = False
             
-            self._db.get_site_auth(callback=cb)
+            self._db.auth_get_site_auth(callback=cb)
             
             if cb.called is False:
                 raise Exception('in db twice: callback not called')
@@ -232,7 +233,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[data['site_id']]]
             cb.called = False
             
-            self._db.get_site_auth(callback=cb)
+            self._db.auth_get_site_auth(callback=cb)
             
             if cb.called is False:
                 raise Exception('bad db info: callback not called')
@@ -243,7 +244,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             cb.called = False
             
-            self._db.get_site_auth(callback=cb)
+            self._db.auth_get_site_auth(callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -251,14 +252,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_site_auth test - %s',str(e))
-            printer('Test dbmethods get_site_auth',False)
+            logger.error('Error running dbmethods auth_get_site_auth test - %s',str(e))
+            printer('Test dbmethods auth_get_site_auth',False)
             raise
         else:
-            printer('Test dbmethods get_site_auth')
+            printer('Test dbmethods auth_get_site_auth')
 
-    def test_011_authorize_site(self):
-        """Test authorize_site"""
+    def test_011_auth_authorize_site(self):
+        """Test auth_authorize_site"""
         try:
             data = {'site_id':1,'auth_key':'key'}
             
@@ -276,7 +277,7 @@ class dbmethods_test(unittest.TestCase):
             # normal site
             sql_read_task.ret = [[data['site_id'],data['auth_key']]]
             
-            self._db.authorize_site(1,'key',callback=cb)
+            self._db.auth_authorize_site(1,'key',callback=cb)
             
             if cb.called is False:
                 raise Exception('normal site: callback not called')
@@ -287,7 +288,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             cb.called = False
             
-            self._db.authorize_site(1,'key',callback=cb)
+            self._db.auth_authorize_site(1,'key',callback=cb)
             
             if cb.called is False:
                 raise Exception('not in db: callback not called')
@@ -298,7 +299,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[1,2],[3,4]]
             cb.called = False
             
-            self._db.authorize_site(1,'key',callback=cb)
+            self._db.auth_authorize_site(1,'key',callback=cb)
             
             if cb.called is False:
                 raise Exception('in db twice: callback not called')
@@ -309,7 +310,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[data['site_id']]]
             cb.called = False
             
-            self._db.authorize_site(1,'key',callback=cb)
+            self._db.auth_authorize_site(1,'key',callback=cb)
             
             if cb.called is False:
                 raise Exception('bad db info: callback not called')
@@ -320,7 +321,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             cb.called = False
             
-            self._db.authorize_site(1,'key',callback=cb)
+            self._db.auth_authorize_site(1,'key',callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -328,14 +329,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods authorize_site test - %s',str(e))
-            printer('Test dbmethods authorize_site',False)
+            logger.error('Error running dbmethods auth_authorize_site test - %s',str(e))
+            printer('Test dbmethods auth_authorize_site',False)
             raise
         else:
-            printer('Test dbmethods authorize_site')
+            printer('Test dbmethods auth_authorize_site')
     
-    def test_012_authorize_task(self):
-        """Test authorize_task"""
+    def test_012_auth_authorize_task(self):
+        """Test auth_authorize_task"""
         try:
             data = {'passkey':1,'expire':'2100-01-01T01:01:01'}
             
@@ -353,7 +354,7 @@ class dbmethods_test(unittest.TestCase):
             # normal task
             sql_read_task.ret = [[data['passkey'],data['expire']]]
             
-            self._db.authorize_task(1,callback=cb)
+            self._db.auth_authorize_task(1,callback=cb)
             
             if cb.called is False:
                 raise Exception('normal task: callback not called')
@@ -364,7 +365,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             cb.called = False
             
-            self._db.authorize_task(1,callback=cb)
+            self._db.auth_authorize_task(1,callback=cb)
             
             if cb.called is False:
                 raise Exception('not in db: callback not called')
@@ -375,7 +376,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[1,2],[3,4]]
             cb.called = False
             
-            self._db.authorize_task(1,callback=cb)
+            self._db.auth_authorize_task(1,callback=cb)
             
             if cb.called is False:
                 raise Exception('in db twice: callback not called')
@@ -386,7 +387,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [[data['passkey']]]
             cb.called = False
             
-            self._db.authorize_task(1,callback=cb)
+            self._db.auth_authorize_task(1,callback=cb)
             
             if cb.called is False:
                 raise Exception('bad db info: callback not called')
@@ -397,7 +398,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             cb.called = False
             
-            self._db.authorize_task(1,callback=cb)
+            self._db.auth_authorize_task(1,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -405,11 +406,11 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods authorize_task test - %s',str(e))
-            printer('Test dbmethods authorize_task',False)
+            logger.error('Error running dbmethods auth_authorize_task test - %s',str(e))
+            printer('Test dbmethods auth_authorize_task',False)
             raise
         else:
-            printer('Test dbmethods authorize_task')
+            printer('Test dbmethods auth_authorize_task')
     
     def test_020_in_cache(self):
         """Test in_cache"""
@@ -897,8 +898,8 @@ class dbmethods_test(unittest.TestCase):
         else:
             printer('Test dbmethods add_to_cache')
 
-    def test_100_get_site_id(self):
-        """Test get_site_id"""
+    def test_100_queue_get_site_id(self):
+        """Test queue_get_site_id"""
         try:
             site_id = 'asdfasdfsdf'
             
@@ -916,7 +917,7 @@ class dbmethods_test(unittest.TestCase):
             # normal site test
             sql_read_task.ret = [[site_id]]
             
-            self._db.get_site_id(callback=cb)
+            self._db.queue_get_site_id(callback=cb)
             
             if cb.called is False:
                 raise Exception('normal site: callback not called')
@@ -927,7 +928,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             cb.called = False
             
-            self._db.get_site_id(callback=cb)
+            self._db.queue_get_site_id(callback=cb)
             
             if cb.called is False:
                 raise Exception('not in db: callback not called')
@@ -938,7 +939,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             cb.called = False
             
-            self._db.get_site_id(callback=cb)
+            self._db.queue_get_site_id(callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -946,14 +947,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_site_id test - %s',str(e))
-            printer('Test dbmethods get_site_id',False)
+            logger.error('Error running dbmethods queue_get_site_id test - %s',str(e))
+            printer('Test dbmethods queue_get_site_id',False)
             raise
         else:
-            printer('Test dbmethods get_site_id')
+            printer('Test dbmethods queue_get_site_id')
 
-    def test_110_get_active_tasks(self):
-        """Test get_active_tasks"""
+    def test_110_queue_get_active_tasks(self):
+        """Test queue_get_active_tasks"""
         try:
             task = OrderedDict([('task_id','asdf'),
                     ('status','queued'),
@@ -1004,7 +1005,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.ret = [task.values()]
             
-            self._db.get_active_tasks(gridspec,callback=cb)
+            self._db.queue_get_active_tasks(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('normal task: callback not called')
@@ -1020,7 +1021,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.ret = []
             
-            self._db.get_active_tasks(gridspec,callback=cb)
+            self._db.queue_get_active_tasks(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -1034,7 +1035,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.ret = [task.values(),task2.values(),task3.values()]
             
-            self._db.get_active_tasks(gridspec,callback=cb)
+            self._db.queue_get_active_tasks(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('several tasks: callback not called')
@@ -1052,7 +1053,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             cb.called = False
             
-            self._db.get_active_tasks(gridspec,callback=cb)
+            self._db.queue_get_active_tasks(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -1060,14 +1061,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_active_tasks test - %s',str(e))
-            printer('Test dbmethods get_active_tasks',False)
+            logger.error('Error running dbmethods queue_get_active_tasks test - %s',str(e))
+            printer('Test dbmethods queue_get_active_tasks',False)
             raise
         else:
-            printer('Test dbmethods get_active_tasks')
+            printer('Test dbmethods queue_get_active_tasks')
 
-    def test_111_set_task_status(self):
-        """Test set_task_status"""
+    def test_111_queue_set_task_status(self):
+        """Test queue_set_task_status"""
         try:
             def _db_write(conn,sql,bindings,*args):
                 def w(s,b):
@@ -1103,7 +1104,7 @@ class dbmethods_test(unittest.TestCase):
             task = 'asfsd'
             status = 'waiting'
             
-            self._db.set_task_status(task,status,callback=cb)
+            self._db.queue_set_task_status(task,status,callback=cb)
             
             if cb.called is False:
                 raise Exception('single task: callback not called')
@@ -1126,7 +1127,7 @@ class dbmethods_test(unittest.TestCase):
             status = 'waiting'
             
             try:
-                self._db.set_task_status(task,status,callback=cb)
+                self._db.queue_set_task_status(task,status,callback=cb)
             except:
                 pass
             else:
@@ -1143,7 +1144,7 @@ class dbmethods_test(unittest.TestCase):
             task = OrderedDict([('asfsd',{}),('gsdf',{})])
             status = 'waiting'
             
-            self._db.set_task_status(task,status,callback=cb)
+            self._db.queue_set_task_status(task,status,callback=cb)
             
             if cb.called is False:
                 raise Exception('multiple tasks (dict): callback not called')
@@ -1167,7 +1168,7 @@ class dbmethods_test(unittest.TestCase):
             task = ['asfsd','gsdf']
             status = 'waiting'
             
-            self._db.set_task_status(task,status,callback=cb)
+            self._db.queue_set_task_status(task,status,callback=cb)
             
             if cb.called is False:
                 raise Exception('multiple tasks (list): callback not called')
@@ -1191,7 +1192,7 @@ class dbmethods_test(unittest.TestCase):
             task = 'asfsd'
             status = 'waiting'
             
-            self._db.set_task_status(task,status,callback=cb)
+            self._db.queue_set_task_status(task,status,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -1199,14 +1200,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods set_task_status test - %s',str(e))
-            printer('Test dbmethods set_task_status',False)
+            logger.error('Error running dbmethods queue_set_task_status test - %s',str(e))
+            printer('Test dbmethods queue_set_task_status',False)
             raise
         else:
-            printer('Test dbmethods set_task_status')
+            printer('Test dbmethods queue_set_task_status')
 
-    def test_112_reset_tasks(self):
-        """Test reset_tasks"""
+    def test_112_queue_reset_tasks(self):
+        """Test queue_reset_tasks"""
         try:
             def _db_write(conn,sql,bindings,*args):
                 def w(s,b):
@@ -1241,7 +1242,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             reset = 'asfsd'
             
-            self._db.reset_tasks(reset,callback=cb)
+            self._db.queue_reset_tasks(reset,callback=cb)
             
             if cb.called is False:
                 raise Exception('single task: callback not called')
@@ -1264,7 +1265,7 @@ class dbmethods_test(unittest.TestCase):
             reset = 'asfsd'
             fail = 'sdfsdf'
             
-            self._db.reset_tasks(reset,fail,callback=cb)
+            self._db.queue_reset_tasks(reset,fail,callback=cb)
             
             if cb.called is False:
                 raise Exception('single task w/fail: callback not called')
@@ -1291,7 +1292,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             fail = 'sdfsdf'
             
-            self._db.reset_tasks(fail=fail,callback=cb)
+            self._db.queue_reset_tasks(fail=fail,callback=cb)
             
             if cb.called is False:
                 raise Exception('single fail task: callback not called')
@@ -1315,7 +1316,7 @@ class dbmethods_test(unittest.TestCase):
             reset = OrderedDict([('asfsd',{}),('gsdf',{})])
             fail = OrderedDict([('asfsd',{}),('gsdf',{})])
             
-            self._db.reset_tasks(reset,fail,callback=cb)
+            self._db.queue_reset_tasks(reset,fail,callback=cb)
             
             if cb.called is False:
                 raise Exception('multiple tasks (dict): callback not called')
@@ -1343,7 +1344,7 @@ class dbmethods_test(unittest.TestCase):
             reset = ['asfsd','gsdf']
             fail = ['asfsd','gsdf']
             
-            self._db.reset_tasks(reset,fail,callback=cb)
+            self._db.queue_reset_tasks(reset,fail,callback=cb)
             
             if cb.called is False:
                 raise Exception('multiple tasks (list): callback not called')
@@ -1370,7 +1371,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             reset = 'asfsd'
             
-            self._db.reset_tasks(reset,callback=cb)
+            self._db.queue_reset_tasks(reset,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error in reset: callback not called')
@@ -1385,7 +1386,7 @@ class dbmethods_test(unittest.TestCase):
             reset = 'asfsd'
             fail = 'kljsdf'
             
-            self._db.reset_tasks(reset,fail,callback=cb)
+            self._db.queue_reset_tasks(reset,fail,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error in fail: callback not called')
@@ -1393,14 +1394,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error in fail: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods reset_tasks test - %s',str(e))
-            printer('Test dbmethods reset_tasks',False)
+            logger.error('Error running dbmethods queue_reset_tasks test - %s',str(e))
+            printer('Test dbmethods queue_reset_tasks',False)
             raise
         else:
-            printer('Test dbmethods reset_tasks')
+            printer('Test dbmethods queue_reset_tasks')
 
-    def test_113_get_task(self):
-        """Test get_task"""
+    def test_113_queue_get_task(self):
+        """Test queue_get_task"""
         try:
             task = OrderedDict([('task_id','asdf'),
                     ('status','queued'),
@@ -1451,7 +1452,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [task.values()]
             task_id = task['task_id']
             
-            self._db.get_task(task_id,callback=cb)
+            self._db.queue_get_task(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('normal task: callback not called')
@@ -1468,7 +1469,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             task_id = task['task_id']
             
-            self._db.get_task(task_id,callback=cb)
+            self._db.queue_get_task(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -1483,7 +1484,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = None
             task_id = task['task_id']
             
-            self._db.get_task(task_id,callback=cb)
+            self._db.queue_get_task(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -1499,7 +1500,7 @@ class dbmethods_test(unittest.TestCase):
             task_id = None
             
             try:
-                self._db.get_task(task_id,callback=cb)
+                self._db.queue_get_task(task_id,callback=cb)
             except:
                 pass
             else:
@@ -1513,7 +1514,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [task.values(),task2.values(),task3.values()]
             task_id = [task['task_id'],task2['task_id'],task3['task_id']]
             
-            self._db.get_task(task_id,callback=cb)
+            self._db.queue_get_task(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('several tasks: callback not called')
@@ -1530,7 +1531,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             task_id = task['task_id']
             
-            self._db.get_task(task_id,callback=cb)
+            self._db.queue_get_task(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -1538,14 +1539,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_task test - %s',str(e))
-            printer('Test dbmethods get_task',False)
+            logger.error('Error running dbmethods queue_get_task test - %s',str(e))
+            printer('Test dbmethods queue_get_task',False)
             raise
         else:
-            printer('Test dbmethods get_task')
+            printer('Test dbmethods queue_get_task')
 
-    def test_114_get_task_by_grid_queue_id(self):
-        """Test get_task_by_grid_queue_id"""
+    def test_114_queue_get_task_by_grid_queue_id(self):
+        """Test queue_get_task_by_grid_queue_id"""
         try:
             task = OrderedDict([('task_id','asdf'),
                     ('status','queued'),
@@ -1596,7 +1597,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [task.values()]
             task_id = task['grid_queue_id']
             
-            self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('normal task: callback not called')
@@ -1613,7 +1614,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             task_id = task['grid_queue_id']
             
-            self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -1628,7 +1629,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = None
             task_id = task['grid_queue_id']
             
-            self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -1644,7 +1645,7 @@ class dbmethods_test(unittest.TestCase):
             task_id = None
             
             try:
-                self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+                self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             except:
                 pass
             else:
@@ -1658,7 +1659,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = [task.values(),task2.values(),task3.values()]
             task_id = [task['grid_queue_id'],task2['grid_queue_id'],task3['grid_queue_id']]
             
-            self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('several tasks: callback not called')
@@ -1675,7 +1676,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             task_id = task['grid_queue_id']
             
-            self._db.get_task_by_grid_queue_id(task_id,callback=cb)
+            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -1683,14 +1684,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_task_by_grid_queue_id test - %s',str(e))
-            printer('Test dbmethods get_task_by_grid_queue_id',False)
+            logger.error('Error running dbmethods queue_get_task_by_grid_queue_id test - %s',str(e))
+            printer('Test dbmethods queue_get_task_by_grid_queue_id',False)
             raise
         else:
-            printer('Test dbmethods get_task_by_grid_queue_id')
+            printer('Test dbmethods queue_get_task_by_grid_queue_id')
 
-    def test_115_set_submit_dir(self):
-        """Test set_submit_dir"""
+    def test_115_queue_set_submit_dir(self):
+        """Test queue_set_submit_dir"""
         try:
             def sql_write_task(sql,bindings,callback):
                 sql_write_task.sql = sql
@@ -1709,7 +1710,7 @@ class dbmethods_test(unittest.TestCase):
             task = 'asfsd'
             submit_dir = 'waiting'
             
-            self._db.set_submit_dir(task,submit_dir,callback=cb)
+            self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
             
             if cb.called is False:
                 raise Exception('single task: callback not called')
@@ -1726,7 +1727,7 @@ class dbmethods_test(unittest.TestCase):
             submit_dir = 'waiting1'
             
             try:
-                self._db.set_submit_dir(task,submit_dir,callback=cb)
+                self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
             except:
                 pass
             else:
@@ -1741,7 +1742,7 @@ class dbmethods_test(unittest.TestCase):
             task = 'asfsd'
             submit_dir = 'waiting2'
             
-            self._db.set_submit_dir(task,submit_dir,callback=cb)
+            self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -1749,14 +1750,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods set_submit_dir test - %s',str(e))
-            printer('Test dbmethods set_submit_dir',False)
+            logger.error('Error running dbmethods queue_set_submit_dir test - %s',str(e))
+            printer('Test dbmethods queue_set_submit_dir',False)
             raise
         else:
-            printer('Test dbmethods set_submit_dir')
+            printer('Test dbmethods queue_set_submit_dir')
 
-    def test_119_buffer_jobs_tasks(self):
-        """Test buffer_jobs_tasks"""
+    def test_119_queue_buffer_jobs_tasks(self):
+        """Test queue_buffer_jobs_tasks"""
         try:
             def non_blocking_task(cb):
                 non_blocking_task.called = True
@@ -1875,7 +1876,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 10
-            self._db.buffer_jobs_tasks(gridspec,num,callback=cb)
+            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 1d,1j,1t: callback not called')
             if isinstance(cb.ret,Exception):
@@ -1942,7 +1943,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 10
-            self._db.buffer_jobs_tasks(gridspec,num,callback=cb)
+            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 2d,1j,1t: callback not called')
             if isinstance(cb.ret,Exception):
@@ -1998,7 +1999,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 10
-            self._db.buffer_jobs_tasks([gridspec,gridspec+'a'],num,callback=cb)
+            self._db.queue_buffer_jobs_tasks([gridspec,gridspec+'a'],num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 2d,1j,1t 2gs: callback not called')
             if isinstance(cb.ret,Exception):
@@ -2071,7 +2072,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 10
-            self._db.buffer_jobs_tasks(gridspec,num,callback=cb)
+            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 1d,1j,1t taskname: callback not called')
             if isinstance(cb.ret,Exception):
@@ -2140,7 +2141,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 10
-            self._db.buffer_jobs_tasks(gridspec,num,callback=cb)
+            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 1d,1j,1t buffered: callback not called')
             if isinstance(cb.ret,Exception):
@@ -2154,21 +2155,21 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             
             num = 1
-            self._db.buffer_jobs_tasks(gridspec,num,callback=cb)
+            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
                 raise Exception('buffer 1d,1j,1t buffer full: callback not called')
             if isinstance(cb.ret,Exception):
                 raise Exception('buffer 1d,1j,1t buffer full: exception returned %s'%cb.ret)
             
         except Exception as e:
-            logger.error('Error running dbmethods buffer_jobs_tasks test - %s',str(e))
-            printer('Test dbmethods buffer_jobs_tasks',False)
+            logger.error('Error running dbmethods queue_buffer_jobs_tasks test - %s',str(e))
+            printer('Test dbmethods queue_buffer_jobs_tasks',False)
             raise
         else:
-            printer('Test dbmethods buffer_jobs_tasks')
+            printer('Test dbmethods queue_buffer_jobs_tasks')
 
-    def test_120_get_queueing_datasets(self):
-        """Test get_queueing_datasets"""
+    def test_120_queue_get_queueing_datasets(self):
+        """Test queue_get_queueing_datasets"""
         try:
             dataset_id = 'asdfasdf'
             def sql_read_task(sql,bindings,callback):
@@ -2210,7 +2211,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.ret = [dataset.values()]
             
-            self._db.get_queueing_datasets(gridspec,callback=cb)
+            self._db.queue_get_queueing_datasets(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('single dataset: callback not called')
@@ -2227,7 +2228,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = []
             gridspec = 'lksdf.grid1'
             
-            self._db.get_queueing_datasets(gridspec,callback=cb)
+            self._db.queue_get_queueing_datasets(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -2242,7 +2243,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.ret = Exception('sql error')
             gridspec = 'lksdf.grid1'
             
-            self._db.get_queueing_datasets(gridspec,callback=cb)
+            self._db.queue_get_queueing_datasets(gridspec,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql error: callback not called')
@@ -2250,14 +2251,14 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql error: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_queueing_datasets test - %s',str(e))
-            printer('Test dbmethods get_queueing_datasets',False)
+            logger.error('Error running dbmethods queue_get_queueing_datasets test - %s',str(e))
+            printer('Test dbmethods queue_get_queueing_datasets',False)
             raise
         else:
-            printer('Test dbmethods get_queueing_datasets')
+            printer('Test dbmethods queue_get_queueing_datasets')
 
-    def test_121_get_queueing_tasks(self):
-        """Test get_queueing_tasks"""
+    def test_121_queue_get_queueing_tasks(self):
+        """Test queue_get_queueing_tasks"""
         try:
             task = OrderedDict([
                     ('task_id','asdf'),
@@ -2322,7 +2323,7 @@ class dbmethods_test(unittest.TestCase):
                                  task['task_id']:[task.values()]}
             dataset_prios = {'adnj':1}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
             
             if cb.called is False:
                 raise Exception('single dataset: callback not called')
@@ -2339,7 +2340,7 @@ class dbmethods_test(unittest.TestCase):
             _db_read.task_ret = {'adnj':[]}
             dataset_prios = {'adnj':1}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
             
             if cb.called is False:
                 raise Exception('no task: callback not called')
@@ -2356,7 +2357,7 @@ class dbmethods_test(unittest.TestCase):
             _db_read.task_ret = {}
             dataset_prios = {'adnj':1}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
             
             if cb.called is False:
                 raise Exception('_db_read error: callback not called')
@@ -2371,7 +2372,7 @@ class dbmethods_test(unittest.TestCase):
             dataset_prios = None
             
             try:
-                self._db.get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+                self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
             except:
                 pass
             else:
@@ -2389,7 +2390,7 @@ class dbmethods_test(unittest.TestCase):
             dataset_prios = {'adnj':1}
             
             try:
-                self._db.get_queueing_tasks(dataset_prios,'ggg.g1',1)
+                self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1)
             except:
                 pass
             else:
@@ -2409,7 +2410,7 @@ class dbmethods_test(unittest.TestCase):
                                  task['task_id']:[task.values(),task2.values(),task3.values()]}
             dataset_prios = {'adnj':1}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
             
             if cb.called is False:
                 raise Exception('several tasks in same dataset: callback not called')
@@ -2432,7 +2433,7 @@ class dbmethods_test(unittest.TestCase):
                                  task2['task_id']:[task.values(),task2.values(),task3.values()]}
             dataset_prios = {'adnj':.3,'nksd':.7}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
             
             if cb.called is False:
                 raise Exception('several tasks in diff dataset: callback not called')
@@ -2457,7 +2458,7 @@ class dbmethods_test(unittest.TestCase):
                                  task2['task_id']:[task2.values(),task3.values(),task4.values()]}
             dataset_prios = {'adnj':.2,'nksd':.8}
             
-            self._db.get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
             
             if cb.called is False:
                 raise Exception('priority weighting dataset: callback not called')
@@ -2468,11 +2469,11 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('priority weighting dataset: callback ret != task2 task3 task4')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_queueing_tasks test - %s',str(e))
-            printer('Test dbmethods get_queueing_tasks',False)
+            logger.error('Error running dbmethods queue_get_queueing_tasks test - %s',str(e))
+            printer('Test dbmethods queue_get_queueing_tasks',False)
             raise
         else:
-            printer('Test dbmethods get_queueing_tasks')
+            printer('Test dbmethods queue_get_queueing_tasks')
 
 
     def test_200_rpc_new_task(self):
@@ -2720,7 +2721,7 @@ class dbmethods_test(unittest.TestCase):
             # everything working
             cb.called = False
             _db_read.task_ret = {'task_stat_id,task_id':[],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
                                  'task_id,task_status':[['task','complete']]}
             increment_id.ret = {'task_stat':'new_task_stat'}
             _db_write.sql = []
@@ -2741,7 +2742,7 @@ class dbmethods_test(unittest.TestCase):
             # distributed job
             cb.called = False
             _db_read.task_ret = {'task_stat_id,task_id':[],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',1,2]],
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',1,2]],
                                  'task_id,task_status':[['task','complete']]}
             _db_write.sql = []
             _db_write.bindings = []
@@ -2810,7 +2811,7 @@ class dbmethods_test(unittest.TestCase):
             _db_write.bindings = []
             _db_write.task_ret = ('complete')
             _db_read.task_ret = {'task_stat_id,task_id':[],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]]}
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]]}
             
             self._db.rpc_finish_task('task',stats,callback=cb)
             
@@ -2823,7 +2824,7 @@ class dbmethods_test(unittest.TestCase):
             # _db_write error
             cb.called = False
             _db_read.task_ret = {'task_stat_id,task_id':[],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
                                  'task_id,task_status':[['task','complete']]}
             increment_id.ret = {'task_stat':'new_task_stat'}
             _db_write.sql = []
@@ -2841,7 +2842,7 @@ class dbmethods_test(unittest.TestCase):
             # update stats
             cb.called = False
             _db_read.task_ret = {'task_stat_id,task_id':[['new_task_stat','task']],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
                                  'task_id,task_status':[['task','complete']]}
             increment_id.ret = {}
             _db_write.sql = []
@@ -2859,7 +2860,7 @@ class dbmethods_test(unittest.TestCase):
             # _db_write update error
             cb.called = False
             _db_read.task_ret = {'task_stat_id,task_id':[['new_task_stat','task']],
-                                 'dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
+                                 'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
                                  'task_id,task_status':[['task','complete']]}
             increment_id.ret = {}
             _db_write.sql = []
@@ -3738,8 +3739,8 @@ class dbmethods_test(unittest.TestCase):
         else:
             printer('Test dbmethods check_upload')
     
-    def test_400_new_passkey(self):
-        """Test new_passkey"""
+    def test_400_auth_new_passkey(self):
+        """Test auth_new_passkey"""
         try:
             def sql_write_task(sql,bindings,callback):
                 sql_write_task.sql = sql
@@ -3768,7 +3769,7 @@ class dbmethods_test(unittest.TestCase):
             increment_id.ret = {'passkey':newid}
             sql_write_task.task_ret = {newid:{}}
             
-            self._db.new_passkey(callback=cb)
+            self._db.auth_new_passkey(callback=cb)
             
             if cb.called is False:
                 raise Exception('everything working: callback not called')
@@ -3782,7 +3783,7 @@ class dbmethods_test(unittest.TestCase):
             increment_id.ret = {'passkey':newid}
             sql_write_task.task_ret = {newid:{}}
             
-            self._db.new_passkey(exp,callback=cb)
+            self._db.auth_new_passkey(exp,callback=cb)
             
             if cb.called is False:
                 raise Exception('expiration: callback not called')
@@ -3798,7 +3799,7 @@ class dbmethods_test(unittest.TestCase):
             increment_id.ret = {'passkey':newid}
             sql_write_task.task_ret = {newid:{}}
             
-            self._db.new_passkey(exp,callback=cb)
+            self._db.auth_new_passkey(exp,callback=cb)
             
             if cb.called is False:
                 raise Exception('expiration2: callback not called')
@@ -3813,7 +3814,7 @@ class dbmethods_test(unittest.TestCase):
             sql_write_task.task_ret = {newid:{}}
             
             try:
-                self._db.new_passkey(exp,callback=cb)
+                self._db.auth_new_passkey(exp,callback=cb)
             except:
                 pass
             else:
@@ -3826,7 +3827,7 @@ class dbmethods_test(unittest.TestCase):
             increment_id.ret = {'passkey':newid}
             sql_write_task.task_ret = {}
             
-            self._db.new_passkey(exp,callback=cb)
+            self._db.auth_new_passkey(exp,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql_write_task error: callback not called')
@@ -3841,21 +3842,21 @@ class dbmethods_test(unittest.TestCase):
             sql_write_task.task_ret = {}
             
             try:
-                self._db.new_passkey(exp,callback=cb)
+                self._db.auth_new_passkey(exp,callback=cb)
             except:
                 pass
             else:
                 raise Exception('increment_id error: did not raise Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods new_passkey test - %s',str(e))
-            printer('Test dbmethods new_passkey',False)
+            logger.error('Error running dbmethods auth_new_passkey test - %s',str(e))
+            printer('Test dbmethods auth_new_passkey',False)
             raise
         else:
-            printer('Test dbmethods new_passkey')
+            printer('Test dbmethods auth_new_passkey')
     
-    def test_401_get_passkey(self):
-        """Test get_passkey"""
+    def test_401_auth_get_passkey(self):
+        """Test auth_get_passkey"""
         try:
             def sql_read_task(sql,bindings,callback):
                 sql_read_task.sql = sql
@@ -3877,7 +3878,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.task_ret = {key:[['theid',key,dbmethods.datetime2str(exp)]]}
             
-            self._db.get_passkey(key,callback=cb)
+            self._db.auth_get_passkey(key,callback=cb)
             
             if cb.called is False:
                 raise Exception('everything working: callback not called')
@@ -3892,7 +3893,7 @@ class dbmethods_test(unittest.TestCase):
             sql_read_task.task_ret = {key:[['theid',key,exp]]}
             
             try:
-                self._db.get_passkey(key,callback=cb)
+                self._db.auth_get_passkey(key,callback=cb)
             except:
                 pass
             else:
@@ -3904,7 +3905,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.task_ret = {}
             
-            self._db.get_passkey(key,callback=cb)
+            self._db.auth_get_passkey(key,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql_read_task error: callback not called')
@@ -3917,7 +3918,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.task_ret = {key:[]}
             
-            self._db.get_passkey(key,callback=cb)
+            self._db.auth_get_passkey(key,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql_read_task error2: callback not called')
@@ -3930,7 +3931,7 @@ class dbmethods_test(unittest.TestCase):
             cb.called = False
             sql_read_task.task_ret = {key:[['id','key']]}
             
-            self._db.get_passkey(key,callback=cb)
+            self._db.auth_get_passkey(key,callback=cb)
             
             if cb.called is False:
                 raise Exception('sql_read_task error3: callback not called')
@@ -3938,11 +3939,11 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('sql_read_task error3: callback ret != Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_passkey test - %s',str(e))
-            printer('Test dbmethods get_passkey',False)
+            logger.error('Error running dbmethods auth_get_passkey test - %s',str(e))
+            printer('Test dbmethods auth_get_passkey',False)
             raise
         else:
-            printer('Test dbmethods get_passkey')
+            printer('Test dbmethods auth_get_passkey')
 
 
     def test_600_cron_dataset_completion(self):
@@ -4104,11 +4105,11 @@ class dbmethods_test(unittest.TestCase):
                 raise Exception('multiple datasets of different status: callback ret is Exception')
             
         except Exception as e:
-            logger.error('Error running dbmethods get_passkey test - %s',str(e))
-            printer('Test dbmethods get_passkey',False)
+            logger.error('Error running dbmethods auth_get_passkey test - %s',str(e))
+            printer('Test dbmethods auth_get_passkey',False)
             raise
         else:
-            printer('Test dbmethods get_passkey')
+            printer('Test dbmethods auth_get_passkey')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

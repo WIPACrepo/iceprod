@@ -108,7 +108,7 @@ class DBAPI(object):
     tables = {'site':OrderedDict([('site_id',str),
                                   ('name',str),
                                   ('institution',str),
-                                  ('queues',Text), # json of {gridspec:(type,description)}
+                                  ('queues',Text), # json of {gridspec:{type,description,resources:{k:(total,empty)}}}
                                   ('auth_key',str),
                                   ('website_url',str),
                                   ('version',str),

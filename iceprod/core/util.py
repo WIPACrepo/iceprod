@@ -25,6 +25,9 @@ class NoncriticalError(Exception):
     def __reduce__(self):
         return (NoncriticalError,(self.value,))
 
+Resources = ('cpu','gpu','memory','disk')
+"""The types of node resources"""
+
 class IFace(object):
     """A network interface object
     

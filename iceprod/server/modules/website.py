@@ -344,10 +344,10 @@ class JSONRPCHandler(MyHandler):
         if 'site_id' in params:
             # authorize site
             site_id = params.pop('site_id')
-            auth = yield self.db_call('authorize_site',site=site_id,key=passkey)
+            auth = yield self.db_call('auth_authorize_site',site=site_id,key=passkey)
         else:
             # authorize task
-            auth = yield self.db_call('authorize_task',key=passkey)
+            auth = yield self.db_call('auth_authorize_task',key=passkey)
         if isinstance(auth,Exception) or auth is not True:
             self.json_error({'code':403,'message':'Not Authorized',
                              'data':'passkey invalid'})
@@ -482,7 +482,7 @@ class Default(PublicHandler):
     @tornado.gen.coroutine
     def get(self):
         with self.catch_error():
-            datasets = yield self.db_call('get_datasets',groups=['status'])
+            datasets = yield self.db_call('web_get_datasets',groups=['status'])
             if isinstance(datasets,Exception):
                 raise datasets
             if not datasets:
@@ -495,10 +495,10 @@ class Submit(PublicHandler):
     def get(self):
         with self.catch_error(message='error generating submit page'):
             url = self.request.uri[1:]
-            passkey = yield self.db_call('new_passkey')
+            passkey = yield self.db_call('auth_new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-            grids = yield self.db_call('get_gridspec')
+            grids = yield self.db_call('web_get_gridspec')
             if isinstance(grids,Exception):
                 raise grids
             render_args = {
@@ -519,7 +519,7 @@ class Config(PublicHandler):
             if not dataset_id:
                 self.write_error(400,message='must provide dataset_id')
                 return
-            dataset = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
+            dataset = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
             if isinstance(dataset,Exception):
                 raise dataset
             if dataset_id not in dataset:
@@ -527,12 +527,12 @@ class Config(PublicHandler):
             dataset = dataset[dataset_id]
             edit = self.get_argument('edit',default=False)
             if edit:
-                passkey = yield self.db_call('new_passkey')
+                passkey = yield self.db_call('auth_new_passkey')
                 if isinstance(passkey,Exception):
                     raise passkey
             else:
                 passkey = None
-            config = yield self.db_call('get_cfg_for_dataset',dataset_id=dataset_id)
+            config = yield self.db_call('queue_get_cfg_for_dataset',dataset_id=dataset_id)
             if isinstance(config,Exception):
                 raise config
             render_args = {
@@ -555,20 +555,20 @@ class Site(PublicHandler):
             filter_results = {n:self.get_arguments(n) for n in filter_options}
             if url and url_parts:
                 site_id = url_parts[0]
-                ret = yield self.db_call('get_site_details',dataset_id=dataset_id)
+                ret = yield self.db_call('web_get_site_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
                 if ret:
                     site = ret.values()[0]
                 else:
                     site = None
-                tasks = yield self.db_call('get_tasks_by_status',site_id=site_id)
+                tasks = yield self.db_call('web_get_tasks_by_status',site_id=site_id)
                 if isinstance(tasks,Exception):
                     raise tasks
                 self.render_handle('site_detail.html',site_id=site_id,
                                    site=site,tasks=tasks)
             else:
-                sites = yield self.db_call('get_sites',**filter_results)
+                sites = yield self.db_call('web_get_sites',**filter_results)
                 if isinstance(sites,Exception):
                     raise sites
                 self.render_handle('site_browse.html',sites=sites,
@@ -586,20 +586,20 @@ class Dataset(PublicHandler):
             filter_results = {n:self.get_arguments(n) for n in filter_options}
             if url and url_parts:
                 dataset_id = url_parts[0]
-                ret = yield self.db_call('get_datasets_details',dataset_id=dataset_id)
+                ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
                 if ret:
                     dataset = ret.values()[0]
                 else:
                     dataset = None
-                tasks = yield self.db_call('get_tasks_by_status',dataset_id=dataset_id)
+                tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
                 if isinstance(tasks,Exception):
                     raise tasks
                 self.render_handle('dataset_detail.html',dataset_id=dataset_id,
                                    dataset=dataset,tasks=tasks)
             else:
-                datasets = yield self.db_call('get_datasets',**filter_results)
+                datasets = yield self.db_call('web_get_datasets',**filter_results)
                 if isinstance(datasets,Exception):
                     raise datasets
                 self.render_handle('dataset_browse.html',datasets=datasets,
@@ -617,7 +617,7 @@ class Task(PublicHandler):
             status = self.get_argument('status',default=None)
             if url and url_parts:
                 task_id = url_parts[0]
-                ret = yield self.db_call('get_tasks_details',task_id=task_id,
+                ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
                                          dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
@@ -625,18 +625,18 @@ class Task(PublicHandler):
                     task_details = ret.values()[0]
                 else:
                     task_details = None
-                logs = yield self.db_call('get_logs',task_id=task_id,lines=20) #TODO: make lines adjustable
+                logs = yield self.db_call('web_get_logs',task_id=task_id,lines=20) #TODO: make lines adjustable
                 if isinstance(logs,Exception):
                     raise logs
                 self.render_handle('task_detail.html',task=task_details,logs=logs)
             elif status:
-                tasks = yield self.db_call('get_tasks_details',status=status,
+                tasks = yield self.db_call('web_get_tasks_details',status=status,
                                            dataset_id=dataset_id)
                 if isinstance(tasks,Exception):
                     raise tasks
                 self.render_handle('task_browse.html',tasks=tasks)
             else:
-                status = yield self.db_call('get_tasks_by_status',dataset_id=dataset_id)
+                status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
                 if isinstance(status,Exception):
                     raise status
                 self.render_handle('tasks.html',status=status)

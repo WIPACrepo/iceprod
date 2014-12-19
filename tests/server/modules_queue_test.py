@@ -370,7 +370,7 @@ class queue_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             q = queue(bcfg)
             q.messaging = _messaging()
-            q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
+            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
             q.cfg = cfg
             if not q:
                 raise Exception('did not return queue object')
@@ -384,9 +384,9 @@ class queue_test(unittest.TestCase):
             try:
                 if 'check_and_clean' not in Test1.name:
                     raise Exception('grid.check_and_clean() not called')
-                if not any('buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
                     logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.buffer_jobs_tasks() not called')
+                    raise Exception('db.queue_buffer_jobs_tasks() not called')
                 if 'queue' not in Test1.name:
                     raise Exception('grid.queue() not called')
             finally:
@@ -447,7 +447,7 @@ class queue_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             q = queue(bcfg)
             q.messaging = _messaging()
-            q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
+            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
             q.cfg = cfg
             if not q:
                 raise Exception('did not return queue object')
@@ -461,9 +461,9 @@ class queue_test(unittest.TestCase):
             try:
                 if 'check_and_clean' not in Test1.name:
                     raise Exception('grid.check_and_clean() not called')
-                if not any('buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
                     logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.buffer_jobs_tasks() not called')
+                    raise Exception('db.queue_buffer_jobs_tasks() not called')
                 if 'queue' not in Test1.name:
                     raise Exception('grid.queue() not called')
             finally:
@@ -537,7 +537,7 @@ class queue_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             q = queue(bcfg)
             q.messaging = _messaging()
-            q.messaging.ret = {'db':{'buffer_jobs_tasks':None}}
+            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
             q.cfg = cfg
             if not q:
                 raise Exception('did not return queue object')
@@ -551,9 +551,9 @@ class queue_test(unittest.TestCase):
             try:
                 if 'check_and_clean' not in Test1d.name:
                     raise Exception('grid.check_and_clean() not called')
-                if not any('buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
                     logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.buffer_jobs_tasks() not called')
+                    raise Exception('db.queue_buffer_jobs_tasks() not called')
                 if 'queue' not in Test1d.name:
                     raise Exception('grid.queue() not called')
             finally:

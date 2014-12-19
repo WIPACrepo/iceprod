@@ -15,6 +15,8 @@ import iceprod.server
 from iceprod.server import module
 from iceprod.server.schedule import Scheduler
 
+logger = logging.getLogger('modules_schedule')
+
 class schedule(module.module):
     """
     Run the schedule module, which handles periodic tasks.
@@ -47,7 +49,7 @@ class schedule(module.module):
             self.scheduler.finish()
             self.scheduler.join(10) # wait up to 10 seconds for scheduler to finish
             if self.scheduler.is_alive():
-                module.logger.warn('scheduler still running after 10 seconds')
+                logger.warn('scheduler still running after 10 seconds')
             self.scheduler = None
         super(schedule,self).stop()
     
@@ -63,16 +65,24 @@ class schedule(module.module):
         """Make the default schedule"""
         
         # mark dataset complete
-        self.scheduler.schedule('every 1 hours',self._dataset_complete)
+        self.scheduler.schedule('every 1 hours',
+                partial(self._db_call,'cron_dataset_completion'))
+        
+        # collate node resources
+        self.scheduler.schedule('every 1 hours',
+                partial(self._db_call,'node_collate_resources',
+                        site_id=self.cfg['site_id']))
     
-    def _dataset_complete(self):
-        """Check for newly completed datasets and mark them as such"""
-        module.logger.warn('running dataset completion check')
+    def _db_call(self,func,**kwargs):
+        """Call DB func, handling any errors"""
+        logger.info('running %s',func)
+        def cb(ret):
+            if isinstance(ret,Exception):
+                logger.warn('error running %s: %r',func,ret)
+            else:
+                logger.info('completed %s',func)
         try:
-            ret = self.messaging.db.cron_dataset_completion(async=False)
+            ret = getattr(self.messaging.db,func)(callback=cb,**kwargs)
         except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            module.logger.warn('error running dataset completion check',
-                               exc_info=True)
+            logger.warn('error running %s',func,exc_info=True)
     

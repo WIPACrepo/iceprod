@@ -209,7 +209,7 @@ class modules_website_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             web = website(bcfg)
             web.messaging = _messaging()
-            web.messaging.ret = {'db':{'authorize_task':True,
+            web.messaging.ret = {'db':{'auth_authorize_task':True,
                                        'echo':'e',
                                        'rpc_test':'testing'}}
             web.cfg = self.cfg
@@ -238,7 +238,7 @@ class modules_website_test(unittest.TestCase):
                     if ret != 'testing':
                         raise Exception('bad ret from JSONRPC.test()')
                     
-                    web.messaging.ret = {'db':{'authorize_task':True,
+                    web.messaging.ret = {'db':{'auth_authorize_task':True,
                                                'rpc_test':Exception()}}
                     try:
                         iceprod.core.jsonRPCclient.JSONRPC.test()
@@ -351,6 +351,7 @@ class modules_website_test(unittest.TestCase):
             gridspec = 'thegrid'
             passkey = 'key'
             datasets = {'d1':1,'d2':2}
+            datasets_status = {'processing':3}
             dataset_details = {'a':1,'b':2}
             tasks = {'task_1':3,'task_2':4}
             task_details = {'waiting':{'c':1,'d':2}}
@@ -360,13 +361,14 @@ class modules_website_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             web = website(bcfg)
             web.messaging = _messaging()
-            web.messaging.ret = {'db':{'new_passkey':passkey,
-                                       'get_gridspec':gridspec,
-                                       'get_datasets_details':dataset_details,
-                                       'get_tasks_by_status':tasks,
-                                       'get_datasets_by_status':datasets,
-                                       'get_tasks_details':task_details,
-                                       'get_tasks_by_status':tasks_status,
+            web.messaging.ret = {'db':{'auth_new_passkey':passkey,
+                                       'web_get_gridspec':gridspec,
+                                       'web_get_datasets_details':dataset_details,
+                                       'web_get_datasets':datasets_status,
+                                       'web_get_tasks_by_status':tasks_status,
+                                       'web_get_datasets_by_status':datasets,
+                                       'web_get_tasks_details':task_details,
+                                       #'web_get_tasks':tasks,
                                 }}
             web.cfg = self.cfg
             web._start()
@@ -389,15 +391,17 @@ class modules_website_test(unittest.TestCase):
                                        str(random.randint(0,10000)))
                 
                 # main site
+                logger.info('url: /')
                 pycurl_handle.fetch(address,outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('main: file not fetched')
                 data = open(outfile).read()
-                if any(k not in data for k in datasets):
+                if any(k not in data for k in datasets_status):
                     raise Exception('main: fetched file data incorrect')
                 os.unlink(outfile)
                 
                 # submit
+                logger.info('url: /submit')
                 pycurl_handle.fetch(address+'submit',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('submit: file not fetched')
@@ -407,6 +411,8 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # dataset
+                # TODO: simulate web_get_datasets (no-groupings)
+                logger.info('url: /dataset')
                 pycurl_handle.fetch(address+'dataset',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('dataset: file not fetched')
@@ -416,8 +422,9 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # dataset by status
+                logger.info('url: /dataset?status=waiting')
                 dataset_browse = {'waiting':{'d1':1,'d2':2}}
-                web.messaging.ret['db']['get_datasets_details'] = dataset_browse
+                web.messaging.ret['db']['web_get_datasets_details'] = dataset_browse
                 pycurl_handle.fetch(address+'dataset?status=waiting',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('dataset by status: file not fetched')
@@ -427,8 +434,9 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # dataset by dataset_id
+                logger.info('url: /dataset/1234')
                 dataset_details = {'waiting':{'d1':1,'d2':2}}
-                web.messaging.ret['db']['get_datasets_details'] = dataset_details
+                web.messaging.ret['db']['web_get_datasets_details'] = dataset_details
                 pycurl_handle.fetch(address+'dataset/1234',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('dataset by id: file not fetched')
@@ -441,6 +449,7 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # task
+                logger.info('url: %s','/task')
                 pycurl_handle.fetch(address+'task',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('task: file not fetched')
@@ -450,8 +459,9 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # task by status
+                logger.info('url: /task?status=waiting')
                 task_browse = {'waiting':{'d1':1,'d2':2}}
-                web.messaging.ret['db']['get_tasks_details'] = task_browse
+                web.messaging.ret['db']['web_get_tasks_details'] = task_browse
                 pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('task by status: file not fetched')
@@ -462,10 +472,11 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # task by task_id
+                logger.info('url: /task/1234')
                 task_details = {'waiting':{'d1':1,'d2':2}}
                 logs = {'err':'this is a log','out':'output'}
-                web.messaging.ret['db']['get_tasks_details'] = task_details
-                web.messaging.ret['db']['get_logs'] = logs
+                web.messaging.ret['db']['web_get_tasks_details'] = task_details
+                web.messaging.ret['db']['web_get_logs'] = logs
                 pycurl_handle.fetch(address+'task/1234',outfile,**ssl_opts)
                 if not os.path.exists(outfile):
                     raise Exception('task by id: file not fetched')
@@ -478,6 +489,7 @@ class modules_website_test(unittest.TestCase):
                 os.unlink(outfile)
                 
                 # test for bad page
+                logger.info('url: %s','/bad_page')
                 try:
                     pycurl_handle.fetch(address+'bad_page',outfile,**ssl_opts)
                 except:
@@ -486,8 +498,9 @@ class modules_website_test(unittest.TestCase):
                     raise Exception('did not raise exception when testing bad page')
                 
                 # test internal error
+                logger.info('url: /task?status=waiting  internal error')
                 task_browse = None
-                web.messaging.ret['db']['get_tasks_details'] = task_browse
+                web.messaging.ret['db']['web_get_tasks_details'] = task_browse
                 try:
                     pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
                 except:

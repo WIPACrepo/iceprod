@@ -28,6 +28,10 @@ This is where IceProd actually submits tasks to a grid.  Various grid architectu
 
 The queueing module can submit to multiple grids at once since multiple plugins can be active at the same time.
 
+.. toctree::
+    :maxdepth: 3
+    
+    global_queueing
 
 Database
 --------

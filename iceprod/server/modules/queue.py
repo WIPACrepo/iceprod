@@ -9,9 +9,12 @@ import logging
 from contextlib import contextmanager
 from itertools import izip
 
+from tornado.httpclient import AsyncHTTPClient
+
 import iceprod.server
 from iceprod.server import module
 import iceprod.core.functions
+from iceprod.core.jsonUtil import json_encode, json_decode
 
 class StopException(Exception):
     pass
@@ -32,6 +35,7 @@ class queue(module.module):
         self.queue_thread = None
         self.thread_running = 0
         self.thread_running_cv = Condition()
+        self.global_queueing_lock = False
         
         self.start()
     
@@ -146,12 +150,13 @@ class queue(module.module):
             except Exception as e:
                 logger.error('Error importing plugin',exc_info=True)
             else:
-                gridspec_types[site_id+'.'+p_name] = [p_cfg['type'],
-                        p_cfg['description'] if 'description' in p_cfg else '']
+                desc = p_cfg['description'] if 'description' in p_cfg else ''
+                gridspec_types[site_id+'.'+p_name] = {'type':p_cfg['type'],
+                        'description':desc}
         
         # add gridspec and types to the db
         try:
-            self.messaging.db.set_site_queues(site_id=site_id,
+            self.messaging.db.queue_set_site_queues(site_id=site_id,
                                               queues=gridspec_types,
                                               async=False)
         except:
@@ -200,8 +205,10 @@ class queue(module.module):
                 
                 with self.check_run():
                     # do global queueing
-                    # TODO: implement this
-                    pass
+                    try:
+                        self.global_queueing()
+                    except Exception:
+                        logger.error('error in global queueing',exc_info=True)
                 
                 # set timeout
                 if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
@@ -215,16 +222,70 @@ class queue(module.module):
                                exc_info=True)
     
     def check_proxy(self):
-        """Check the proxy"""
+        """Check the x509 proxy"""
         # TODO: implement this
         pass
+    
+    def global_queueing(self):
+        """
+        Do global queueing.
+        
+        Fetch tasks from the global server that match the local resources
+        and add them to the local DB. This is non-blocking, but only
+        one at a time can run.
+        """
+        if self.global_queueing_lock:
+            logger.info('already doing a global_queueing event, so skip')
+            return
+        if not self.cfg['master']['url']:
+            logger.debug('no master url, so skip global queueing')
+            return
+        self.global_queueing_lock = True
+        def cb3(ret):
+            if isinstance(ret,Exception):
+                logger.warn('error merging global tasks: %r',ret)
+            self.global_queueing_lock = False
+        def cb2(ret):
+            try:
+                if ret.error:
+                    logger.warn('error getting response from master: %r',
+                                     ret.error)
+                else:
+                    body = json_decocde(ret.body)
+                    if 'error' in body:
+                        logger.warn('error on master: %r',body['error'])
+                    else:
+                        self.messaging.db.merge_global_tasks(body['result'],
+                                                             callback=cb3)
+                        return
+            except Exception:
+                logger.warn('error in global_queueing cb2:',
+                                 exc_info=True)
+            self.global_queueing_lock = False
+        def cb(resources):
+            if isinstance(resources,Exception):
+                logger.warn('error getting resources: %r',resources)
+                self.global_queueing_lock = False
+                return
+            try:
+                http_client = AsyncHTTPClient()
+                url = self.cfg['master']['url']
+                body = json_encode({'jsonrpc':'2.0','method':'queue_master',
+                                    'params':{'resources':resources},'id':1})
+                http_client.fetch(url,body=body,callback=cb2)
+            except Exception:
+                logger.warn('error in global_queueing cb:',
+                                 exc_info=True)
+                self.global_queueing_lock = False
+        self.messaging.db.node_get_site_resources(site_id=self.cfg['site_id'],
+                                             callback=cb)
     
     def buffer_jobs_tasks(self,gridspecs):
         """Make sure active datasets have jobs and tasks defined"""
         buffer = self.cfg['queue']['task_buffer']
         if buffer <= 0:
             buffer = 200
-        ret = self.messaging.db.buffer_jobs_tasks(gridspec=gridspecs,
+        ret = self.messaging.db.queue_buffer_jobs_tasks(gridspec=gridspecs,
                                                   num_tasks=buffer,async=False)
         if isinstance(ret,Exception):
             raise ret

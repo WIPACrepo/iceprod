@@ -103,7 +103,7 @@ class grid(object):
                 change = min(change,num_to_queue)
         
             # get queueing datasets from database
-            datasets = self.db.get_queueing_datasets(gridspec=self.gridspec,
+            datasets = self.db.queue_get_queueing_datasets(gridspec=self.gridspec,
                                                      async=False)
             if isinstance(datasets,Exception):
                 raise datasets
@@ -111,7 +111,7 @@ class grid(object):
                 logger.warn('no datasets to queue')
                 return
             elif not isinstance(datasets,dict):
-                raise Exception('db.get_queueing_datasets(%s) did not return a dict'%self.gridspec)
+                raise Exception('db.queue_get_queueing_datasets(%s) did not return a dict'%self.gridspec)
             
         with self.check_run():
             # assign each dataset a priority
@@ -129,7 +129,7 @@ class grid(object):
             
         with self.check_run():
             # get tasks to queue
-            tasks = self.db.get_queueing_tasks(dataset_prios=dataset_prios,
+            tasks = self.db.queue_get_queueing_tasks(dataset_prios=dataset_prios,
                                                gridspec=self.gridspec,
                                                num=change,async=False)
             if isinstance(tasks,Exception):
@@ -138,7 +138,7 @@ class grid(object):
                 logger.warn('no tasks to queue, but a dataset can be queued')
                 return
             elif not isinstance(tasks,dict):
-                raise Exception('db.get_queueing_tasks(%s) did not return a dict'%self.gridspec)
+                raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
             
         if tasks is not None:
             if self.submit_multi:
@@ -157,7 +157,7 @@ class grid(object):
                         # submit to queueing system
                         self.submit(tasks[t])
             # mark as queued
-            self.db.set_task_status(task=[tasks[t]['task_id'] for t in tasks],
+            self.db.queue_set_task_status(task=[tasks[t]['task_id'] for t in tasks],
                                     status='queued',async=False)
             self.tasks_queued += len(tasks)
 
@@ -166,14 +166,14 @@ class grid(object):
 
     def check_iceprod(self):
         """check if any task is in a state for too long"""
-        tasks = self.db.get_active_tasks(gridspec=self.gridspec,async=False)
+        tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
         logger.debug('active tasks: %r',tasks)
         if tasks is None:
-            raise Exception('db.get_active_tasks(%s) returned none'%self.gridspec)
+            raise Exception('db.queue_get_active_tasks(%s) returned none'%self.gridspec)
         elif isinstance(tasks,Exception):
             raise tasks
         elif not isinstance(tasks,dict):
-            raise Exception('db.get_active_tasks(%s) did not return a dict'%self.gridspec)
+            raise Exception('db.queue_get_active_tasks(%s) did not return a dict'%self.gridspec)
         
         now = datetime.utcnow()
         reset_tasks = []
@@ -233,7 +233,7 @@ class grid(object):
                     failures.append(t['task_id'])
                 else:
                     resets.append(t['task_id'])
-            ret = self.db.reset_tasks(reset=resets,fail=failures,async=False)
+            ret = self.db.queue_reset_tasks(reset=resets,fail=failures,async=False)
             if isinstance(ret,Exception):
                 raise ret
     
@@ -293,7 +293,7 @@ class grid(object):
                     failures.append(t['task_id'])
                 else:
                     resets.append(t['task_id'])
-            ret = self.db.reset_tasks(reset=resets,fail=failures,async=False)
+            ret = self.db.queue_reset_tasks(reset=resets,fail=failures,async=False)
             if isinstance(ret,Exception):
                 raise ret
     
@@ -308,13 +308,13 @@ class grid(object):
         reset_tasks = set()
         
         # get active tasks
-        active_tasks = self.db.get_active_tasks(gridspec=self.gridspec,async=False)
+        active_tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
         if active_tasks is None:
-            raise Exception('db.get_active_tasks(%s) returned none'%self.gridspec)
+            raise Exception('db.queue_get_active_tasks(%s) returned none'%self.gridspec)
         elif isinstance(active_tasks,Exception):
             raise active_tasks
         elif not isinstance(active_tasks,dict):
-            raise Exception('db.get_active_tasks(%s) did not return a dict'%self.gridspec)
+            raise Exception('db.queue_get_active_tasks(%s) did not return a dict'%self.gridspec)
         
         if 'queued' in active_tasks:
             tasks.update(active_tasks['queued'])
@@ -382,7 +382,7 @@ class grid(object):
         
         if reset_tasks:
             # reset some tasks
-            ret = self.db.set_task_status(tasks=reset_tasks,status='waiting',
+            ret = self.db.queue_set_task_status(tasks=reset_tasks,status='waiting',
                                           async=False)
             if isinstance(ret,Exception):
                 raise ret
@@ -428,7 +428,7 @@ class grid(object):
             
             # update DB
             logger.info('task %s has new submit_dir %s',task['task_id'],task_dir)
-            ret = self.db.set_submit_dir(task=task['task_id'],
+            ret = self.db.queue_set_submit_dir(task=task['task_id'],
                                          submit_dir=task_dir,async=False)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with submit_dir')
@@ -446,7 +446,7 @@ class grid(object):
         filename = os.path.join(task['submit_dir'],'task.cfg')
         
         # get config from database
-        ret = self.db.get_cfg_for_task(task_id=task['task_id'],async=False)
+        ret = self.db.queue_get_cfg_for_task(task_id=task['task_id'],async=False)
         if isinstance(ret,Exception):
             logger.error('error getting task cfg for task_id %r',
                          task['task_id'])

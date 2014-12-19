@@ -152,7 +152,9 @@ class JSONRPC(object):
     """
     JSONRPC client connection.
     
-    Call JSONRPC functions as regular function calls.
+    Call JSON-RPC functions as regular function calls.
+    
+    JSON-RPC spec: http://www.jsonrpc.org/specification
        
     Example::
     
