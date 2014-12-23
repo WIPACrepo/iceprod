@@ -105,7 +105,7 @@ class BasicConfig(object):
         ('messaging', 'modules:messaging', 'boolean'),
         
         # [messaging]
-        ('messaging_url', 'messaging:url'),
+        ('messaging_url', 'messaging:messaging_url'),
         
         # [logging]
         ('logging|level', 'logging:level'),
