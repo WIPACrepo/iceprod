@@ -23,6 +23,8 @@ class IceProdConfig(dict):
     automatically, but are available for manual calling.
     
     Note that this class is not thread-safe.
+    
+    :param filename: filename for config file (optional)
     """
     def __init__(self, filename=None):
         if filename:

@@ -15,14 +15,23 @@ from iceprod.server.RPCinternal import RPCService
 class config(module.module):
     """
     Run the config module, which handles iceprod configuration settings.
+    
+    This is a module wrapper around 
+    :class:`iceprod.server.config.IceProdConfig`.
+    
+    :param filename: filename for config file (optional)
     """
     
     def __init__(self,*args,**kwargs):
+        # pull out config filename, if available
+        filename = None
+        if 'filename' in kwargs:
+            filename = kwargs.pop('filename')
         # run default init
         super(config,self).__init__(*args,**kwargs)
         self.service_class = ConfigService(self)
         
-        self.config = IceProdConfig()
+        self.config = IceProdConfig(filename=filename)
         self.start()
     
     def start(self,blocking=True):

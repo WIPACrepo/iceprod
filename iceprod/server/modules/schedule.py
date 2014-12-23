@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 import time
 from threading import Thread,Event,Condition
 import logging
+from functools import partial
 from contextlib import contextmanager
 from itertools import izip
 
@@ -22,9 +23,9 @@ class schedule(module.module):
     Run the schedule module, which handles periodic tasks.
     """
     
-    def __init__(self,cfg):
+    def __init__(self,*args,**kwargs):
         # run default init
-        super(schedule,self).__init__(cfg)
+        super(schedule,self).__init__(*args,**kwargs)
         
         self.scheduler = None
         

@@ -164,6 +164,7 @@ class modules_schedule_test(unittest.TestCase):
             bcfg.messaging_url = 'localhost'
             q = schedule(bcfg)
             q.messaging = _messaging()
+            q.cfg = {'site_id':'1'}
             
             q.scheduler = _Schedule()
             q._make_schedule()

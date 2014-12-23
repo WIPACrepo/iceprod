@@ -17,6 +17,7 @@ import signal
 from datetime import datetime,timedelta
 import shutil
 import tempfile
+import json
 
 try:
     import unittest2 as unittest
@@ -100,9 +101,10 @@ class modules_config_test(unittest.TestCase):
             flexmock(config).should_receive('start').replace_with(start)
             start.called = False
             
+            cfg_file = os.path.join(self.test_dir,'cfg.json')
             cfg = basic_config.BasicConfig()
             cfg.messaging_url = 'localhost'
-            q = config(cfg)
+            q = config(cfg,filename=cfg_file)
             if not q:
                 raise Exception('did not return config object')
             if start.called != True:
@@ -133,9 +135,10 @@ class modules_config_test(unittest.TestCase):
             flexmock(config).should_receive('start').replace_with(start)
             start.called = False
             
+            cfg_file = os.path.join(self.test_dir,'cfg.json')
             cfg = basic_config.BasicConfig()
             cfg.messaging_url = 'localhost'
-            q = config(cfg)
+            q = config(cfg,filename=cfg_file)
             q.config.filename = os.path.join(self.test_dir,'test.json')
             q.config['test'] = 1
             q.messaging = _messaging()
@@ -145,7 +148,7 @@ class modules_config_test(unittest.TestCase):
             
             cb.ret = None
             q.service_class.get(callback=cb)
-            if cb.ret != {'test':1}:
+            if 'test' not in cb.ret or cb.ret['test'] != 1:
                 raise Exception('get() did not return config')
             
             cb.ret = None
@@ -158,8 +161,8 @@ class modules_config_test(unittest.TestCase):
             if q.config['test'] != 2:
                 raise Exception('set(key="test",2) did not set to 2')
             
-            txt = open(q.config.filename).read()
-            if txt != '{"test":2}':
+            txt = json.load(open(q.config.filename))
+            if 'test' not in txt or txt['test'] != 2:
                 raise Exception('set() did not save to file')
             
             cb.ret = None
@@ -167,8 +170,8 @@ class modules_config_test(unittest.TestCase):
             if 'test' in q.config:
                 raise Exception('delete(key="test") did not delete')
             
-            txt = open(q.config.filename).read()
-            if txt != '{}':
+            txt = json.load(open(q.config.filename))
+            if 'test' in txt:
                 raise Exception('delete() did not save to file')
             
         except Exception as e:
