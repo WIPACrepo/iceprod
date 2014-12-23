@@ -3,6 +3,10 @@ Nginx is used to handle static content and proxy all other requests to
 the `website module <iceprod.server.modules.website>`_. It also handles 
 most of the web security as a SSL/TLS front-end and more generally as 
 a hardened attack surface.
+
+Nginx is easily capable of handling 100+ https connections per second per
+cpu core (on fairly old and weak hardware, at that). It is unlikely to be
+the performance bottleneck.
 """
 
 from __future__ import absolute_import, division, print_function
