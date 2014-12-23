@@ -18,11 +18,18 @@ try:
 except ImportError:
     pass
 
+def find_module_recursive(name, path=None):
+    """ Recursively search for submodule. Submodules must be separated with a '.' """
+    import imp
+    res = None
+    for x in name.split('.'):
+        res = imp.find_module(x, path)
+        path = [res[1]]
+    return res
+
 def listmodules(package_name=''):
     """List modules in a package or directory"""
-    import imp
-    package_name_os = package_name.replace('.','/')
-    file, pathname, description = imp.find_module(package_name_os)
+    file, pathname, description = find_module_recursive(package_name)
     if file:
         # Not a package
         return []
