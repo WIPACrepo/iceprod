@@ -8,7 +8,7 @@ import os
 import logging
 
 from iceprod.core.jsonUtil import json_encode, json_decode
-from iceprod.server import get_pkgdata_filename
+from iceprod.server import GlobalID, get_pkgdata_filename
 
 logger = logging.getLogger('config')
 
@@ -64,6 +64,10 @@ class IceProdConfig(dict):
                 logger.debug('~setter()')
             logger.info('before defaults: %s',self)
             setter(obj,self)
+            # special case for site_id
+            if 'site_id' not in self:
+                self['site_id'] = GlobalID.siteID_gen()
+                logger.warn('Generating new site_id: %s',self['site_id'])
             logger.info('with defaults: %s',self)
         except Exception:
             logger.warn('failed to load from default config file %s',
