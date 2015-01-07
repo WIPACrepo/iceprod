@@ -66,3 +66,11 @@ The easy way to install dependencies is with pip.  Then install IceProd::
 
 This will install IceProd and all dependencies into your home directory, under ``~/.local``.
 
+
+How to Run the Server
+""""""""""""""""""""
+
+cd iceprod
+export PYTHONPATH=.
+python bin/iceprod_server.py
+
