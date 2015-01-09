@@ -1,0 +1,82 @@
+{
+    "type": "object",
+    
+    "properties": {
+    
+        
+        "queue": {
+            "type": "object",
+            "properties": {
+                "max_resets": {
+                    "type": "integer"
+                },
+                "task_buffer": {
+                    "type": "integer"
+                },
+                "submit_dir": {
+                    "type": "string"
+                }
+            },
+            "required": ["max_resets", "task_buffer", "submit_dir"]
+        },
+        
+        "db": {
+            
+            "type": "object",
+            "properties": {
+                "backup_name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["mysql", "sqlite"]
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": ["backup_name", "type","name"]
+        },
+        "webserver": {
+            "type": "object",
+            "properties": {
+                "request_timeout": {
+                    "type": "integer"
+                },
+                "lib_dir": {
+                    "type": "string"
+                },
+                "sites": {
+                    "type": "object"
+                },
+                "tornado_port": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "numcpus": {
+                    "type": "integer"
+                }
+            },
+            "required": ["request_timeout", "lib_dir", "sites", "tornado_port", "port", "numcpus"]
+        },
+        "master":
+        {
+            "type":"object",
+            "properties": {
+                "status":{
+                    "type": "string"
+                },
+                "url":{
+                    "type": "string"
+                }
+            },
+            "required": ["status", "url"]
+        },
+        "site_id": {
+            "type": "string"
+        }
+    },
+     "required": ["queue", "db", "webserver", "master"]
+}

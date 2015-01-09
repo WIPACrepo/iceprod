@@ -10,6 +10,11 @@ import logging
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.server import GlobalID, get_pkgdata_filename
 
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
+import json
+
+
 logger = logging.getLogger('config')
 
 class IceProdConfig(dict):
@@ -82,6 +87,18 @@ class IceProdConfig(dict):
             if os.path.exists(self.filename):
                 text = open(self.filename).read()
                 obj = json_decode(text)
+                
+                filename = get_pkgdata_filename('iceprod.server',
+                                                'data/etc/iceprod_schema.json')
+                schema = json.load(open(filename))
+
+                try:
+                    validate(obj, schema)
+                except ValidationError as e:
+                    path = '.'.join(e.path)
+                    logger.warn('Validation error at "%s": %s' % (path, e.message))
+                    raise e
+                
                 for key in obj:
                     self[key] = obj[key]
         except Exception:

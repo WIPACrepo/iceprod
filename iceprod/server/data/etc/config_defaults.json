@@ -30,10 +30,10 @@
         "port":8888,
         "tornado_port":8889,
         "numcpus":1,
-        "sites":null
+        "sites":{}
     },
     "master":{
-        "status":null,
-        "url":null
+        "status":"",
+        "url":""
     }
 }
