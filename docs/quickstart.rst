@@ -42,6 +42,7 @@ Required Dependencies
 
 * tornado >= 3.0
 * pyzmq
+* jsonschema
 
 If using python < 3.2, the following is also required:
 
