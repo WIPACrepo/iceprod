@@ -210,7 +210,7 @@ class misc(_Methods_Base):
         """Allocate a new upload if possible"""
         cb = partial(self._new_upload_blocking,url,size,checksum,
                      checksum_type,callback=callback)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('new_upload',cb)
     def _new_upload_blocking(self,url,size,checksum,checksum_type,callback=None):
         uid = uuid.uuid4().hex
         id = self.db.increment_id('upload')

@@ -11,7 +11,7 @@ from functools import partial
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable
 
-from iceprod.server.pool import PriorityThreadPool,SingleGrouping
+from iceprod.server.pool import PriorityThreadPool,SingleGrouping,NamedThreadPool
 from iceprod.server import module
 from iceprod.server import dbmethods
 from iceprod.server import GlobalID
@@ -380,7 +380,7 @@ class DBAPI(object):
             numthreads = self.cfg['db']['numthreads']
             self.write_pool.start()
             self.read_pool.start(numthreads)
-            self.blocking_pool.start()
+            self.blocking_pool.start(numthreads)
             self.non_blocking_pool.start(numthreads)
     
     def init(self):
@@ -459,8 +459,8 @@ class DBAPI(object):
             for args,kwargs in tasks:
                 w(*args,**kwargs)
     
-    def blocking_task(self,func,*args,**kwargs):
-        self.blocking_pool.add_task(func,*args,**kwargs)
+    def blocking_task(self,name,func,*args,**kwargs):
+        self.blocking_pool.add_task(name,func,*args,**kwargs)
     
     def non_blocking_task(self,func,*args,**kwargs):
         self.non_blocking_pool.add_task(func,*args,**kwargs)
@@ -483,7 +483,7 @@ class DBAPI(object):
         self.read_pool.finish()
         self.read_pool.disable_output_queue()
         self.read_pool.start()
-        self.blocking_pool = PriorityThreadPool(1)
+        self.blocking_pool = NamedThreadPool(numthreads)
         self.blocking_pool.finish()
         self.blocking_pool.disable_output_queue()
         self.blocking_pool.start()

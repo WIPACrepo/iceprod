@@ -47,7 +47,7 @@ class node(_Methods_Base):
             logger.debug('node_update(): missing gridspec')
         else:
             cb = partial(self._node_update_blocking,hostname,domain,**kwargs)
-            self.db.blocking_task(cb)
+            self.db.blocking_task('node_stats',cb)
     def _node_update_blocking(self,hostname,domain,ret,**kwargs):
         conn,archive_conn = self.db._dbsetup()
         now = datetime2str(datetime.utcnow())
@@ -124,7 +124,7 @@ class node(_Methods_Base):
                             grid_resources[gridspec][resource] = stats[resource]
                 if grid_resources:
                     cb = partial(self._node_collate_resources_blocking,site_id,grid_resources)
-                    self.db.blocking_task(cb)
+                    self.db.blocking_task('node_stats',cb)
             except Exception:
                 self.logger.info('error in _node_collate_resources_cb',
                                  exc_info=True)

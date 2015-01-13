@@ -45,7 +45,7 @@ class rpc(_Methods_Base):
         self.parent.node_update(**args) # non-blocking node update
         cb2 = partial(self._rpc_new_task_callback,args,callback=callback)
         cb = partial(self._rpc_new_task_blocking,args,callback=cb2)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('queue',cb)
     def _rpc_new_task_blocking(self,args,callback=None):
         """This executes in a single thread regardless of the number of
            parallel requests for a new task.
@@ -112,7 +112,7 @@ class rpc(_Methods_Base):
         """
         stats = json_encode(stats)
         cb = partial(self._rpc_finish_task_blocking,task,stats,callback=callback)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('queue',cb)
     def _rpc_finish_task_blocking(self,task,stats,callback=None):
         conn,archive_conn = self.db._dbsetup()
         
@@ -304,7 +304,7 @@ class rpc(_Methods_Base):
         """Uploading of a logfile from a task"""
         cb2 = partial(self._rpc_upload_logfile_callback,callback=callback)
         cb = partial(self._rpc_upload_logfile_blocking,task,name,data,callback=cb2)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('logfile',cb)
     def _rpc_upload_logfile_blocking(self,task,name,data,callback=None):
         conn,archive_conn = self.db._dbsetup()
         sql = 'select task_log_id,task_id from task_log where '
@@ -371,7 +371,7 @@ class rpc(_Methods_Base):
         cb = partial(self._rpc_submit_dataset_blocking,data,difplus,description,
                      gridspec,njobs,stat_keys,debug,
                      callback=callback)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('submit_dataset',cb)
     def _rpc_submit_dataset_blocking(self,config_data,difplus,description,gridspec,
                                      njobs,stat_keys,debug,
                                      callback=None):

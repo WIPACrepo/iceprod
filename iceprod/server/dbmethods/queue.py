@@ -55,7 +55,7 @@ class queue(_Methods_Base):
         """Set the site queues"""
         cb = partial(self._queue_set_site_queues_blocking,site_id,queues,
                      callback=callback)
-        self.db.blocking_task(cb)
+        self.db.blocking_task('queue',cb)
     def _queue_set_site_queues_blocking(self,site_id,queues,callback=None):
         conn,archive_conn = self.db._dbsetup()
         sql = 'select * from site where site_id = ?'

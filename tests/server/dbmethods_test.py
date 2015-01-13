@@ -2498,7 +2498,7 @@ class dbmethods_test(unittest.TestCase):
                     ('evictions',0),
                     ('depends',None),
                    ])
-            def blocking_task(cb):
+            def blocking_task(name,cb):
                 blocking_task.called = True
                 cb()
             def sql_read_task(sql,bindings,callback):
@@ -2675,7 +2675,7 @@ class dbmethods_test(unittest.TestCase):
     def test_201_rpc_finish_task(self):
         """Test rpc_finish_task"""
         try:
-            def blocking_task(cb):
+            def blocking_task(name,cb):
                 blocking_task.called = True
                 cb()
             def _db_read(conn,sql,bindings,*args):
@@ -3005,7 +3005,7 @@ class dbmethods_test(unittest.TestCase):
     def test_203_rpc_upload_logfile(self):
         """Test rpc_upload_logfile"""
         try:
-            def blocking_task(cb):
+            def blocking_task(name,cb):
                 blocking_task.called = True
                 cb()
             def non_blocking_task(cb):
@@ -3302,7 +3302,7 @@ class dbmethods_test(unittest.TestCase):
     def test_300_new_upload(self):
         """Test new_upload"""
         try:
-            def blocking_task(cb):
+            def blocking_task(name,cb):
                 blocking_task.called = True
                 cb()
             def increment_id(table,conn=None):
