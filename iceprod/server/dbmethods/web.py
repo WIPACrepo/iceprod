@@ -19,7 +19,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, filtered_input
 
 logger = logging.getLogger('dbmethods.web')
 
