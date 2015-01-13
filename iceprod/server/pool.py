@@ -8,6 +8,7 @@ import Queue
 from time import sleep
 from collections import deque
 from threading import Thread,Event,RLock
+from functools import partial
 import logging
 
 logger = logging.getLogger('pool')
@@ -240,7 +241,6 @@ class ThreadPoolDeque(ThreadPool):
         self.input = deque2()
         self.output = deque2()
 
-
 class PriorityThreadPool(ThreadPool):
     """A priority queue backed ThreadPool"""
     
@@ -467,3 +467,50 @@ class SingleGrouping(GroupingThreadPool):
         # use a raw deque without locking for increased speed
         self.input = deque2()
         self.output = deque2()
+
+
+class NamedThreadPool():
+    """Thread Pool that groups tasks by name, running only one "name" at once."""
+    def __init__(self, **kwargs):
+        self._pool = ThreadPoolDeque(**kwargs)
+        self._names = {} # {name:deque2(func,args,kwargs)}
+        self._name_lock = RLock()
+    
+    def pause(self):
+        self._pool.pause()
+    
+    def start(self, **kwargs):
+        self._pool.start(**kwargs)
+    
+    def finish(self, **kwargs):
+        self._pool.finish(**kwargs)
+    
+    def disable_output_queue(self):
+        self._pool.disable_output_queue()
+    
+    def enable_output_queue(self):
+        self._pool.enable_output_queue()
+
+    def add_task(self, name, func, *args, **kwargs):
+        """Add a task to the queue"""
+        with self._name_lock:
+            if name not in self._names:
+                self._names[name] = deque2()
+                self._pool.add_task(partial(self._runner,name))
+            self._names[name].put((func,args,kwargs))
+    
+    def _runner(self,name,*args,**kwargs):
+        while True:
+            latest = None
+            with self._name_lock:
+                try:
+                    latest = self._names[name].get()
+                except IndexError, KeyError:
+                    break
+            if not latest:
+                break
+            try:
+                f,a,k = latest
+                f(*a,**k)
+            except Exception:
+                logger.info('error in NamedThreadPool runner',exc_info=True)

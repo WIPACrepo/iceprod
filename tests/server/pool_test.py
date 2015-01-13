@@ -140,7 +140,7 @@ class pool_test(unittest.TestCase):
             if qq != 0 or qq != dd:
                 raise Exception('empty() failed')          
             
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.deque2 test - %s',str(e))
             printer('Test pool.deque2',False)
             raise
@@ -297,7 +297,7 @@ class pool_test(unittest.TestCase):
             if foo2.cnt != reduce(lambda a,b:a+b,ret):
                 raise Exception('ret: ret is not the same as cnt')
         
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.ThreadPool test - %s',str(e))
             printer('Test pool.ThreadPool',False)
             raise
@@ -425,7 +425,7 @@ class pool_test(unittest.TestCase):
             if foo2.cnt != cb.cnt:
                 raise Exception('callback: ret is not the same as cnt')
         
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.ThreadPoolDeque test - %s',str(e))
             printer('Test pool.ThreadPoolDeque',False)
             raise
@@ -553,7 +553,7 @@ class pool_test(unittest.TestCase):
             if foo2.cnt != cb.cnt:
                 raise Exception('callback: ret is not the same as cnt')
         
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.PriorityThreadPool test - %s',str(e))
             printer('Test pool.PriorityThreadPool',False)
             raise
@@ -712,7 +712,7 @@ class pool_test(unittest.TestCase):
             if foo2.cnt != cb.cnt:
                 raise Exception('callback: ret is not the same as cnt')
         
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.GroupingThreadPool test - %s',str(e))
             printer('Test pool.GroupingThreadPool',False)
             raise
@@ -921,12 +921,81 @@ class pool_test(unittest.TestCase):
             if foo2.cnt+foo3.cnt != cb.cnt:
                 raise Exception('callback: ret is not the same as cnt')        
         
-        except Exception, e:
+        except Exception as e:
             logger.error('Error running pool.SingleGrouping test - %s',str(e))
             printer('Test pool.SingleGrouping',False)
             raise
         else:
             printer('Test pool.SingleGrouping')
+
+    def test_07_NamedThreadPool(self):
+        """Test NamedThreadPool"""
+        try:
+            # create NamedThreadPool
+            th = pool.NamedThreadPool()
+            def foo(x):
+                foo.cnt += x
+            foo.cnt = 0
+            for i in xrange(100):
+                th.add_task('fooey',foo,i)
+            th.finish()
+            if foo.cnt != reduce(lambda a,b:a+b,xrange(100)):
+                raise Exception('add_task failed to run all tasks')
+            
+            # create NamedThreadPool with callbacks
+            th = pool.NamedThreadPool()
+            def cb(x):
+                cb.cnt += x
+            def foo2(x,callback=None):
+                foo2.cnt += x
+                if callback:
+                    callback(x)
+            foo2.cnt = 0
+            cb.cnt = 0
+            for i in xrange(100):
+                th.add_task('fooey',foo2,i,callback=cb)
+            th.finish()
+            if foo2.cnt != reduce(lambda a,b:a+b,xrange(100)):
+                raise Exception('callback: add_task failed to run all tasks')
+            if foo2.cnt != cb.cnt:
+                raise Exception('callback: ret is not the same as cnt')
+            
+            # try calling two same named tasks at once
+            th = pool.NamedThreadPool(num_threads=3)
+            def bar():
+                bar.t = time.time()
+                time.sleep(1)
+            bar.t = None
+            def bar2():
+                bar2.t = time.time()
+                time.sleep(1)
+            bar2.t = None
+            th.add_task('bar',bar)
+            th.add_task('bar',bar2)
+            th.finish()
+            if not bar.t or not bar2.t:
+                raise Exception('named: add_task failed to run all tasks')
+            if abs(bar2.t - bar.t) < 0.9:
+                raise Exception('named tasks occurred at same time')
+            
+            # try calling different named tasks at once
+            th = pool.NamedThreadPool(num_threads=3)
+            bar.t = None
+            bar2.t = None
+            th.add_task('bar',bar)
+            th.add_task('bar2',bar2)
+            th.finish()
+            if not bar.t or not bar2.t:
+                raise Exception('named diff: add_task failed to run all tasks')
+            if abs(bar2.t - bar.t) > 0.9:
+                raise Exception('diff named tasks were called sequentially')
+        
+        except Exception as e:
+            logger.error('Error running pool.NamedThreadPool test - %s',str(e))
+            printer('Test pool.NamedThreadPool',False)
+            raise
+        else:
+            printer('Test pool.NamedThreadPool')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
