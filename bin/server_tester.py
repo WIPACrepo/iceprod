@@ -39,7 +39,7 @@ except ImportError:
     import unittest
     
 import iceprod.server
-from iceprod.server import listmodules,run_module
+from iceprod.server import listmodules, run_module, basic_config
 
 import iceprod.core.logger
 logging.basicConfig()
@@ -123,17 +123,15 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         grep_str = sys.argv[1]
         
-    # get config   
-    try:
-        cfgfile = iceprod.server.locateconfig()
-    except:
-        cfgfile = ''
-    cfg = iceprod.server.getconfig(cfgfile,False)
+    # get config
+    cfg = basic_config.BasicConfig()
+    cfg.read_file( basic_config.locateconfig() )
+
     
     # set up logger
     localhost = os.uname()[1].split(".")[0]
-    cfg['logging']['logfile'] = 'server_tester.log'
-    cfg['logging']['level'] = 'DEBUG'
+    cfg.logging['logfile'] = 'server_tester.log'
+    cfg.logging['level'] = 'DEBUG'
     iceprod.core.logger.setlogger(logger.name,cfg)
     signal.signal(signal.SIGQUIT, handler1)
     signal.signal(signal.SIGINT, handler1)
@@ -149,15 +147,18 @@ if __name__ == "__main__":
     # accumulate tests
     loader = unittest.defaultTestLoader
     test_suites = []
+
+    test_directory = 'tests.server'
+
     try:
         # python 2.7 features
-        test_suites = loader.discover('iceprod.server.tests',grep_str+'.py')
+        test_suites = loader.discover(test_directory,grep_str+'.py')
     except:
         import fnmatch
-        for m in listmodules('iceprod.server.tests'):
+        for m in listmodules(test_directory):
             module_name = m.rsplit('.',1)[1]
             if fnmatch.fnmatch(module_name,grep_str):
-                x = __import__(name,globals(),locals(),[module_name])
+                x = __import__(test_directory+'.'+module_name,globals(),locals(),[module_name])
                 test_suites.append(x.load_tests(loader,None,None))
 
     # run tests
