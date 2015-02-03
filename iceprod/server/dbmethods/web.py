@@ -133,7 +133,7 @@ class web(_Methods_Base):
             bindings += ('%'+gridspec+'%',)
         cb = partial(self._web_get_datasets_details_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
-    def _get_datasets_details_callback(self,ret,callback=None):
+    def _web_get_datasets_details_callback(self,ret,callback=None):
         if callback:
             if isinstance(ret,Exception):
                 callback(ret)
