@@ -752,6 +752,9 @@ class RPCService():
         if callback is not None:
             if isinstance(data,Exception):
                 callback(data)
+            elif 'error' in data:
+                logger.warning('Response contains error: %s' % data['error'])
+                callback(Exception('Response contains error'))
             elif 'result' not in data:
                 logger.warning('data does not contain a result')
                 callback(Exception('data does not contain a result'))
