@@ -210,6 +210,7 @@ class website(module.module):
                 (r"/config", Config, handler_args),
                 (r"/dataset(/.*)?", Dataset, handler_args),
                 (r"/task(/.*)?", Task, handler_args),
+                (r"/util", Util, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
@@ -640,6 +641,11 @@ class Task(PublicHandler):
                 if isinstance(status,Exception):
                     raise status
                 self.render_handle('tasks.html',status=status)
+
+class Util(PublicHandler):
+    """Util Page"""
+    def get(self):
+        self.write_error(404,message='Not yet implemented')
 
 class Other(PublicHandler):
     """Handle any other urls"""
