@@ -737,7 +737,7 @@ class RPCService():
                 # error calling function
                 if callback:
                     callback({'error':str(e)})
-                logger.warning('error calling function specified',exc_info=True)
+                logger.warning('error calling function "%s"' % methodname, exc_info=True)
             else:
                 if ret is not None:
                     callback({'result':ret})

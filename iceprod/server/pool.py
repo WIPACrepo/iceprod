@@ -482,8 +482,8 @@ class NamedThreadPool():
     def start(self, **kwargs):
         self._pool.start(**kwargs)
     
-    def finish(self, **kwargs):
-        self._pool.finish(**kwargs)
+    def finish(self, *args, **kwargs):
+        self._pool.finish(*args, **kwargs)
     
     def disable_output_queue(self):
         self._pool.disable_output_queue()
