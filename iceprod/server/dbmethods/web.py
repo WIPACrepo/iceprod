@@ -65,7 +65,6 @@ class web(_Methods_Base):
         """Get the number of datasets in each state on this site and plugin, 
            returning {status:num}
         """
-        print('web_get_datasets')
         sql = 'select '
         if groups:
             groups = filtered_input(groups)
