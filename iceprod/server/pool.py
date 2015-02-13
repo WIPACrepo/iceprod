@@ -471,8 +471,8 @@ class SingleGrouping(GroupingThreadPool):
 
 class NamedThreadPool():
     """Thread Pool that groups tasks by name, running only one "name" at once."""
-    def __init__(self, **kwargs):
-        self._pool = ThreadPoolDeque(**kwargs)
+    def __init__(self, *args, **kwargs):
+        self._pool = ThreadPoolDeque(*args, **kwargs)
         self._names = {} # {name:deque2(func,args,kwargs)}
         self._name_lock = RLock()
     
