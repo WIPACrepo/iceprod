@@ -506,6 +506,7 @@ class NamedThreadPool():
                 try:
                     latest = self._names[name].get()
                 except IndexError, KeyError:
+                    del self._names[name]
                     break
             if not latest:
                 break
