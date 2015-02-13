@@ -643,6 +643,7 @@ def gethostname():
         if iface.encap.lower() in ('local','loopback'): # ignore loopback interface
             continue
         for link in iface.link:
+            if not 'ip' in link: continue
             try:
                 hn = socket.gethostbyaddr(link['ip'])
             except socket.herror:
