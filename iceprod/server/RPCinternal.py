@@ -721,6 +721,11 @@ class RPCService():
                     callback({'error':'Method not available'})
                 logger.warning('method %s not available',str(methodname))
                 return
+            if not callable(func):
+                if callback:
+                    callback({'error':'"%s" is not callable' % methodname})
+                logger.warning('"%s" is not callable' % methodname)
+                return
             kwargs['callback'] = partial(self.__response,callback=callback)
             try:
                 if self.context:
