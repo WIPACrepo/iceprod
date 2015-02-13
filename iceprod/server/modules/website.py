@@ -210,6 +210,7 @@ class website(module.module):
                 (r"/config", Config, handler_args),
                 (r"/dataset(/.*)?", Dataset, handler_args),
                 (r"/task(/.*)?", Task, handler_args),
+                (r"/site(/.*)?", Site, handler_args),
                 (r"/util", Util, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
@@ -549,6 +550,8 @@ class Site(PublicHandler):
     """Handle /site urls"""
     @tornado.gen.coroutine
     def get(self,url):
+        self.write_error(404,message='Not yet implemented')
+        return
         with self.catch_error(message='error generating site page'):
             if url:
                 url_parts = [x for x in url.split('/') if x]
