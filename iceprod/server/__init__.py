@@ -212,6 +212,20 @@ def get_pkg_binary(package, binary):
     except Exception:
         pass
     
+    # try going up from sys.argv[0]
+    try:
+        f = os.path.abspath(sys.argv[0])
+        while f and 'iceprod' in f:
+            filepath = os.path.join(f,'bin',binary)
+            if os.path.exists(filepath):
+                return filepath
+            f = os.path.dirname(f)
+        filepath = os.path.join(f,'bin',binary)
+        if os.path.exists(filepath):
+            return filepath
+    except Exception:
+        pass
+    
     # try just asking the shell
     try:
         return subprocess.check_output(["which",binary]).strip('\n')
