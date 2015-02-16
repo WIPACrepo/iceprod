@@ -611,7 +611,7 @@ class queue(_Methods_Base):
             callback(Exception('get_cfg_for_task did not return a dataset_id'))
         else:
             dataset_id = ret[0][1]
-            self.get_cfg_for_dataset(dataset_id,callback=callback)
+            self.queue_get_cfg_for_dataset(dataset_id,callback=callback)
     
     def queue_get_cfg_for_dataset(self,dataset_id,callback=None):
         """Get a cfg for a dataset"""

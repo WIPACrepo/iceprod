@@ -414,7 +414,7 @@ class grid(object):
         expiration += timedelta(seconds=self.queue_cfg['max_task_queued_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_processing_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_reset_time'])
-        ret = self.db.new_passkey(expiration=expiration,async=False)
+        ret = self.db.auth_new_passkey(expiration=expiration,async=False)
         if isinstance(ret,Exception):
             logger.error('error getting passkey for task_id %r',
                          task['task_id'])
