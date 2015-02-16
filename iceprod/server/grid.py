@@ -103,8 +103,8 @@ class grid(object):
                 change = min(change,num_to_queue)
         
             # get queueing datasets from database
-            datasets = self.db.queue_get_queueing_datasets(gridspec=self.gridspec,
-                                                     async=False)
+            datasets = self.db.queue_get_queueing_datasets(gridspec=self.gridspec, async=False)
+            
             if isinstance(datasets,Exception):
                 raise datasets
             elif not datasets:

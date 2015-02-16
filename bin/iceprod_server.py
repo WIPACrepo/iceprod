@@ -123,7 +123,7 @@ def main(cfgfile,cfgdata=None):
                     mod = 'iceprod.server.modules.'+mod
                 mod_name = mod.rsplit('.',1)[-1]
                 if mod_name in self.running_modules:
-                    getattr(messaging,mod_name).start(asyc=True)
+                    getattr(messaging,mod_name).start(async=True)
                 else:
                     self.running_modules[mod_name] = module_start(mod)
             else:
@@ -141,7 +141,7 @@ def main(cfgfile,cfgdata=None):
             logger.warn('STOP %s',mod if mod else '')
             if mod:
                 mod_name = mod.rsplit('.',1)[-1]
-                getattr(messaging,mod).stop(asyc=True)
+                getattr(messaging,mod).stop(async=True)
                 if mod_name in self.running_modules:
                     del self.running_modules[mod_name]
                 if callback:
@@ -158,7 +158,7 @@ def main(cfgfile,cfgdata=None):
                                 continue
                             self.running_modules[mod].process.join(1)
                             if self.running_modules[mod].process.is_alive():
-                                getattr(messaging,mod).kill(asyc=True)
+                                getattr(messaging,mod).kill(async=True)
                             else:
                                 del self.running_modules[mod]
                         for mod in self.running_modules:
@@ -191,7 +191,7 @@ def main(cfgfile,cfgdata=None):
                 return
             logger.warn('RESTART %s',mod if mod else '')
             if mod:
-                getattr(messaging,mod).restart(asyc=True)
+                getattr(messaging,mod).restart(async=True)
             else:
                 self.broadcast_ignore.add('RESTART')
                 messaging.BROADCAST.restart(async=True)
@@ -207,7 +207,7 @@ def main(cfgfile,cfgdata=None):
             logger.warn('KILL %s',mod if mod else '')
             if mod:
                 mod_name = mod.rsplit('.',1)[-1]
-                getattr(messaging,mod).kill(asyc=False,timeout=0.1)
+                getattr(messaging,mod).kill(async=False,timeout=0.1)
                 if mod_name in self.running_modules:
                     self.running_modules[mod_name].process.join(.1)
                     if self.running_modules[mod_name].process.is_alive():
