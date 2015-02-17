@@ -723,8 +723,8 @@ class RPCService():
                 return
             if not callable(func):
                 if callback:
-                    callback({'error':'"%s" is not callable' % methodname})
-                logger.warning('"%s" is not callable' % methodname)
+                    callback({'error':'"%s" is not callable %s' % (methodname, str(func.__class__))})
+                logger.warning('"%s" is not callable %s' % (methodname, str(func.__class__)))
                 return
             kwargs['callback'] = partial(self.__response,callback=callback)
             try:

@@ -58,7 +58,7 @@ class node(_Methods_Base):
         except Exception as e:
             ret = e
         if isinstance(ret,Exception):
-            self.logger.info('exception from _node_update_blocking(): %r',ret)
+            logger.info('exception from _node_update_blocking(): %r',ret)
             return
         elif not ret or len(ret) < 1 or len(ret[0]) < 1:
             # insert new row
@@ -82,9 +82,9 @@ class node(_Methods_Base):
         except Exception as e:
             ret = e
         if isinstance(ret,Exception):
-            self.logger.info('exception2 from _node_update_blocking(): %r',ret)
+            logger.info('exception2 from _node_update_blocking(): %r',ret)
     
-    def node_collate_resources(self,site_id=None,node_include_age=30):
+    def node_collate_resources(self,site_id=None,node_include_age=30, callback=None):
         """
         Collate node resources into site resources.
         
@@ -93,6 +93,7 @@ class node(_Methods_Base):
         :param site_id: The site to assign resources to
         :param node_include_age: The number of days a node can age before
                                  not being included.
+        (Note: callback is a dummy parameter)
         """
         if not site_id:
             return
@@ -103,9 +104,9 @@ class node(_Methods_Base):
         self.db.sql_read_task(sql,tuple(),callback=cb)
     def _node_collate_resources_cb(self,ret,site_id=None):
         if isinstance(ret,Exception):
-            self.logger.debug('exception in node_collate_resources: %r',ret)
+            logger.info('exception in node_collate_resources: %r',ret)
         elif not ret:
-            self.logger.debug('no results returned for node_collate_resources')
+            logger.debug('no results returned for node_collate_resources')
         else:
             try:
                 grid_resources = {}
@@ -126,7 +127,7 @@ class node(_Methods_Base):
                     cb = partial(self._node_collate_resources_blocking,site_id,grid_resources)
                     self.db.blocking_task('node_stats',cb)
             except Exception:
-                self.logger.info('error in _node_collate_resources_cb',
+                logger.info('error in _node_collate_resources_cb',
                                  exc_info=True)
     def _node_collate_resources_blocking(self,site_id=None,grid_resources=None):
         conn,archive_conn = self.db._dbsetup()
@@ -135,14 +136,14 @@ class node(_Methods_Base):
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
-            self.logger.info('failed to get site queues for site %r',site_id,
+            logger.info('failed to get site queues for site %r',site_id,
                              exc_info=True)
             return
         if isinstance(ret,Exception):
-            self.logger.debug('exception in _node_collate_resources_blocking for site %r: %r',
+            logger.debug('exception in _node_collate_resources_blocking for site %r: %r',
                               site_id,ret)
         elif not ret or not ret[0]:
-            self.logger.debug('no site queues for site %r',site_id)
+            logger.debug('no site queues for site %r',site_id)
         else:
             try:
                 queues = json_decode(ret[0][0])
@@ -154,10 +155,10 @@ class node(_Methods_Base):
                 try:
                     self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception:
-                    self.logger.info('failed to update resources for site %r',
+                    logger.info('failed to update resources for site %r',
                                      site_id,exc_info=True)
             except Exception:
-                self.logger.info('error in _node_collate_resources_blocking',
+                logger.info('error in _node_collate_resources_blocking',
                                  exc_info=True)
     
     def node_get_site_resources(self,site_id=None,empty_only=True,callback=None):
