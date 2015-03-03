@@ -71,9 +71,7 @@ This will install IceProd and all dependencies into your home directory, under `
 How to Run the Server
 """""""""""""""""""""
 
-To run the server, use the following commands::
+To run the server::
 
-    $ cd iceprod
-    $ export PYTHONPATH=.
-    $ python bin/iceprod_server.py
+    $ python iceprod/bin/iceprod_server.py
 

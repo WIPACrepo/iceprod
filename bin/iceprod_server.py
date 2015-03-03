@@ -21,6 +21,11 @@ except ImportError:
     setproctitle = None
     print('Could not import setproctitle module')
 
+# Assuming that the directory structure remains constant, this will automatically set the python path to find iceprod
+bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
+root_path = os.path.dirname( bin_dir )
+sys.path.append( root_path )
+
 import iceprod
 import iceprod.server
 import iceprod.server.basic_config
