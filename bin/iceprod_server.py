@@ -26,6 +26,22 @@ bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
 root_path = os.path.dirname( bin_dir )
 sys.path.append( root_path )
 
+data_class_path = os.path.join( root_path, 'iceprod/server/data/www/dataclasses.js')
+if not os.path.exists(data_class_path):
+    print('Generating data classes')
+    import inspect
+    import json
+    from iceprod.core import dataclasses
+    dcs = {}
+    names = dataclasses._plurals.copy()
+    for name, obj in inspect.getmembers(dataclasses,inspect.isclass):
+        if name[0] != '_' and dict in inspect.getmro(obj):
+            dcs[name] = obj().output()
+            names[name] = obj.plural
+    data = {'classes':dcs,'names':names}
+    with open(data_class_path,'w') as f:
+        f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
+
 import iceprod
 import iceprod.server
 import iceprod.server.basic_config

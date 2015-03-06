@@ -191,7 +191,7 @@ def runner(cfgfile,url,debug=False,offline=False):
                 # find task by name
                 for task in config['tasks']:
                     if task['name'] == config['options']['task']:
-                        iceprod.core.exe.runtask(env,config['tasks'][config['options']['task']])
+                        iceprod.core.exe.runtask(env, task)
                         break
                 else:
                     logger.critical('cannot find task named \'%s\'',

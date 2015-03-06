@@ -214,6 +214,8 @@ elif [ -z $X509_USER_PROXY ]; then
     export X509_USER_PROXY=$PWD/x509up
 fi
 
+
+export PYTHONPATH=$SROOT
 # run i3exec
 cmd="$PYBIN -m iceprod.core.i3exec --url=$DOWNLOAD_URL $@"
 echo $cmd
