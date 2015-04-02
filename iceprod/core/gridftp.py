@@ -130,8 +130,6 @@ except ImportError:
     import tempfile
     import shutil
     import subprocess
-    def _cmd(cmd):
-        return not subprocess.call(cmd)
     def _cmd_async(cmd,callback=None,timeout=None):
         def wrap():
             p = subprocess.Popen(cmd)
@@ -154,17 +152,21 @@ except ImportError:
             if callback:
                 callback(ret)
         Thread(target=wrap).start()
-    def _cmd_output(cmd,type=None):
-        try:
-            ret = subprocess.check_output(cmd)
-        except subprocess.CalledProcessError:
-            ret = None
-        if ret and type:
-            try:
-                ret = type(ret)
-            except Exception:
-                pass
-        return ret
+    def _cmd(cmd,timeout=None):
+        e = Event()
+        def cb(ret):
+            cb.ret = ret
+            e.set()
+        cb.ret = None
+        if not timeout:
+            timeout = 10
+        _cmd_async(cmd,callback=cb,timeout=timeout-0.1)
+        e.wait(timeout)
+        if not cb.ret:
+            raise Exception('Request timed out')
+        elif isinstance(cb.ret,Exception):
+            raise cb.ret
+        return cb.ret
     def _cmd_output_async(cmd,type=None,callback=None,timeout=None):
         def wrap():
             p = subprocess.Popen(cmd,bufsize=-1,stdout=subprocess.PIPE)
@@ -192,6 +194,21 @@ except ImportError:
             if callback:
                 callback(ret)
         Thread(target=wrap).start()
+    def _cmd_output(cmd,type=None,timeout=None):
+        e = Event()
+        def cb(ret):
+            cb.ret = ret
+            e.set()
+        cb.ret = None
+        if not timeout:
+            timeout = 10
+        _cmd_output_async(cmd,type=type,callback=cb,timeout=timeout-0.1)
+        e.wait(timeout)
+        if not cb.ret:
+            raise Exception('Request timed out')
+        elif isinstance(cb.ret,Exception):
+            raise cb.ret
+        return cb.ret
     class GridFTP(_gridftp_common):
         """Asyncronous GridFTP interface to command line client.
            Designed to hide the complex stuff and mimic tornado http downloads.
@@ -251,14 +268,15 @@ except ImportError:
             
             cmd = ['globus-url-copy',address,dest]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if async_callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=async_callback, timeout=timeout)
             else:
-                ret = _cmd(cmd)
+                ret = _cmd(cmd, timeout=timeout)
                 if ret and filename is None:
                     try:
                         contents = open(dest[5:]).read()
@@ -319,18 +337,19 @@ except ImportError:
             
             cmd = ['globus-url-copy','-cd',src,address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 def cb(ret):
                     if tmpdir:
                         shutil.rmtree(tmpdir,ignore_errors=True)
                     callback(ret)
                 _cmd_async(cmd, callback=cb, timeout=timeout)
             else:
-                ret = _cmd(cmd)
+                ret = _cmd(cmd, timeout=timeout)
                 if tmpdir:
                     shutil.rmtree(tmpdir,ignore_errors=True)
                 return ret
@@ -355,15 +374,16 @@ except ImportError:
             listify = partial(cls.listify,details=details,dotfiles=dotfiles)
             cmd = ['uberftp','-ls',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_output_async(cmd, type=listify, callback=callback,
                                   timeout=timeout)
             else:
-                return _cmd_output(cmd, type=listify)
+                return _cmd_output(cmd, type=listify, timeout=timeout)
         
         @classmethod
         def popen(cls,address,cmd,args,callback=None,request_timeout=None):
@@ -402,14 +422,16 @@ except ImportError:
                 pass
             
             cmd = ['uberftp','-mkdir',address]
+            
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
         
         @classmethod
         def rmdir(cls,address,callback=None,request_timeout=None):
@@ -426,14 +448,15 @@ except ImportError:
             
             cmd = ['uberftp','-rmdir',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
         
         @classmethod
         def delete(cls,address,callback=None,request_timeout=None):
@@ -450,14 +473,15 @@ except ImportError:
             
             cmd = ['uberftp','-rm',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
             
         @classmethod
         def rmtree(cls,address,callback=None,request_timeout=None):
@@ -474,14 +498,15 @@ except ImportError:
             
             cmd = ['uberftp','-rm','-r',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
         
         @classmethod
         def move(cls,src,dest,callback=None,request_timeout=None):
@@ -500,14 +525,15 @@ except ImportError:
             
             cmd = ['uberftp','-rename',src,cls.address_split(dest)[-1]]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
         
         @classmethod
         def exists(cls,address,callback=None,request_timeout=None):
@@ -524,14 +550,14 @@ except ImportError:
             
             cmd = ['uberftp','-size',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
         
         @classmethod
         def chmod(cls,address,mode,callback=None,request_timeout=None):
@@ -548,14 +574,15 @@ except ImportError:
             
             cmd = ['uberftp','-chmod',mode,address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+            
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
-                return _cmd(cmd)
+                return _cmd(cmd, timeout=timeout)
             
         @classmethod
         def size(cls,address,callback=None,request_timeout=None):
@@ -572,15 +599,15 @@ except ImportError:
             
             cmd = ['uberftp','-size',address]
             
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
             if callback:
-                if request_timeout is None:
-                    timeout = cls._timeout
-                else:
-                    timeout = request_timeout
                 _cmd_output_async(cmd, type=int, callback=callback,
                                   timeout=timeout)
             else:
-                return _cmd_output(cmd, type=int)
+                return _cmd_output(cmd, type=int, timeout=timeout)
         
         @classmethod
         def _chksum(cls,type,address,callback=None,request_timeout=None):
