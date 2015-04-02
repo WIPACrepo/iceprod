@@ -63,7 +63,7 @@ signal.signal(signal.SIGINT, handler1)
 # start testing
 logger.warn('starting...%s ' % logger.name)
 print('Testing...')
-print('(detailed log file available at test.log)')
+print('(detailed log file available at tests.log)')
 print('')
 
 # accumulate tests

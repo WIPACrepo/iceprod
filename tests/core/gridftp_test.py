@@ -40,7 +40,7 @@ class gridftp_test(unittest.TestCase):
         try:
             iceprod.core.gridftp.GridFTP.mkdir(self.server_test_dir,
                                                parents=True,
-                                               timeout=self._timeout)
+                                               request_timeout=self._timeout)
         except:
             pass
         if not os.path.exists(self.test_dir):
@@ -50,7 +50,7 @@ class gridftp_test(unittest.TestCase):
     def tearDown(self):
         try:
             iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
-                                                timeout=self._timeout)
+                                                request_timeout=self._timeout)
         except:
             pass
         shutil.rmtree(self.test_dir)
