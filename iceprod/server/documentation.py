@@ -1,0 +1,48 @@
+import os
+page_template = '''
+    <h1>%s</h1>
+    <p class = "desc">
+    %s
+    </p>
+    <h2>Properties</h2>
+    <ul>
+    %s
+    </ul>
+
+    '''
+
+#       Converts ##LinkName## in string to html linkds
+def add_links(desc):
+    d = desc.split('##')
+    is_link = False
+    desc = ''
+    for i in d:
+        if is_link:
+            desc += "<a href='javascript: show_doc(\"%s\");'>%s</a>" % (i, i)
+        else:
+            desc += i
+        is_link = not is_link
+    return desc
+
+#       Loads and parses documentation file
+def load_doc(filename):
+    lines = []
+    for l in open(filename, 'rt').readlines():
+        if len(l.strip()):
+            lines.append(l)
+
+    body = ''
+    for l in lines[1:]:
+        nd = l.split(None, 1)
+        name = nd[0]
+        desc = nd[1] if len(nd) == 2 else ''
+        desc = add_links(desc)
+        body += '<li><h3>%s</h3><p>%s</p></li>' % (name, desc)
+
+
+    nd = lines[0].split(None, 1)
+    name = nd[0]
+    desc = nd[1] if len(nd) == 2 else ''
+    
+    
+    return page_template %(name, desc, body)

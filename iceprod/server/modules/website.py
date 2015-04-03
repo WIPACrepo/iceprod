@@ -49,6 +49,7 @@ from iceprod.server.nginx import Nginx
 from iceprod.server.file_io import AsyncFileIO
 from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
+from iceprod.server import documentation
 
 logger = logging.getLogger('website')
 
@@ -212,6 +213,7 @@ class website(module.module):
                 (r"/task(/.*)?", Task, handler_args),
                 (r"/site(/.*)?", Site, handler_args),
                 (r"/util", Util, handler_args),
+                (r"/docs", Documentation, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
@@ -645,6 +647,13 @@ class Task(PublicHandler):
                     raise status
                 self.render_handle('tasks.html',status=status)
 
+class Documentation(PublicHandler):
+    def get(self):
+        doc_path = get_pkgdata_filename('iceprod.server','data/docs')
+        self.write(documentation.load_doc(doc_path+'/job.txt'))
+        self.flush()
+
+
 class Util(PublicHandler):
     """Util Page"""
     def get(self):
@@ -654,4 +663,3 @@ class Other(PublicHandler):
     """Handle any other urls"""
     def get(self):
         self.write_error(404,message='Bad url: '+self.request.uri)
-

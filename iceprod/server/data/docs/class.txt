@@ -1,0 +1,7 @@
+Class			Python class that is downloaded and added to python path	
+
+src			Source path of class. If value is not a valid url, it is first prefixed by parameters.resource_url which defaults to “http://x2100.icecube.wisc.edu/downloads/”. If this is not value the system then tries prefixing it with parameters.svn_repository which defaults to “http://code.icecube.wisc.edu/svn/projects/”
+
+resource_name		If present, class will be set to a previously downloaded resource with name equal to value. If field src is also set, then the full path to the class is constructed with resource_name prefixing src
+
+name	Unique identifier to refer to the class

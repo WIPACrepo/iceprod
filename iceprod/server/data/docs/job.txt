@@ -1,0 +1,11 @@
+Job		Job to run. Contains a list of individual task.
+
+difplus 	 ##Difplus##
+tasks		List of tasks to run. See ##Task##
+description	
+dataset		
+parent_id	
+version		
+steering	See ##Steering##
+options		Global options used by the job
+categories	

@@ -1,0 +1,8 @@
+Resource		File to be downloaded to local filesystem
+
+arch			Appears to be unused.
+
+remote			Url of resource on remote server. If it is not a complete url, it is prefixed by parameters.resource_url, which defaults to “http://x2100.icecube.wisc.edu”
+
+compression		Specifies whether the resource needs to be decompressed.
+local			Path on local filesystem to store resource, defaults to the base name of the remote url. This is prefixed with parameters.resource_directory, which defaults to “resource”

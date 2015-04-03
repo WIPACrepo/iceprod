@@ -1,0 +1,11 @@
+Tray		Contains modules to run.
+
+name		Name to refer to tray.
+
+parameters	Parameters to config tray.
+modules		Modules to run in tray. See ##Module##
+classes		Classes used by tray. See ##Class##
+resources	Resources used by tray. See ##Resource##
+iterations	Number of times to run tray. The current run index is stored in parameters.tray_iteration
+data		Data used by tray. See ##Data##
+projects	Projects used by tray. See ##Project##

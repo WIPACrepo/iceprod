@@ -1,0 +1,7 @@
+Task		Contains trays to run
+name		Name to refer to task
+parameters	Parameters to config task
+depends		List of task names that this task depends on
+batchsys	Dictionary<Dictionary<String>> TODO!
+resources	Resources used by task. See ##Resource##
+trays		Trays to run. See ##Tray##

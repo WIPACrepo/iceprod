@@ -1,0 +1,11 @@
+Data		Resource file used as input/output
+
+local		Path of file on local filesystem.  Filename is prefixed with parameters.data_directory, which defaults to “data”
+
+movement	Movement direction of file. Input downloads file to local file system. Output uploads from local file system to remote server. Both downloads and uploads. Choose from (input, output, both).
+
+remote      Url of file on remote server prefixed by storage location. Storage location is set by parameters[data.type]. If this value is not present and data.type is ‘permanent’, storage location is set to parameters.data_url.
+
+compression	Whether to use compression when downloading/uploading. The default format for uploading is LZMA.
+
+type		Specifies the storage location used to prefix the remote url. Choose from (permanent, tray_temp, task_temp, job_temp, dataset_temp, site_temp)

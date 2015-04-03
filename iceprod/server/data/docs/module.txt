@@ -1,0 +1,19 @@
+Module 			A module is a data class that contains a specific script to run. It also reports all dependencies, whether data files, libraries, or arguments.
+
+src			Specifies source of script to run. It can be a python script, “.py”, a shell script, “.sh”, otherwise it will be treated as a regular executable.  If value is not a valid url, it is first prefixed by parameters.resource_url which defaults to “http://x2100.icecube.wisc.edu/downloads/”. If this is not value the system then tries prefixing it with parameters.svn_repository which defaults to “http://code.icecube.wisc.edu/svn/projects/” Scripts are downloaded and stored in “local_temp”
+
+resources		Downloaded files required by module. See ##Resource##
+
+name			Name used to refer to module
+
+parameters 		Generic key-value parameters used when running module
+
+args			Arbitrary data passed to script
+
+classes			Python classes required by module. See ##Class##
+
+running_class		Python path to main class.  If this value is not supplied, the module is run as a script
+
+data			Input / output files used by scripts. See ##Data##
+
+projects		Python files required by module. See ##Project##
