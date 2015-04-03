@@ -696,6 +696,7 @@ def download(url,local,cache=False,proxy=False,options={}):
 def upload(local,remote,proxy=False,options={}):
     """Upload a file, checksumming if possible"""
     if not os.path.exists(local):
+        logger.warn('upload: local path, %s, does not exist' % local)
         return False
     trials = 5  # repeat wput 5 times if failed
     success = False

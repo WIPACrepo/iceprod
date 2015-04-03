@@ -24,7 +24,7 @@ except ImportError:
 # Assuming that the directory structure remains constant, this will automatically set the python path to find iceprod
 bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
 root_path = os.path.dirname( bin_dir )
-sys.path.append( root_path )
+if not root_path in sys.path: sys.path.append( root_path )
 
 data_class_path = os.path.join( root_path, 'iceprod/server/data/www/dataclasses.js')
 if not os.path.exists(data_class_path):
