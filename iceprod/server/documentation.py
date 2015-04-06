@@ -26,8 +26,12 @@ def add_links(desc):
 
 #       Loads and parses documentation file
 def load_doc(filename):
+    try:
+        f = open(filename, 'rt')
+    except IOError:
+        return 'Not found'
     lines = []
-    for l in open(filename, 'rt').readlines():
+    for l in f.readlines():
         if len(l.strip()):
             lines.append(l)
 
@@ -43,6 +47,6 @@ def load_doc(filename):
     nd = lines[0].split(None, 1)
     name = nd[0]
     desc = nd[1] if len(nd) == 2 else ''
-    
+    f.close()
     
     return page_template %(name, desc, body)

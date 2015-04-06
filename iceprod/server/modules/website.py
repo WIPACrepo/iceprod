@@ -213,7 +213,7 @@ class website(module.module):
                 (r"/task(/.*)?", Task, handler_args),
                 (r"/site(/.*)?", Site, handler_args),
                 (r"/util", Util, handler_args),
-                (r"/docs", Documentation, handler_args),
+                (r"/docs/(.*)", Documentation, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
@@ -648,9 +648,9 @@ class Task(PublicHandler):
                 self.render_handle('tasks.html',status=status)
 
 class Documentation(PublicHandler):
-    def get(self):
+    def get(self, url):
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
-        self.write(documentation.load_doc(doc_path+'/job.txt'))
+        self.write(documentation.load_doc(doc_path+'/' + url))
         self.flush()
 
 
