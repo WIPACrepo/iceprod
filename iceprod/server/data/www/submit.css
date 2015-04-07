@@ -6,8 +6,7 @@ span.hide {
     padding: 4px;
 }
 #basic_submit div.indent {
-    margin-left: 1em;
-    margin-top: 2px;
+    margin: 2px 1em 0;
     border-top: 1px solid blue;
 }
 #basic_submit div.indent.trays {
@@ -32,6 +31,28 @@ span.hide {
     color: blue;
     cursor: pointer;
 }
+#basic_submit .delete {
+    background-color: #C72E10;
+    color: white;
+    font: 0.8em/0.8em Arial,serif;
+    padding: 0 2px 2px;
+    margin-left: 1em;
+    vertical-align: middle;
+    cursor: pointer;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: none;
+}
+#basic_submit :hover > .delete {
+    display: inline-block;
+}
+#basic_submit .indent > .delete {
+    float: right;
+    font: 1em Arial,serif;
+    line-height: 0.8em;
+}
 #basic_submit .null {
     display: inline-block;
 }
@@ -41,7 +62,7 @@ span.hide {
 #basic_submit span.val {
     display: inline-block;
     min-height: 1em;
-    min-width: 30px;
+    min-width: 20px;
 }
 #basic_submit div.empty {
     height: .2em;

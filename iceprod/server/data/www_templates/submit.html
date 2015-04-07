@@ -21,19 +21,20 @@
 <script id="LoopTmpl" type="text/x-jsrender">
 <div class="indent {{!:~key}}">
     <span class="path">{{!:~concat(~path,#index,~key)}}</span>
+    <span class="delete" title="Delete {{!singular:~key}}">x</span>
     {^{props ~path=~concat(~path,#index,~key) tmpl="#EditTmpl" /}}
 </div>
 </script>
 <script id="LoopTmplBasic" type="text/x-jsrender">
 <div class="indent {{!:~key}}">
-    <span class="path">{{!:~concat(~path,#index,~key)}}</span>
+    <span class="path">{{!:~concat(~path,#index,~key)}}</span><span class="delete">x</span>
     <div>
     {^{if ~editable(~concat(~path,#index,~key))}}
         <span class="editing"><span class="key hide"></span><input type="text" data-link="{intToStr:#data:strToInt}" /></span>
     {{!else}}
         <span class="editable"><span class="key hide"></span><span class="val">{{!:#data}}</span></span>
     {{!/if}}
-    </div>
+    <span class="delete">x</span></div>
 </div>
 </script>
 <script id="EditTmpl" type="text/x-jsrender">
@@ -50,11 +51,11 @@
     {{!/if}}
     <div class="indent"><span class="add array"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span></div>
 {{!else ~isObject(prop)}}
-    {{!if ~canAddToObject(~path,key) }}
+    {{!if ~canEditObjectName(~path,key) }}
         {{!if ~editable(key+'_key',~path) }}
-            <div><span class="editing"><span class="key hide">{{!:key}}</span><input type="text" data-link="{intToStr:key:strToInt}" /></span></div>
+            <div><span class="editing"><span class="key hide">{{!:key}}</span><input type="text" data-link="{intToStr:key:strToInt}" /></span><span class="delete">x</span></div>
         {{!else}}
-            <div class="header"><span class="editable key_editable"><span class="key">{{!keyToHtml:key}}</span></span></div>
+            <div class="header"><span class="editable key_editable"><span class="key">{{!keyToHtml:key}}</span></span><span class="delete">x</span></div>
         {{!/if}}
     {{!else}}
         <div class="header key">{{!keyToHtml:key}}</div>
@@ -97,7 +98,7 @@
         {{!/if}}
         <span class="key">{{!keyToHtml:key}}</span>: <span class="val">{{!:prop}}</span></span>
     {{!/if}}
-    </div>
+    <span class="delete">x</span></div>
 {{!/if}}
 </script>
 <script id="AdvTmpl" type="text/x-jsrender">

@@ -66,11 +66,13 @@ var Submission = (function( $ ) {
                 for (var i=0;i<json.length;i++)
                     json[i] = private_methods.clean_json(json[i]);
             } else if ($.type(json) === 'object') {
+                var ret_json = {};
                 for (var i in json) {
                     if (i == '_type')
                         continue;
-                    json[i] = private_methods.clean_json(json[i]);
+                    ret_json[i] = private_methods.clean_json(json[i]);
                 }
+                json = ret_json;
             }
             if (j === undefined)
                 data.submit_data = json;
@@ -116,7 +118,7 @@ var Submission = (function( $ ) {
         },
         update : function() {
             private_methods.clean_json();
-            RPCclient('update_dataset_config',{passkey:data.passkey,data:data.submit_data,dataset_id:data.dataset_id},callback=function(return_data){
+            RPCclient('update_dataset_config',{passkey:data.passkey,data:data.submit_data,dataset_id:data.dataset.dataset_id},callback=function(return_data){
                 $('#error').html('success');
             });
         },
@@ -236,17 +238,33 @@ var Submission = (function( $ ) {
                     else
                         return ret;
                 },
+                canEditObjectName: function(path,key){
+                    var c = getDataclass(path,key), s = null;
+                    if (c in dataclasses['classes'])
+                        return false;
+                    do {
+                        s = path.split('.');
+                        key = s.slice(-1)[0];
+                        path = s.slice(0, -2).join('.')+s.slice(-2.-1)[0].split('_');
+                        c = getDataclass(path,key);
+                        if (c in dataclasses['classes']) {
+                            c = dataclasses['classes'][c];
+                            var keys = Object.keys(c);
+                            ret = (keys.length == 1 && '*' in c);
+                            return ret;
+                        }
+                    } while (path != null && path.indexOf('.') != -1);
+                    return false;
+                },
                 canAddToObject: function(path,key){
-                    var c = getDataclass(path,key);
-                    if (c === null || !(c in dataclasses['classes']))
-                        return true;
-                    else {
+                    var c = getDataclass(path,key), s = null;
+                    if (c in dataclasses['classes']) {
                         c = dataclasses['classes'][c];
                         var keys = Object.keys(c);
-                        ret = (keys.length < 1 || (keys.length == 1 && '*' in c));
-                        console.warn('canAddToObject(): '+ret+' for '+JSON.stringify(keys));
+                        ret = (keys.length == 1 && '*' in c);
                         return ret;
                     }
+                    return true;
                 }
             };
             $.views.helpers(helpers);
@@ -481,7 +499,7 @@ var Submission = (function( $ ) {
             if (data.dataset == null) {
                 html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
                 for (var g in args.grids) {
-                    html += '<option value="'+g+'">'+args.grids[g][1]+'</option>';
+                    html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
                 }
                 html += '</select></div>';
                 html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em"></textarea>';
@@ -500,7 +518,7 @@ var Submission = (function( $ ) {
             $('#submit_action').on('click',function(){
                 if (data.state == 'expert')
                     data.submit_data = JSON.parse($('#expert_submit').find('textarea').off().val());
-                if (data.dataset_id == null) {
+                if (data.dataset == null) {
                     var njobs = parseInt($('#number_jobs').val());
                     if ( njobs == null || njobs == undefined || isNaN(njobs)) {
                         $('#error').text('Must specify integer number of jobs');
@@ -508,7 +526,7 @@ var Submission = (function( $ ) {
                     }
                     private_methods.submit( njobs, $('#gridspec').val(), $('#description').val() );
                 } else if (data.edit)
-                    private_methods.update(); // TODO: implement this method
+                    private_methods.update();
             });
             var goto_basic = function(){
                 if (data.state != 'basic') {
