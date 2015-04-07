@@ -14,7 +14,7 @@ import shutil
 from io import BytesIO
 
 import iceprod.core.functions
-from iceprod.core.util import Resources
+from iceprod.core.util import Node_Resources
 from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor

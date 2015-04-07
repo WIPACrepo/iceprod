@@ -14,7 +14,7 @@ import shutil
 from io import BytesIO
 
 import iceprod.core.functions
-from iceprod.core.util import Resources
+from iceprod.core.util import Node_Resources
 from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
@@ -116,7 +116,7 @@ class node(_Methods_Base):
                     gridspec = stats.pop('gridspec')
                     if gridspec not in grid_resources:
                         grid_resources[gridspec] = {}
-                    for resource in set(Resources)&set(stats):
+                    for resource in set(Node_Resources)&set(stats):
                         if resource in grid_resources[gridspec]:
                             if (isinstance(grid_resources[gridspec][resource],Number)
                                 and isinstance(stats[resource],Number)):
@@ -149,7 +149,20 @@ class node(_Methods_Base):
                 queues = json_decode(ret[0][0])
                 for gridspec in queues:
                     if gridspec in grid_resources:
-                        queues[gridspec]['resources'] = grid_resources[gridspec]
+                        gg = grid_resources[gridspec]
+                        if 'resources' not in queues[gridspec]:
+                            queues[gridspec]['resources'] = dict.from_keys(gg.keys(),[0,0])
+                        qq = queues[gridspec]['resources']
+                        for r in gg:
+                            if isinstance(gg[r],Number):
+                                qq[r][1] += gg[r]-qq[r][0]
+                                if qq[r][1] < 0:
+                                    qq[r][1] = 0
+                                qq[r][0] = gg[r]
+                            else:
+                                qq[r][0] = gg[r]
+                        for r in set(qq)-set(gg):
+                            qq[r] = [0,0]
                 sql = 'update site set queues = ? where site_id = ?'
                 bindings = (json_encode(queues),suite_id)
                 try:
@@ -191,10 +204,11 @@ class node(_Methods_Base):
                     if 'resources' not in grids:
                         continue
                     for k in grids['resources']:
-                        if k in resources and isinstance(resources[k],Number):
+                        if (k in resources and 
+                            isinstance(grids['resources'][k][0],Number)):
                             resources[k] += grids['resources'][k][index]
                         else:
-                            resources[k] = grids['resources'][k][index]
+                            resources[k] = grids['resources'][k][0]
                 return resources
             except Exception as e:
                 callback(e)

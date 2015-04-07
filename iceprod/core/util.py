@@ -25,8 +25,109 @@ class NoncriticalError(Exception):
     def __reduce__(self):
         return (NoncriticalError,(self.value,))
 
-Resources = ('cpu','gpu','memory','disk')
-"""The types of node resources"""
+def get_cpus():
+    """Detect the number of available (allocated) cpus."""
+    ret = 1
+    flag = False
+    if os.path.exists('.machine.ad'):
+        try:
+            for line in open('.machine.ad'):
+                if line and line.split('=')[0].strip().lower() == 'cpus':
+                    ret = int(line.split('=')[1])
+                    flag = True
+                    break
+        except Exception:
+            pass
+    if not flag and 'NUM_CPUS' in os.environ:
+        try:
+            ret = int(os.environ['NUM_CPUS'])
+        except Exception:
+            pass
+    return ret
+
+def get_gpus():
+    """Detect the number of available (allocated) gpus."""
+    ret = 1
+    flag = False
+    if os.path.exists('.machine.ad'):
+        try:
+            for line in open('.machine.ad'):
+                if line and line.split('=')[0].strip().lower() == 'gpus':
+                    ret = int(line.split('=')[1])
+                    flag = True
+                    break
+        except Exception:
+            pass
+    if not flag and 'NUM_GPUS' in os.environ:
+        try:
+            ret = int(os.environ['NUM_GPUS'])
+        except Exception:
+            pass
+    if not flag and 'CUDA_VISIBLE_DEVICES' in os.environ:
+        try:
+            ret = int(len(os.environ['CUDA_VISIBLE_DEVICES'].split(',')))
+        except Exception:
+            pass
+    if not flag and 'GPU_DEVICE_ORDINAL' in os.environ:
+        try:
+            ret = int(len(os.environ['GPU_DEVICE_ORDINAL'].split(',')))
+        except Exception:
+            pass
+    if not flag and '_CONDOR_AssignedGPUs' in os.environ:
+        try:
+            ret = int(len(os.environ['_CONDOR_AssignedGPUs'].split(',')))
+        except Exception:
+            pass
+    return ret
+
+def get_memory():
+    """Detect the amount of available (allocated) memory (in GB)."""
+    ret = 1
+    flag = False
+    if os.path.exists('.machine.ad'):
+        try:
+            for line in open('.machine.ad'):
+                if line and line.split('=')[0].strip().lower() == 'memory':
+                    ret = int(line.split('=')[1])/1000
+                    flag = True
+                    break
+        except Exception:
+            pass
+    if not flag and 'NUM_MEMORY' in os.environ:
+        try:
+            ret = int(os.environ['NUM_MEMORY'])
+        except Exception:
+            pass
+    return ret
+
+def get_disk():
+    """Detect the amount of available (allocated) disk (in GB)."""
+    ret = 1
+    flag = False
+    if os.path.exists('.machine.ad'):
+        try:
+            for line in open('.machine.ad'):
+                if line and line.split('=')[0].strip().lower() == 'disk':
+                    ret = int(line.split('=')[1])/1000000
+                    flag = True
+                    break
+        except Exception:
+            pass
+    if not flag and 'NUM_DISK' in os.environ:
+        try:
+            ret = int(os.environ['NUM_DISK'])
+        except Exception:
+            pass
+    return ret
+
+#: The types of node resources, with detection methods
+Node_Resources = {
+    'cpu':get_cpus(),
+    'gpu':get_gpus(),
+    'memory':get_memory(),
+    'disk':get_disk(),
+}
+
 
 class IFace(object):
     """A network interface object

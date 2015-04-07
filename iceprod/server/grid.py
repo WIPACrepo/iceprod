@@ -15,9 +15,8 @@ from datetime import datetime,timedelta
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
-from iceprod.server import get_pkg_binary
-from iceprod.server import GlobalID
 from iceprod.server import module
+from iceprod.server import get_pkg_binary,GlobalID,calc_datasets_prios
 
 logger = logging.getLogger('grid')
 
@@ -114,18 +113,14 @@ class grid(object):
                 raise Exception('db.queue_get_queueing_datasets(%s) did not return a dict'%self.gridspec)
             
         with self.check_run():
+            # get priority factors
+            qf_p = self.queue_cfg['queueing_factor_priority']
+            qf_d = self.queue_cfg['queueing_factor_dataset']
+            qf_t = self.queue_cfg['queueing_factor_tasks']
+        
             # assign each dataset a priority
-            dataset_prios = {dataset_id:self.calc_dataset_prio(datasets[dataset_id]) for dataset_id in datasets}
+            dataset_prios = calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
             logger.debug('dataset prios: %r',dataset_prios)
-            # normalize
-            total_prio = math.fsum(dataset_prios.values())
-            if total_prio <= 0:
-                # datasets do not have priority, so assign all equally
-                for d in dataset_prios:
-                    dataset_prios[d] = 1.0/len(dataset_prios)
-            else:
-                for d in dataset_prios:
-                    dataset_prios[d] /= total_prio
             
         with self.check_run():
             # get tasks to queue
@@ -472,35 +467,6 @@ class grid(object):
         serialization.serialize_json.dump(config,filename)
         
         return config
-    
-    def calc_dataset_prio(self,dataset):
-        """Calculate the dataset priority.  Takes a dataset with 'dataset_id', 'priority' and 'tasks_submitted'"""
-        # get priority factors
-        qf_p = self.queue_cfg['queueing_factor_priority']
-        qf_d = self.queue_cfg['queueing_factor_dataset']
-        qf_t = self.queue_cfg['queueing_factor_tasks']
-        
-        # get dataset info
-        p = dataset['priority']
-        if p < 0 or p > 100:
-            # do not allow negative or overly large priorities (they skew things)
-            p = 0
-            logger.warning('Priority for dataset %s is invalid, using default',dataset['dataset_id'])
-        d = GlobalID.localID_ret(dataset['dataset_id'],type='int')
-        if d < 0:
-            d = 0
-            logger.warning('Dataset for dataset %s is invalid, using default',dataset['dataset_id'])
-        t = dataset['tasks_submitted']
-        
-        # return prio
-        if t < 1:
-            prio = (qf_p/10.0*p-qf_d/10000.0*d)
-        else:
-            prio = (qf_p/10.0*p-qf_d/10000.0*d-qf_t/10.0*math.log10(t))
-        if prio < 0:
-            prio = 0
-            logger.error('Dataset prio for dataset %s is <0',dataset['dataset_id'])
-        return prio
     
     def get_submit_args(self,task,cfg=None,passkey=None):
         """Get the submit arguments to start the loader script."""

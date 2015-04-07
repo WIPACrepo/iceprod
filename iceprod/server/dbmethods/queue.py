@@ -9,7 +9,7 @@ import operator
 from collections import OrderedDict, Iterable
 import math
 
-from iceprod.core.util import Resources
+from iceprod.core.util import Node_Resources
 from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
@@ -443,7 +443,7 @@ class queue(_Methods_Base):
                 for t in xrange(tasks_per_job):
                     task_id = task_ids[t]
                     depends = ','.join([task_ids[n] for n in task_depends[t]])
-                    tasks.append((task_id, 'waiting', 'waiting', '', now,
+                    tasks.append((task_id, 'idle', 'idle', '', now,
                                  '', '', 0, 0, depends))
                     task_bindings.append(q_10)
                     name = task_names[t]
@@ -459,7 +459,7 @@ class queue(_Methods_Base):
                     if isinstance(gs,(list,tuple)):
                         gs = ','.join(gs)
                     search.append((task_id, job_id, dataset, gs,
-                                   name, 'waiting'))
+                                   name, 'idle'))
                     search_bindings.append(q_6)
             sql = 'insert into task (task_id,status,prev_status,'
             sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
@@ -488,7 +488,7 @@ class queue(_Methods_Base):
         # done buffering
         callback(True)
     
-    def queue_get_queueing_datasets(self,gridspec,callback=None):
+    def queue_get_queueing_datasets(self,gridspec=None,callback=None):
         """Get datasets that are currently in processing status on gridspec.
            Returns a list of dataset_ids"""
         def cb(ret):
@@ -501,44 +501,57 @@ class queue(_Methods_Base):
                         d = self._list_to_dict('dataset',row)
                         datasets[d['dataset_id']] = d
                 callback(datasets)
+        bindings = []
         sql = 'select dataset.* from dataset join search on '
         sql += 'search.dataset_id = dataset.dataset_id where '
         sql += 'dataset.status = "processing" and '
-        sql += 'search.gridspec = ? and '
-        sql += 'search.task_status = "waiting" '
-        bindings = (gridspec,)
+        if gridspec:
+            sql += 'search.gridspec = ? and '
+            bindings.append(gridspec)
+        sql += 'search.task_status in ("idle","waiting") '
+        bindings = tuple(bindings)
         self.db.sql_read_task(sql,bindings,callback=cb)
     
-    def queue_get_queueing_tasks(self,dataset_prios,gridspec,num=20,callback=None):
+    def queue_get_queueing_tasks(self,dataset_prios,gridspec=None,num=20,
+                                 resources=None,gridspec_assignment=None,
+                                 callback=None):
         """Get tasks to queue based on dataset priorities.
         
         :param dataset_prios: a dict of {dataset_id:priority} where sum(priorities)=1
-        :param gridspec: the grid to queue on
-        :param num: number of tasks to queue
+        :param gridspec: (optional) the grid to queue on
+        :param num: (optional) number of tasks to queue
+        :param resources: (optional) availble resources on grid
+        :param gridspec_assignment: (optional) the grid to assign the tasks to
         :returns: {task_id:task}
         """
         if callback is None:
             raise Exception('need a callback')
         if dataset_prios is None or not isinstance(dataset_prios,dict):
             raise Exception('dataset_prios not a dict')
-        if not gridspec:
-            callback({})
-            return
         cb = partial(self._queue_get_queueing_tasks_blocking,dataset_prios,
-                     gridspec,num,callback=callback)
+                     gridspec,num,resources,gridspec_assignment,
+                     callback=callback)
         self.db.non_blocking_task(cb)
     def _queue_get_queueing_tasks_blocking(self,dataset_prios,gridspec,num,
-                                     callback=None):
+                                           resources,gridspec_assignment,
+                                           callback=None):
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
-        sql = 'select search.dataset_id,task.task_id,task.depends,task.status '
+        sql = 'select search.dataset_id, task.task_id, task_rel.depends, '
+        sql += ' task_rel.requrements, task.status '
         sql += ' from search join task on search.task_id = task.task_id '
+        sql += ' join task_rel on task.task_rel_id = task_rel.task_rel_id '
         sql += ' where dataset_id in ('+','.join(['?' for _ in dataset_prios])
-        sql += ') and gridspec = ?'
-        bindings = tuple(dataset_prios)+(gridspec,)
+        sql += ') '
+        bindings = list(dataset_prios)
+        if gridspec:
+            sql += 'and gridspec = ? '
+            bindings.append(gridspec)
+        bindings = tuple(bindings)
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
+            logger.debug('error queueing tasks',exc_info=True)
             ret = e
         if isinstance(ret,Exception):
             callback(ret)
@@ -546,16 +559,16 @@ class queue(_Methods_Base):
         tasks = {}
         datasets = {k:OrderedDict() for k in dataset_prios}
         if ret:
-            for dataset,id,depends,status in ret:
-                if status == 'waiting':
-                    datasets[dataset][id] = depends
+            for dataset,id,depends,reqs,status in ret:
+                if status in ('idle','waiting'):
+                    datasets[dataset][id] = (depends,reqs)
                 tasks[id] = status
         # get actual tasks
         task_prio = []
         for dataset in dataset_prios:
             limit = int(math.ceil(dataset_prios[dataset]*num))
             for task_id in datasets[dataset]:
-                depends = datasets[dataset][task_id]
+                depends = datasets[dataset][task_id][1]
                 satisfied = True
                 if depends:
                     for dep in depends.split(','):
@@ -563,6 +576,8 @@ class queue(_Methods_Base):
                             satisfied = False
                             break
                 if satisfied:
+                    # now match based on resources
+                    # TODO: complete this *******************************************************
                     # task can be queued now
                     task_prio.append((dataset_prios[dataset],task_id))
                     limit -= 1
@@ -579,11 +594,12 @@ class queue(_Methods_Base):
         sql = 'select search.*,dataset.debug from search '
         sql += ' join dataset on search.dataset_id = dataset.dataset_id '
         sql += ' where search.task_id in ('
-        sql += ','.join(['?' for _ in task_prio])+')'
+        sql += ','.join('?' for _ in task_prio)+')'
         bindings = tuple(task_prio)
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
+            logger.debug('error queueing tasks',exc_info=True)
             ret = e
         if isinstance(ret,Exception):
             callback(ret)
@@ -594,6 +610,36 @@ class queue(_Methods_Base):
                 tmp = self._list_to_dict('search',row[:-1])
                 tmp['debug'] = row[-1]
                 tasks[tmp['task_id']] = tmp
+            if tasks:
+                # set status to waiting
+                sql = 'update search join task on search.task_id = task.task_id'
+                sql += ' set search.task_status="waiting", '
+                sql += ' task.prev_status = task.status, '
+                sql += ' task.status="waiting", '
+                sql += ' task.status_changed = ? '
+                bindings = [datetime2str(datetime.utcnow())]
+                if gridspec_assignment:
+                    sql += ', gridspec = ? '
+                    bindings.append(gridspec_assignment)
+                sql += 'where task_id in ('
+                sql += ','.join('?' for _ in tasks)
+                sql += ')'
+                bindings.extend(tasks)
+                bindings = tuple(bindings)
+                try:
+                    ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                except Exception as e:
+                    logger.debug('error setting gridspec',exc_info=True)
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
+                for t in tasks:
+                    tasks['task_status'] = 'waiting'
+                    if gridspec_assignment
+                        tasks['gridspec'] = gridspec_assignment
+            # TODO: mark tasks such that they won't get queued on the next cycle
+            #       maybe 'queueing'? something else?
         callback(tasks)
 
     def queue_get_cfg_for_task(self,task_id,callback=None):

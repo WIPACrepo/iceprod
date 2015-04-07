@@ -161,8 +161,12 @@ class DBAPI(object):
                                       ('job_id',str),
                                       ('stat',MediumText), # json of {name:value}
                                      ]),
+              'task_rel':OrderedDict([('task_rel_id',str),
+                                      ('depends',Text), # comma separated list of task_rel_ids
+                                      ('requrements',Text), # json of {name:value}
+                                     ]),
               'task':OrderedDict([('task_id',str),
-                                  ('status',str), # possible statuses: {waiting, queued, processing, complete, suspended, failed, resume, reset}
+                                  ('status',str), # possible statuses: {idle, waiting, queued, processing, complete, suspended, failed, resume, reset}
                                   ('prev_status',str),
                                   ('error_message',Text),
                                   ('status_changed',str), # datetime
@@ -170,7 +174,7 @@ class DBAPI(object):
                                   ('grid_queue_id',str),
                                   ('failures',int),
                                   ('evictions',int),
-                                  ('depends',Text), # list of task_ids
+                                  ('task_rel_id',str),
                                  ]),
               'task_stat':OrderedDict([('task_stat_id',str),
                                        ('task_id',str),
@@ -280,6 +284,7 @@ class DBAPI(object):
                                      ('dataset_stat_offset',str),
                                      ('job_offset',str),
                                      ('job_stat_offset',str),
+                                     ('task_rel_offset',str),
                                      ('task_offset',str),
                                      ('task_stat_offset',str),
                                      ('task_log_offset',str),

@@ -6,10 +6,12 @@ import logging
 from datetime import datetime
 from functools import partial
 from collections import OrderedDict
+import math
 
-from iceprod.core.util import Resources
+from iceprod.core.util import Node_Resources
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.server import calc_datasets_prios
 
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
 
@@ -458,7 +460,11 @@ class rpc(_Methods_Base):
         else:
             callback(True)
     
-    def rpc_queue_master(self,resources=None,callback=None):
+    def rpc_queue_master(self,resources=None,
+                         queueing_factor_priority=1.0,
+                         queueing_factor_dataset=1.0,
+                         queueing_factor_tasks=1.0,
+                         callback=None):
         """
         Handle global queueing request from a site.
         
@@ -467,10 +473,44 @@ class rpc(_Methods_Base):
         the necessary resources should be available on the site.
         
         :param resources: the available resources on the site
+        :param queueing_factor_priority: (optional) queueing factor for priority
+        :param queueing_factor_dataset: (optional) queueing factor for dataset id
+        :param queueing_factor_tasks: (optional) queueing factor for number of tasks
         :returns: (via callback) dict of table entries to be merged
         """
-        if not resources:
+        if resources is None:
             callback(Exception('no resources provided'))
-        else:
-            pass
-            # TODO: finish this method
+            return
+        
+        # priority factors
+        qf_p = queueing_factor_priority
+        qf_d = queueing_factor_dataset
+        qf_t = queueing_factor_tasks
+        
+        def cb2(tasks):
+            if isinstance(tasks,Exception):
+                callback(tasks)
+            elif not tasks:
+                callback({})
+            elif not isinstance(tasks,dict):
+                callback(Exception('queue_get_queueing_tasks() did not return a dict'))
+            else:
+                logger.debug('rpc_queue_master(): tasks: %r',tasks)
+                self.parent.misc_get_tables_for_task(tasks,callback=callback)
+        def cb(datasets):
+            if isinstance(datasets,Exception):
+                callback(datasets)
+            elif not datasets:
+                callback({})
+            elif not isinstance(datasets,dict):
+                callback(Exception('queue_get_queueing_datasets() did not return a dict'))
+            else:
+                dataset_prios = calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
+                logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
+                self.parent.queue_get_queueing_tasks(dataset_prios,
+                                                     resources=resources,
+                                                     callback=cb2)
+        
+        self.parent.queue_get_queueing_datasets(callback=cb)
+
+

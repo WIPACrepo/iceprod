@@ -573,6 +573,87 @@ class queue_test(unittest.TestCase):
             raise
         else:
             printer('Test queue multi_partial_match')
+    
+    def test_20_global_queueing(self):
+        """Test global_queueing"""
+        import tornado.httpclient
+        try:
+            # mock some functions so we don't go too far
+            def start():
+                start.called = True
+            flexmock(queue).should_receive('start').replace_with(start)
+            def http(*args,**kwargs):
+                http.called = True
+                http.args = args
+                http.kwargs = kwargs
+                if 'callback' in kwargs:
+                    kwargs['callback'](http.ret)
+            flexmock(tornado.httpclient.AsyncHTTPClient).should_receive('fetch').replace_with(http)
+            
+            class Response:
+                def __init__(self,**kwargs):
+                    for k in kwargs:
+                        setattr(self,k,kwargs[k])
+            
+            # make cfg
+            cfg = {'site_id':'thesite',
+                   'queue':{'init_queue_interval':0.1,
+                            'queue_interval':1,
+                            'task_buffer':10,
+                            'plugin1':{'type':'Test1dag','description':'d'},
+                           },
+                   'master':{'url':'a://url'}
+                  }
+            bcfg = basic_config.BasicConfig()
+            bcfg.messaging_url = 'localhost'
+            q = queue(bcfg)
+            resources = {'cpus':12,'gpus':3}
+            q.messaging = _messaging()
+            q.messaging.ret = {'db':{'node_get_site_resources':resources,
+                                     'misc_update_tables':None}
+                              }
+            q.cfg = cfg
+            if not q:
+                raise Exception('did not return queue object')
+            
+            http.ret = Response(error=None,body='{"jsonrpc":"2.0","result":{},"id":1}')
+            http.called = False
+            q.global_queueing()
+            
+            if len(q.messaging.called) < 1 or q.messaging.called[0][1] != 'node_get_site_resources':
+                logger.debug(q.messaging.called)
+                raise Exception('node_get_site_resources not called')
+            if not http.called:
+                raise Exception('http fetch not called')
+            if len(q.messaging.called) < 2 or q.messaging.called[1][1] != 'misc_update_tables':
+                logger.debug(q.messaging.called)
+                raise Exception('misc_update_tables not called')
+            
+            # already locked
+            q.messaging.called = []
+            http.called = False
+            q.global_queueing_lock = True
+            q.global_queueing()
+            
+            if len(q.messaging.called) > 0 or http.called:
+                raise Exception('queueing_lock did not stop queueing')
+            
+            # no master url
+            q.messaging.called = []
+            http.called = False
+            q.global_queueing_lock = False
+            del q.cfg['master']['url']
+            q.global_queueing()
+            
+            if len(q.messaging.called) > 0 or http.called:
+                raise Exception('no master url did not stop queueing')
+            
+        except Exception as e:
+            logger.error('Error running queue global_queueing test - %s',str(e))
+            printer('Test queue global_queueing',False)
+            raise
+        else:
+            printer('Test queue global_queueing')
 
 
 def load_tests(loader, tests, pattern):

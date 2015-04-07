@@ -272,12 +272,14 @@ class Task(_TaskCommon):
     :ivar depends: [] -- a list of task names
     :ivar batchsys: None
     :ivar trays: []
+    :ivar requirements: {} -- a dict of requirements
     """
     plural = 'Tasks'
     def __init__(self,*args,**kwargs):
         self['depends']  = []
         self['batchsys'] = None
         self['trays']    = []
+        self['requirements'] = {}
         super(Task,self).__init__(*args,**kwargs)
     
     def output(self):
@@ -325,7 +327,8 @@ class Task(_TaskCommon):
                         isinstance(self['batchsys'],Batchsys) and
                         self['batchsys'].valid())) and
                     isinstance(self['trays'],list) and
-                    all(isinstance(t,Tray) and t.valid() for t in self['trays'])
+                    all(isinstance(t,Tray) and t.valid() for t in self['trays']) and
+                    isinstance(self['requirements'],dict)
                    )
         except Exception:
             return False

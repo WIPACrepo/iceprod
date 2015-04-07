@@ -9,7 +9,7 @@ import logging
 from contextlib import contextmanager
 from itertools import izip
 
-from tornado.httpclient import AsyncHTTPClient
+import tornado.httpclient
 
 import iceprod.server
 from iceprod.server import module
@@ -206,7 +206,23 @@ class queue(module.module):
                 with self.check_run():
                     # do global queueing
                     try:
-                        self.global_queueing()
+                        # get priority factors
+                        qf_p = 1.0
+                        qf_d = 1.0
+                        qf_t = 1.0
+                        if 'queueing_factor_priority' in self.cfg['queue']:
+                            qf_p = self.cfg['queue']['queueing_factor_priority']
+                        elif plugin_cfg:
+                            qf_p = plugin_cfg[0]['queueing_factor_priority']
+                        if 'queueing_factor_dataset' in self.cfg['queue']:
+                            qf_d = self.cfg['queue']['queueing_factor_dataset']
+                        elif plugin_cfg:
+                            qf_d = plugin_cfg[0]['queueing_factor_dataset']
+                        if 'queueing_factor_tasks' in self.cfg['queue']:
+                            qf_t = self.cfg['queue']['queueing_factor_tasks']
+                        elif plugin_cfg:
+                            qf_t = plugin_cfg[0]['queueing_factor_tasks']
+                        self.global_queueing(qf_p,qf_d,qf_t)
                     except Exception:
                         logger.error('error in global queueing',exc_info=True)
                 
@@ -226,18 +242,25 @@ class queue(module.module):
         # TODO: implement this
         pass
     
-    def global_queueing(self):
+    def global_queueing(self, queueing_factor_priority=1.0,
+                        queueing_factor_dataset=1.0,
+                        queueing_factor_tasks=1.0):
         """
         Do global queueing.
         
         Fetch tasks from the global server that match the local resources
         and add them to the local DB. This is non-blocking, but only
         one at a time can run.
+        
+        :param queueing_factor_priority: queueing factor for priority
+        :param queueing_factor_dataset: queueing factor for dataset id
+        :param queueing_factor_tasks: queueing factor for number of tasks
         """
         if self.global_queueing_lock:
             logger.info('already doing a global_queueing event, so skip')
             return
-        if not self.cfg['master']['url']:
+        if ('master' not in self.cfg or 'url' not in self.cfg['master'] or 
+            not self.cfg['master']['url']):
             logger.debug('no master url, so skip global queueing')
             return
         self.global_queueing_lock = True
@@ -251,11 +274,11 @@ class queue(module.module):
                     logger.warn('error getting response from master: %r',
                                      ret.error)
                 else:
-                    body = json_decocde(ret.body)
+                    body = json_decode(ret.body)
                     if 'error' in body:
                         logger.warn('error on master: %r',body['error'])
                     else:
-                        self.messaging.db.merge_global_tasks(body['result'],
+                        self.messaging.db.misc_update_tables(body['result'],
                                                              callback=cb3)
                         return
             except Exception:
@@ -268,10 +291,15 @@ class queue(module.module):
                 self.global_queueing_lock = False
                 return
             try:
-                http_client = AsyncHTTPClient()
+                http_client = tornado.httpclient.AsyncHTTPClient()
                 url = self.cfg['master']['url']
+                params = {'resources':resources,
+                          'queueing_factor_priority':queueing_factor_priority,
+                          'queueing_factor_dataset':queueing_factor_dataset,
+                          'queueing_factor_tasks':queueing_factor_tasks,
+                         }
                 body = json_encode({'jsonrpc':'2.0','method':'queue_master',
-                                    'params':{'resources':resources},'id':1})
+                                    'params':params,'id':1})
                 http_client.fetch(url,body=body,callback=cb2)
             except Exception:
                 logger.warn('error in global_queueing cb:',
