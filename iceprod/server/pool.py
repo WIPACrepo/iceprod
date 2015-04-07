@@ -91,21 +91,29 @@ class ThreadPool():
                 callback = None
                 if 'callback' in kwargs:
                     callback = kwargs['callback']
-                    del kwargs['callback']
                 if self.init is not None and 'init' not in kwargs:
                     kwargs['init'] = self.init
                 
                 # actually do task
                 try:
-                    ret = func(*args, **kwargs)
-                    if callback is not None:
-                        callback(ret)
-                    else:
+                    try:
+                        ret = func(*args, **kwargs)
+                    except TypeError as e:
+                        if "unexpected keyword argument 'callback'" in str(e):
+                            del kwargs['callback']
+                            ret = func(*args, **kwargs)
+                            if callback is not None:
+                                callback(ret)
+                        else:
+                            raise
+                    if callback is None:
                         self.output.put(ret)
                 except Exception as e:
                     logger.info('error in pool task',exc_info=True)
                     if callback is not None:
                         callback(e)
+                    else:
+                        self.output.put(e)
                 finally:
                     self.input.task_done()
             if self.exit is not None:
@@ -284,21 +292,29 @@ class PriorityThreadPool(ThreadPool):
                 callback = None
                 if 'callback' in kwargs:
                     callback = kwargs['callback']
-                    del kwargs['callback']
                 if self.init is not None and 'init' not in kwargs:
                     kwargs['init'] = self.init
                 
                 # actually do task
                 try:
-                    ret = func(*args, **kwargs)
-                    if callback is not None:
-                        callback(ret)
-                    else:
+                    try:
+                        ret = func(*args, **kwargs)
+                    except TypeError as e:
+                        if "unexpected keyword argument 'callback'" in str(e):
+                            del kwargs['callback']
+                            ret = func(*args, **kwargs)
+                            if callback is not None:
+                                callback(ret)
+                        else:
+                            raise
+                    if callback is None:
                         self.output.put(ret)
                 except Exception as e:
                     logger.info('error in pool task',exc_info=True)
                     if callback is not None:
                         callback(e)
+                    else:
+                        self.output.put(ret)
                 finally:
                     self.input.task_done()
             if self.exit is not None:
