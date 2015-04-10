@@ -1,11 +1,11 @@
 Steering	
 
-batchsys	dict< dict<string> >
+batchsys	
 
 data		##Data##
 
-systen		dict<string>
+systen		
 
-parameters	dict<string>
+parameters	
 
 resources	##Resource##

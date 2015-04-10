@@ -27,7 +27,7 @@ def add_links(desc):
 #       Loads and parses documentation file
 def load_doc(filename):
     try:
-        f = open(filename, 'rt')
+        f = open(filename.lower()+'.txt', 'rt')
     except IOError:
         return 'Not found'
     lines = []

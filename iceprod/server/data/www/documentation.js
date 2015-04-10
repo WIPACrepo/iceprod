@@ -25,7 +25,7 @@ function close_popup()
 // Display documentation page specified by url
 function show_doc(url)
 {
-    //console.log(":"+url);
+    console.log(":"+url);
     if (page_url == url) return;
     page_url = url;
     

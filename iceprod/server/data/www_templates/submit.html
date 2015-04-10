@@ -6,6 +6,7 @@
 
 {% block head_scripts %}
 <link rel="stylesheet" href="/static/submit.css" media="all" type="text/css" />
+<link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
 {% end %}
 
 {% block page_title %}Submit{% end %}
@@ -43,7 +44,11 @@
         <span class="add null"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span>
     </div>
 {{!else ~isArray(prop)}}
-    <div class="header key">{{!keyToHtml:key}}</div>
+    {{!if ~isDocumented(~path,key) }}
+    <a href="#{{!singular:key}}" class="header key">{{!keyToHtml:key}}</a>
+    {{!else}}
+        <div class="header key">{{!keyToHtml:key}}</div>
+    {{!/if}}
     {{!if ~isBasicArray(prop)}}
         {^{for prop ~key=key tmpl="#LoopTmplBasic" /}}
     {{!else}}
@@ -102,7 +107,7 @@
 {{!/if}}
 </script>
 <script id="AdvTmpl" type="text/x-jsrender">
-<div class="header key">Job</div>
+<a href="#job" class="header key">Job</a>
 <div class="indent">
     {^{props ~path="" tmpl="#EditTmpl" }}
     {{!else}}
@@ -110,10 +115,14 @@
     {{!/props}}
 </div>
 </script>
+
+<div id="overlay"></div><div id="popup">Loading...</div>
+
 <script type="text/javascript" src="/static/json-rpc.js"></script>
 <script type="text/javascript" src="/static/dataclasses.js"></script>
 <script type="text/javascript" src="/static/jsviews.min.js"></script>
 <script type="text/javascript" src="/static/submit.js"></script>
+<script type="text/javascript" src="/static/documentation.js"></script>
 <script type="text/javascript">
 jQuery(document).ready(function() {
     // initalize the submission form

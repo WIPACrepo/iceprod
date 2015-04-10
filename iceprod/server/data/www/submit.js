@@ -213,6 +213,12 @@ var Submission = (function( $ ) {
                     console.log('isEnum(): '+ret);
                     return ret;
                 },
+                isDocumented: function(path, key) {
+                  key = singular(key).toLowerCase();
+                  console.log('11' + key);
+                  var types = ['class', 'data', 'dif', 'difplus', 'job', 'module', 'personnel', 'plus', 'project', 'resource', 'steering', 'task', 'tray', ];
+                  return types.indexOf(key) != -1;
+                },
                 getEnums: function(path,key){
                     var c = getDataclass(path);
                     if (c === null || !(c in dataclasses['classes']))
