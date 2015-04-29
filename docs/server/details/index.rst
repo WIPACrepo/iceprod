@@ -8,6 +8,19 @@ The server handles many different tasks and has several independent modules to t
 
 IceProd can be reloaded to update a configuration variable.  This will only reload the affected parts of IceProd, while letting the rest continue running.
 
+Why Multprocessing?
+-------------------
+
+For small sites, everything could be handled in a single process. The problem
+comes when attempting to scale up. Fairly quickly, the backend work for queries
+or submission will block for longer than you want to wait. In python, threads
+will only get you so far. The `GIL <https://wiki.python.org/moin/GlobalInterpreterLock>`_ 
+will eventually block you somewhere. As seen in 
+`this video <https://youtu.be/MCs5OvhV9S4>`_ by David Beazley, CPU-heavy work 
+will slow down other python threads in the same process. The solution is obvious:
+get another python process so the GIL is not blocking. This is particularly
+important for the web front-end, since it needs to be responsive.
+
 Configuration
 -------------
 
