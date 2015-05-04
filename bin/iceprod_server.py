@@ -49,15 +49,23 @@ import iceprod.server.basic_config
 import iceprod.server.RPCinternal
 import iceprod.core.logger
 
-def check_module(name, message = ''):
+def check_module(name, message = '', required = False):
     try:
         importlib.import_module(name)
     except ImportError:
         print ('Cannot import python module %s. %s' % (name, message))
+        if required:
+            print('Required module "%s" not found. Exiting...' % name)
+            exit(0)
 
 def check_dependencies():
     check_module('apsw', 'SQLite database will not be available.')
     check_module('setproctitle', 'Will not be able to set process title.')
+    check_module('tornado', required = True)
+    check_module('zmq', required = True)
+    check_module('jsonschema', required = True)
+    check_module('concurrent.futures', required = True)
+
 
 check_dependencies()
 
