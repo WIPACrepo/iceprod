@@ -14,12 +14,13 @@ from functools import partial
 import logging
 import logging.config
 import signal
+import importlib
 
 try:
     from setproctitle import setproctitle
 except ImportError:
-    setproctitle = None
-    print('Could not import setproctitle module')
+    def setproctitle(name):
+        pass
 
 # Assuming that the directory structure remains constant, this will automatically set the python path to find iceprod
 bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
@@ -47,6 +48,18 @@ import iceprod.server
 import iceprod.server.basic_config
 import iceprod.server.RPCinternal
 import iceprod.core.logger
+
+def check_module(name, message = ''):
+    try:
+        importlib.import_module(name)
+    except ImportError:
+        print ('Cannot import python module %s. %s' % (name, message))
+
+def check_dependencies():
+    check_module('apsw', 'SQLite database will not be available.')
+    check_module('setproctitle', 'Will not be able to set process title.')
+
+check_dependencies()
 
 
 def load_config(cfgfile):
@@ -114,11 +127,10 @@ def main(cfgfile,cfgdata=None):
     logger = logging.getLogger('iceprod_server')
     
     # Change name of process for ps
-    if setproctitle:
-        try:
-            setproctitle('iceprod_server.main')
-        except Exception:
-            logger.warn("could not rename process")
+    try:
+        setproctitle('iceprod_server.main')
+    except Exception:
+        logger.warn("could not rename process")
     
     def module_start(mod):
         logger.warn('starting %s',mod)
