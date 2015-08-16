@@ -1,23 +1,23 @@
 IceProd
 =======
 
-IceProd is a Python framework for distributed management of batch jobs. 
-It runs as a layer on top of other batch middleware such as CREAM, Condor, 
-and PBS and can pool together resources from different batch systems. 
-The primary purpose is to coordinate and administer many large sets of 
+IceProd is a Python framework for distributed management of batch jobs.
+It runs as a layer on top of other batch middleware such as CREAM, Condor,
+and PBS and can pool together resources from different batch systems.
+The primary purpose is to coordinate and administer many large sets of
 jobs at once, keeping a history of the entire job lifecycle.
 
 .. note:
 
-    For IceCube users with CVMFS access, IceProd is already installed. 
+    For IceCube users with CVMFS access, IceProd is already installed.
     To load the environment execute::
-    
+
         /cvmfs/icecube.wisc.edu/iceprod/stable/env-shell.sh
-    
+
     or::
-    
+
         source `/cvmfs/icecube.wisc.edu/iceprod/stable/setup.sh`
-    
+
     depending on whether you want to get a new shell or load the variables
     into the current shell.
 
@@ -39,7 +39,7 @@ deployment (even though Mac OS X is derived from BSD and supports kqueue, its
 networking performance is generally poor so it is recommended only for
 development use).
 
-**Prerequisites**: IceProd runs on python 2.7, 3.2, 3.3, and 3.4. 
+**Prerequisites**: IceProd runs on python 2.7, 3.2, 3.3, and 3.4.
 
 The following is required:
 
@@ -50,6 +50,8 @@ Programs:
 Python libraries:
 
 * pycurl
+
+* certifi
 
 * tornado
 
@@ -78,7 +80,7 @@ Python non-essentials:
 
 **Manual Install of Prerequisites**:
 
-`http://brew.sh Homebrew`_ and the 
+`http://brew.sh Homebrew`_ and the
 `https://github.com/Homebrew/linuxbrew Linuxbrew fork`_
 greatly simplify installation.
 

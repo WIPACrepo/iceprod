@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import logging
 import fnmatch
+import unittest
 
 def printer(input,passed=True):
     numcols = 60
@@ -29,6 +30,10 @@ def printer(input,passed=True):
     print(final_str)
 
 test_glob = '*'
+def skipTest(obj, attr):
+    if fnmatch.fnmatch(obj.__name__,test_glob):
+        return unittest.skip()
+    return lambda func: func
 def glob_tests(x):
     """glob the tests that were requested"""
     return fnmatch.filter(x,test_glob)

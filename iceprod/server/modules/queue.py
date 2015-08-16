@@ -13,8 +13,8 @@ import tornado.httpclient
 
 import iceprod.server
 from iceprod.server import module
+from iceprod.server.master_communication import send_master
 import iceprod.core.functions
-from iceprod.core.jsonUtil import json_encode, json_decode
 
 class StopException(Exception):
     pass
@@ -25,49 +25,50 @@ class queue(module.module):
     """
     Run the queue module, which queues jobs onto the local grid system(s).
     """
-    
+
     def __init__(self,*args,**kwargs):
         # run default init
         super(queue,self).__init__(*args,**kwargs)
-        
+
         # set up local variables
         self.queue_stop = Event()
         self.queue_thread = None
         self.thread_running = 0
         self.thread_running_cv = Condition()
         self.global_queueing_lock = False
-        
+
         self.start()
-    
-    def start(self):
+
+    def start(self,*args,**kwargs):
         """Start thread if not already running"""
         # start messaging
-        super(queue,self).start(callback=self._start)
-    
+        kwargs['callback'] = self._start
+        super(queue,self).start(*args,**kwargs)
+
     def stop(self):
         """Stop queue loop"""
         # set the exit flag
         self.queue_stop.set()
-        
+
         # wait until current threads have finished
         self.thread_running_cv.acquire()
         i = 0
         while self.thread_running > 0 and i < 300: # wait a max of 5 min
-            self.thread_running_cv.wait(1) 
+            self.thread_running_cv.wait(1)
             i += 1
         self.thread_running_cv.release()
-        
+
         # stop messaging
         super(queue,self).stop()
-    
+
     def kill(self):
         """Kill queue loop"""
         self.queue_stop.set()
         # let process eat any hanging thread
-        
+
         # stop messaging
         super(queue,self).kill()
-    
+
     def _start(self):
         if self.queue_thread is None or not self.queue_thread.is_alive():
             # start queueing thread
@@ -75,7 +76,7 @@ class queue(module.module):
             self.thread_running = 0
             self.queue_thread = Thread(target=self.queue_loop)
             self.queue_thread.start()
-    
+
     @contextmanager
     def check_run(self):
         """A context manager which keeps track of # of running threads"""
@@ -91,12 +92,12 @@ class queue(module.module):
             self.thread_running -= 1
             self.thread_running_cv.notify_all()
             self.thread_running_cv.release()
-    
+
     def queue_loop(self):
         """Run the queueing loop"""
         # get site_id
         site_id = self.cfg['site_id']
-        
+
         # some setup
         plugins = []
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
@@ -108,7 +109,7 @@ class queue(module.module):
             logger.warn('no queueing plugins found. deactivating queue')
             self.stop()
             return
-        
+
         # try to find plugins
         raw_types = iceprod.server.listmodules('iceprod.server.plugins')
         logger.info('available modules: %r',raw_types)
@@ -137,7 +138,7 @@ class queue(module.module):
                 plugins_tmp.append((p,plugin_names[i],plugin_cfg[i]))
             else:
                 logger.error('Cannot find plugin for grid %s of type %s',plugin_names[i],t)
-        
+
         # instantiate all plugins that are required
         gridspec_types = {}
         for p,p_name,p_cfg in plugins_tmp:
@@ -153,7 +154,7 @@ class queue(module.module):
                 desc = p_cfg['description'] if 'description' in p_cfg else ''
                 gridspec_types[site_id+'.'+p_name] = {'type':p_cfg['type'],
                         'description':desc}
-        
+
         # add gridspec and types to the db
         try:
             self.messaging.db.queue_set_site_queues(site_id=site_id,
@@ -161,7 +162,7 @@ class queue(module.module):
                                               async=False)
         except:
             logger.warn('error setting site queues',exc_info=True)
-        
+
         # the queueing loop
         # give 10 second initial delay to let the rest of iceprod start
         timeout = 10
@@ -177,14 +178,14 @@ class queue(module.module):
                         except Exception:
                             logger.error('plugin %s.check_and_clean() raised exception',
                                          p.__class__.__name__,exc_info=True)
-                
+
                 with self.check_run():
                     # check proxy cert
                     try:
                         self.check_proxy()
                     except Exception:
                         logger.error('error checking proxy',exc_info=True)
-                
+
                 with self.check_run():
                     # make sure active datasets have jobs and tasks defined
                     gridspecs = [p.gridspec for p in plugins]
@@ -193,7 +194,7 @@ class queue(module.module):
                     except Exception:
                         logger.error('error buffering jobs and tasks',
                                      exc_info=True)
-                
+
                 # queue tasks to grids
                 for p in plugins:
                     with self.check_run():
@@ -202,7 +203,7 @@ class queue(module.module):
                         except Exception:
                             logger.error('plugin %s.queue() raised exception',
                                          p.__class__.__name__,exc_info=True)
-                
+
                 with self.check_run():
                     # do global queueing
                     try:
@@ -225,7 +226,7 @@ class queue(module.module):
                         self.global_queueing(qf_p,qf_d,qf_t)
                     except Exception:
                         logger.error('error in global queueing',exc_info=True)
-                
+
                 # set timeout
                 if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
                     timeout = self.cfg['queue']['queue_interval']
@@ -236,22 +237,22 @@ class queue(module.module):
         except Exception as e:
             logger.warn('queue_loop stopped because of exception',
                                exc_info=True)
-    
+
     def check_proxy(self):
         """Check the x509 proxy"""
         # TODO: implement this
         pass
-    
+
     def global_queueing(self, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0,
                         queueing_factor_tasks=1.0):
         """
         Do global queueing.
-        
+
         Fetch tasks from the global server that match the local resources
         and add them to the local DB. This is non-blocking, but only
         one at a time can run.
-        
+
         :param queueing_factor_priority: queueing factor for priority
         :param queueing_factor_dataset: queueing factor for dataset id
         :param queueing_factor_tasks: queueing factor for number of tasks
@@ -259,7 +260,7 @@ class queue(module.module):
         if self.global_queueing_lock:
             logger.info('already doing a global_queueing event, so skip')
             return
-        if ('master' not in self.cfg or 'url' not in self.cfg['master'] or 
+        if ('master' not in self.cfg or 'url' not in self.cfg['master'] or
             not self.cfg['master']['url']):
             logger.debug('no master url, so skip global queueing')
             return
@@ -270,17 +271,13 @@ class queue(module.module):
             self.global_queueing_lock = False
         def cb2(ret):
             try:
-                if ret.error:
+                if isinstance(ret,Exception):
                     logger.warn('error getting response from master: %r',
-                                     ret.error)
+                                ret)
                 else:
-                    body = json_decode(ret.body)
-                    if 'error' in body:
-                        logger.warn('error on master: %r',body['error'])
-                    else:
-                        self.messaging.db.misc_update_tables(body['result'],
-                                                             callback=cb3)
-                        return
+                    self.messaging.db.misc_update_tables(ret,
+                                                         callback=cb3)
+                    return
             except Exception:
                 logger.warn('error in global_queueing cb2:',
                                  exc_info=True)
@@ -298,16 +295,14 @@ class queue(module.module):
                           'queueing_factor_dataset':queueing_factor_dataset,
                           'queueing_factor_tasks':queueing_factor_tasks,
                          }
-                body = json_encode({'jsonrpc':'2.0','method':'queue_master',
-                                    'params':params,'id':1})
-                http_client.fetch(url,body=body,callback=cb2)
+                send_master(self.cfg,'queue_master',callback=cb2,**params)
             except Exception:
                 logger.warn('error in global_queueing cb:',
                                  exc_info=True)
                 self.global_queueing_lock = False
         self.messaging.db.node_get_site_resources(site_id=self.cfg['site_id'],
-                                             callback=cb)
-    
+                                                  callback=cb)
+
     def buffer_jobs_tasks(self,gridspecs):
         """Make sure active datasets have jobs and tasks defined"""
         buffer = self.cfg['queue']['task_buffer']
