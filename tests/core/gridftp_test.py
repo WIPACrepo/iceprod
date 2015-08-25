@@ -21,7 +21,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
-    
+
 try:
     import unittest2 as unittest
 except ImportError:
@@ -46,7 +46,7 @@ class gridftp_test(unittest.TestCase):
         if not os.path.exists(self.test_dir):
             os.mkdir(self.test_dir)
         super(gridftp_test,self).setUp()
-    
+
     def tearDown(self):
         try:
             iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
@@ -55,7 +55,7 @@ class gridftp_test(unittest.TestCase):
             pass
         shutil.rmtree(self.test_dir)
         super(gridftp_test,self).tearDown()
-        
+
     def test_01_supported_address(self):
         """Test supported_address"""
         try:
@@ -64,7 +64,7 @@ class gridftp_test(unittest.TestCase):
                              'ftp:/test']
             good_addresses = ['gsiftp://data.icecube.wisc.edu','ftp://gnu.org',
                               'gsiftp://gridftp-rr.icecube.wisc.edu/data/sim/sim-new']
-            
+
             for i in xrange(0,10):
                 for a in bad_addresses:
                     ret = iceprod.core.gridftp.GridFTP.supported_address(a)
@@ -74,27 +74,27 @@ class gridftp_test(unittest.TestCase):
                     ret = iceprod.core.gridftp.GridFTP.supported_address(a)
                     if ret is not True:
                         raise Exception('Good address %s was called bad'%a)
-            
+
         except Exception, e:
             logger.error('Error running supported_address test: %s',str(e))
             printer('Test gridftp.supported_address()',False)
             raise
         else:
             printer('Test gridftp.supported_address()')
-    
+
     def test_02_address_split(self):
         """Test address_split"""
         try:
             good_addresses = {'gsiftp://data.icecube.wisc.edu':('gsiftp://data.icecube.wisc.edu','/'),
                               'ftp://gnu.org':('ftp://gnu.org','/'),
                               'gsiftp://gridftp-rr.icecube.wisc.edu/data/sim/sim-new':('gsiftp://gridftp-rr.icecube.wisc.edu','/data/sim/sim-new')}
-            
+
             for i in xrange(0,10):
                 for a in good_addresses:
                     pieces = iceprod.core.gridftp.GridFTP.address_split(a)
                     if pieces != good_addresses[a]:
                         raise Exception('Address %s was not split properly'%a)
-            
+
         except Exception, e:
             logger.error('Error running address_split test: %s',str(e))
             printer('Test gridftp.address_split()',False)
@@ -107,7 +107,7 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
@@ -120,14 +120,14 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with str test: %s',str(e))
             printer('Test gridftp.put() with str',False)
             raise
         else:
             printer('Test gridftp.put() with str')
-    
+
     def test_101_put_file(self):
         """Test put with a file - synchronous"""
         try:
@@ -137,7 +137,7 @@ class gridftp_test(unittest.TestCase):
             filecontents = 'this is a test'
             with open(filename,'w') as f:
                 f.write(filecontents)
-            
+
             try:
                 # put file
                 ret = iceprod.core.gridftp.GridFTP.put(address,filename=filename,
@@ -150,7 +150,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with file test: %s',str(e))
             printer('Test gridftp.put() with file',False)
@@ -167,7 +167,7 @@ class gridftp_test(unittest.TestCase):
                 # give every 10 chars
                 for i in xrange(0,len(filecontents),10):
                     yield filecontents[i:i+10]
-            
+
             try:
                 # put from function
                 ret = iceprod.core.gridftp.GridFTP.put(address,streaming_callback=contents().next,
@@ -180,7 +180,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with func test: %s',str(e))
             printer('Test gridftp.put() with func',False)
@@ -193,14 +193,14 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 # get str
                 ret = iceprod.core.gridftp.GridFTP.get(address,
                                                        request_timeout=self._timeout)
@@ -216,14 +216,14 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with str test: %s',str(e))
             printer('Test gridftp.get() with str',False)
             raise
         else:
             printer('Test gridftp.get() with str')
-    
+
     def test_111_get_file(self):
         """Test get with a file - synchronous"""
         try:
@@ -234,14 +234,14 @@ class gridftp_test(unittest.TestCase):
             filecontents = 'this is a test'
             with open(filename,'w') as f:
                 f.write(filecontents)
-            
+
             try:
                 # put file
                 ret = iceprod.core.gridftp.GridFTP.put(address,filename=filename,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 # get file
                 ret = iceprod.core.gridftp.GridFTP.get(address,filename=filename2,
                                                        request_timeout=self._timeout)
@@ -261,7 +261,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with file test: %s',str(e))
             printer('Test gridftp.get() with file',False)
@@ -281,14 +281,14 @@ class gridftp_test(unittest.TestCase):
             def contents2(data):
                 contents2.data += data
             contents2.data = ''
-            
+
             try:
                 # put from function
                 ret = iceprod.core.gridftp.GridFTP.put(address,streaming_callback=contents().next,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                
+
                 # get strGridFTP
                 ret = iceprod.core.gridftp.GridFTP.get(address,streaming_callback=contents2,
                                                        request_timeout=self._timeout)
@@ -304,7 +304,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with func test: %s',str(e))
             printer('Test gridftp.get() with func',False)
@@ -316,18 +316,18 @@ class gridftp_test(unittest.TestCase):
         """Test list - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != []:
                     logger.info('expected: []')
                     logger.info('actual: %r',ret)
@@ -338,7 +338,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir)',False)
@@ -351,19 +351,19 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['test_file']:
                     logger.info("expected: ['test_file']")
                     logger.info('actual: %r',ret)
@@ -374,7 +374,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-        
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file)',False)
@@ -386,19 +386,19 @@ class gridftp_test(unittest.TestCase):
         """Test list - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,dotfiles=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['.','..']:
                     logger.info("expected: ['.','..']")
                     logger.info('actual: %r',ret)
@@ -409,7 +409,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,dotfiles)',False)
@@ -422,19 +422,19 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,dotfiles=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['test_file']:
                     logger.info('expected: [\'test_file\']')
                     logger.info('actual: %r',ret)
@@ -445,31 +445,31 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,dotfiles)',False)
             raise
         else:
             printer('Test gridftp.list(file,dotfiles)')
-    
+
     def test_124_list(self):
         """Test list - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != []:
                     logger.info('expected: []')
                     logger.info('actual: %r',ret)
@@ -480,7 +480,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,details)',False)
@@ -493,19 +493,19 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if len(ret) != 1 or ret[0].directory:
                     logger.info('actual: %r',ret)
                     raise Exception('list did not return expected results')
@@ -515,7 +515,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-        
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,details)',False)
@@ -527,20 +527,20 @@ class gridftp_test(unittest.TestCase):
         """Test list - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                         dotfiles=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if (len(ret) != 2 or not any([x.name == '.' for x in ret])
                     or not any([x.name == '..' for x in ret])):
                     logger.info("expected: ['..','.']")
@@ -552,7 +552,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,details,dotfiles)',False)
@@ -565,20 +565,20 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 ret = iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                         dotfiles=True,
                                                         request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if len(ret) != 1 or ret[0].name != 'test_file':
                     logger.info("expected: ['test_file']")
                     logger.info('actual: %r',ret)
@@ -589,7 +589,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,details,dotfiles)',False)
@@ -602,18 +602,18 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-                
+
             ret = iceprod.core.gridftp.GridFTP.delete(address,
                                                       request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('delete failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running delete test: %s',str(e))
             printer('Test gridftp.delete()',False)
@@ -626,18 +626,18 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'file_test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             ret = iceprod.core.gridftp.GridFTP.rmtree(address,
                                                       request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(file)',False)
@@ -649,18 +649,18 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             ret = iceprod.core.gridftp.GridFTP.rmtree(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(empty dir)',False)
@@ -672,27 +672,27 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             address2 = os.path.join(self.server_test_dir,'test','file_test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address2,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             ret = iceprod.core.gridftp.GridFTP.rmtree(address,
                                                       request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(dir + file)',False)
@@ -704,34 +704,34 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-            
+
             # mkdir
             address2 = os.path.join(self.server_test_dir,'test','test2')
             ret = iceprod.core.gridftp.GridFTP.mkdir(address2,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             address3 = os.path.join(self.server_test_dir,'test','test2','file_test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address3,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             ret = iceprod.core.gridftp.GridFTP.rmtree(address,
                                                       request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(dir + dir + file)',False)
@@ -744,19 +744,19 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                           request_timeout=self._timeout)
                 if ret is True:
                     raise Exception('exists succeeded when it should have failed')
-                
+
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                           request_timeout=self._timeout)
                 if ret is not True:
@@ -767,7 +767,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running exists test: %s',str(e))
             printer('Test gridftp.exists()',False)
@@ -781,24 +781,24 @@ class gridftp_test(unittest.TestCase):
             address = os.path.join(self.server_test_dir,'test')
             address2 = os.path.join(self.server_test_dir,'test2')
             filecontents = 'this is a test'
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                
+
                 ret = iceprod.core.gridftp.GridFTP.exists(address2,
                                                           request_timeout=self._timeout)
                 if ret is True:
                     raise Exception('exists succeeded before move')
-                
+
                 ret = iceprod.core.gridftp.GridFTP.move(address,address2,
                                                         request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('move failed: ret=%r'%ret)
-                
+
                 ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                           request_timeout=self._timeout)
                 if ret is True:
@@ -813,47 +813,47 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running move test: %s',str(e))
             printer('Test gridftp.move()',False)
             raise
         else:
             printer('Test gridftp.move()')
-    
+
     def test_180_checksum(self):
         """Test checksums - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             import hashlib
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.md5sum(address,
                                                           request_timeout=self._timeout)
                 correct = hashlib.md5(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('md5sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.sha1sum(address,
                                                            request_timeout=self._timeout)
                 correct = hashlib.sha1(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('sha1sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.sha256sum(address,
                                                              request_timeout=self._timeout)
                 correct = hashlib.sha256(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('sha256sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.sha512sum(address,
                                                              request_timeout=self._timeout)
                 correct = hashlib.sha512(filecontents).hexdigest()
@@ -865,27 +865,27 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running checksum test: %s',str(e))
             printer('Test gridftp.checksum()',False)
             raise
         else:
             printer('Test gridftp.checksum()')
-    
+
     def test_190_size(self):
         """Test size - synchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 ret = iceprod.core.gridftp.GridFTP.size(address,
                                                         request_timeout=self._timeout)
                 correct = len(filecontents)
@@ -897,38 +897,38 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running size test: %s',str(e))
             printer('Test gridftp.size()',False)
             raise
         else:
             printer('Test gridftp.size()')
-    
+
     def test_200_put_str(self):
         """Test put with a str - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put str
                 iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                  callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
             finally:
@@ -937,14 +937,14 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with str test: %s',str(e))
             printer('Test gridftp.put() with str',False)
             raise
         else:
             printer('Test gridftp.put() with str')
-    
+
     def test_201_put_file(self):
         """Test put with a file - asynchronous"""
         try:
@@ -954,25 +954,25 @@ class gridftp_test(unittest.TestCase):
             filecontents = 'this is a test'
             with open(filename,'w') as f:
                 f.write(filecontents)
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put file
                 iceprod.core.gridftp.GridFTP.put(address,filename=filename,
                                                  callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
             finally:
@@ -981,7 +981,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with file test: %s',str(e))
             printer('Test gridftp.put() with file',False)
@@ -998,26 +998,26 @@ class gridftp_test(unittest.TestCase):
                 # give every 10 chars
                 for i in xrange(0,len(filecontents),10):
                     yield filecontents[i:i+10]
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put from function
                 iceprod.core.gridftp.GridFTP.put(address,
                                                  streaming_callback=contents().next,
                                                  callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
             finally:
@@ -1026,7 +1026,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running put with func test: %s',str(e))
             printer('Test gridftp.put() with func',False)
@@ -1039,30 +1039,30 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
                 cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 # get str
                 iceprod.core.gridftp.GridFTP.get(address,callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('get failed: ret=%r'%ret)
                 if ret != filecontents:
@@ -1075,14 +1075,14 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with str test: %s',str(e))
             printer('Test gridftp.get() with str',False)
             raise
         else:
             printer('Test gridftp.get() with str')
-    
+
     def test_211_get_file(self):
         """Test get with a file - asynchronous"""
         try:
@@ -1094,31 +1094,31 @@ class gridftp_test(unittest.TestCase):
             with open(filename,'w') as f:
                 f.write(filecontents)
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put file
                 ret = iceprod.core.gridftp.GridFTP.put(address,filename=filename,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 # get file
                 iceprod.core.gridftp.GridFTP.get(address,filename=filename2,
                                                  callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('get failed: ret=%r'%ret)
                 if not os.path.exists(filename2):
@@ -1135,7 +1135,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with file test: %s',str(e))
             printer('Test gridftp.get() with file',False)
@@ -1155,14 +1155,14 @@ class gridftp_test(unittest.TestCase):
             def contents2(data):
                 contents2.data += data
             contents2.data = ''
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put from function
                 ret = iceprod.core.gridftp.GridFTP.put(address,
@@ -1170,17 +1170,17 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                
+
                 # get strGridFTP
                 iceprod.core.gridftp.GridFTP.get(address,streaming_callback=contents2,
                                                  callback=cb,
                                                  request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('get failed: ret=%r'%ret)
                 if contents2.data != filecontents:
@@ -1193,7 +1193,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running get with func test: %s',str(e))
             printer('Test gridftp.get() with func',False)
@@ -1205,32 +1205,32 @@ class gridftp_test(unittest.TestCase):
         """Test list - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != []:
                     logger.info('expected: []')
                     logger.info('actual: %r',ret)
@@ -1241,7 +1241,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir)',False)
@@ -1254,32 +1254,32 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['test_file']:
                     logger.info("expected: ['test_file']")
                     logger.info('actual: %r',ret)
@@ -1290,7 +1290,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-        
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file)',False)
@@ -1302,32 +1302,32 @@ class gridftp_test(unittest.TestCase):
         """Test list - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,dotfiles=True,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['.','..']:
                     logger.info("expected: ['.','..']")
                     logger.info('actual: %r',ret)
@@ -1338,7 +1338,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,dotfiles)',False)
@@ -1351,32 +1351,32 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,dotfiles=True,callback=cb,
                                                        request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != ['test_file']:
                     logger.info('expected: [\'test_file\']')
                     logger.info('actual: %r',ret)
@@ -1387,44 +1387,44 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,dotfiles)',False)
             raise
         else:
             printer('Test gridftp.list(file,dotfiles)')
-    
+
     def test_224_list(self):
         """Test list - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,details=True,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if ret != []:
                     logger.info('expected: []')
                     logger.info('actual: %r',ret)
@@ -1435,7 +1435,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,details)',False)
@@ -1448,32 +1448,32 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,details=True,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if len(ret) != 1 or ret[0].directory:
                     logger.info('actual: %r',ret)
                     raise Exception('list did not return expected results')
@@ -1483,7 +1483,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-        
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,details)',False)
@@ -1495,33 +1495,33 @@ class gridftp_test(unittest.TestCase):
         """Test list - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                          request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('mkdir failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                   dotfiles=True,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if (len(ret) != 2 or not any([x.name == '.' for x in ret])
                     or not any([x.name == '..' for x in ret])):
                     logger.info("expected: ['..','.']")
@@ -1533,7 +1533,7 @@ class gridftp_test(unittest.TestCase):
                                                        request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(dir,details,dotfiles)',False)
@@ -1546,33 +1546,33 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test_file')
             data = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=data,
                                                        request_timeout=self._timeout)
                 if ret is False:
                     raise Exception('put failed')
-                
+
                 # get listing
                 iceprod.core.gridftp.GridFTP.list(address,details=True,
                                                   dotfiles=True,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is False:
                     raise Exception('list failed: ret=%r'%ret)
-                
+
                 if len(ret) != 1 or ret[0].name != 'test_file':
                     logger.info("expected: ['test_file']")
                     logger.info('actual: %r',ret)
@@ -1583,7 +1583,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running list test: %s',str(e))
             printer('Test gridftp.list(file,details,dotfiles)',False)
@@ -1596,31 +1596,31 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-                
+
             iceprod.core.gridftp.GridFTP.delete(address,callback=cb,
                                                 request_timeout=self._timeout)
-            
+
             if cb.event.wait(self._timeout) is False:
                 # timeout
                 raise Exception('Request timed out: %s'%str(address))
             ret = cb.ret
-            
+
             if ret is not True:
                 raise Exception('delete failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running delete test: %s',str(e))
             printer('Test gridftp.delete()',False)
@@ -1633,31 +1633,31 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'file_test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             iceprod.core.gridftp.GridFTP.rmtree(address,callback=cb,
                                                 request_timeout=self._timeout)
-            
+
             if cb.event.wait(self._timeout) is False:
                 # timeout
                 raise Exception('Request timed out: %s'%str(address))
             ret = cb.ret
-            
+
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(file)',False)
@@ -1669,31 +1669,31 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             iceprod.core.gridftp.GridFTP.rmtree(address,callback=cb,
                                                 request_timeout=self._timeout)
-            
+
             if cb.event.wait(self._timeout) is False:
                 # timeout
                 raise Exception('Request timed out: %s'%str(address))
             ret = cb.ret
-            
+
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(empty dir)',False)
@@ -1705,40 +1705,40 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             address2 = os.path.join(self.server_test_dir,'test','file_test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address2,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             iceprod.core.gridftp.GridFTP.rmtree(address,callback=cb,
                                                 request_timeout=self._timeout)
-            
+
             if cb.event.wait(self._timeout) is False:
                 # timeout
                 raise Exception('Request timed out: %s'%str(address))
             ret = cb.ret
-            
+
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(dir + file)',False)
@@ -1750,47 +1750,47 @@ class gridftp_test(unittest.TestCase):
         """Test rmtree - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             # mkdir
             ret = iceprod.core.gridftp.GridFTP.mkdir(address,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-            
+
             # mkdir
             address2 = os.path.join(self.server_test_dir,'test','test2')
             ret = iceprod.core.gridftp.GridFTP.mkdir(address2,
                                                      request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('mkdir failed: ret=%r'%ret)
-                
+
             address3 = os.path.join(self.server_test_dir,'test','test2','file_test')
             filecontents = 'this is a test'
-            
+
             # put str
             ret = iceprod.core.gridftp.GridFTP.put(address3,data=filecontents,
                                                    request_timeout=self._timeout)
             if ret is not True:
                 raise Exception('put failed: ret=%r'%ret)
-            
+
             iceprod.core.gridftp.GridFTP.rmtree(address,callback=cb,
                                                 request_timeout=self._timeout)
-            
+
             if cb.event.wait(self._timeout) is False:
                 # timeout
                 raise Exception('Request timed out: %s'%str(address))
             ret = cb.ret
-            
+
             if ret is not True:
                 raise Exception('rmtree failed: ret=%r'%ret)
-            
+
         except Exception, e:
             logger.error('Error running rmtree test: %s',str(e))
             printer('Test gridftp.rmtree(dir + dir + file)',False)
@@ -1803,34 +1803,34 @@ class gridftp_test(unittest.TestCase):
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                           request_timeout=self._timeout)
                 if ret is True:
                     raise Exception('exists succeeded when it should have failed')
-                
+
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 iceprod.core.gridftp.GridFTP.exists(address,callback=cb,
                                                     request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is not True:
                     raise Exception('exists failed: ret=%r'%ret)
             finally:
@@ -1839,7 +1839,7 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running exists test: %s',str(e))
             printer('Test gridftp.exists()',False)
@@ -1853,37 +1853,37 @@ class gridftp_test(unittest.TestCase):
             address = os.path.join(self.server_test_dir,'test')
             address2 = os.path.join(self.server_test_dir,'test2')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                
+
                 ret = iceprod.core.gridftp.GridFTP.exists(address2,
                                                           request_timeout=self._timeout)
                 if ret is True:
                     raise Exception('exists succeeded before move')
-                
+
                 iceprod.core.gridftp.GridFTP.move(address,address2,callback=cb,
                                                   request_timeout=self._timeout)
-                
+
                 if cb.event.wait(self._timeout) is False:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 ret = cb.ret
-                
+
                 if ret is not True:
                     raise Exception('move failed: ret=%r'%ret)
-                
+
                 ret = iceprod.core.gridftp.GridFTP.exists(address,
                                                           request_timeout=self._timeout)
                 if ret is True:
@@ -1898,37 +1898,37 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running move test: %s',str(e))
             printer('Test gridftp.move()',False)
             raise
         else:
             printer('Test gridftp.move()')
-    
+
     def test_280_checksum(self):
         """Test checksums - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
-            
+
+
             import hashlib
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 iceprod.core.gridftp.GridFTP.md5sum(address,callback=cb,
                                                     request_timeout=self._timeout)
                 if cb.event.wait(self._timeout) is False:
@@ -1938,7 +1938,7 @@ class gridftp_test(unittest.TestCase):
                 correct = hashlib.md5(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('md5sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 iceprod.core.gridftp.GridFTP.sha1sum(address,callback=cb,
                                                      request_timeout=self._timeout)
                 if cb.event.wait(self._timeout) is False:
@@ -1948,7 +1948,7 @@ class gridftp_test(unittest.TestCase):
                 correct = hashlib.sha1(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('sha1sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 iceprod.core.gridftp.GridFTP.sha256sum(address,callback=cb,
                                                        request_timeout=self._timeout)
                 if cb.event.wait(self._timeout) is False:
@@ -1958,7 +1958,7 @@ class gridftp_test(unittest.TestCase):
                 correct = hashlib.sha256(filecontents).hexdigest()
                 if ret != correct:
                     raise Exception('sha256sum failed: ret=%r and correct=%r'%(ret,correct))
-                    
+
                 iceprod.core.gridftp.GridFTP.sha512sum(address,callback=cb,
                                                        request_timeout=self._timeout)
                 if cb.event.wait(self._timeout) is False:
@@ -1974,34 +1974,34 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running checksum test: %s',str(e))
             printer('Test gridftp.checksum()',False)
             raise
         else:
             printer('Test gridftp.checksum()')
-    
+
     def test_290_size(self):
         """Test size - asynchronous"""
         try:
             address = os.path.join(self.server_test_dir,'test')
             filecontents = 'this is a test'
-            
+
             def cb(ret):
                 cb.ret = ret
-                cb.event.set()    
+                cb.event.set()
             cb.ret = False
             cb.event = Event()
             cb.event.clear()
-            
+
             try:
                 # put str
                 ret = iceprod.core.gridftp.GridFTP.put(address,data=filecontents,
                                                        request_timeout=self._timeout)
                 if ret is not True:
                     raise Exception('put failed: ret=%r'%ret)
-                    
+
                 iceprod.core.gridftp.GridFTP.size(address,callback=cb,
                                                   request_timeout=self._timeout)
                 if cb.event.wait(self._timeout) is False:
@@ -2017,18 +2017,22 @@ class gridftp_test(unittest.TestCase):
                                                         request_timeout=self._timeout)
                 except:
                     pass
-            
+
         except Exception, e:
             logger.error('Error running size test: %s',str(e))
             printer('Test gridftp.size()',False)
             raise
         else:
             printer('Test gridftp.size()')
-    
-    
-    
+
+
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
+    if (subprocess.call(['which','uberftp']) or
+        subprocess.call(['which','globus-url-copy'])):
+        print('skipping gridftp tests: uberftp or globus-url-copy not found')
+        return suite
     alltests = glob_tests(loader.getTestCaseNames(gridftp_test))
     suite.addTests(loader.loadTestsFromNames(alltests,gridftp_test))
     return suite

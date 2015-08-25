@@ -11,9 +11,11 @@ from functools import partial
 from collections import namedtuple
 from datetime import datetime
 
+logger = logging.getLogger('gridftp')
+
 class _gridftp_common(object):
     _timeout = 60 # 1 min default timeout
-    
+
     @classmethod
     def supported_address(cls,address):
         """Return False for address types that are not supported"""
@@ -23,7 +25,7 @@ class _gridftp_common(object):
         if addr_type not in ('gsiftp','ftp'):
             return False
         return True
-    
+
     @classmethod
     def address_split(cls,address):
         """Split an address into server/path parts"""
@@ -33,7 +35,7 @@ class _gridftp_common(object):
             return (pieces[0]+'://'+pieces2[0],'/'+pieces2[1])
         else:
             return (address,'/')
-    
+
     @staticmethod
     def listify(lines,details=False,dotfiles=False):
         """Turn ls output into a list of NamedTuples"""
@@ -72,56 +74,56 @@ class _gridftp_common(object):
                 if not f.startswith('.') or dotfiles:
                     out.append(f)
         return out
-    
+
     ### Some helper functions for different checksum types ###
-    
+
     @classmethod
     def md5sum(cls,address,callback=None,request_timeout=None):
         """Get the md5sum of a file on an ftp server
-             
+
            callback should be of type callback(result)
               where result is the md5sum or False
-           
+
            If no callback is defined, the function blocks and returns either
               the md5sum or False, or an exception is raised.
         """
-        return cls._chksum('md5sum',address,callback=callback,request_timeout=request_timeout)    
-    
+        return cls._chksum('md5sum',address,callback=callback,request_timeout=request_timeout)
+
     @classmethod
     def sha1sum(cls,address,callback=None,request_timeout=None):
         """Get the sha1sum of a file on an ftp server
-             
+
            callback should be of type callback(result)
               where result is the sha1sum or False
-           
+
            If no callback is defined, the function blocks and returns either
               the sha1sum or False, or an exception is raised.
         """
-        return cls._chksum('sha1sum',address,callback=callback,request_timeout=request_timeout)    
-    
+        return cls._chksum('sha1sum',address,callback=callback,request_timeout=request_timeout)
+
     @classmethod
     def sha256sum(cls,address,callback=None,request_timeout=None):
         """Get the sha256sum of a file on an ftp server
-             
+
            callback should be of type callback(result)
               where result is the sha256sum or False
-           
+
            If no callback is defined, the function blocks and returns either
               the sha256sum or False, or an exception is raised.
         """
-        return cls._chksum('sha256sum',address,callback=callback,request_timeout=request_timeout)     
-    
+        return cls._chksum('sha256sum',address,callback=callback,request_timeout=request_timeout)
+
     @classmethod
     def sha512sum(cls,address,callback=None,request_timeout=None):
         """Get the sha512sum of a file on an ftp server
-             
+
            callback should be of type callback(result)
               where result is the sha512sum or False
-           
+
            If no callback is defined, the function blocks and returns either
               the sha512sum or False, or an exception is raised.
         """
-        return cls._chksum('sha512sum',address,callback=callback,request_timeout=request_timeout)   
+        return cls._chksum('sha512sum',address,callback=callback,request_timeout=request_timeout)
 
 try:
     import gridftpClient
@@ -132,7 +134,13 @@ except ImportError:
     import subprocess
     def _cmd_async(cmd,callback=None,timeout=None):
         def wrap():
-            p = subprocess.Popen(cmd)
+            try:
+                p = subprocess.Popen(cmd)
+            except Exception as e:
+                logger.error('error running cmd %r',cmd)
+                if callback:
+                    callback(e)
+                return
             ret = None
             if timeout:
                 i = 0
@@ -212,7 +220,7 @@ except ImportError:
     class GridFTP(_gridftp_common):
         """Asyncronous GridFTP interface to command line client.
            Designed to hide the complex stuff and mimic tornado http downloads.
-           
+
            Example:
                GridFTP.get('gsiftp://data.icecube.wisc.edu/file',
                            callback=endfunc,
@@ -223,18 +231,18 @@ except ImportError:
                 filename=None, request_timeout=None):
             """Do a GridFTP get request, asyncronously if a callback is defined.
                streaming_callback or filename may be defined.
-               
+
                streaming_callback should be of type streaming_callback(data)
                   where data is a bytestring
                callback should be of type callback(result)
                   where result is a bytestring or True/False
-               
+
                If no callback is defined, the function blocks and either False
                   or the data is returned, or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             async_callback = callback
             tmpdir = None
             if filename is None:
@@ -265,14 +273,14 @@ except ImportError:
                     async_callback = cb
             else:
                 dest = 'file:'+filename
-            
+
             cmd = ['globus-url-copy',address,dest]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if async_callback:
                 _cmd_async(cmd, callback=async_callback, timeout=timeout)
             else:
@@ -294,25 +302,25 @@ except ImportError:
                     return contents
                 else:
                     return ret
-        
+
         @classmethod
         def put(cls, address, callback=None, streaming_callback=None,
                 data=None, filename=None, request_timeout=None):
             """Do a GridFTP put request, asyncronously if a callback is defined.
                Either streaming_callback, data, or filename must be defined.
-               
+
                streaming_callback should be of type streaming_callback()
                   where a block of data is returned by the function each
                   time it is called
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             tmpdir = None
             if streaming_callback is not None:
                 # stream data to server
@@ -334,14 +342,14 @@ except ImportError:
                 src = 'file:'+filename
             else:
                 raise Exception('Neither streaming_callback, data, or filename is defined')
-            
+
             cmd = ['globus-url-copy','-cd',src,address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 def cb(ret):
                     if tmpdir:
@@ -353,203 +361,203 @@ except ImportError:
                 if tmpdir:
                     shutil.rmtree(tmpdir,ignore_errors=True)
                 return ret
-        
+
         @classmethod
         def list(cls,address,callback=None,request_timeout=None,details=False,
                  dotfiles=False):
             """Do a GridFTP list request, asyncronously if a callback is defined.
-               
+
                callback should be of type callback(result)
                   where result is a list or False
-               
+
                Result is a list of NamedTuples if details=True.
                Result includes '.', '..', and other '.' files if dotfiles=True.
-               
+
                If no callback is defined, the function blocks and either False
                   or a list is returned, or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             listify = partial(cls.listify,details=details,dotfiles=dotfiles)
             cmd = ['uberftp','-ls',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_output_async(cmd, type=listify, callback=callback,
                                   timeout=timeout)
             else:
                 return _cmd_output(cmd, type=listify, timeout=timeout)
-        
+
         @classmethod
         def popen(cls,address,cmd,args,callback=None,request_timeout=None):
             """Call popen on the ftp server
                   cmd should be the program to execute
                   args should be a list of arguments
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
+
                If no callback is defined, the function blocks and returns either
                   the cmd output or True/False, or an exception is raised.
             """
             raise NotImplementedError()
-        
+
         @classmethod
         def mkdir(cls,address,callback=None,request_timeout=None,parents=False):
             """Make a directory on the ftp server
-               
+
                parents - no error if existing, make parent directories as needed
-               
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             # recursively make directory
             try:
                 cls.mkdir(os.path.basename(address),
                           request_timeout=request_timeout,parents=True)
             except Exception:
                 pass
-            
+
             cmd = ['uberftp','-mkdir',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-        
+
         @classmethod
         def rmdir(cls,address,callback=None,request_timeout=None):
             """Remove a directory on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-rmdir',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-        
+
         @classmethod
         def delete(cls,address,callback=None,request_timeout=None):
             """Delete a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-rm',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-            
+
         @classmethod
         def rmtree(cls,address,callback=None,request_timeout=None):
             """Delete a file or directory on the ftp server (like rm -rf)
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-rm','-r',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-        
+
         @classmethod
         def move(cls,src,dest,callback=None,request_timeout=None):
             """Move a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(src):
                 raise Exception('address type not supported for src %s'%str(src))
             if not cls.supported_address(dest):
                 raise Exception('address type not supported for dest %s'%str(dest))
-            
+
             cmd = ['uberftp','-rename',src,cls.address_split(dest)[-1]]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-        
+
         @classmethod
         def exists(cls,address,callback=None,request_timeout=None):
             """Check if a file exists on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-size',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
@@ -558,47 +566,47 @@ except ImportError:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-        
+
         @classmethod
         def chmod(cls,address,mode,callback=None,request_timeout=None):
             """Chmod a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-chmod',mode,address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
                 timeout = request_timeout
-            
+
             if callback:
                 _cmd_async(cmd, callback=callback, timeout=timeout)
             else:
                 return _cmd(cmd, timeout=timeout)
-            
+
         @classmethod
         def size(cls,address,callback=None,request_timeout=None):
             """Get the size of a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is the size or None
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns the size or None or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             cmd = ['uberftp','-size',address]
-            
+
             if request_timeout is None:
                 timeout = cls._timeout
             else:
@@ -608,7 +616,7 @@ except ImportError:
                                   timeout=timeout)
             else:
                 return _cmd_output(cmd, type=int, timeout=timeout)
-        
+
         @classmethod
         def _chksum(cls,type,address,callback=None,request_timeout=None):
             """The real work of checksums happens here"""
@@ -619,42 +627,42 @@ else:
     class GridFTP(_gridftp_common):
         """Asyncronous GridFTP interface using python bindings to C library.
            Designed to hide the complex stuff and mimic tornado http downloads.
-           
+
            Example:
                GridFTP.get('gsiftp://data.icecube.wisc.edu/file',
                            callback=endfunc,
                            streaming_callback=streamfunc)
         """
         __buffersize = 1048576 # 1MB default buffer size
-        
+
         @classmethod
         def get(cls,address,callback=None,streaming_callback=None,filename=None,request_timeout=None):
             """Do a GridFTP get request, asyncronously if a callback is defined.
                streaming_callback or filename may be defined.
-               
+
                streaming_callback should be of type streaming_callback(data)
                   where data is a bytestring
                callback should be of type callback(result)
                   where result is a bytestring or True/False
-               
+
                If no callback is defined, the function blocks and either False
                   or the data is returned, or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._get_callback,callback=cb)
             else:
                 complete_callback = partial(cls._get_callback,callback=callback)
-            
+
             if streaming_callback is not None:
                 # stream data to requester as it comes in
                 data_callback = partial(cls._get_data_callback,streaming_callback=streaming_callback)
@@ -683,12 +691,12 @@ else:
                         else:
                             callback(ret)
                     complete_callback = partial(cls._get_callback,callback=cb)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             b = gridftpClient.Buffer(cls.__buffersize)
             cl.get(address,complete_callback,(cl,b),gridftpClient.OperationAttr())
             cl.register_read(b,data_callback,(cl,b))
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -711,7 +719,7 @@ else:
                         return scb.buffer
                     except:
                         return False
-        
+
         @classmethod
         def _get_data_callback(cls,arg,handle,error,buffer,length,offset,eof,streaming_callback=None):
             cl,b = arg
@@ -730,10 +738,10 @@ else:
                     cl.abort()
                 except:
                     pass
-            
+
             if not eof:
-                cl.register_read(b,partial(cls._get_data_callback,streaming_callback=streaming_callback),arg)            
-        
+                cl.register_read(b,partial(cls._get_data_callback,streaming_callback=streaming_callback),arg)
+
         @classmethod
         def _get_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -744,24 +752,24 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._get_callback: callback is not defined')
-        
+
         @classmethod
         def put(cls,address,callback=None,streaming_callback=None,data=None,filename=None,request_timeout=None):
             """Do a GridFTP put request, asyncronously if a callback is defined.
                Either streaming_callback, data, or filename must be defined.
-               
+
                streaming_callback should be of type streaming_callback()
                   where a block of data is returned by the function each
                   time it is called
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
@@ -773,7 +781,7 @@ else:
                 complete_callback = partial(cls._put_callback,callback=cb)
             else:
                 complete_callback = partial(cls._put_callback,callback=callback)
-            
+
             if streaming_callback is not None:
                 # stream data to server
                 data_callback = streaming_callback
@@ -794,13 +802,13 @@ else:
                 data_callback = scb().next
             else:
                 raise Exception('Neither streaming_callback, data, or filename is defined')
-            
+
             # check that the directory exists before we put into it
             dirname = os.path.dirname(address)
             if not cls.supported_address(dirname):
                 raise Exception('dirname address type not supported for address %s',
                                 dirname)
-            
+
             def cb2(ret):
                 if ret:
                     cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
@@ -809,7 +817,7 @@ else:
                 else:
                     cb(False)
             GridFTP.mkdir(dirname,callback=cb2,parents=True)
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -824,7 +832,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _put_data(cls,cl,offset,streaming_callback=None):
             if streaming_callback is None:
@@ -834,7 +842,7 @@ else:
                 except:
                     pass
                 return
-            
+
             # get some data
             try:
                 data = streaming_callback()
@@ -854,11 +862,11 @@ else:
             else:
                 eof = 0
                 b = gridftpClient.Buffer(data)
-            
+
             # write to server
             data_callback = partial(cls._put_data_callback,streaming_callback=streaming_callback)
             cl.register_write(b,offset,eof,data_callback,cl)
-        
+
         @classmethod
         def _put_data_callback(cls,arg,handle,error,buffer,length,offset,eof,streaming_callback=None):
             cl = arg
@@ -879,7 +887,7 @@ else:
                     cl.abort()
                 except:
                     pass
-        
+
         @classmethod
         def _put_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -890,26 +898,26 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._put_callback: callback is not defined')
-        
+
         @classmethod
         def list(cls,address,callback=None,request_timeout=None,details=False,
                  dotfiles=False):
             """Do a GridFTP list request, asyncronously if a callback is defined.
-               
+
                callback should be of type callback(result)
                   where result is a list or False
-               
+
                Result is a list of NamedTuples if details=True.
                Result includes '.', '..', and other '.' files if dotfiles=True.
-               
+
                If no callback is defined, the function blocks and either False
                   or a list is returned, or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             listify = partial(cls.listify,details=details,dotfiles=dotfiles)
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
@@ -921,7 +929,7 @@ else:
                 complete_callback = partial(cls._list_callback,callback=cb)
             else:
                 complete_callback = partial(cls._list_callback,callback=callback)
-            
+
             # store temp state in buffer
             def scb(buffer):
                 scb.buffer += buffer
@@ -939,12 +947,12 @@ else:
                     else:
                         callback(ret)
                 complete_callback = partial(cls._get_callback,callback=cb)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             b = gridftpClient.Buffer(cls.__buffersize)
             cl.verbose_list(address,complete_callback,(cl,b),gridftpClient.OperationAttr())
             cl.register_read(b,data_callback,(cl,b))
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -965,7 +973,7 @@ else:
                 except Exception:
                     logging.warn('error in listify',exc_info=True)
                     return False
-        
+
         @classmethod
         def _list_data_callback(cls,arg,handle,error,buffer,length,offset,eof,streaming_callback=None):
             cl,b = arg
@@ -984,10 +992,10 @@ else:
                     cl.abort()
                 except Exception:
                     pass
-            
+
             if not eof:
-                cl.register_read(b,partial(cls._list_data_callback,streaming_callback=streaming_callback),arg)            
-        
+                cl.register_read(b,partial(cls._list_data_callback,streaming_callback=streaming_callback),arg)
+
         @classmethod
         def _list_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -998,42 +1006,42 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._list_callback: callback is not defined')
-        
+
         @classmethod
         def popen(cls,address,cmd,args,callback=None,request_timeout=None):
             """Call popen on the ftp server
                   cmd should be the program to execute
                   args should be a list of arguments
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
+
                If no callback is defined, the function blocks and returns either
                   the cmd output or True/False, or an exception is raised.
-            """        
+            """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
             if not isinstance(args,list):
                 raise Exception('cmd args needs to be a list')
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._get_callback,callback=cb)
             else:
                 complete_callback = partial(cls._get_callback,callback=callback)
-            
+
             # store temp state in buffer
             def scb(buffer):
                 scb.buffer += buffer
             scb.buffer = ''
             data_callback = partial(cls._get_data_callback,streaming_callback=scb)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             b = gridftpClient.Buffer(cls.__buffersize)
             opattr = gridftpClient.OperationAttr()
@@ -1041,7 +1049,7 @@ else:
             opattr.set_disk_stack(disk_stack)
             cl.get(address,complete_callback,(cl,b),opattr)
             cl.register_read(b,data_callback,(cl,b))
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -1061,34 +1069,34 @@ else:
                     return scb.buffer
                 except:
                     return False
-        
+
         @classmethod
         def mkdir(cls,address,callback=None,request_timeout=None,parents=False):
             """Make a directory on the ftp server
-               
+
                parents - no error if existing, make parent directories as needed
-               
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
             else:
                 cb = callback
             complete_callback = partial(cls._mkdir_callback,callback=cb)
-            
+
             if parents:
                 # make parent directories as needed
                 logging.info('mkdir parents=True addr=%s',address)
@@ -1142,7 +1150,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _mkdir_callback(cls,arg,handle,error,callback=None,suppress_warn=False):
             if callback is not None:
@@ -1160,28 +1168,28 @@ else:
         @classmethod
         def rmdir(cls,address,callback=None,request_timeout=None):
             """Remove a directory on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._rmdir_callback,callback=cb)
             else:
                 complete_callback = partial(cls._rmdir_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.rmdir(address,complete_callback,0,gridftpClient.OperationAttr())
 
@@ -1199,7 +1207,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _rmdir_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -1214,16 +1222,16 @@ else:
         @classmethod
         def delete(cls,address,callback=None,request_timeout=None):
             """Delete a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
@@ -1235,7 +1243,7 @@ else:
                 complete_callback = partial(cls._delete_callback,callback=cb)
             else:
                 complete_callback = partial(cls._delete_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.delete(address,complete_callback,0,gridftpClient.OperationAttr())
 
@@ -1253,7 +1261,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _delete_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -1264,20 +1272,20 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._delete_callback: callback is not defined')
-        
+
         @classmethod
         def rmtree(cls,address,callback=None,request_timeout=None):
             """Delete a file or directory on the ftp server (like rm -rf)
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
@@ -1288,7 +1296,7 @@ else:
                 cb.event.clear()
             else:
                 cb = callback
-            
+
             def cb3(ret,totalresults=0):
                 # accumulate all results before calling cb
                 cb3.results += 1
@@ -1339,10 +1347,10 @@ else:
                 else:
                     logging.warn('unknown situation. list results: %r',ret)
                     cb(False) # not sure what's going on
-            
+
             GridFTP.list(address,callback=cb2,request_timeout=request_timeout,
                          details=True,dotfiles=True)
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -1357,34 +1365,34 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def move(cls,src,dest,callback=None,request_timeout=None):
             """Move a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(src):
                 raise Exception('address type not supported for address %s'%str(src))
             if not cls.supported_address(dest):
                 raise Exception('address type not supported for address %s'%str(dest))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._move_callback,callback=cb)
             else:
                 complete_callback = partial(cls._move_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.move(src,dest,complete_callback,0,gridftpClient.OperationAttr())
 
@@ -1402,7 +1410,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _move_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -1413,20 +1421,20 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._move_callback: callback is not defined')
-        
+
         @classmethod
         def exists(cls,address,callback=None,request_timeout=None):
             """Check if a file exists on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
@@ -1438,7 +1446,7 @@ else:
                 complete_callback = partial(cls._exists_callback,callback=cb)
             else:
                 complete_callback = partial(cls._exists_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.exists(address,complete_callback,0,gridftpClient.OperationAttr())
 
@@ -1456,7 +1464,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _exists_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -1466,32 +1474,32 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._exists_callback: callback is not defined')
-        
+
         @classmethod
         def chmod(cls,address,mode,callback=None,request_timeout=None):
             """Chmod a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is True/False
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns True/False or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._chmod_callback,callback=cb)
             else:
                 complete_callback = partial(cls._chmod_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.chmod(address,mode,complete_callback,0,gridftpClient.OperationAttr())
 
@@ -1509,7 +1517,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _chmod_callback(cls,arg,handle,error,callback=None):
             if callback is not None:
@@ -1520,35 +1528,35 @@ else:
                     callback(True)
             else:
                 logging.warning('Error in GridFTP._chmod_callback: callback is not defined')
-        
+
         @classmethod
         def size(cls,address,callback=None,request_timeout=None):
             """Get the size of a file on the ftp server
-                 
+
                callback should be of type callback(result)
                   where result is the size or None
-               
-               If no callback is defined, the function blocks and 
+
+               If no callback is defined, the function blocks and
                   returns the size or None or an exception is raised.
             """
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = None
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._size_callback,callback=cb)
             else:
                 complete_callback = partial(cls._size_callback,callback=callback)
-            
+
             cl = gridftpClient.FTPClient(gridftpClient.HandleAttr())
             cl.size(address,complete_callback,0,gridftpClient.OperationAttr())
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout
@@ -1563,7 +1571,7 @@ else:
                         pass
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _size_callback(cls,ret,arg,handle,error,callback=None):
             if callback is not None:
@@ -1572,28 +1580,28 @@ else:
                 callback(ret)
             else:
                 logging.warning('Error in GridFTP._size_callback: callback is not defined')
-        
+
         @classmethod
         def _chksum(cls,type,address,callback=None,request_timeout=None):
             """The real work of checksums happens here"""
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
-            
+
             if callback is None:
                 # return like normal function
                 def cb(ret):
                     cb.ret = ret
-                    cb.event.set()    
+                    cb.event.set()
                 cb.ret = False
                 cb.event = Event()
                 cb.event.clear()
                 complete_callback = partial(cls._chksum_callback,callback=cb)
             else:
                 complete_callback = partial(cls._chksum_callback,callback=callback)
-            
+
             server,path = cls.address_split(address)
             cls.popen(server,type,[path],callback=complete_callback,request_timeout=request_timeout)
-            
+
             if callback is None:
                 if request_timeout is None:
                     timeout = cls._timeout+1
@@ -1604,7 +1612,7 @@ else:
                     # timeout
                     raise Exception('Request timed out: %s'%str(address))
                 return cb.ret
-        
+
         @classmethod
         def _chksum_callback(cls,ret,callback=None):
             if callback is not None:
