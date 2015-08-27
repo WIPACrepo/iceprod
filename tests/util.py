@@ -1,13 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
+import os
 import sys
 import logging
 import fnmatch
 import unittest
 
-def printer(input,passed=True):
+from functools import wraps
+
+def printer(input,passed=True,skipped=False):
     numcols = 60
-    padding = 4
+    padding = 3 if skipped else 4
     while len(input) > numcols:
         # wrap longer strings
         pos = input.rfind(' ',0,numcols)
@@ -20,14 +23,55 @@ def printer(input,passed=True):
     final_str = input
     for i in xrange(len(input),numcols+padding):
         final_str += ' '
-    
-    if passed:
+
+    if skipped:
+        logging.error(final_str+'skipped')
+        final_str += '\033[36m'+'skipped'+'\033[0m'
+    elif passed:
         logging.error(final_str+'passed')
         final_str += '\033[32m'+'passed'+'\033[0m'
     else:
         logging.error(final_str+'failed')
         final_str += '\033[31m'+'failed'+'\033[0m'
     print(final_str)
+
+def unittest_reporter(*args,**kwargs):
+    def make_wrapper(obj):
+        module = os.path.basename(obj.func_globals['__file__']).split('_test')[0]
+        if 'module' in kwargs:
+            module = kwargs['module']
+        name = '_'.join(obj.func_name.split('_')[2:])+'()'
+        if 'name' in kwargs:
+            name = kwargs['name']
+        if name.startswith(' '):
+            test_name = '%s%s'%(module,name)
+        else:
+            test_name = '%s.%s'%(module,name)
+        skip = False
+        if 'skip' in kwargs:
+            skip = kwargs['skip']
+            if callable(skip):
+                skip = skip()
+            skip = bool(skip)
+        @wraps(obj)
+        def wrapper(*args, **kwargs):
+            if skip:
+                printer('Test '+test_name,skipped=True)
+                return
+            try:
+                obj(*args,**kwargs)
+            except Exception as e:
+                logging.error('Error running %s test',(name,),
+                             exc_info=True)
+                printer('Test '+test_name,passed=False)
+                raise
+            else:
+                printer('Test '+test_name)
+        return wrapper
+    if kwargs:
+        return make_wrapper
+    else:
+        return make_wrapper(*args)
 
 test_glob = '*'
 def skipTest(obj, attr):
@@ -49,7 +93,7 @@ def listmodules(package_name=''):
     ret = []
     for module in os.listdir(pathname):
         if module.endswith('.py') and module != '__init__.py':
-            tmp = os.path.splitext(module)[0] 
+            tmp = os.path.splitext(module)[0]
             ret.append(package_name+'.'+tmp)
     return ret
 

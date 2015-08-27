@@ -4,7 +4,7 @@ Test script for database server module
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import printer, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, _messaging
 
 import logging
 logger = logging.getLogger('modules_db_test')
@@ -74,15 +74,15 @@ class modules_db_test(unittest.TestCase):
     def setUp(self):
         super(modules_db_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        
+
         self.ca_cert = os.path.join(self.test_dir,'ca.crt')
         self.ca_key = os.path.join(self.test_dir,'ca.key')
         self.ssl_key = os.path.join(self.test_dir,'test.key')
         self.ssl_cert = os.path.join(self.test_dir,'test.crt')
-        
+
         # set hostname
         self.hostname = 'localhost'
-        
+
         def sig(*args):
             sig.args = args
         flexmock(signal).should_receive('signal').replace_with(sig)
@@ -95,185 +95,165 @@ class modules_db_test(unittest.TestCase):
         def removestdout(*args,**kwargs):
             pass
         flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
-    
+
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(modules_db_test,self).tearDown()
 
+    @unittest_reporter
     def test_01_init(self):
         """Test init"""
-        try:
-            # mock some functions so we don't go too far
-            def start(*args,**kwargs):
-                start.called = True
-            flexmock(db.db).should_receive('start').replace_with(start)
-            start.called = False
-            
-            cfg = basic_config.BasicConfig()
-            cfg.messaging_url = 'localhost'
-            q = db.db(cfg)
-            q.messaging = _messaging()
-            if not q:
-                raise Exception('did not return db object')
-            if start.called is not True:
-                raise Exception('init did not call start')
-            
-            new_cfg = {'new':1}
-            q.messaging.BROADCAST.reload(cfg=new_cfg)
-            if not q.messaging.called:
-                raise Exception('init did not call messaging')
-            if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
-                raise Exception('init did not call correct message')
-            
-        except Exception as e:
-            logger.error('Error running modules.db init test - %s',str(e))
-            printer('Test modules.db init',False)
-            raise
-        else:
-            printer('Test modules.db init')
-    
+        # mock some functions so we don't go too far
+        def start(*args,**kwargs):
+            start.called = True
+        flexmock(db.db).should_receive('start').replace_with(start)
+        start.called = False
+
+        cfg = basic_config.BasicConfig()
+        cfg.messaging_url = 'localhost'
+        q = db.db(cfg)
+        q.messaging = _messaging()
+        if not q:
+            raise Exception('did not return db object')
+        if start.called is not True:
+            raise Exception('init did not call start')
+
+        new_cfg = {'new':1}
+        q.messaging.BROADCAST.reload(cfg=new_cfg)
+        if not q.messaging.called:
+            raise Exception('init did not call messaging')
+        if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
+            raise Exception('init did not call correct message')
+
+    @unittest_reporter
     def test_02_start_stop(self):
         """Test start_stop"""
+        # mock some functions so we don't go too far
+        def start(*args,**kwargs):
+            start.called = True
+        flexmock(db.db).should_receive('start').replace_with(start)
+        start.called = False
+
+        cfg = basic_config.BasicConfig()
+        cfg.messaging_url = 'localhost'
+        q = db.db(cfg)
+        q.messaging = _messaging()
+
+        q.start()
+        if start.called is not True:
+            raise Exception('did not start')
+
+        local_db = _DB()
+        q.db = local_db
+        q.stop()
+        if local_db.stopped is not True:
+            raise Exception('did not stop DB')
+
+        q.kill()
+        if local_db.killed is not True:
+            raise Exception('did not kill DB')
+
+        cfg = {'test':1,'a':3}
+        q.update_cfg(cfg)
+        if q.cfg != cfg:
+            raise Exception('did not update cfg')
+        if local_db.cfg != cfg:
+            raise Exception('did not update cfg on DB')
+
+        q.db = None
         try:
-            # mock some functions so we don't go too far
-            def start(*args,**kwargs):
-                start.called = True
-            flexmock(db.db).should_receive('start').replace_with(start)
-            start.called = False
-            
-            cfg = basic_config.BasicConfig()
-            cfg.messaging_url = 'localhost'
-            q = db.db(cfg)
-            q.messaging = _messaging()
-            
-            q.start()
-            if start.called is not True:
-                raise Exception('did not start')
-            
-            local_db = _DB()
-            q.db = local_db
             q.stop()
-            if local_db.stopped is not True:
-                raise Exception('did not stop DB')
-            
             q.kill()
-            if local_db.killed is not True:
-                raise Exception('did not kill DB')
-            
-            cfg = {'test':1,'a':3}
             q.update_cfg(cfg)
-            if q.cfg != cfg:
-                raise Exception('did not update cfg')
-            if local_db.cfg != cfg:
-                raise Exception('did not update cfg on DB')
-            
-            q.db = None
-            try:
-                q.stop()
-                q.kill()
-                q.update_cfg(cfg)
-            except Exception:
-                logger.info('exception raised',exc_info=True)
-                raise Exception('db = None and exception raised')
-            
-        except Exception as e:
-            logger.error('Error running modules.db start_stop test - %s',str(e))
-            printer('Test modules.db start_stop',False)
-            raise
-        else:
-            printer('Test modules.db start_stop')
-    
+        except Exception:
+            logger.info('exception raised',exc_info=True)
+            raise Exception('db = None and exception raised')
+
+    @unittest_reporter
     def test_10_DBService(self):
         """Test DBService"""
+        # mock some functions so we don't go too far
+        def start(*args,**kwargs):
+            start.called = True
+        flexmock(db.db).should_receive('start').replace_with(start)
+        start.called = False
+
+        def cb(*args,**kwargs):
+            cb.called = [args,kwargs]
+        cb.called = None
+
+        cfg = basic_config.BasicConfig()
+        cfg.messaging_url = 'localhost'
+        q = db.db(cfg)
+        q.messaging = _messaging()
+        local_db = _DB()
+        q.db = local_db
+
+        cb.called = None
+        q.service_class.start(callback=cb)
+        if start.called is not True:
+            raise Exception('did not start')
+        if not cb.called:
+            raise Exception('did not call callback')
+
+        cb.called = None
+        q.service_class.stop(callback=cb)
+        if local_db.stopped is not True:
+            raise Exception('did not stop DB')
+        if not cb.called:
+            raise Exception('did not call callback')
+
+        cb.called = None
+        q.service_class.kill(callback=cb)
+        if local_db.killed is not True:
+            raise Exception('did not kill DB')
+        if not cb.called:
+            raise Exception('did not call callback')
+
+        cb.called = None
+        cfg = {'test':1,'a':3}
+        q.service_class.reload(cfg,callback=cb)
+        if local_db.cfg != cfg:
+            raise Exception('did not update cfg')
+        if not cb.called:
+            raise Exception('did not call callback')
+
+        cb.called = None
+        q.service_class.backup(callback=cb)
+        if local_db.backuped is not True:
+            raise Exception('did not backup DB')
+        if not cb.called:
+            raise Exception('did not call callback')
+
+        q.service_class.db_func(1,a=2)
+        if local_db.dbmethods.db_func_called != [(1,),{'a':2}]:
+            logger.info('db_func_called: %r',local_db.dbmethods.db_func_called)
+            raise Exception('did not call rpc db func with correct args')
+
+        q.db = None
         try:
-            # mock some functions so we don't go too far
-            def start(*args,**kwargs):
-                start.called = True
-            flexmock(db.db).should_receive('start').replace_with(start)
-            start.called = False
-            
-            def cb(*args,**kwargs):
-                cb.called = [args,kwargs]
-            cb.called = None
-            
-            cfg = basic_config.BasicConfig()
-            cfg.messaging_url = 'localhost'
-            q = db.db(cfg)
-            q.messaging = _messaging()
-            local_db = _DB()
-            q.db = local_db
-            
-            cb.called = None
-            q.service_class.start(callback=cb)
-            if start.called is not True:
-                raise Exception('did not start')
-            if not cb.called:
-                raise Exception('did not call callback')
-            
-            cb.called = None
-            q.service_class.stop(callback=cb)
-            if local_db.stopped is not True:
-                raise Exception('did not stop DB')
-            if not cb.called:
-                raise Exception('did not call callback')
-            
-            cb.called = None
-            q.service_class.kill(callback=cb)
-            if local_db.killed is not True:
-                raise Exception('did not kill DB')
-            if not cb.called:
-                raise Exception('did not call callback')
-            
-            cb.called = None
-            cfg = {'test':1,'a':3}
-            q.service_class.reload(cfg,callback=cb)
-            if local_db.cfg != cfg:
-                raise Exception('did not update cfg')
-            if not cb.called:
-                raise Exception('did not call callback')
-            
-            cb.called = None
-            q.service_class.backup(callback=cb)
-            if local_db.backuped is not True:
-                raise Exception('did not backup DB')
-            if not cb.called:
-                raise Exception('did not call callback')
-            
+            q.service_class.start()
+            q.service_class.stop()
+            q.service_class.kill()
+            q.service_class.reload(cfg)
+            q.service_class.backup()
+        except Exception:
+            logger.info('exception raised',exc_info=True)
+            raise Exception('db = None and exception raised')
+
+        try:
             q.service_class.db_func(1,a=2)
-            if local_db.dbmethods.db_func_called != [(1,),{'a':2}]:
-                logger.info('db_func_called: %r',local_db.dbmethods.db_func_called)
-                raise Exception('did not call rpc db func with correct args')
-            
-            q.db = None
-            try:
-                q.service_class.start()
-                q.service_class.stop()
-                q.service_class.kill()
-                q.service_class.reload(cfg)
-                q.service_class.backup()
-            except Exception:
-                logger.info('exception raised',exc_info=True)
-                raise Exception('db = None and exception raised')
-            
-            try:
-                q.service_class.db_func(1,a=2)
-            except Exception:
-                logger.info('e',exc_info=True)
-            else:
-                raise Exception('rpc db func did not raise error when db is None')
-            
-        except Exception as e:
-            logger.error('Error running modules.db DBService test - %s',str(e))
-            printer('Test modules.db DBService',False)
-            raise
+        except Exception:
+            logger.info('e',exc_info=True)
         else:
-            printer('Test modules.db DBService')
+            raise Exception('rpc db func did not raise error when db is None')
+
 
 class dbapi_test(unittest.TestCase):
     def setUp(self):
         super(dbapi_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        
+
         # get hostname
         hostname = functions.gethostname()
         if hostname is None:
@@ -281,101 +261,87 @@ class dbapi_test(unittest.TestCase):
         elif isinstance(hostname,set):
             hostname = hostname.pop()
         self.hostname = hostname
-        
+
         # set db class
         self._dbclass = db.DBAPI
-    
+
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(dbapi_test,self).tearDown()
-    
+
+    @unittest_reporter
     def test_01_init(self):
         """Test init"""
-        try:
-            # mock db
-            def start():
-                start.called = True
-            flexmock(self._dbclass).should_receive('start').replace_with(start)
-            def tables():
-                tables.called = True
-            flexmock(self._dbclass).should_receive('_setup_tables').replace_with(tables)
-            def init():
-                init.called = True
-            flexmock(self._dbclass).should_receive('init').replace_with(init)
-            
-            start.called = False
-            tables.called = False
-            init.called = False
-            
-            cfg = {'test':1}
-            newdb = self._dbclass(cfg)
-            if not newdb:
-                raise Exception('init did not return db object')
-            elif tables.called != True:
-                raise Exception('init did not call _setup_tables')
-            elif init.called != True:
-                raise Exception('init did not call init')
-            elif start.called != False:
-                raise Exception('init called start when not supposed to')
-            elif not newdb.cfg or 'test' not in newdb.cfg or newdb.cfg['test'] != 1:
-                raise Exception('init did not copy cfg properly')
-            
-        except Exception, e:
-            logger.error('Error running db init test - %s',str(e))
-            printer('Test db:%s init'%self._dbclass.__name__,False)
-            raise
-        else:
-            printer('Test db:%s init'%self._dbclass.__name__)
-    
+        # mock db
+        def start():
+            start.called = True
+        flexmock(self._dbclass).should_receive('start').replace_with(start)
+        def tables():
+            tables.called = True
+        flexmock(self._dbclass).should_receive('_setup_tables').replace_with(tables)
+        def init():
+            init.called = True
+        flexmock(self._dbclass).should_receive('init').replace_with(init)
+
+        start.called = False
+        tables.called = False
+        init.called = False
+
+        cfg = {'test':1}
+        newdb = self._dbclass(cfg)
+        if not newdb:
+            raise Exception('init did not return db object')
+        elif tables.called != True:
+            raise Exception('init did not call _setup_tables')
+        elif init.called != True:
+            raise Exception('init did not call init')
+        elif start.called != False:
+            raise Exception('init called start when not supposed to')
+        elif not newdb.cfg or 'test' not in newdb.cfg or newdb.cfg['test'] != 1:
+            raise Exception('init did not copy cfg properly')
+
+    @unittest_reporter
     def test_02_start_stop(self):
         """Test start_stop"""
-        try:
-            # mock db
-            def _start_db():
-                _start_db.called = True
-            flexmock(self._dbclass).should_receive('_start_db').replace_with(_start_db)
-            def _stop_db(force=False):
-                _stop_db.called = True
-            flexmock(self._dbclass).should_receive('_stop_db').replace_with(_stop_db)
-            def tables():
-                tables.called = True
-            flexmock(self._dbclass).should_receive('_setup_tables').replace_with(tables)
-            def init():
-                init.called = True
-            flexmock(self._dbclass).should_receive('init').replace_with(init)
-            
-            _start_db.called = False
-            _stop_db.called = False
-            tables.called = False
-            init.called = False
-            
-            # test start
-            cfg = {'db':{'name':'name','numthreads':1,'sqlite_cachesize':1000}}
-            newdb = self._dbclass(cfg)
-            if not newdb:
-                raise Exception('start_stop did not return db object')
-            
-            newdb.start()
-            if _start_db.called != True:
-                raise Exception('start_stop did not call _start_db')
-            elif tables.called != True:
-                raise Exception('start_stop did not call _setup_tables')
-            elif init.called != True:
-                raise Exception('start_stop did not call init')
-            
-            # test stop
-            newdb.stop()
-            if _stop_db.called != True:
-                raise Exception('start_stop did not call _stop_db')
-            
-        except Exception, e:
-            logger.error('Error running db start_stop test - %s',str(e))
-            printer('Test db:%s start_stop'%self._dbclass.__name__,False)
-            raise
-        else:
-            printer('Test db:%s start_stop'%self._dbclass.__name__)
-    
-    
+        # mock db
+        def _start_db():
+            _start_db.called = True
+        flexmock(self._dbclass).should_receive('_start_db').replace_with(_start_db)
+        def _stop_db(force=False):
+            _stop_db.called = True
+        flexmock(self._dbclass).should_receive('_stop_db').replace_with(_stop_db)
+        def tables():
+            tables.called = True
+        flexmock(self._dbclass).should_receive('_setup_tables').replace_with(tables)
+        def init():
+            init.called = True
+        flexmock(self._dbclass).should_receive('init').replace_with(init)
+
+        _start_db.called = False
+        _stop_db.called = False
+        tables.called = False
+        init.called = False
+
+        # test start
+        cfg = {'db':{'name':'name','numthreads':1,'sqlite_cachesize':1000}}
+        newdb = self._dbclass(cfg)
+        if not newdb:
+            raise Exception('start_stop did not return db object')
+
+        newdb.start()
+        if _start_db.called != True:
+            raise Exception('start_stop did not call _start_db')
+        elif tables.called != True:
+            raise Exception('start_stop did not call _setup_tables')
+        elif init.called != True:
+            raise Exception('start_stop did not call init')
+
+        # test stop
+        newdb.stop()
+        if _stop_db.called != True:
+            raise Exception('start_stop did not call _stop_db')
+
+
 try:
     import apsw
 except:
@@ -386,13 +352,13 @@ else:
     class sqlite_test(dbapi_test):
         def setUp(self):
             super(sqlite_test,self).setUp()
-            
+
             # set db class
             self._dbclass = db.SQLite
-        
+
         def tearDown(self):
             super(sqlite_test,self).tearDown()
-    
+
 
 try:
     import MySQLdb
@@ -404,14 +370,14 @@ else:
     class mysql_test(dbapi_test):
         def setUp(self):
             super(mysql_test,self).setUp()
-            
+
             # set db class
             self._dbclass = db.MySQL
-        
+
         def tearDown(self):
             super(mysql_test,self).tearDown()
-    
-    
+
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(modules_db_test))

@@ -4,7 +4,7 @@ Test script for gridftp tornado integration
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import printer, glob_tests
+from tests.util import unittest_reporter, glob_tests
 
 import logging
 logger = logging.getLogger('gridftp')
@@ -30,6 +30,11 @@ except ImportError:
 import tornado.ioloop
 
 import iceprod.server.gridftp
+
+skip_tests = False
+if (subprocess.call(['which','uberftp']) or
+    subprocess.call(['which','globus-url-copy'])):
+    skip_tests = True
 
 class gridftp_test(unittest.TestCase):
 
@@ -57,87 +62,69 @@ class gridftp_test(unittest.TestCase):
         shutil.rmtree(self.test_dir)
         super(gridftp_test,self).tearDown()
 
-    def test_callback(self):
+    @unittest_reporter(skip=skip_tests)
+    def test_01_callback(self):
         """Test async callback"""
+        address = os.path.join(self.server_test_dir,'test')
+        filecontents = 'this is a test'
+
+        def cb(ret):
+            cb.ret = ret
+            tornado.ioloop.IOLoop.instance().stop()
+        cb.ret = False
+
         try:
-            address = os.path.join(self.server_test_dir,'test')
-            filecontents = 'this is a test'
+            # put str
+            iceprod.server.gridftp.GridFTP.put(address,data=filecontents,callback=cb,
+                                               request_timeout=self._timeout)
+            tornado.ioloop.IOLoop.instance().start()
+            ret = cb.ret
 
-            def cb(ret):
-                cb.ret = ret
-                tornado.ioloop.IOLoop.instance().stop()
-            cb.ret = False
-
+            if ret is not True:
+                raise Exception('put failed: ret=%r'%ret)
+        finally:
             try:
-                # put str
-                iceprod.server.gridftp.GridFTP.put(address,data=filecontents,callback=cb,
-                                                   request_timeout=self._timeout)
-                tornado.ioloop.IOLoop.instance().start()
-                ret = cb.ret
+                iceprod.server.gridftp.GridFTP.delete(address,
+                                                      request_timeout=self._timeout)
+            except:
+                pass
 
-                if ret is not True:
-                    raise Exception('put failed: ret=%r'%ret)
-            finally:
-                try:
-                    iceprod.server.gridftp.GridFTP.delete(address,
-                                                          request_timeout=self._timeout)
-                except:
-                    pass
-
-        except Exception as e:
-            logger.error('Error running callback test: %s',str(e))
-            printer('Test gridftp async callback',False)
-            raise
-        else:
-            printer('Test gridftp async callback')
-
-    def test_streaming_callback(self):
+    @unittest_reporter(skip=skip_tests)
+    def test_02_streaming_callback(self):
         """Test async streaming callback"""
+        address = os.path.join(self.server_test_dir,'test')
+        filecontents = 'this is a test'
+        def contents():
+            # give every 10 chars
+            for i in xrange(0,len(filecontents),10):
+                yield filecontents[i:i+10]
+
+        def cb(ret):
+            cb.ret = ret
+            tornado.ioloop.IOLoop.instance().stop()
+        cb.ret = False
+
         try:
-            address = os.path.join(self.server_test_dir,'test')
-            filecontents = 'this is a test'
-            def contents():
-                # give every 10 chars
-                for i in xrange(0,len(filecontents),10):
-                    yield filecontents[i:i+10]
+            # put from function
+            iceprod.server.gridftp.GridFTP.put(address,
+                                               streaming_callback=contents().next,
+                                               callback=cb,
+                                               request_timeout=self._timeout)
+            tornado.ioloop.IOLoop.instance().start()
+            ret = cb.ret
 
-            def cb(ret):
-                cb.ret = ret
-                tornado.ioloop.IOLoop.instance().stop()
-            cb.ret = False
-
+            if ret is not True:
+                raise Exception('put failed: ret=%r'%ret)
+        finally:
             try:
-                # put from function
-                iceprod.server.gridftp.GridFTP.put(address,
-                                                   streaming_callback=contents().next,
-                                                   callback=cb,
-                                                   request_timeout=self._timeout)
-                tornado.ioloop.IOLoop.instance().start()
-                ret = cb.ret
-
-                if ret is not True:
-                    raise Exception('put failed: ret=%r'%ret)
-            finally:
-                try:
-                    iceprod.server.gridftp.GridFTP.delete(address,
-                                                          request_timeout=self._timeout)
-                except:
-                    pass
-
-        except Exception as e:
-            logger.error('Error running streaming callback test: %s',str(e))
-            printer('Test gridftp async streaming callback',False)
-            raise
-        else:
-            printer('Test gridftp async streaming callback')
+                iceprod.server.gridftp.GridFTP.delete(address,
+                                                      request_timeout=self._timeout)
+            except:
+                pass
 
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    if (subprocess.call(['which','uberftp']) or
-        subprocess.call(['which','globus-url-copy'])):
-        print('skipping gridftp tests: uberftp or globus-url-copy not found')
-        return suite
     alltests = glob_tests(loader.getTestCaseNames(gridftp_test))
     suite.addTests(loader.loadTestsFromNames(alltests,gridftp_test))
     return suite

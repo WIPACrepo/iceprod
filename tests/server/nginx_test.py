@@ -4,7 +4,7 @@ Test script for nginx
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import printer, glob_tests
+from tests.util import unittest_reporter, glob_tests
 
 import logging
 logger = logging.getLogger('nginx_test')
@@ -15,6 +15,7 @@ import tempfile
 import random
 import threading
 import glob
+import subprocess
 
 try:
     import unittest2 as unittest
@@ -30,6 +31,9 @@ from iceprod.server import nginx
 
 from iceprod.server import ssl_cert
 
+skip_tests = False
+if subprocess.call(['which','nginx']):
+    skip_tests = True
 
 # a simple server for testing the proxy
 def server(port,cb):
@@ -87,7 +91,7 @@ def server(port,cb):
                 self.end_headers()
             self.wfile.write(ret)
             self.wfile.close()
-    
+
     SocketServer.TCPServer.allow_reuse_address = True
     httpd = SocketServer.TCPServer(("localhost", port), Handler)
     def noop(*args,**kwargs):
@@ -110,10 +114,10 @@ class nginx_test(unittest.TestCase):
     def setUp(self):
         super(nginx_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        
+
         self.ssl_key = os.path.join(self.test_dir,'test.key')
         self.ssl_cert = os.path.join(self.test_dir,'test.crt')
-        
+
         # get hostname
         hostname = functions.gethostname()
         if hostname is None:
@@ -121,465 +125,423 @@ class nginx_test(unittest.TestCase):
         elif isinstance(hostname,set):
             hostname = hostname.pop()
         self.hostname = hostname
-        
+
         # make cert
         ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,hostname=hostname)
-    
+
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(nginx_test,self).tearDown()
-    
+
+    @unittest_reporter(skip=skip_tests)
     def test_01_init(self):
         """Test __init__"""
-        try:
-            # default setup
-            n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
-                            access_log=os.path.join(self.test_dir,'access.log'),
-                            error_log=os.path.join(self.test_dir,'nginx_error.log'))
-            
-            # test config file
-            filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
-            if not os.path.exists(filename):
-                raise Exception('Basic config does not produce nginx.conf')
-            for i,line in enumerate(open(filename)):
-                line = line.strip()
-                if not line.endswith(';') and '{' not in line and '}' not in line:
-                    raise Exception('Basic config missing semicolon at line %d'%i)
-            
-            # test ssl and auth_basic
-            if n.ssl is True:
-                raise Exception('Basic config has ssl enabled')
-            if n.auth_basic is True:
-                raise Exception('Basic config has auth_basic enabled')
-            
-            
-            # auth_basic setup
-            n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
-                            access_log=os.path.join(self.test_dir,'access.log'),
-                            error_log=os.path.join(self.test_dir,'nginx_error.log'),
-                            username='user',
-                            password='pass')
-            
-            # test config file
-            filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
-            if not os.path.exists(filename):
-                raise Exception('auth_basic config does not produce nginx.conf')
-            for i,line in enumerate(open(filename)):
-                line = line.strip()
-                if not line.endswith(';') and '{' not in line and '}' not in line:
-                    raise Exception('auth_basic config missing semicolon at line %d'%i)
-            
-            # test ssl and auth_basic
-            if n.ssl is True:
-                raise Exception('auth_basic config has ssl enabled')
-            if n.auth_basic is False:
-                raise Exception('auth_basic config has auth_basic disabled')
-            if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
-                raise Exception('auth_basic config missing authbasic.htpasswd file')
-            
-            # ssl setup
-            n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
-                            access_log=os.path.join(self.test_dir,'access.log'),
-                            error_log=os.path.join(self.test_dir,'nginx_error.log'),
-                            sslkey=self.ssl_key,
-                            sslcert=self.ssl_cert)
-            
-            # test config file
-            filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
-            if not os.path.exists(filename):
-                raise Exception('ssl config does not produce nginx.conf')
-            for i,line in enumerate(open(filename)):
-                line = line.strip()
-                if not line.endswith(';') and '{' not in line and '}' not in line:
-                    raise Exception('ssl config missing semicolon at line %d'%i)
-            
-            # test ssl and auth_basic
-            if n.ssl is False:
-                raise Exception('ssl config has ssl disabled')
-            if n.auth_basic is True:
-                raise Exception('ssl config has auth_basic enabled')
-            
-            
-            # authbasic and ssl setup
-            n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
-                            access_log=os.path.join(self.test_dir,'access.log'),
-                            error_log=os.path.join(self.test_dir,'nginx_error.log'),
-                            sslkey=self.ssl_key,
-                            sslcert=self.ssl_cert,
-                            username='user',
-                            password='pass')
-            
-            # test config file
-            filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
-            if not os.path.exists(filename):
-                raise Exception('auth_basic+ssl config does not produce nginx.conf')
-            for i,line in enumerate(open(filename)):
-                line = line.strip()
-                if not line.endswith(';') and '{' not in line and '}' not in line:
-                    raise Exception('auth_basic+ssl config missing semicolon at line %d'%i)
-            
-            # test ssl and auth_basic
-            if n.ssl is False:
-                raise Exception('auth_basic+ssl config has ssl disabled')
-            if n.auth_basic is False:
-                raise Exception('auth_basic+ssl config has auth_basic disabled')
-            if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
-                raise Exception('auth_basic+ssl config missing authbasic.htpasswd file')
-            
-        except Exception as e:
-            logger.error('Error running nginx.__init__ test - %s',str(e))
-            printer('Test nginx.__init__',False)
-            raise
-        else:
-            printer('Test nginx.__init__')
+        # default setup
+        n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
+                        access_log=os.path.join(self.test_dir,'access.log'),
+                        error_log=os.path.join(self.test_dir,'nginx_error.log'))
 
+        # test config file
+        filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
+        if not os.path.exists(filename):
+            raise Exception('Basic config does not produce nginx.conf')
+        for i,line in enumerate(open(filename)):
+            line = line.strip()
+            if not line.endswith(';') and '{' not in line and '}' not in line:
+                raise Exception('Basic config missing semicolon at line %d'%i)
+
+        # test ssl and auth_basic
+        if n.ssl is True:
+            raise Exception('Basic config has ssl enabled')
+        if n.auth_basic is True:
+            raise Exception('Basic config has auth_basic enabled')
+
+
+        # auth_basic setup
+        n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
+                        access_log=os.path.join(self.test_dir,'access.log'),
+                        error_log=os.path.join(self.test_dir,'nginx_error.log'),
+                        username='user',
+                        password='pass')
+
+        # test config file
+        filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
+        if not os.path.exists(filename):
+            raise Exception('auth_basic config does not produce nginx.conf')
+        for i,line in enumerate(open(filename)):
+            line = line.strip()
+            if not line.endswith(';') and '{' not in line and '}' not in line:
+                raise Exception('auth_basic config missing semicolon at line %d'%i)
+
+        # test ssl and auth_basic
+        if n.ssl is True:
+            raise Exception('auth_basic config has ssl enabled')
+        if n.auth_basic is False:
+            raise Exception('auth_basic config has auth_basic disabled')
+        if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
+            raise Exception('auth_basic config missing authbasic.htpasswd file')
+
+        # ssl setup
+        n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
+                        access_log=os.path.join(self.test_dir,'access.log'),
+                        error_log=os.path.join(self.test_dir,'nginx_error.log'),
+                        sslkey=self.ssl_key,
+                        sslcert=self.ssl_cert)
+
+        # test config file
+        filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
+        if not os.path.exists(filename):
+            raise Exception('ssl config does not produce nginx.conf')
+        for i,line in enumerate(open(filename)):
+            line = line.strip()
+            if not line.endswith(';') and '{' not in line and '}' not in line:
+                raise Exception('ssl config missing semicolon at line %d'%i)
+
+        # test ssl and auth_basic
+        if n.ssl is False:
+            raise Exception('ssl config has ssl disabled')
+        if n.auth_basic is True:
+            raise Exception('ssl config has auth_basic enabled')
+
+
+        # authbasic and ssl setup
+        n = nginx.Nginx(cfg_file=os.path.join(self.test_dir,'nginx.conf'),
+                        access_log=os.path.join(self.test_dir,'access.log'),
+                        error_log=os.path.join(self.test_dir,'nginx_error.log'),
+                        sslkey=self.ssl_key,
+                        sslcert=self.ssl_cert,
+                        username='user',
+                        password='pass')
+
+        # test config file
+        filename = os.path.expandvars(os.path.join(self.test_dir,'nginx.conf'))
+        if not os.path.exists(filename):
+            raise Exception('auth_basic+ssl config does not produce nginx.conf')
+        for i,line in enumerate(open(filename)):
+            line = line.strip()
+            if not line.endswith(';') and '{' not in line and '}' not in line:
+                raise Exception('auth_basic+ssl config missing semicolon at line %d'%i)
+
+        # test ssl and auth_basic
+        if n.ssl is False:
+            raise Exception('auth_basic+ssl config has ssl disabled')
+        if n.auth_basic is False:
+            raise Exception('auth_basic+ssl config has auth_basic disabled')
+        if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
+            raise Exception('auth_basic+ssl config missing authbasic.htpasswd file')
+
+    @unittest_reporter(skip=skip_tests)
     def test_02_start_stop(self):
         """Test start/stop"""
-        try:
-            # common kwargs
-            common = {
-                'prefix': self.test_dir,
-                'pid_file': os.path.join(self.test_dir,'nginx.pid'),
-                'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
-                'access_log': os.path.join(self.test_dir,'access.log'),
-                'error_log': os.path.join(self.test_dir,'nginx_error.log'),
-                }
-        
-            instances = {}
-            # default setup
-            instances['default'] = {
-                }
-            # auth_basic setup
-            instances['auth_basic'] = {
-                'username': 'user',
-                'password': 'pass',
-                }
-            # ssl setup
-            instances['ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                }
-            # authbasic and ssl setup
-            instances['auth_basic+ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                'username': 'user',
-                'password': 'pass',
-                }
-            
-            for desc in instances:
-                kwargs = common.copy()
-                kwargs.update(instances[desc])
-                n = nginx.Nginx(**kwargs)
-                try:
-                    n.start()
-                except Exception:
-                    raise Exception('start %s failed',desc,exc_info=True)
-                try:
-                    n.stop()
-                except Exception:
-                    raise Exception('stop %s failed',desc,exc_info=True)
-        
-        except Exception as e:
-            logger.error('Error running nginx.start/stop test - %s',str(e))
-            printer('Test nginx.start/stop',False)
-            raise
-        else:
-            printer('Test nginx.start/stop')
+        # common kwargs
+        common = {
+            'prefix': self.test_dir,
+            'pid_file': os.path.join(self.test_dir,'nginx.pid'),
+            'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
+            'access_log': os.path.join(self.test_dir,'access.log'),
+            'error_log': os.path.join(self.test_dir,'nginx_error.log'),
+            }
 
+        instances = {}
+        # default setup
+        instances['default'] = {
+            }
+        # auth_basic setup
+        instances['auth_basic'] = {
+            'username': 'user',
+            'password': 'pass',
+            }
+        # ssl setup
+        instances['ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            }
+        # authbasic and ssl setup
+        instances['auth_basic+ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            'username': 'user',
+            'password': 'pass',
+            }
+
+        for desc in instances:
+            kwargs = common.copy()
+            kwargs.update(instances[desc])
+            n = nginx.Nginx(**kwargs)
+            try:
+                n.start()
+            except Exception:
+                raise Exception('start %s failed',desc,exc_info=True)
+            try:
+                n.stop()
+            except Exception:
+                raise Exception('stop %s failed',desc,exc_info=True)
+
+    @unittest_reporter(skip=skip_tests)
     def test_03_start_kill(self):
         """Test start/kill"""
-        try:
-            # common kwargs
-            common = {
-                'prefix': self.test_dir,
-                'pid_file': os.path.join(self.test_dir,'nginx.pid'),
-                'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
-                'access_log': os.path.join(self.test_dir,'access.log'),
-                'error_log': os.path.join(self.test_dir,'nginx_error.log'),
-                }
-        
-            instances = {}
-            # default setup
-            instances['default'] = {
-                }
-            
-            for desc in instances:
-                kwargs = common.copy()
-                kwargs.update(instances[desc])
-                n = nginx.Nginx(**kwargs)
-                try:
-                    n.start()
-                except Exception:
-                    raise Exception('start %s failed',desc,exc_info=True)
-                try:
-                    n.kill()
-                except Exception:
-                    raise Exception('kill %s failed',desc,exc_info=True)
-        
-        except Exception as e:
-            logger.error('Error running nginx.start/kill test - %s',str(e))
-            printer('Test nginx.start/kill',False)
-            raise
-        else:
-            printer('Test nginx.start/kill')
+        # common kwargs
+        common = {
+            'prefix': self.test_dir,
+            'pid_file': os.path.join(self.test_dir,'nginx.pid'),
+            'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
+            'access_log': os.path.join(self.test_dir,'access.log'),
+            'error_log': os.path.join(self.test_dir,'nginx_error.log'),
+            }
 
+        instances = {}
+        # default setup
+        instances['default'] = {
+            }
+
+        for desc in instances:
+            kwargs = common.copy()
+            kwargs.update(instances[desc])
+            n = nginx.Nginx(**kwargs)
+            try:
+                n.start()
+            except Exception:
+                raise Exception('start %s failed',desc,exc_info=True)
+            try:
+                n.kill()
+            except Exception:
+                raise Exception('kill %s failed',desc,exc_info=True)
+
+    @unittest_reporter(skip=skip_tests)
     def test_04_logrotate(self):
         """Test logrotate"""
-        try:
-            # common kwargs
-            common = {
-                'prefix': self.test_dir,
-                'pid_file': os.path.join(self.test_dir,'nginx.pid'),
-                'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
-                'access_log': os.path.join(self.test_dir,'access.log'),
-                'error_log': os.path.join(self.test_dir,'nginx_error.log'),
-                }
-        
-            instances = {}
-            # default setup
-            instances['default'] = {
-                }
-            
-            for desc in instances:
-                kwargs = common.copy()
-                kwargs.update(instances[desc])
-                n = nginx.Nginx(**kwargs)
-                try:
-                    n.start()
-                except Exception:
-                    raise Exception('start %s failed',desc,exc_info=True)
-                n.logrotate()
-                log_path = os.path.join(self.test_dir,'nginx_error.log_*')
-                files = glob.glob(log_path)
-                if not files:
-                    raise Exception('no rotated file')
-                for f in files:
-                    os.unlink(f)
+        # common kwargs
+        common = {
+            'prefix': self.test_dir,
+            'pid_file': os.path.join(self.test_dir,'nginx.pid'),
+            'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
+            'access_log': os.path.join(self.test_dir,'access.log'),
+            'error_log': os.path.join(self.test_dir,'nginx_error.log'),
+            }
+
+        instances = {}
+        # default setup
+        instances['default'] = {
+            }
+
+        for desc in instances:
+            kwargs = common.copy()
+            kwargs.update(instances[desc])
+            n = nginx.Nginx(**kwargs)
+            try:
+                n.start()
+            except Exception:
+                raise Exception('start %s failed',desc,exc_info=True)
+            n.logrotate()
+            log_path = os.path.join(self.test_dir,'nginx_error.log_*')
+            files = glob.glob(log_path)
+            if not files:
+                raise Exception('no rotated file')
+            for f in files:
+                os.unlink(f)
+            try:
+                n.stop()
+            except Exception:
+                raise Exception('stop %s failed',desc,exc_info=True)
+
+    @unittest_reporter(skip=skip_tests)
+    def test_09_static_download(self):
+        """Test static download"""
+        static_dir = os.path.join(self.test_dir,'static')
+        os.mkdir(static_dir)
+
+        # common kwargs
+        common = {
+            'prefix': self.test_dir,
+            'pid_file': os.path.join(self.test_dir,'nginx.pid'),
+            'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
+            'access_log': os.path.join(self.test_dir,'access.log'),
+            'error_log': os.path.join(self.test_dir,'nginx_error.log'),
+            'static_dir': static_dir,
+            'port': 8080,
+            }
+
+        instances = {}
+        # default setup
+        instances['default'] = {
+            }
+        # auth_basic setup
+        instances['auth_basic'] = {
+            'username': 'user',
+            'password': 'pass',
+            }
+        # ssl setup
+        instances['ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            }
+        # authbasic and ssl setup
+        instances['auth_basic+ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            'username': 'user',
+            'password': 'pass',
+            }
+
+        pycurl_handle = util.PycURL()
+        dest_path = os.path.join(self.test_dir,'download')
+        url = 'http://'+self.hostname+':8080/static'
+        for desc in instances:
+            kwargs = common.copy()
+            kwargs.update(instances[desc])
+            n = nginx.Nginx(**kwargs)
+            try:
+                n.start()
+            except Exception:
+                raise Exception('start %s failed',desc,exc_info=True)
+
+            try:
+                for _ in xrange(10):
+                    # try to download from static dir
+                    filename = str(random.randint(0,10000))
+                    filecontents = str(random.randint(0,10000))
+                    dest_path = os.path.join(self.test_dir,filename)
+                    with open(os.path.join(static_dir,filename),'w') as f:
+                        f.write(filecontents)
+
+                    try:
+                        # static dir should not require username or password, so leave them blank
+                        pycurl_handle.fetch(os.path.join(url,filename),dest_path,
+                                            cacert=self.ssl_cert)
+                    except Exception:
+                        raise Exception('pycurl failed to download file',exc_info=True)
+
+                    if not os.path.exists(dest_path):
+                        raise Exception('downloaded file not found')
+                    newcontents = ''
+                    with open(dest_path) as f:
+                        newcontents = f.read(1000)
+                    if newcontents != filecontents:
+                        logger.info('correct contents: %r',filecontents)
+                        logger.info('downloaded contents: %r',newcontents)
+                        raise Exception('contents not equal')
+
+                    os.remove(dest_path)
+            finally:
                 try:
                     n.stop()
                 except Exception:
                     raise Exception('stop %s failed',desc,exc_info=True)
-        
-        except Exception as e:
-            logger.error('Error running nginx.logrotate test - %s',str(e))
-            printer('Test nginx.logrotate',False)
-            raise
-        else:
-            printer('Test nginx.logrotate')
-    
-    def test_09_static_download(self):
-        """Test start/stop"""
-        try:
-            static_dir = os.path.join(self.test_dir,'static')
-            os.mkdir(static_dir)
-            
-            # common kwargs
-            common = {
-                'prefix': self.test_dir,
-                'pid_file': os.path.join(self.test_dir,'nginx.pid'),
-                'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
-                'access_log': os.path.join(self.test_dir,'access.log'),
-                'error_log': os.path.join(self.test_dir,'nginx_error.log'),
-                'static_dir': static_dir,
-                'port': 8080,
-                }
-        
-            instances = {}
-            # default setup
-            instances['default'] = {
-                }
-            # auth_basic setup
-            instances['auth_basic'] = {
-                'username': 'user',
-                'password': 'pass',
-                }
-            # ssl setup
-            instances['ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                }
-            # authbasic and ssl setup
-            instances['auth_basic+ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                'username': 'user',
-                'password': 'pass',
-                }
-            
-            pycurl_handle = util.PycURL()
-            dest_path = os.path.join(self.test_dir,'download')
-            url = 'http://'+self.hostname+':8080/static'
-            for desc in instances:
-                kwargs = common.copy()
-                kwargs.update(instances[desc])
-                n = nginx.Nginx(**kwargs)
-                try:
-                    n.start()
-                except Exception:
-                    raise Exception('start %s failed',desc,exc_info=True)
-                
-                try:
-                    for _ in xrange(10):
-                        # try to download from static dir
-                        filename = str(random.randint(0,10000))
-                        filecontents = str(random.randint(0,10000))
-                        dest_path = os.path.join(self.test_dir,filename)
-                        with open(os.path.join(static_dir,filename),'w') as f:
-                            f.write(filecontents)
-                        
-                        try:
-                            # static dir should not require username or password, so leave them blank
-                            pycurl_handle.fetch(os.path.join(url,filename),dest_path,
-                                                cacert=self.ssl_cert)
-                        except Exception:
-                            raise Exception('pycurl failed to download file',exc_info=True)
-                        
-                        if not os.path.exists(dest_path):
-                            raise Exception('downloaded file not found')
-                        newcontents = ''
-                        with open(dest_path) as f:
-                            newcontents = f.read(1000)
-                        if newcontents != filecontents:
-                            logger.info('correct contents: %r',filecontents)
-                            logger.info('downloaded contents: %r',newcontents)
-                            raise Exception('contents not equal')
-                    
-                        os.remove(dest_path)
-                finally:
-                    try:
-                        n.stop()
-                    except Exception:
-                        raise Exception('stop %s failed',desc,exc_info=True)
-        
-        except Exception as e:
-            logger.error('Error running nginx.start/stop test - %s',str(e))
-            printer('Test nginx static download',False)
-            raise
-        else:
-            printer('Test nginx static download')
-    
+
+    @unittest_reporter(skip=skip_tests)
     def test_10_proxy(self):
         """Test proxy"""
-        try:
-            static_dir = os.path.join(self.test_dir,'static')
-            os.mkdir(static_dir)
-            
-            # common kwargs
-            common = {
-                'prefix': self.test_dir,
-                'pid_file': os.path.join(self.test_dir,'nginx.pid'),
-                'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
-                'access_log': os.path.join(self.test_dir,'access.log'),
-                'error_log': os.path.join(self.test_dir,'nginx_error.log'),
-                'static_dir': static_dir,
-                'port': 8080,
-                'proxy_port': 8081,
-                }
-        
-            instances = {}
-            # default setup
-            instances['default'] = {
-                }
-            # auth_basic setup
-            instances['auth_basic'] = {
-                'username': 'user',
-                'password': 'pass',
-                }
-            # ssl setup
-            instances['ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                }
-            # authbasic and ssl setup
-            instances['auth_basic+ssl'] = {
-                'sslkey': self.ssl_key,
-                'sslcert': self.ssl_cert,
-                'username': 'user',
-                'password': 'pass',
-                }
-            
-            filecontents = str(random.randint(0,10000))
-            def proxy(url,input=None):
-                # get a request
-                proxy.url = url
-                proxy.input = input
-                if proxy.success:
-                    return filecontents
-                else:
-                    return ('',404)
-            
-            with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
-                try:
-                    http = server(common['proxy_port'],proxy)
-                except Exception:
-                    logger.error('initializing server failed',exc_info=True)
-                    raise Exception('failed to start proxy server')
-                
-                try:
-                    pycurl_handle = util.PycURL()
-                    dest_path = os.path.join(self.test_dir,'download')
-                    url = 'http://'+self.hostname+':8080/'
-                    for desc in instances:
-                        kwargs = common.copy()
-                        kwargs.update(instances[desc])
-                        n = nginx.Nginx(**kwargs)
-                        try:
-                            n.start()
-                        except Exception:
-                            raise Exception('start %s failed',desc,exc_info=True)
-                        
-                        try:
-                            for _ in xrange(10):
-                                # try to open main page
-                                proxy.success = True
-                                try:
-                                    # static dir should not require username or password, so leave them blank
-                                    pycurl_handle.fetch(url,dest_path,
-                                                        cacert=self.ssl_cert)
-                                except Exception :
-                                    raise Exception('pycurl failed to download file',exc_info=True)
-                                
-                                if not os.path.exists(dest_path):
-                                    raise Exception('downloaded file not found')
-                                newcontents = ''
-                                with open(dest_path) as f:
-                                    newcontents = f.read(1000)
-                                if newcontents != filecontents:
-                                    logger.info('correct contents: %r',filecontents)
-                                    logger.info('downloaded contents: %r',newcontents)
-                                    raise Exception('contents not equal')
-                                os.remove(dest_path)
-                                
-                                # see what happens when it errors
-                                proxy.success = False
-                                try:
-                                    # static dir should not require username or password, so leave them blank
-                                    pycurl_handle.fetch(url,dest_path,
-                                                        cacert=self.ssl_cert)
-                                except Exception:
-                                    pass
-                                else:
-                                    raise Exception('pycurl succeeds when it should fail')
-                                
-                        finally:
-                            try:
-                                n.stop()
-                            except Exception:
-                                raise Exception('stop %s failed',desc,exc_info=True)
-                finally:
+        static_dir = os.path.join(self.test_dir,'static')
+        os.mkdir(static_dir)
+
+        # common kwargs
+        common = {
+            'prefix': self.test_dir,
+            'pid_file': os.path.join(self.test_dir,'nginx.pid'),
+            'cfg_file': os.path.join(self.test_dir,'nginx.conf'),
+            'access_log': os.path.join(self.test_dir,'access.log'),
+            'error_log': os.path.join(self.test_dir,'nginx_error.log'),
+            'static_dir': static_dir,
+            'port': 8080,
+            'proxy_port': 8081,
+            }
+
+        instances = {}
+        # default setup
+        instances['default'] = {
+            }
+        # auth_basic setup
+        instances['auth_basic'] = {
+            'username': 'user',
+            'password': 'pass',
+            }
+        # ssl setup
+        instances['ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            }
+        # authbasic and ssl setup
+        instances['auth_basic+ssl'] = {
+            'sslkey': self.ssl_key,
+            'sslcert': self.ssl_cert,
+            'username': 'user',
+            'password': 'pass',
+            }
+
+        filecontents = str(random.randint(0,10000))
+        def proxy(url,input=None):
+            # get a request
+            proxy.url = url
+            proxy.input = input
+            if proxy.success:
+                return filecontents
+            else:
+                return ('',404)
+
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+            try:
+                http = server(common['proxy_port'],proxy)
+            except Exception:
+                logger.error('initializing server failed',exc_info=True)
+                raise Exception('failed to start proxy server')
+
+            try:
+                pycurl_handle = util.PycURL()
+                dest_path = os.path.join(self.test_dir,'download')
+                url = 'http://'+self.hostname+':8080/'
+                for desc in instances:
+                    kwargs = common.copy()
+                    kwargs.update(instances[desc])
+                    n = nginx.Nginx(**kwargs)
                     try:
-                        http.shutdown()
-                        time.sleep(0.5)
-                    except:
-                        logger.error('http server failed to stop')
-        
-        except Exception as e:
-            logger.error('Error running nginx.proxy test - %s',str(e))
-            printer('Test nginx proxy',False)
-            raise
-        else:
-            printer('Test nginx proxy')
+                        n.start()
+                    except Exception:
+                        raise Exception('start %s failed',desc,exc_info=True)
+
+                    try:
+                        for _ in xrange(10):
+                            # try to open main page
+                            proxy.success = True
+                            try:
+                                # static dir should not require username or password, so leave them blank
+                                pycurl_handle.fetch(url,dest_path,
+                                                    cacert=self.ssl_cert)
+                            except Exception :
+                                raise Exception('pycurl failed to download file',exc_info=True)
+
+                            if not os.path.exists(dest_path):
+                                raise Exception('downloaded file not found')
+                            newcontents = ''
+                            with open(dest_path) as f:
+                                newcontents = f.read(1000)
+                            if newcontents != filecontents:
+                                logger.info('correct contents: %r',filecontents)
+                                logger.info('downloaded contents: %r',newcontents)
+                                raise Exception('contents not equal')
+                            os.remove(dest_path)
+
+                            # see what happens when it errors
+                            proxy.success = False
+                            try:
+                                # static dir should not require username or password, so leave them blank
+                                pycurl_handle.fetch(url,dest_path,
+                                                    cacert=self.ssl_cert)
+                            except Exception:
+                                pass
+                            else:
+                                raise Exception('pycurl succeeds when it should fail')
+
+                    finally:
+                        try:
+                            n.stop()
+                        except Exception:
+                            raise Exception('stop %s failed',desc,exc_info=True)
+            finally:
+                try:
+                    http.shutdown()
+                    time.sleep(0.5)
+                except:
+                    logger.error('http server failed to stop')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

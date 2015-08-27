@@ -4,7 +4,7 @@ Test script for queue module
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import printer, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, _messaging
 
 import logging
 logger = logging.getLogger('queue_test')
@@ -23,7 +23,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
-    
+
 try:
     import unittest2 as unittest
 except ImportError:
@@ -42,7 +42,7 @@ class queue_test(unittest.TestCase):
     def setUp(self):
         super(queue_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        
+
         # override listmodules, run_module
         self.listmodules_called = False
         self.listmodules_ret = {}
@@ -53,7 +53,7 @@ class queue_test(unittest.TestCase):
         self.run_module_ret = {}
         flexmock(iceprod.server).should_receive('listmodules').replace_with(self._listmodules)
         flexmock(iceprod.server).should_receive('run_module').replace_with(self._run_module)
-        
+
         def sig(*args):
             sig.args = args
         flexmock(signal).should_receive('signal').replace_with(sig)
@@ -66,18 +66,18 @@ class queue_test(unittest.TestCase):
         def removestdout(*args,**kwargs):
             pass
         flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
-        
+
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(queue_test,self).tearDown()
-    
+
     def _listmodules(self,package_name=''):
         self.listmodules_called = True
         if package_name and package_name in self.listmodules_ret:
             return self.listmodules_ret[package_name]
         else:
             return []
-    
+
     def _run_module(self,name,args):
         self.run_module_called = True
         self.run_module_name = name
@@ -87,573 +87,516 @@ class queue_test(unittest.TestCase):
         else:
             self.run_module_exception = True
             raise Exception('could not run module')
-    
+
+    @unittest_reporter
     def test_01_init(self):
         """Test init"""
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            start.called = False
-            
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            if not q:
-                raise Exception('did not return queue object')
-            if start.called is not True:
-                raise Exception('init did not call start')
-            
-            q.messaging = _messaging()
-            new_cfg = {'new':1}
-            q.messaging.BROADCAST.reload(cfg=new_cfg)
-            if not q.messaging.called:
-                raise Exception('init did not call messaging')
-            if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
-                raise Exception('init did not call correct message')
-            
-        except Exception as e:
-            logger.error('Error running queue init test - %s',str(e))
-            printer('Test queue init',False)
-            raise
-        else:
-            printer('Test queue init')
-    
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        start.called = False
+
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        if not q:
+            raise Exception('did not return queue object')
+        if start.called is not True:
+            raise Exception('init did not call start')
+
+        q.messaging = _messaging()
+        new_cfg = {'new':1}
+        q.messaging.BROADCAST.reload(cfg=new_cfg)
+        if not q.messaging.called:
+            raise Exception('init did not call messaging')
+        if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
+            raise Exception('init did not call correct message')
+
+    @unittest_reporter
     def test_02_start_stop(self):
         """Test start_stop"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
+                    time.sleep(1)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'plugin1':{'type':'Test1','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(1)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
         try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                def __init__(self,*args,**kwargs):
-                    pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        time.sleep(1)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'plugin1':{'type':'Test1','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(1)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
-            try:
-                if not self.listmodules_called:
-                    raise Exception('listmodules not called')
-                if not self.run_module_called:
-                    raise Exception('run_module not called')
-                if self.run_module_exception:
-                    logger.info('run_module name: %s',self.run_module_name)
-                    logger.info('run_module args: %s',self.run_module_args)
-                    raise Exception('run_module raised an Exception')
-            finally:
-                try:
-                    q.stop()
-                except Exception:
-                    logger.info('exception raised',exc_info=True)
-                    raise Exception('queue stop and exception raised')
-                
-                time.sleep(0.5)
-                if q.queue_thread.is_alive():
-                    raise Exception('queue thread still running')
-            
-        except Exception as e:
-            logger.error('Error running queue start_stop test - %s',str(e))
-            printer('Test queue start_stop',False)
-            raise
-        else:
-            printer('Test queue start_stop')
-    
-    def test_03_start_kill(self):
-        """Test start_kill"""
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                def __init__(self,*args,**kwargs):
-                    pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        time.sleep(1)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'plugin1':{'type':'Test1','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(1)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
-            try:
-                if not self.listmodules_called:
-                    raise Exception('listmodules not called')
-                if not self.run_module_called:
-                    raise Exception('run_module not called')
-                if self.run_module_exception:
-                    logger.info('run_module name: %s',self.run_module_name)
-                    logger.info('run_module args: %s',self.run_module_args)
-                    raise Exception('run_module raised an Exception')
-            finally:
-                try:
-                    q.kill()
-                except Exception:
-                    logger.info('exception raised',exc_info=True)
-                    raise Exception('queue kill and exception raised')
-                
-                time.sleep(2)
-                if q.queue_thread.is_alive():
-                    raise Exception('queue thread still running')
-            
-        except Exception as e:
-            logger.error('Error running queue start_kill test - %s',str(e))
-            printer('Test queue start_kill',False)
-            raise
-        else:
-            printer('Test queue start_kill')
-    
-    def test_04_queue_timeout(self):
-        """Test queue_timeout"""
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                def __init__(self,*args,**kwargs):
-                    pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        time.sleep(1)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'plugin1':{'type':'Test1','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(2)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
+            if not self.listmodules_called:
+                raise Exception('listmodules not called')
+            if not self.run_module_called:
+                raise Exception('run_module not called')
+            if self.run_module_exception:
+                logger.info('run_module name: %s',self.run_module_name)
+                logger.info('run_module args: %s',self.run_module_args)
+                raise Exception('run_module raised an Exception')
+        finally:
             try:
                 q.stop()
             except Exception:
                 logger.info('exception raised',exc_info=True)
                 raise Exception('queue stop and exception raised')
-            
+
             time.sleep(0.5)
             if q.queue_thread.is_alive():
                 raise Exception('queue thread still running')
-            
-            
-        except Exception as e:
-            logger.error('Error running queue queue_timeout test - %s',str(e))
-            printer('Test queue queue_timeout',False)
-            raise
-        else:
-            printer('Test queue queue_timeout')
-    
+
+    @unittest_reporter
+    def test_03_start_kill(self):
+        """Test start_kill"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
+                    time.sleep(1)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'plugin1':{'type':'Test1','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(1)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
+        try:
+            if not self.listmodules_called:
+                raise Exception('listmodules not called')
+            if not self.run_module_called:
+                raise Exception('run_module not called')
+            if self.run_module_exception:
+                logger.info('run_module name: %s',self.run_module_name)
+                logger.info('run_module args: %s',self.run_module_args)
+                raise Exception('run_module raised an Exception')
+        finally:
+            try:
+                q.kill()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('queue kill and exception raised')
+
+            time.sleep(2)
+            if q.queue_thread.is_alive():
+                raise Exception('queue thread still running')
+
+    @unittest_reporter
+    def test_04_queue_timeout(self):
+        """Test queue_timeout"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
+                    time.sleep(1)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'plugin1':{'type':'Test1','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(2)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
+        try:
+            q.stop()
+        except Exception:
+            logger.info('exception raised',exc_info=True)
+            raise Exception('queue stop and exception raised')
+
+        time.sleep(0.5)
+        if q.queue_thread.is_alive():
+            raise Exception('queue thread still running')
+
+    @unittest_reporter(name='queue() grid calls')
     def test_10_grid_calls(self):
         """Test grid_calls"""
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                name = []
-                def __init__(self,*args,**kwargs):
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            name = []
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
                     pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        pass
-                    logging.info('called %s',name)
-                    Test1.name.append(name)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'task_buffer':10,
-                            'plugin1':{'type':'Test1','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(1)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
+                logging.info('called %s',name)
+                Test1.name.append(name)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'task_buffer':10,
+                        'plugin1':{'type':'Test1','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(1)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
+        try:
+            if 'check_and_clean' not in Test1.name:
+                raise Exception('grid.check_and_clean() not called')
+            if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                logger.info('messages: %r',q.messaging.called)
+                raise Exception('db.queue_buffer_jobs_tasks() not called')
+            if 'queue' not in Test1.name:
+                raise Exception('grid.queue() not called')
+        finally:
             try:
-                if 'check_and_clean' not in Test1.name:
-                    raise Exception('grid.check_and_clean() not called')
-                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
-                    logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.queue_buffer_jobs_tasks() not called')
-                if 'queue' not in Test1.name:
-                    raise Exception('grid.queue() not called')
-            finally:
-                try:
-                    q.stop()
-                except Exception:
-                    logger.info('exception raised',exc_info=True)
-                    raise Exception('queue stop and exception raised')
-                
-                time.sleep(0.5)
-                if q.queue_thread.is_alive():
-                    raise Exception('queue thread still running')
-            
-        except Exception as e:
-            logger.error('Error running queue grid_calls test - %s',str(e))
-            printer('Test queue grid_calls',False)
-            raise
-        else:
-            printer('Test queue grid_calls')
-    
+                q.stop()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('queue stop and exception raised')
+
+            time.sleep(0.5)
+            if q.queue_thread.is_alive():
+                raise Exception('queue thread still running')
+
+    @unittest_reporter(name='queue() partial match')
     def test_11_partial_match(self):
         """Test partial_match"""
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                name = []
-                def __init__(self,*args,**kwargs):
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            name = []
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
                     pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        pass
-                    logging.info('called %s',name)
-                    Test1.name.append(name)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'task_buffer':10,
-                            'plugin1':{'type':'Test1.dag','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(1)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
+                logging.info('called %s',name)
+                Test1.name.append(name)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1()}
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'task_buffer':10,
+                        'plugin1':{'type':'Test1.dag','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(1)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
+        try:
+            if 'check_and_clean' not in Test1.name:
+                raise Exception('grid.check_and_clean() not called')
+            if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                logger.info('messages: %r',q.messaging.called)
+                raise Exception('db.queue_buffer_jobs_tasks() not called')
+            if 'queue' not in Test1.name:
+                raise Exception('grid.queue() not called')
+        finally:
             try:
-                if 'check_and_clean' not in Test1.name:
-                    raise Exception('grid.check_and_clean() not called')
-                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
-                    logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.queue_buffer_jobs_tasks() not called')
-                if 'queue' not in Test1.name:
-                    raise Exception('grid.queue() not called')
-            finally:
-                try:
-                    q.stop()
-                except Exception:
-                    logger.info('exception raised',exc_info=True)
-                    raise Exception('queue stop and exception raised')
-                
-                time.sleep(0.5)
-                if q.queue_thread.is_alive():
-                    raise Exception('queue thread still running')
-            
-        except Exception as e:
-            logger.error('Error running queue partial_match test - %s',str(e))
-            printer('Test queue partial_match',False)
-            raise
-        else:
-            printer('Test queue partial_match')
-    
+                q.stop()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('queue stop and exception raised')
+
+            time.sleep(0.5)
+            if q.queue_thread.is_alive():
+                raise Exception('queue thread still running')
+
+    @unittest_reporter(name='queue() multi partial match')
     def test_12_multi_partial_match(self):
         """Test multi_partial_match"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        class Test1(object):
+            name = []
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
+                    pass
+                logging.info('called %s',name)
+                Test1.name.append(name)
+                return func
+        class Test1d(object):
+            name = []
+            def __init__(self,*args,**kwargs):
+                pass
+            def __getattr__(self,name):
+                def func(*args,**kwargs):
+                    pass
+                logging.info('called %s',name)
+                Test1d.name.append(name)
+                return func
+
+        self.listmodules_called = False
+        self.listmodules_ret = {'iceprod.server.plugins': [
+                                        'iceprod.server.plugins.Test1',
+                                        'iceprod.server.plugins.Test1d']
+                                   }
+        self.run_module_called = False
+        self.run_module_exception = False
+        self.run_module_name = None
+        self.run_module_args = None
+        self.run_module_ret = {'iceprod.server.plugins.Test1':Test1(),
+                               'iceprod.server.plugins.Test1d':Test1d()
+                              }
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'task_buffer':10,
+                        'plugin1':{'type':'Test1dag','description':'d'},
+                       }
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        q.messaging = _messaging()
+        q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q._start()
+        time.sleep(1)
+
+        if not q.queue_thread.is_alive():
+            raise Exception('queue thread died immediately')
+
         try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            class Test1(object):
-                name = []
-                def __init__(self,*args,**kwargs):
-                    pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        pass
-                    logging.info('called %s',name)
-                    Test1.name.append(name)
-                    return func
-            class Test1d(object):
-                name = []
-                def __init__(self,*args,**kwargs):
-                    pass
-                def __getattr__(self,name):
-                    def func(*args,**kwargs):
-                        pass
-                    logging.info('called %s',name)
-                    Test1d.name.append(name)
-                    return func
-            
-            self.listmodules_called = False
-            self.listmodules_ret = {'iceprod.server.plugins': [
-                                            'iceprod.server.plugins.Test1',
-                                            'iceprod.server.plugins.Test1d']
-                                       }
-            self.run_module_called = False
-            self.run_module_exception = False
-            self.run_module_name = None
-            self.run_module_args = None
-            self.run_module_ret = {'iceprod.server.plugins.Test1':Test1(),
-                                   'iceprod.server.plugins.Test1d':Test1d()
-                                  }
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'task_buffer':10,
-                            'plugin1':{'type':'Test1dag','description':'d'},
-                           }
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            q.messaging = _messaging()
-            q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            q._start()
-            time.sleep(1)
-            
-            if not q.queue_thread.is_alive():
-                raise Exception('queue thread died immediately')
-            
+            if 'check_and_clean' not in Test1d.name:
+                raise Exception('grid.check_and_clean() not called')
+            if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
+                logger.info('messages: %r',q.messaging.called)
+                raise Exception('db.queue_buffer_jobs_tasks() not called')
+            if 'queue' not in Test1d.name:
+                raise Exception('grid.queue() not called')
+        finally:
             try:
-                if 'check_and_clean' not in Test1d.name:
-                    raise Exception('grid.check_and_clean() not called')
-                if not any('queue_buffer_jobs_tasks' == x[1] for x in q.messaging.called):
-                    logger.info('messages: %r',q.messaging.called)
-                    raise Exception('db.queue_buffer_jobs_tasks() not called')
-                if 'queue' not in Test1d.name:
-                    raise Exception('grid.queue() not called')
-            finally:
-                try:
-                    q.stop()
-                except Exception:
-                    logger.info('exception raised',exc_info=True)
-                    raise Exception('queue stop and exception raised')
-                
-                time.sleep(0.5)
-                if q.queue_thread.is_alive():
-                    raise Exception('queue thread still running')
-            
-        except Exception as e:
-            logger.error('Error running queue multi_partial_match test - %s',str(e))
-            printer('Test queue multi_partial_match',False)
-            raise
-        else:
-            printer('Test queue multi_partial_match')
-    
+                q.stop()
+            except Exception:
+                logger.info('exception raised',exc_info=True)
+                raise Exception('queue stop and exception raised')
+
+            time.sleep(0.5)
+            if q.queue_thread.is_alive():
+                raise Exception('queue thread still running')
+
+    @unittest_reporter
     def test_20_global_queueing(self):
         """Test global_queueing"""
         import tornado.httpclient
-        try:
-            # mock some functions so we don't go too far
-            def start():
-                start.called = True
-            flexmock(queue).should_receive('start').replace_with(start)
-            def http(*args,**kwargs):
-                http.called = True
-                http.args = args
-                http.kwargs = kwargs
-                if 'callback' in kwargs:
-                    kwargs['callback'](http.ret)
-            flexmock(tornado.httpclient.AsyncHTTPClient).should_receive('fetch').replace_with(http)
-            
-            class Response:
-                def __init__(self,**kwargs):
-                    for k in kwargs:
-                        setattr(self,k,kwargs[k])
-            
-            # make cfg
-            cfg = {'site_id':'thesite',
-                   'queue':{'init_queue_interval':0.1,
-                            'queue_interval':1,
-                            'task_buffer':10,
-                            'plugin1':{'type':'Test1dag','description':'d'},
-                           },
-                   'master':{'url':'a://url'}
-                  }
-            bcfg = basic_config.BasicConfig()
-            bcfg.messaging_url = 'localhost'
-            q = queue(bcfg)
-            resources = {'cpus':12,'gpus':3}
-            q.messaging = _messaging()
-            q.messaging.ret = {'db':{'node_get_site_resources':resources,
-                                     'misc_update_tables':None}
-                              }
-            q.cfg = cfg
-            if not q:
-                raise Exception('did not return queue object')
-            
-            http.ret = Response(error=None,body='{"jsonrpc":"2.0","result":{},"id":1}')
-            http.called = False
-            q.global_queueing()
-            
-            if len(q.messaging.called) < 1 or q.messaging.called[0][1] != 'node_get_site_resources':
-                logger.debug(q.messaging.called)
-                raise Exception('node_get_site_resources not called')
-            if not http.called:
-                raise Exception('http fetch not called')
-            if len(q.messaging.called) < 2 or q.messaging.called[1][1] != 'misc_update_tables':
-                logger.debug(q.messaging.called)
-                raise Exception('misc_update_tables not called')
-            
-            # already locked
-            q.messaging.called = []
-            http.called = False
-            q.global_queueing_lock = True
-            q.global_queueing()
-            
-            if len(q.messaging.called) > 0 or http.called:
-                raise Exception('queueing_lock did not stop queueing')
-            
-            # no master url
-            q.messaging.called = []
-            http.called = False
-            q.global_queueing_lock = False
-            del q.cfg['master']['url']
-            q.global_queueing()
-            
-            if len(q.messaging.called) > 0 or http.called:
-                raise Exception('no master url did not stop queueing')
-            
-        except Exception as e:
-            logger.error('Error running queue global_queueing test - %s',str(e))
-            printer('Test queue global_queueing',False)
-            raise
-        else:
-            printer('Test queue global_queueing')
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+        def http(*args,**kwargs):
+            http.called = True
+            http.args = args
+            http.kwargs = kwargs
+            if 'callback' in kwargs:
+                kwargs['callback'](http.ret)
+        flexmock(tornado.httpclient.AsyncHTTPClient).should_receive('fetch').replace_with(http)
+
+        class Response:
+            def __init__(self,**kwargs):
+                for k in kwargs:
+                    setattr(self,k,kwargs[k])
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'task_buffer':10,
+                        'plugin1':{'type':'Test1dag','description':'d'},
+                       },
+               'master':{'url':'a://url'}
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        resources = {'cpus':12,'gpus':3}
+        q.messaging = _messaging()
+        q.messaging.ret = {'db':{'node_get_site_resources':resources,
+                                 'misc_update_tables':None}
+                          }
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        http.ret = Response(error=None,body='{"jsonrpc":"2.0","result":{},"id":1}')
+        http.called = False
+        q.global_queueing()
+
+        if len(q.messaging.called) < 1 or q.messaging.called[0][1] != 'node_get_site_resources':
+            logger.debug(q.messaging.called)
+            raise Exception('node_get_site_resources not called')
+        if not http.called:
+            raise Exception('http fetch not called')
+        if len(q.messaging.called) < 2 or q.messaging.called[1][1] != 'misc_update_tables':
+            logger.debug(q.messaging.called)
+            raise Exception('misc_update_tables not called')
+
+        # already locked
+        q.messaging.called = []
+        http.called = False
+        q.global_queueing_lock = True
+        q.global_queueing()
+
+        if len(q.messaging.called) > 0 or http.called:
+            raise Exception('queueing_lock did not stop queueing')
+
+        # no master url
+        q.messaging.called = []
+        http.called = False
+        q.global_queueing_lock = False
+        del q.cfg['master']['url']
+        q.global_queueing()
+
+        if len(q.messaging.called) > 0 or http.called:
+            raise Exception('no master url did not stop queueing')
 
 
 def load_tests(loader, tests, pattern):
