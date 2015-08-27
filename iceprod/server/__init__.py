@@ -36,7 +36,7 @@ def listmodules(package_name=''):
     ret = []
     for module in os.listdir(pathname):
         if module.endswith('.py') and module != '__init__.py':
-            tmp = os.path.splitext(module)[0] 
+            tmp = os.path.splitext(module)[0]
             ret.append(package_name+'.'+tmp)
     return ret
 
@@ -59,7 +59,7 @@ class GlobalID(object):
     IDLEN = 15
     MAXSITEID = 10**10
     MAXLOCALID = 10**15
-    
+
     @classmethod
     def int2char(cls,i):
         if not isinstance(i,(int,long)) or i < 0: # only deal with positive ints
@@ -70,7 +70,7 @@ class GlobalID(object):
             out += cls.CHARS[i%cls.CHARS_LEN]
             i = i//cls.CHARS_LEN - 1
         return out[::-1]
-        
+
     @classmethod
     def char2int(cls,c):
         if not isinstance(c,basestring) or len(c) < 1: # only deal with string
@@ -102,7 +102,7 @@ class GlobalID(object):
             return cls.int2char(site_id*cls.MAXLOCALID+id)
         else:
             raise Exception('Site id is not a string, int, or long')
-    
+
     @classmethod
     def localID_ret(cls,id,type='str'):
         """Retrieve a local id from a global id"""
@@ -110,7 +110,7 @@ class GlobalID(object):
         if type == 'str':
             ret = cls.int2char(ret)
         return ret
-        
+
     @classmethod
     def siteID_ret(cls,id,type='str'):
         """Retrieve a site id from a global id"""
@@ -123,7 +123,7 @@ def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
                       queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):
     """
     Calculate the dataset priority.
-    
+
     :param dataset: a dataset with 'dataset_id', 'priority' and 'tasks_submitted'
     :param queueing_factor_priority: queueing factor for priority
     :param queueing_factor_dataset: queueing factor for dataset id
@@ -134,7 +134,7 @@ def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
     qf_p = queueing_factor_priority
     qf_d = queueing_factor_dataset
     qf_t = queueing_factor_tasks
-    
+
     # get dataset info
     p = dataset['priority']
     if p < 0 or p > 100:
@@ -146,7 +146,7 @@ def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
         d = 0
         logging.warning('Dataset for dataset %s is invalid, using default',dataset['dataset_id'])
     t = dataset['tasks_submitted']
-    
+
     # return prio
     if t < 1:
         prio = (qf_p/10.0*p-qf_d/10000.0*d)
@@ -161,7 +161,7 @@ def calc_datasets_prios(datasets, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):
     """
     Calculate the dataset priority for each dataset, normalized.
-    
+
     :param dataset: a dataset with 'dataset_id', 'priority' and 'tasks_submitted'
     :param queueing_factor_priority: queueing factor for priority
     :param queueing_factor_dataset: queueing factor for dataset id
@@ -172,7 +172,7 @@ def calc_datasets_prios(datasets, queueing_factor_priority=1.0,
     qf_p = queueing_factor_priority
     qf_d = queueing_factor_dataset
     qf_t = queueing_factor_tasks
-    
+
     dataset_prios = {}
     for id in datasets:
         dataset_prios[id] = calc_dataset_prio(datasets[id],qf_p,qf_d,qf_t)
@@ -186,14 +186,16 @@ def calc_datasets_prios(datasets, queueing_factor_priority=1.0,
     else:
         for d in dataset_prios:
             dataset_prios[d] /= total_prio
-    
+
     return dataset_prios
 
 
 def salt(length=2):
     """Returns a string of random letters"""
+    import string
+    import random
     letters = string.letters+string.digits
-    return ''.join([random.choice(letters) for _ in xrange(length)])
+    return ''.join([random.choice(letters) for _ in range(length)])
 
 class KwargConfig(object):
     """A way to validate kwargs passed in to a class"""
@@ -230,7 +232,7 @@ class KwargConfig(object):
             else:
                 raise Exception('%s has an unknown type'%(str(s)))
             self._cfg[s] = v
-        
+
         # make directories
         for c in self._cfg_types:
             if self._cfg_types[c] == 'file':
@@ -282,7 +284,7 @@ def get_pkg_binary(package, binary):
             return filepath
     except Exception:
         pass
-    
+
     # try going up from sys.argv[0]
     try:
         f = os.path.abspath(sys.argv[0])
@@ -296,7 +298,7 @@ def get_pkg_binary(package, binary):
             return filepath
     except Exception:
         pass
-    
+
     # try just asking the shell
     try:
         return subprocess.check_output(["which",binary]).strip('\n')

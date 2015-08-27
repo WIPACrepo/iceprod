@@ -16,7 +16,8 @@ from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.server import module
-from iceprod.server import get_pkg_binary,GlobalID,calc_datasets_prios
+from iceprod.server import get_pkg_binary,GlobalID
+import iceprod.server
 
 logger = logging.getLogger('grid')
 
@@ -56,7 +57,10 @@ class grid(object):
             self.queue_cfg['monitor_address']):
             self.web_address = self.queue_cfg['monitor_address']
         else:
-            self.web_address = 'http://'+functions.gethostname()
+            host = functions.gethostname()
+            if isinstance(host,set):
+                host = host.pop()
+            self.web_address = 'http://'+host
             if ('webserver' in self.cfg and 'port' in self.cfg['webserver'] and
                 self.cfg['webserver']['port']):
                 self.web_address += ':'+str(self.cfg['webserver']['port'])
@@ -114,12 +118,16 @@ class grid(object):
 
         with self.check_run():
             # get priority factors
-            qf_p = self.queue_cfg['queueing_factor_priority']
-            qf_d = self.queue_cfg['queueing_factor_dataset']
-            qf_t = self.queue_cfg['queueing_factor_tasks']
+            qf_p = qf_d = qf_t = 1.0
+            if 'queueing_factor_priority' in self.queue_cfg:
+                qf_p = self.queue_cfg['queueing_factor_priority']
+            if 'queueing_factor_dataset' in self.queue_cfg:
+                qf_d = self.queue_cfg['queueing_factor_dataset']
+            if 'queueing_factor_tasks' in self.queue_cfg:
+                qf_t = self.queue_cfg['queueing_factor_tasks']
 
             # assign each dataset a priority
-            dataset_prios = calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
+            dataset_prios = iceprod.server.calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
             logger.debug('dataset prios: %r',dataset_prios)
 
         with self.check_run():

@@ -91,6 +91,106 @@ class init_test(unittest.TestCase):
             if ret2 != ran2:
                 raise Exception('returned site id does not match initial id: %d != %d'%(ran,ret2))
 
+    @unittest_reporter
+    def test_20_calc_dataset_prio(self):
+        """Test calc_dataset_prio"""
+        site = iceprod.server.GlobalID.siteID_gen()
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':0,
+                   'priority':0,
+                  }
+        prio1 = iceprod.server.calc_dataset_prio(dataset)
+        if not isinstance(prio1,(int,float)):
+            raise Exception('dataset prio is not a number')
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':0,
+                   'priority':1,
+                  }
+        prio2 = iceprod.server.calc_dataset_prio(dataset)
+        if prio2 < prio1:
+            raise Exception('priority is not winning')
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':100,
+                   'priority':1,
+                  }
+        prio3 = iceprod.server.calc_dataset_prio(dataset)
+        if prio2 < prio3:
+            raise Exception('greater # tasks submitted is not losing')
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(2,site),
+                   'tasks_submitted':0,
+                   'priority':1,
+                  }
+        prio4 = iceprod.server.calc_dataset_prio(dataset)
+        if prio2 < prio4:
+            raise Exception('greater dataset_id is not losing')
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':0,
+                   'priority':-1,
+                  }
+        prio5 = iceprod.server.calc_dataset_prio(dataset)
+        if prio5 != prio1:
+            raise Exception('negative prio not reset to 0')
+
+    @unittest_reporter
+    def test_21_calc_datasets_prios(self):
+        """Test calc_datasets_prios"""
+        site = iceprod.server.GlobalID.siteID_gen()
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':0,
+                   'priority':0,
+                  }
+        dataset2 = {'dataset_id':iceprod.server.GlobalID.globalID_gen(2,site),
+                   'tasks_submitted':0,
+                   'priority':0,
+                  }
+        datasets = {dataset['dataset_id']:dataset,
+                   dataset2['dataset_id']:dataset2}
+
+        prios = iceprod.server.calc_datasets_prios(datasets)
+        for p in prios.values():
+            if not isinstance(p,(int,float)):
+                raise Exception('dataset prio is not a number')
+        if prios[dataset['dataset_id']] != prios[dataset2['dataset_id']]:
+            logger.info(prios)
+            raise Exception('datasets not equal in priority')
+
+        dataset = {'dataset_id':iceprod.server.GlobalID.globalID_gen(1,site),
+                   'tasks_submitted':0,
+                   'priority':1,
+                  }
+        dataset2 = {'dataset_id':iceprod.server.GlobalID.globalID_gen(2,site),
+                   'tasks_submitted':0,
+                   'priority':1,
+                  }
+        datasets = {dataset['dataset_id']:dataset,
+                   dataset2['dataset_id']:dataset2}
+
+        prios = iceprod.server.calc_datasets_prios(datasets)
+        for p in prios.values():
+            if not isinstance(p,(int,float)):
+                raise Exception('dataset prio is not a number')
+        if prios[dataset['dataset_id']] <= prios[dataset2['dataset_id']]:
+            logger.info(prios)
+            raise Exception('datasets in wrong order')
+
+    @unittest_reporter
+    def test_30_salt(self):
+        s = iceprod.server.salt()
+        if not isinstance(s,basestring):
+            raise Exception('not a string')
+
+        for _ in range(100):
+            for l in range(1,100):
+                s = iceprod.server.salt(l)
+                if len(s) != l:
+                    logger.info('len: %d. salt: %s',l,s)
+                    raise Exception('salt is not correct length')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

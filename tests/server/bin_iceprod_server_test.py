@@ -166,6 +166,8 @@ class iceprod_server_test(unittest.TestCase):
         class rpc:
             def __init__(self,**kwargs):
                 pass
+            def setup(*args,**kwargs):
+                pass
             def start(*args,**kwargs):
                 pass
             def stop(*args,**kwargs):
