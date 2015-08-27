@@ -41,6 +41,7 @@ from flexmock import flexmock
 sys.path.append('bin')
 import iceprod_server
 import iceprod.server
+import iceprod.server.basic_config
 try:
     import iceprod.procname
 except ImportError:
@@ -98,58 +99,21 @@ class iceprod_server_test(unittest.TestCase):
         cfgfile = os.path.join(self.test_dir,'cfg')
         with open(cfgfile,'w') as f:
             p = partial(print,sep='',file=f)
-            p('[server_modules]')
-            p('  queue = True')
-            p('  db = True')
-            p('  website = True')
-            p('[queue]')
-            p('  queue_interval = 180')
-            p('[db]')
-            p('  name = iceprod_db')
-            p('[webserver]')
-            p('  port = 9080')
-            p('[download]')
-            p('  http_username = icecube')
-            p('[logging]')
-            p('  level = DEBUG')
-            p('  format = %(asctime)s %(levelname)s : %(message)s')
-            p('  size = 100000')
-            p('  num = 2')
-            p('  logfile = test.log')
-            p('[system]')
-            p('  ssl = False')
-            p('  test = True')
+            p('[modules]')
+            p('queue = True')
+            p('db = True')
+            p('website = True')
 
-        iceprod_server.load_config(cfgfile)
+        cfg = iceprod_server.load_config(cfgfile)
 
-        if iceprod_server.cfg is None:
+        if cfg is None:
             raise Exception('did not set cfg')
-        if 'server_modules' not in iceprod_server.cfg:
-            raise Exception('did not set server_modules')
-        if 'queue' not in iceprod_server.cfg['server_modules']:
-            raise Exception('did not set server_modules[queue]')
-        if 'system' not in iceprod_server.cfg:
-            raise Exception('did not set system')
-        if 'test' not in iceprod_server.cfg['system']:
-            raise Exception('did not set system[test]')
-        if iceprod_server.cfg['system']['test'] != 'True':
-            raise Exception('did not set system[test]=True')
-
-        iceprod_server.cfg = None
-        iceprod_server.load_config(iceprod.server.getconfig(cfgfile))
-
-        if iceprod_server.cfg is None:
-            raise Exception('did not set cfg')
-        if 'server_modules' not in iceprod_server.cfg:
-            raise Exception('did not set server_modules')
-        if 'queue' not in iceprod_server.cfg['server_modules']:
-            raise Exception('did not set server_modules[queue]')
-        if 'system' not in iceprod_server.cfg:
-            raise Exception('did not set system')
-        if 'test' not in iceprod_server.cfg['system']:
-            raise Exception('did not set system[test]')
-        if iceprod_server.cfg['system']['test'] != 'True':
-            raise Exception('did not set system[test]=True')
+        if cfg.queue is not True:
+            raise Exception('did not set cfg.queue')
+        if cfg.queue is not True:
+            raise Exception('did not set cfg.db')
+        if cfg.queue is not True:
+            raise Exception('did not set cfg.website')
 
     @unittest_reporter
     def test_002_server_module(self):
@@ -158,20 +122,13 @@ class iceprod_server_test(unittest.TestCase):
         def test_mod(args):
             test_mod.called = True
             test_mod.args = args
-            cfg,queue,pipe,pqueue = args
-            while True:
-                ret = queue.get()
-                if ret == 'pipe':
-                    test_mod.obj = pipe.recv()
-                    continue
-                elif ret == 'stop':
-                    break
-                test_mod.ret = ret
-                pqueue.put(ret)
+            cfg = args
         self.run_module_ret = {'test':test_mod}
 
+        cfg = iceprod.server.basic_config.BasicConfig()
+
         # test successful module
-        s = iceprod_server.server_module('test')
+        s = iceprod_server.server_module('test',cfg)
 
         # test starting
         test_mod.called = False
@@ -181,98 +138,48 @@ class iceprod_server_test(unittest.TestCase):
         if not test_mod.called:
             raise Exception('failed to call test_mod')
         logger.info('mod args: %r',test_mod.args)
-        if len(test_mod.args) != 4:
-            raise Exception('wrong number of mod args')
-        if not isinstance(test_mod.args[0],dict):
-            raise Exception('mod arg 1 was not cfg')
-        if not isinstance(test_mod.args[1],multiprocessing.queues.Queue):
-            raise Exception('mod arg 2 was not Queue')
-        if not isinstance(test_mod.args[2],_multiprocessing.Connection):
-            raise Exception('mod arg 3 was not Pipe')
-        if not isinstance(test_mod.args[3],multiprocessing.queues.Queue):
-            raise Exception('mod arg 4 was not Queue')
-
-        # test put_message
-        s.put_message('test')
-        time.sleep(0.1)
-        if test_mod.ret != 'test':
-            raise Exception('put_message failed')
-
-        # test put_object
-        obj = {'t':'test'}
-        s.put_object(obj)
-        s.put_message('pipe')
-        time.sleep(0.1)
-        if test_mod.obj != obj:
-            raise Exception('put_object failed')
-
-        # test stop
-        s.stop()
-        time.sleep(0.1)
-        if s.process.is_alive():
-            raise Exception('stop failed')
+        if test_mod.args != cfg:
+            raise Exception('cfg not passed as args')
 
     @unittest_reporter
     def test_010_main(self):
         """Test main"""
         iceprod_server.server_module.process_class = threading.Thread
-        cfgfile = os.path.join(self.test_dir,'cfg')
-        with open(cfgfile,'w') as f:
-            p = partial(print,sep='',file=f)
-            p('[server_modules]')
-            p('  test = True')
-            p('  db = True')
-            p('  website = True')
-            p('[queue]')
-            p('  queue_interval = 180')
-            p('[db]')
-            p('  name = iceprod_db')
-            p('[webserver]')
-            p('  port = 9080')
-            p('[download]')
-            p('  http_username = icecube')
-            p('[logging]')
-            p('  level = DEBUG')
-            p('  format = %(asctime)s %(levelname)s : %(message)s')
-            p('  size = 100000')
-            p('  num = 2')
-            p('  logfile = test.log')
-            p('[system]')
-            p('  ssl = False')
-            p('  test = True')
-        iceprod_server.load_config(cfgfile)
-        iceprod_server.cfg['server_modules']['test'] = True
+        cfg = iceprod.server.basic_config.BasicConfig()
+        cfg.test = True
+        cfg.start_order = ['test']
 
         def test_mod(args):
             test_mod.called = True
             test_mod.args = args
-            cfg,queue,pipe,pqueue = args
-            while True:
-                ret = queue.get()
-                if ret == 'newcfg':
-                    test_mod.obj = pipe.recv()
-                    continue
-                elif ret in ('stop','kill'):
-                    break
-                test_mod.ret = ret
+            cfg = args
         self.listmodules_ret = {'iceprod.server.modules':['iceprod.server.modules.test']}
         self.run_module_ret = {'iceprod.server.modules.test':test_mod}
 
-        def sig():
+        def sig(*args):
             sig.called = True
-        def log():
+        def log(*args):
             log.called = True
         flexmock(iceprod_server).should_receive('set_signals').replace_with(sig)
         flexmock(iceprod_server).should_receive('set_logger').replace_with(log)
 
+        class rpc:
+            def __init__(self,**kwargs):
+                pass
+            def start(*args,**kwargs):
+                pass
+            def stop(*args,**kwargs):
+                pass
+        flexmock(iceprod.server.RPCinternal).should_receive('RPCService').replace_with(rpc)
+
         # test successful module
         test_mod.called = False
         def run():
-            s = iceprod_server.main(cfgfile,iceprod_server.cfg)
+            s = iceprod_server.main(cfg)
         t = threading.Thread(target=run)
         t.daemon = True
         t.start()
-        time.sleep(5)
+        time.sleep(0.1)
 
         if not sig.called:
             raise Exception('failed to call sig')
@@ -281,65 +188,8 @@ class iceprod_server_test(unittest.TestCase):
         if not test_mod.called:
             raise Exception('failed to call test_mod')
         logger.info('mod args: %r',test_mod.args)
-        if len(test_mod.args) != 4:
-            raise Exception('wrong number of mod args')
-        if not isinstance(test_mod.args[0],dict):
-            raise Exception('mod arg 1 was not cfg')
-        if not isinstance(test_mod.args[1],multiprocessing.queues.Queue):
-            raise Exception('mod arg 2 was not Queue')
-        if not isinstance(test_mod.args[2],_multiprocessing.Connection):
-            raise Exception('mod arg 3 was not Pipe')
-        if not isinstance(test_mod.args[3],multiprocessing.queues.Queue):
-            raise Exception('mod arg 4 was not Queue')
-
-        # test new cfg
-        with open(cfgfile,'w') as f:
-            p = partial(print,sep='',file=f)
-            p('[server_modules]')
-            p('  queue = True')
-            p('  db = True')
-            p('  website = True')
-            p('[queue]')
-            p('  queue_interval = 180')
-            p('[db]')
-            p('  name = iceprod_db')
-            p('[webserver]')
-            p('  port = 9080')
-            p('[download]')
-            p('  http_username = icecube')
-            p('[logging]')
-            p('  level = DEBUG')
-            p('  format = %(asctime)s %(levelname)s : %(message)s')
-            p('  size = 100000')
-            p('  num = 2')
-            p('  logfile = test.log')
-            p('[system]')
-            p('  ssl = False')
-            p('  test = False')
-        iceprod_server.server_module.message_queue.put('reload')
-        time.sleep(1)
-        obj = test_mod.obj
-        if not (isinstance(obj,dict) and
-                'system' in obj and
-                'test' in obj['system'] and
-                obj['system']['test'] == 'False'):
-            raise Exception('cfg not updated')
-
-        # try stopping
-        iceprod_server.server_module.message_queue.put('stop')
-        time.sleep(1)
-        if t.is_alive():
-            raise Exception('stop failed')
-
-        # try killing
-        t = threading.Thread(target=run)
-        t.daemon = True
-        t.start()
-        time.sleep(1)
-        iceprod_server.server_module.message_queue.put('kill')
-        time.sleep(1)
-        if t.is_alive():
-            raise Exception('kill failed')
+        if test_mod.args != cfg:
+            raise Exception('args != cfg')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

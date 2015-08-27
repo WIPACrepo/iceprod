@@ -63,7 +63,7 @@ def check_dependencies():
     check_module('setproctitle', 'Will not be able to set process title.')
     check_module('tornado', required = True)
     check_module('zmq', required = True)
-    check_module('jsonschema', required = True)
+    check_module('jsonschema')
     check_module('concurrent.futures', required = True)
 
 
@@ -80,13 +80,13 @@ def load_config(cfgfile):
         return cfg
     else:
         # assume we were passed cfg data directly
-        logging.warn('loading new cfg directly'%cfgfile)
+        logging.warn('loading new cfg directly')
         return cfgfile
 
 def set_logger(cfg):
     """Setup the root logger"""
     iceprod.core.logger.setlogger('logfile',cfg)
-    
+
     # remove stdout logging handler, if present
     iceprod.core.logger.removestdout()
 
@@ -94,17 +94,17 @@ def set_logger(cfg):
 class server_module():
     """Manage a server module"""
     process_class = multiprocessing.Process
-    
+
     def __init__(self,mod_name,cfg):
         self.mod_name = mod_name
         self.process = server_module.process_class(
                 target=iceprod.server.run_module,
                 args=[mod_name,cfg])
         self.process.daemon = True
-    
+
     def start(self):
         self.process.start()
-    
+
     def kill(self):
         self.process.terminate()
 
@@ -122,36 +122,36 @@ def set_signals(obj):
     signal.signal(signal.SIGQUIT, partial(handle_kill,obj))
 
 def main(cfgfile,cfgdata=None):
-    
+
     if cfgdata:
         # use the config data directly
         cfg = load_config(cfgdata)
     else:
         # Read config file
         cfg = load_config(cfgfile)
-    
+
     # set logger
     set_logger(cfg)
     logger = logging.getLogger('iceprod_server')
-    
+
     # Change name of process for ps
     try:
         setproctitle('iceprod_server.main')
     except Exception:
         logger.warn("could not rename process")
-    
+
     def module_start(mod):
         logger.warn('starting %s',mod)
         rmod = server_module(mod,cfg)
         rmod.start()
         return rmod
-    
+
     # start messaging
     class Respond():
         def __init__(self,running_modules):
             self.running_modules = running_modules
             self.broadcast_ignore = set()
-        
+
         def start(self,mod=None,callback=None):
             if 'START' in self.broadcast_ignore:
                 self.broadcast_ignore.remove('START')
@@ -172,7 +172,7 @@ def main(cfgfile,cfgdata=None):
                 messaging.BROADCAST.start(async=True)
             if callback:
                 callback()
-        
+
         def stop(self,mod=None,callback=None):
             if 'STOP' in self.broadcast_ignore:
                 self.broadcast_ignore.remove('STOP')
@@ -223,7 +223,7 @@ def main(cfgfile,cfgdata=None):
                         logger.debug('kill messaging')
                         messaging.kill()
                 messaging.BROADCAST.stop(timeout=1,callback=cb)
-        
+
         def restart(self,mod=None,callback=None):
             if 'RESTART' in self.broadcast_ignore:
                 self.broadcast_ignore.remove('RESTART')
@@ -238,7 +238,7 @@ def main(cfgfile,cfgdata=None):
                 messaging.BROADCAST.restart(async=True)
             if callback:
                 callback()
-        
+
         def kill(self,mod=None,callback=None):
             if 'KILL' in self.broadcast_ignore:
                 self.broadcast_ignore.remove('KILL')
@@ -284,13 +284,13 @@ def main(cfgfile,cfgdata=None):
                         logger.debug('kill messaging')
                         messaging.kill()
                 messaging.BROADCAST.kill(timeout=0.1,callback=cb)
-    
+
     running_modules = {}
     respond_obj = Respond(running_modules)
-    
+
     # set signal handlers
     set_signals(respond_obj)
-    
+
     # setup messaging
     kwargs = {'address':cfg.messaging_url,
               'service_name':'daemon',
@@ -298,7 +298,7 @@ def main(cfgfile,cfgdata=None):
               'immediate_setup':False,
              }
     messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
-    
+
     # get modules
     available_modules = {}
     for mod in iceprod.server.listmodules('iceprod.server.modules'):
@@ -311,15 +311,15 @@ def main(cfgfile,cfgdata=None):
         if mod in available_modules and getattr(cfg,mod) is True:
             running_modules[mod] = module_start(available_modules[mod])
             time.sleep(1) # wait 1 second between starts
-    
+
     # wait for messages
     messaging.setup()
     messaging.start()
-    
+
     # terminate all modules
     for mod in running_modules.values():
         mod.kill()
-    
+
     logger.warn('shutdown')
 
 if __name__ == '__main__':
@@ -338,19 +338,19 @@ if __name__ == '__main__':
     parser.add_argument('--umask',type=int,default=077,
                         help='File creation umask')
     args = parser.parse_args()
-    
+
     if args.file:
         cfgfile = os.path.expanduser(os.path.expandvars(args.file))
     else:
         cfgfile = iceprod.server.basic_config.locateconfig()
     cfgdata = None
-    
+
     # start iceprod
     if args.daemon:
         if args.action in ('start','restart'):
             # try loading cfgfile before daemonizing to catch the bad cfgfile error
-            cfgdata = iceprod.server.getconfig(cfgfile)
-        
+            cfgdata = load_config(cfgfile)
+
         # now daemonize
         from iceprod.server.daemon import Daemon
         pidfile = os.path.expanduser(os.path.expandvars(args.pidfile))

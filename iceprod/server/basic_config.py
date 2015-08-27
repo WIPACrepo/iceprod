@@ -59,7 +59,7 @@ class BasicConfig(object):
 
         # start order
         self.start_order = ['messaging','config','db','proxy','website',
-                            'schedule','queue']
+                            'schedule','master_updater','queue']
 
         # messaging server url
         # TODO: better directory for this
