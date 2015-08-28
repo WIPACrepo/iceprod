@@ -20,7 +20,7 @@ optional arguments:
 import os
 import sys
 import logging
-import logging.config    
+import logging.config
 import signal
 from functools import partial
 
@@ -65,18 +65,18 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         iceprod.core.logger.removestdout()
         logger = logging.getLogger('i3exec')
         logger.warn('starting...%s ' % logger.name)
-        
+
         signal.signal(signal.SIGQUIT, handler)
         signal.signal(signal.SIGINT, handler)
-        
+
         if offline is True:
             # run in offline mode
             runner(cfgfile,url,debug,offline)
             return
-        
+
         # setup jsonRPC
         iceprod.core.exe.setupjsonRPC(url+'/jsonrpc',passkey)
-        
+
         if cfgfile is not None:
             # default configuration - a single task
             runner(cfgfile,url,debug)
@@ -93,7 +93,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     logger.error('cannot download task. current error count is %d',
                                  errors,exc_info=True)
                     continue
-                
+
                 if cfgfile is None:
                     break # assuming server wants client to exit
                 else:
@@ -106,7 +106,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             if errors >= 5:
                 logger.error('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
-    
+
 def runner(cfgfile,url,debug=False,offline=False):
     """Run a config"""
     # load config
@@ -134,19 +134,19 @@ def runner(cfgfile,url,debug=False,offline=False):
     # set logging verbosity
     if 'debug' in config['options'] and 'loglevel' not in config['options']:
         config['options']['loglevel'] = 'INFO'
-    if ('loglevel' in config['options'] and 
+    if ('loglevel' in config['options'] and
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
             logging.getLogger().setLevel(iceprod.core.logger.setlevel[config['options']['loglevel'].upper()])
         except Exception as e:
             logger.warn('failed to set a new log level: %r',e)
-    
+
     # check that resource_url and debug are in options
     if 'resource_url' not in config['options']:
         config['options']['resource_url'] = str(url)+'/download'
     if 'debug' not in config['options']:
         config['options']['debug'] = bool(offline)
-    
+
     # make sure some basic options are set
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
@@ -162,26 +162,26 @@ def runner(cfgfile,url,debug=False,offline=False):
         config['options']['job'] = '0'
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
-    
+
     if not config['steering']:
         # make sure steering exists in the config
         config['steering'] = iceprod.core.dataclasses.Steering()
-    
-    # set up global config value
-    iceprod.core.exe.config = config
-    
+
+    # make exe Config
+    cfg = iceprod.core.exe.Config(config=config)
+
     # set up global env, based on config['options'] and config.steering
-    env = iceprod.core.exe.setupenv(config['steering'],{'parameters':config['options']})
-    
+    env = iceprod.core.exe.setupenv(cfg, config['steering'],{'parameters':config['options']})
+
     logger.warn("config options: %r",config['options'])
-    
+
     if not offline:
         # tell the server that we are processing this task
         try:
-            iceprod.core.exe.processing()
+            iceprod.core.exe.processing(cfg)
         except Exception as e:
             logging.error(e)
-    
+
     # find tasks to run
     try:
         if 'task' in config['options']:
@@ -191,7 +191,7 @@ def runner(cfgfile,url,debug=False,offline=False):
                 # find task by name
                 for task in config['tasks']:
                     if task['name'] == config['options']['task']:
-                        iceprod.core.exe.runtask(env, task)
+                        iceprod.core.exe.runtask(cfg, env, task)
                         break
                 else:
                     logger.critical('cannot find task named \'%s\'',
@@ -199,28 +199,28 @@ def runner(cfgfile,url,debug=False,offline=False):
                     raise Exception('cannot find specified task')
             elif isinstance(config['options']['task'],int):
                 # find task by index
-                if (config['options']['task'] >= 0 and 
+                if (config['options']['task'] >= 0 and
                     config['options']['task'] < len(config['tasks'])):
-                    iceprod.core.exe.runtask(env,config['tasks'][config['options']['task']])
+                    iceprod.core.exe.runtask(cfg, env, config['tasks'][config['options']['task']])
                 else:
                     logger.critical('cannot find task index %d',
                                     config['options']['task'])
                     raise Exception('cannot find specified task')
-            
+
             else:
                 logger.critical('task specified in options is \'%r\', but no task found',config['options']['task'])
                 raise Exception('cannot find specified task')
         else:
             # run all tasks in order
             for task in config['tasks']:
-                iceprod.core.exe.runtask(env,task)
+                iceprod.core.exe.runtask(cfg, env, task)
     except Exception as e:
         logger.error('task failed, exiting without running completion steps.',
                      exc_info=True)
         # set task status on server
         if not offline:
             try:
-                iceprod.core.exe.taskerror()
+                iceprod.core.exe.taskerror(cfg)
             except Exception as e:
                 logger.error(e)
         raise
@@ -242,20 +242,20 @@ def runner(cfgfile,url,debug=False,offline=False):
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        iceprod.core.exe.uploadLogging()
+                        iceprod.core.exe.uploadLogging(cfg)
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        iceprod.core.exe.uploadLog()
+                        iceprod.core.exe.uploadLog(cfg)
                     elif up.startswith('err'):
                         # upload err files
-                        iceprod.core.exe.uploadErr()
+                        iceprod.core.exe.uploadErr(cfg)
                     elif up.startswith('out'):
                         # upload out files
-                        iceprod.core.exe.uploadOut()
+                        iceprod.core.exe.uploadOut(cfg)
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
-    
+
 
 if __name__ == '__main__':
     # get arguments
@@ -278,14 +278,13 @@ if __name__ == '__main__':
 
     args = vars(parser.parse_args())
     print args
-    
+
     # check cfgfile
     if args['cfgfile'] is not None and not os.path.isfile(args['cfgfile']):
         if os.path.isfile(os.path.join(os.getcwd(),args['cfgfile'])):
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
-    
+
     # start iceprod
     main(**args)
-    

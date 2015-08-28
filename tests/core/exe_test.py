@@ -63,10 +63,10 @@ class exe_test(unittest.TestCase):
         upload.should_receive('upload').replace_with(self.upload)
 
         # set offline mode
-        iceprod.core.exe.config.options = {'offline':True}
+        self.config = iceprod.core.exe.Config()
+        self.config.config['options']['offline'] = True
 
     def tearDown(self):
-        iceprod.core.exe.config.options = {}
         shutil.rmtree(self.test_dir,True)
         super(exe_test,self).tearDown()
 
@@ -794,14 +794,14 @@ inithello(void)
         obj = iceprod.core.dataclasses.Steering()
         # create an empty env
         try:
-            empty_env = iceprod.core.exe.setupenv(obj)
+            empty_env = iceprod.core.exe.setupenv(self.config, obj)
         except:
             logger.error('creating empty env failed')
             raise
 
         # create secondary env
         try:
-            env2 = iceprod.core.exe.setupenv(obj,empty_env)
+            env2 = iceprod.core.exe.setupenv(self.config, obj, empty_env)
         except:
             logger.error('creating secondary env failed')
             raise
@@ -813,7 +813,7 @@ inithello(void)
 
         # make new env from env2, and check it has that value
         try:
-            env3 = iceprod.core.exe.setupenv(obj,env2)
+            env3 = iceprod.core.exe.setupenv(self.config, obj, env2)
         except:
             logger.error('creating env3 failed')
             raise
@@ -833,12 +833,12 @@ inithello(void)
         # do second level checks, like dealing with parameters
         obj.parameters = {}
         try:
-            env4 = iceprod.core.exe.setupenv(obj)
+            env4 = iceprod.core.exe.setupenv(self.config, obj)
         except:
             logger.error('creating empty env failed')
             raise
         try:
-            env5 = iceprod.core.exe.setupenv(obj,env4)
+            env5 = iceprod.core.exe.setupenv(self.config, obj, env4)
         except:
             logger.error('creating empty env failed')
             raise
@@ -846,7 +846,7 @@ inithello(void)
         if 'test' in env4['parameters']:
             raise Exception('adding a parameter in env5 adds it to env4')
         try:
-            env6 = iceprod.core.exe.setupenv(obj,env5)
+            env6 = iceprod.core.exe.setupenv(self.config, obj, env5)
         except:
             logger.error('creating empty env failed')
             raise
@@ -897,7 +897,7 @@ inithello(void)
 
         # create the env
         try:
-            env = iceprod.core.exe.setupenv(steering,
+            env = iceprod.core.exe.setupenv(self.config, steering,
                                             {'parameters':options})
         except:
             logger.error('creating env failed')
@@ -974,7 +974,7 @@ inithello(void)
 
         # create the env
         try:
-            env = iceprod.core.exe.setupenv(steering,
+            env = iceprod.core.exe.setupenv(self.config, steering,
                                             {'parameters':options})
         except:
             logger.error('creating env failed')
@@ -994,7 +994,7 @@ inithello(void)
 
         # create the env
         try:
-            env = iceprod.core.exe.setupenv(steering,
+            env = iceprod.core.exe.setupenv(self.config, steering,
                                             {'parameters':options})
         except:
             logger.error('creating env failed')
@@ -1016,7 +1016,7 @@ inithello(void)
 
         # create the env
         try:
-            env = iceprod.core.exe.setupenv(steering,
+            env = iceprod.core.exe.setupenv(self.config, steering,
                                             {'parameters':options,
                                              'deletions':[filename]})
         except:
@@ -1080,12 +1080,11 @@ inithello(void)
         # set env
         env = {'parameters': options}
 
-        logger.warn('options: %r',iceprod.core.exe.config.options)
-
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env,
+                                                 module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1137,7 +1136,7 @@ inithello(void)
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1197,7 +1196,7 @@ class Test(IPBaseClass):
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1263,7 +1262,7 @@ class Test(IPBaseClass):
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1316,7 +1315,7 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1329,7 +1328,7 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed (short)')
                 raise
@@ -1383,7 +1382,7 @@ if __name__ == '__main__':
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1435,7 +1434,7 @@ echo "test"
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1494,7 +1493,7 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(env,module)
+                ret = iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
@@ -1573,7 +1572,7 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtray(env,tray)
+                ret = iceprod.core.exe.runtray(self.config, env, tray)
             except:
                 logger.error('running the tray failed')
                 raise
@@ -1654,7 +1653,7 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtray(env,tray)
+                ret = iceprod.core.exe.runtray(self.config, env, tray)
             except:
                 logger.error('running the tray failed')
                 raise
@@ -1743,7 +1742,7 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(env,task)
+                ret = iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
@@ -1855,7 +1854,7 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(env,task)
+                ret = iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
@@ -1969,7 +1968,7 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(env,task)
+                ret = iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
@@ -2008,7 +2007,7 @@ def Test():
         #ssl_options = None
         f.returns = {'echo':'e'}
         try:
-            iceprod.core.exe.setupjsonRPC(address,passkey)
+            iceprod.core.exe.setupjsonRPC(address, passkey)
         except:
             logger.error('running setupjsonRPC failed')
             raise
@@ -2113,10 +2112,10 @@ def Test():
                 return ret
         jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
         jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-        iceprod.core.exe.config['options']['task_id'] = task_id
+        self.config.config['options']['task_id'] = task_id
 
         try:
-            iceprod.core.exe.finishtask(stats)
+            iceprod.core.exe.finishtask(self.config, stats)
         except:
             logger.error('running finishtask failed')
             raise
@@ -2154,11 +2153,11 @@ def Test():
                     return ret
             jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
             jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            iceprod.core.exe.config['options']['task_id'] = task_id
+            self.config.config['options']['task_id'] = task_id
 
             stillrunning.ret = True
             try:
-                iceprod.core.exe.stillrunning()
+                iceprod.core.exe.stillrunning(self.config)
             except:
                 logger.error('exception when not supposed to')
                 raise
@@ -2169,18 +2168,18 @@ def Test():
 
             stillrunning.ret = False
             try:
-                iceprod.core.exe.stillrunning()
+                iceprod.core.exe.stillrunning(self.config)
             except:
                 pass
             else:
                 raise Exception('exception not thrown')
                 raise
-            if 'DBkill' not in iceprod.core.exe.config['options']:
+            if 'DBkill' not in self.config.config['options']:
                 raise Exception('DBkill not in config["options"]')
 
             stillrunning.ret = Exception('sql error')
             try:
-                iceprod.core.exe.stillrunning()
+                iceprod.core.exe.stillrunning(self.config)
             except:
                 pass
             else:
@@ -2188,8 +2187,8 @@ def Test():
                 raise
 
         finally:
-            if 'DBkill' in iceprod.core.exe.config['options']:
-                del iceprod.core.exe.config['options']['DBkill']
+            if 'DBkill' in self.config.config['options']:
+                del self.config.config['options']['DBkill']
 
     @unittest_reporter
     def test_94_taskerror(self):
@@ -2217,10 +2216,10 @@ def Test():
                 return ret
         jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
         jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-        iceprod.core.exe.config['options']['task_id'] = task_id
+        self.config.config['options']['task_id'] = task_id
 
         try:
-            iceprod.core.exe.taskerror()
+            iceprod.core.exe.taskerror(self.config)
         except:
             logger.error('running taskerror failed')
             raise
@@ -2255,7 +2254,7 @@ def Test():
                 return ret
         jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
         jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(fun,func_name=a))
-        iceprod.core.exe.config['options']['task_id'] = task_id
+        self.config.config['options']['task_id'] = task_id
 
         data = ''.join([str(random.randint(0,10000)) for _ in xrange(100)])
 
@@ -2268,7 +2267,8 @@ def Test():
         uploader.data = {}
         name = 'testing'
         try:
-            iceprod.core.exe._upload_logfile(task_id,name,filename)
+            iceprod.core.exe._upload_logfile(self.config, task_id,
+                                             name, filename)
         except:
             logger.error('running _upload_logfile failed')
             raise
@@ -2291,7 +2291,7 @@ def Test():
                     f.write(''.join([str(random.randint(0,10000))
                                      for _ in xrange(100)]))
         try:
-            iceprod.core.exe.uploadLogging()
+            iceprod.core.exe.uploadLogging(self.config)
         except:
             logger.error('running uploadLogging failed')
             raise
