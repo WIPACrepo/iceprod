@@ -7,18 +7,19 @@ from datetime import datetime
 from functools import partial
 from collections import OrderedDict
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.cron')
 
 class cron(_Methods_Base):
     """
     The scheduled (cron) DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+
+    @dbmethod
     def cron_dataset_completion(self,callback=None):
         """Check for newly completed datasets and mark them as such"""
         sql = 'select dataset_id,jobs_submitted,tasks_submitted '
@@ -54,7 +55,7 @@ class cron(_Methods_Base):
             for dataset_id,task_status in ret:
                 datasets[dataset_id]['ntasks'] += 1
                 datasets[dataset_id]['task_status'].add(task_status)
-            
+
             dataset_status = {}
             for dataset_id in datasets:
                 total_tasks = datasets[dataset_id]['tasks_submitted']
@@ -106,5 +107,4 @@ class cron(_Methods_Base):
         else:
             # TODO: consolidate dataset statistics
             callback(True)
-    
-    
+

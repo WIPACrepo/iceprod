@@ -9,18 +9,18 @@ import uuid
 
 from iceprod.core.dataclasses import Number,String
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.auth')
 
 class auth(_Methods_Base):
     """
     The authorization / security DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+    @dbmethod
     def auth_get_site_auth(self,callback=None):
         """Get current site's id and key for authentication and authorization with other sites.
         Returns (site_id,key) tuple"""
@@ -43,7 +43,8 @@ class auth(_Methods_Base):
                     r = {'site_id':ret[0][0],
                          'auth_key':ret[0][1]}
                     callback(r)
-    
+
+    @dbmethod
     def auth_authorize_site(self,site,key,callback=None):
         """Validate site and key for authorization.
         Returns True/Exception"""
@@ -64,7 +65,8 @@ class auth(_Methods_Base):
                     callback(Exception('Row does not have both site and key'))
                 else:
                     callback(key == ret[0][1])
-    
+
+    @dbmethod
     def auth_authorize_task(self,key,callback=None):
         """Validate key for authorization.
         Returns True/Exception"""
@@ -92,14 +94,15 @@ class auth(_Methods_Base):
                         callback(Exception('Passkey is expired'))
                     else:
                         callback(True)
-    
+
+    @dbmethod
     def auth_new_passkey(self,expiration=3600,callback=None):
         """Make a new passkey.  Default expiration in 1 hour."""
         if isinstance(expiration,Number):
             expiration = datetime.utcnow()+timedelta(seconds=expiration)
         elif not isinstance(expiration,datetime):
             raise Exception('bad expiration')
-        
+
         passkey_id = self.db.increment_id('passkey')
         passkey = uuid.uuid4().hex
         sql = 'insert into passkey (passkey_id,key,expire) '
@@ -112,12 +115,13 @@ class auth(_Methods_Base):
             callback(ret)
         else:
             callback(passkey)
-    
+
+    @dbmethod
     def auth_get_passkey(self,passkey,callback=None):
         """Get the expiration datetime of a passkey"""
         if not passkey:
             raise Exception('bad expiration')
-        
+
         sql = 'select * from passkey where key = ?'
         bindings = (passkey,)
         cb = partial(self._auth_get_passkey_callback,callback=callback)
@@ -134,4 +138,3 @@ class auth(_Methods_Base):
                 callback(e)
             else:
                 callback(expiration)
-    

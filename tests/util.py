@@ -61,7 +61,7 @@ def unittest_reporter(*args,**kwargs):
             try:
                 obj(*args,**kwargs)
             except Exception as e:
-                logging.error('Error running %s test',(name,),
+                logging.error('Error running %s test',name,
                              exc_info=True)
                 printer('Test '+test_name,passed=False)
                 raise

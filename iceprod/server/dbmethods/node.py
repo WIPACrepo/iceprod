@@ -19,24 +19,25 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.node')
 
 class node(_Methods_Base):
     """
     The node DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+
+    @dbmethod
     def node_update(self,hostname=None,domain=None,**kwargs):
         """
         Update node data.
-        
+
         Non-blocking, with no return value. Call and forget.
-        
+
         :param hostname: hostname of node
         :param domain: domain of node
         :param **kwargs: gridspec and other statistics
@@ -76,20 +77,21 @@ class node(_Methods_Base):
                     stats[k][kk] = old_stats[k][kk]
             sql = 'update node set last_update=?, stats=? where node_id = ?'
             bindings = (now,json_encode(stats),row['node_id'])
-        
+
         try:
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:
             ret = e
         if isinstance(ret,Exception):
             logger.info('exception2 from _node_update_blocking(): %r',ret)
-    
+
+    @dbmethod
     def node_collate_resources(self,site_id=None,node_include_age=30, callback=None):
         """
         Collate node resources into site resources.
-        
+
         Non-blocking, with no return value. Call and forget.
-        
+
         :param site_id: The site to assign resources to
         :param node_include_age: The number of days a node can age before
                                  not being included.
@@ -173,11 +175,12 @@ class node(_Methods_Base):
             except Exception:
                 logger.info('error in _node_collate_resources_blocking',
                                  exc_info=True)
-    
+
+    @dbmethod
     def node_get_site_resources(self,site_id=None,empty_only=True,callback=None):
         """
         Get all resources for a site.
-        
+
         :param site_id: The site to examine
         :param empty_only: Get only the empty resources, defaults to True
         :returns: (via callback) dict of resources
@@ -204,7 +207,7 @@ class node(_Methods_Base):
                     if 'resources' not in grids:
                         continue
                     for k in grids['resources']:
-                        if (k in resources and 
+                        if (k in resources and
                             isinstance(grids['resources'][k][0],Number)):
                             resources[k] += grids['resources'][k][index]
                         else:
@@ -212,4 +215,3 @@ class node(_Methods_Base):
                 return resources
             except Exception as e:
                 callback(e)
-    

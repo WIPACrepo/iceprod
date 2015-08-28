@@ -25,6 +25,7 @@ except ImportError:
     import unittest
 
 import tornado.escape
+from tornado.testing import AsyncTestCase
 
 from flexmock import flexmock
 
@@ -74,6 +75,116 @@ class dbmethods_base(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
         super(dbmethods_base,self).tearDown()
+
+class decorator_test(AsyncTestCase):
+    @unittest_reporter(name=' decorator')
+    def test_000_decorator(self):
+        """Test decorator"""
+        def cb(*args,**kwargs):
+            cb.called = True
+            cb.args = args
+            cb.kwargs = kwargs
+            self.stop()
+
+        # test callback and default timeout
+        @dbmethods.dbmethod
+        def test(callback=None):
+            callback()
+        cb.called = False
+        test(callback=cb)
+        self.wait(timeout=0.1)
+        if not cb.called:
+            raise Exception('callback not called')
+
+        # test kwarg in decorator timeout
+        @dbmethods.dbmethod(timeout=0.1)
+        def test2(callback=None):
+            pass
+        cb.called = False
+        test2(callback=cb)
+        self.wait(timeout=0.2)
+        if not cb.called:
+            raise Exception('callback not called')
+
+        # test kwarg in function timeout
+        @dbmethods.dbmethod
+        def test3(timeout=None,callback=None):
+            pass
+        cb.called = False
+        test3(timeout=0.1,callback=cb)
+        self.wait(timeout=0.2)
+        if not cb.called:
+            raise Exception('callback not called')
+
+        # test callback firing after timeout
+        @dbmethods.dbmethod(timeout=0.1)
+        def test4(callback=None):
+            time.sleep(0.2)
+            logger.info('calling delayed callback')
+            callback()
+        cb.called = False
+        test4(callback=cb)
+        self.wait(timeout=0.15)
+        if not cb.called:
+            raise Exception('callback not called')
+        cb.called = False
+        try:
+            self.wait(timeout=0.2)
+        except Exception:
+            pass
+        if cb.called:
+            raise Exception('callback called twice')
+
+        # test timeout firing after callback
+        @dbmethods.dbmethod(timeout=0.1)
+        def test5(callback=None):
+            callback()
+        cb.called = False
+        test5(callback=cb)
+        self.wait(timeout=0.05)
+        if not cb.called:
+            raise Exception('callback not called')
+        cb.called = False
+        try:
+            self.wait(timeout=0.15)
+        except Exception:
+            pass
+        if cb.called:
+            raise Exception('callback called twice')
+
+        # test non-timeout branch
+        @dbmethods.dbmethod(timeout=0.05)
+        def test6(callback=None):
+            pass
+        cb.called = False
+        test6()
+        try:
+            self.wait(timeout=0.1)
+        except Exception:
+            pass
+        if cb.called:
+            raise Exception('callback called unexpectedly')
+
+    @unittest_reporter(name=' decorator with class method')
+    def test_001_decorator(self):
+        """Test decorator"""
+        def cb(*args,**kwargs):
+            cb.called = True
+            cb.args = args
+            cb.kwargs = kwargs
+            self.stop()
+
+        # test callback and default timeout
+        class test_class:
+            @dbmethods.dbmethod
+            def test(self,callback=None):
+                callback()
+        cb.called = False
+        a = test_class()
+        a.test(callback=cb)
+        self.wait(timeout=0.1)
+        if not cb.called:
+            raise Exception('callback not called')
 
 class dbmethods_test(dbmethods_base):
     @unittest_reporter
@@ -156,6 +267,8 @@ class dbmethods_test(dbmethods_base):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
+    alltests = glob_tests(loader.getTestCaseNames(decorator_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,decorator_test))
     alltests = glob_tests(loader.getTestCaseNames(dbmethods_test))
     suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_test))
     return suite

@@ -13,21 +13,23 @@ from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import calc_datasets_prios
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.rpc')
 
 class rpc(_Methods_Base):
     """
     The RPC DB methods.
-    
+
     :param parent: the parent DBMethods class instance
     """
-    
+
+    @dbmethod
     def rpc_echo(self,value,callback=None):
         """Echo a single value. Just a test to see if rpc is working"""
         return value
-    
+
+    @dbmethod
     def rpc_new_task(self, gridspec=None, callback=None, **kwargs):
         """Get a new task from the queue specified by the gridspec,
            based on the platform, hostname, network interfaces, python unicode.
@@ -103,11 +105,13 @@ class rpc(_Methods_Base):
             self.parent.queue_get_cfg_for_dataset(task['dataset_id'],
                                                   callback=callback)
 
+    @dbmethod
     def rpc_set_processing(self,task,callback=None):
         """Set a task to the processing status"""
         return self.parent.queue_set_task_status(task,'processing',
                                                  callback=callback)
 
+    @dbmethod
     def rpc_finish_task(self,task,stats={},callback=None):
         """Do task completion operations.
         Takes a task_id and a stats dict as input.
@@ -117,7 +121,7 @@ class rpc(_Methods_Base):
         self.db.blocking_task('queue',cb)
     def _rpc_finish_task_blocking(self,task,stats,callback=None):
         conn,archive_conn = self.db._dbsetup()
-        
+
         # update task status
         now = datetime.utcnow()
         sql = 'update search set task_status = ? '
@@ -133,7 +137,7 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
-        
+
         # update task statistics
         sql = 'select task_stat_id,task_id from task_stat where task_id = ?'
         bindings = (task,)
@@ -165,7 +169,7 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
-        
+
         # check if whole job is finished
         sql = 'select search.dataset_id,job_id,jobs_submitted,tasks_submitted '
         sql += ' from search '
@@ -230,13 +234,14 @@ class rpc(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
-            
+
             if job_status == 'complete':
                 # TODO: collate task stats
                 pass
-                
+
         callback(True)
 
+    @dbmethod
     def rpc_task_error(self,task,callback=None):
         """Mark task as ERROR"""
         if not task:
@@ -285,7 +290,7 @@ class rpc(_Methods_Base):
                     status = 'failed'
                 else:
                     status = 'reset'
-                
+
                 now = datetime.utcnow()
                 sql = 'update search set task_status = ? '
                 sql += ' where task_id = ?'
@@ -301,7 +306,8 @@ class rpc(_Methods_Base):
                     callback(ret)
                 else:
                     callback(True)
-    
+
+    @dbmethod
     def rpc_upload_logfile(self,task,name,data,callback=None):
         """Uploading of a logfile from a task"""
         cb2 = partial(self._rpc_upload_logfile_callback,callback=callback)
@@ -349,6 +355,7 @@ class rpc(_Methods_Base):
         else:
             callback(True)
 
+    @dbmethod
     def rpc_stillrunning(self,task,callback=None):
         """Check that the task is still in a running state"""
         sql = 'select task_id,status from task where task_id = ?'
@@ -365,7 +372,8 @@ class rpc(_Methods_Base):
                 callback(True)
             else:
                 callback(False)
-    
+
+    @dbmethod
     def rpc_submit_dataset(self,data,difplus='',description='',gridspec='',
                            njobs=1,stat_keys=[],debug=False,
                            callback=None):
@@ -439,6 +447,7 @@ class rpc(_Methods_Base):
         else:
             callback(True)
 
+    @dbmethod
     def rpc_update_dataset_config(self,dataset_id,data,callback=None):
         """Update a dataset config"""
         if isinstance(data,dict):
@@ -449,7 +458,7 @@ class rpc(_Methods_Base):
                             exc_info=True)
                 callback(e)
                 return
-        
+
         sql = 'update config set config_data = ? where dataset_id = ?'
         bindings = (data,dataset_id)
         cb = partial(self._rpc_update_dataset_config_callback,callback=callback)
@@ -459,7 +468,8 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             callback(True)
-    
+
+    @dbmethod
     def rpc_queue_master(self,resources=None,
                          queueing_factor_priority=1.0,
                          queueing_factor_dataset=1.0,
@@ -467,11 +477,11 @@ class rpc(_Methods_Base):
                          callback=None):
         """
         Handle global queueing request from a site.
-        
+
         For a task to queue on a site, it must be matched in the dataset
         gridspec list (or the list should be empty to match all), and
         the necessary resources should be available on the site.
-        
+
         :param resources: the available resources on the site
         :param queueing_factor_priority: (optional) queueing factor for priority
         :param queueing_factor_dataset: (optional) queueing factor for dataset id
@@ -481,12 +491,12 @@ class rpc(_Methods_Base):
         if resources is None:
             callback(Exception('no resources provided'))
             return
-        
+
         # priority factors
         qf_p = queueing_factor_priority
         qf_d = queueing_factor_dataset
         qf_t = queueing_factor_tasks
-        
+
         def cb2(tasks):
             if isinstance(tasks,Exception):
                 callback(tasks)
@@ -510,7 +520,7 @@ class rpc(_Methods_Base):
                 self.parent.queue_get_queueing_tasks(dataset_prios,
                                                      resources=resources,
                                                      callback=cb2)
-        
+
         self.parent.queue_get_queueing_datasets(callback=cb)
 
 

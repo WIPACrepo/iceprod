@@ -14,18 +14,18 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.queue')
 
 class queue(_Methods_Base):
     """
     The Queue DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+
     def _queue_get_task_from_ret(self,ret):
         tasks = OrderedDict()
         try:
@@ -35,7 +35,8 @@ class queue(_Methods_Base):
             return {}
         else:
             return tasks
-    
+
+    @dbmethod
     def queue_get_site_id(self,callback=None):
         """Get the current site_id"""
         sql = 'select site_id from setting'
@@ -50,7 +51,8 @@ class queue(_Methods_Base):
                 callback(Exception('no site id'))
             else:
                 callback(ret[0][0])
-    
+
+    @dbmethod
     def queue_set_site_queues(self,site_id,queues,callback=None):
         """Set the site queues"""
         cb = partial(self._queue_set_site_queues_blocking,site_id,queues,
@@ -100,9 +102,10 @@ class queue(_Methods_Base):
             callback(ret)
         else:
             callback(True)
-    
+
+    @dbmethod
     def queue_get_active_tasks(self,gridspec,callback=None):
-        """Get a dict of active tasks (queued,processing,reset,resume) on this site and plugin, 
+        """Get a dict of active tasks (queued,processing,reset,resume) on this site and plugin,
            returning {status:{tasks}} where each task = join of search and task tables"""
         sql = 'select task.* from search join task on search.task_id = task.task_id '
         sql += 'where search.gridspec like ? '
@@ -124,7 +127,8 @@ class queue(_Methods_Base):
                             task_groups[status] = {}
                         task_groups[status][task_id] = tasks[task_id]
                 callback(task_groups)
-    
+
+    @dbmethod
     def queue_set_task_status(self,task,status,callback=None):
         """Set the status of a task"""
         if not isinstance(task,Iterable):
@@ -159,7 +163,8 @@ class queue(_Methods_Base):
             callback(ret)
         else:
             callback(True)
-    
+
+    @dbmethod
     def queue_reset_tasks(self,reset=[],fail=[],callback=None):
         """Reset and fail specified tasks"""
         def cb(ret=None):
@@ -174,7 +179,8 @@ class queue(_Methods_Base):
             self.queue_set_task_status(reset,'reset',callback=cb)
         else:
             cb(True)
-    
+
+    @dbmethod
     def queue_get_task(self,task_id=None,callback=None):
         """Get tasks specified by task_id (can be id or list of ids).
            Returns either a single task, or a dict of many tasks."""
@@ -192,7 +198,7 @@ class queue(_Methods_Base):
                         callback(None)
                 else:
                     callback(tasks)
-        
+
         if isinstance(task_id,str):
             # single task
             sql = 'select * from task where task_id = ?'
@@ -204,9 +210,10 @@ class queue(_Methods_Base):
             bindings = tuple(task_id)
         else:
             raise Exception('task_id is not a str or iterable')
-        
+
         self.db.sql_read_task(sql,bindings,callback=cb)
-    
+
+    @dbmethod
     def queue_get_task_by_grid_queue_id(self,grid_queue_id,callback=None):
         """Get tasks specified by grid_queue_id (can be id or list of ids)"""
         def cb(ret):
@@ -223,7 +230,7 @@ class queue(_Methods_Base):
                         callback(None)
                 else:
                     callback(tasks)
-        
+
         if isinstance(grid_queue_id,str):
             # single task
             sql = 'select * from task where grid_queue_id = ?'
@@ -235,9 +242,10 @@ class queue(_Methods_Base):
             bindings = tuple(grid_queue_id)
         else:
             raise Exception('grid_queue_id is not a str or iterable')
-        
+
         self.db.sql_read_task(sql,bindings,callback=cb)
-    
+
+    @dbmethod
     def queue_set_submit_dir(self,task,submit_dir,callback=None):
         """Set the submit_dir of a task"""
         if not task:
@@ -246,7 +254,8 @@ class queue(_Methods_Base):
         sql += ' where task_id = ?'
         bindings = (submit_dir,task)
         self.db.sql_write_task(sql,bindings,callback=callback)
-    
+
+    @dbmethod
     def queue_buffer_jobs_tasks(self,gridspec,num_tasks,callback=None):
         """Create a buffer of jobs and tasks ahead of queueing"""
         sql = 'select dataset_id,status,gridspec,jobs_submitted,'
@@ -361,7 +370,7 @@ class queue(_Methods_Base):
         logger.debug('in _buffer_jobs_tasks_blocking')
         conn,archive_conn = self.db._dbsetup()
         now = datetime2str(datetime.utcnow())
-        
+
         # get dataset config
         sql = 'select dataset_id,config_data from config where dataset_id in '
         sql += '('+(','.join(['?' for _ in need_to_buffer]))+')'
@@ -378,13 +387,13 @@ class queue(_Methods_Base):
                 possible_datasets[d]['config'] = serialization.serialize_json.loads(c)
             except:
                 logger.info('config for dataset %s not loaded',d,exc_info=True)
-        
+
         for dataset in need_to_buffer:
             logger.debug('buffering dataset %s',dataset)
             total_jobs = possible_datasets[dataset]['jobs']
             total_tasks = possible_datasets[dataset]['tasks']
             tasks_per_job = int(total_tasks/total_jobs)
-            
+
             # make jobs
             jobs = []
             sql_bindings = []
@@ -402,7 +411,7 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
-            
+
             # make tasks
             task_names = []
             task_depends = []
@@ -418,7 +427,7 @@ class queue(_Methods_Base):
                     task_names = [t['name'] if t['name'] else i for i,t in enumerate(tt)]
                     try:
                         for t in tt:
-                            task_depends.append([task_names.index(d) 
+                            task_depends.append([task_names.index(d)
                                                  for d in t['depends']])
                     except ValueError:
                         logger.error('task dependency not in tasks for '
@@ -438,7 +447,7 @@ class queue(_Methods_Base):
             q_10 = '('+(','.join(['?' for _ in xrange(10)]))+')'
             q_6 = '('+(','.join(['?' for _ in xrange(6)]))+')'
             for job_id,job_status,n in jobs:
-                task_ids = [self.db._increment_id_helper('task',conn) 
+                task_ids = [self.db._increment_id_helper('task',conn)
                             for t in xrange(tasks_per_job)]
                 for t in xrange(tasks_per_job):
                     task_id = task_ids[t]
@@ -484,10 +493,11 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
-        
+
         # done buffering
         callback(True)
-    
+
+    @dbmethod
     def queue_get_queueing_datasets(self,gridspec=None,callback=None):
         """Get datasets that are currently in processing status on gridspec.
            Returns a list of dataset_ids"""
@@ -511,12 +521,13 @@ class queue(_Methods_Base):
         sql += 'search.task_status in ("idle","waiting") '
         bindings = tuple(bindings)
         self.db.sql_read_task(sql,bindings,callback=cb)
-    
+
+    @dbmethod
     def queue_get_queueing_tasks(self,dataset_prios,gridspec=None,num=20,
                                  resources=None,gridspec_assignment=None,
                                  callback=None):
         """Get tasks to queue based on dataset priorities.
-        
+
         :param dataset_prios: a dict of {dataset_id:priority} where sum(priorities)=1
         :param gridspec: (optional) the grid to queue on
         :param num: (optional) number of tasks to queue
@@ -636,12 +647,13 @@ class queue(_Methods_Base):
                     return
                 for t in tasks:
                     tasks['task_status'] = 'waiting'
-                    if gridspec_assignment
+                    if gridspec_assignment:
                         tasks['gridspec'] = gridspec_assignment
             # TODO: mark tasks such that they won't get queued on the next cycle
             #       maybe 'queueing'? something else?
         callback(tasks)
 
+    @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):
         """Get a cfg for a task"""
         if not task_id:
@@ -658,7 +670,8 @@ class queue(_Methods_Base):
         else:
             dataset_id = ret[0][1]
             self.queue_get_cfg_for_dataset(dataset_id,callback=callback)
-    
+
+    @dbmethod
     def queue_get_cfg_for_dataset(self,dataset_id,callback=None):
         """Get a cfg for a dataset"""
         if not dataset_id:
@@ -683,4 +696,3 @@ class queue(_Methods_Base):
                 callback(values['config_data'])
             else:
                 callback(None)
-    

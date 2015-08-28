@@ -19,20 +19,21 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.misc')
 
 class misc(_Methods_Base):
     """
     misc DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+
     ## Proxying ##
-    
+
+    @dbmethod
     def in_cache(self,url,callback=None):
         """Get whether or not the url is in the cache.
         Returns (incache,uid) tuple"""
@@ -48,7 +49,8 @@ class misc(_Methods_Base):
                 callback(False,None)
             else:
                 callback(True,ret[0][0])
-    
+
+    @dbmethod
     def remove_from_cache(self,url,callback=None):
         """Delete the url from the cache.
         Returns (False,None) tuple"""
@@ -62,7 +64,8 @@ class misc(_Methods_Base):
                 callback(ret,None)
             else:
                 callback(False,None)
-    
+
+    @dbmethod
     def get_cache_checksum(self,url,callback=None):
         """Get checksum if url is in the cache.
         Returns (incache,checksum) tuple"""
@@ -78,7 +81,8 @@ class misc(_Methods_Base):
                 callback(False,None)
             else:
                 callback(True,ret[0][0],ret[0][1])
-    
+
+    @dbmethod
     def get_cache_size(self,url,callback=None):
         """Get size if url is in the cache.
         Returns (incache,size) tuple"""
@@ -94,7 +98,8 @@ class misc(_Methods_Base):
                 callback(False,None)
             else:
                 callback(True,ret[0][0])
-    
+
+    @dbmethod
     def check_cache_space(self,downloaddir,size,priority=5,url=None,callback=None):
         """Check space on disk and potentially in use from downloading.
         Allocate space for the current download if possible.
@@ -194,7 +199,8 @@ class misc(_Methods_Base):
         bindings = (priority,)
         cb3 = partial(callback,priority)
         self.db.sql_read_task(sql,bindings,callback=cb)
-    
+
+    @dbmethod
     def add_to_cache(self,url,uid,size,checksum,checksum_type='sha512',priority=5,callback=None):
         """Add file to cache after it is uploaded or downloaded"""
         sql = 'insert into cache (cache_id,permanent_url,uid,size,checksum,'
@@ -202,10 +208,11 @@ class misc(_Methods_Base):
         cache_id = self.db.increment_id('cache')
         bindings = (cache_id,url,uid,size,checksum,priority)
         self.db.sql_write_task(sql,bindings,callback=callback)
-    
-    
+
+
     ### upload functions ###
-    
+
+    @dbmethod
     def new_upload(self,url,size,checksum,checksum_type,callback=None):
         """Allocate a new upload if possible"""
         cb = partial(self._new_upload_blocking,url,size,checksum,
@@ -224,7 +231,8 @@ class misc(_Methods_Base):
             callback(ret)
         else:
             callback(uid)
-    
+
+    @dbmethod
     def is_upload_addr(self,uid,callback=None):
         """Test to see if this address is a valid upload address"""
         sql = 'select * from upload where uid = ? and status = "uploading"'
@@ -238,7 +246,8 @@ class misc(_Methods_Base):
             callback(True)
         else:
             callback(False)
-    
+
+    @dbmethod
     def handle_upload(self,uid,name,content_type,path,host,callback=None):
         """Handle an uploaded file, moving it from tmp space to
            a more permanent location.
@@ -258,7 +267,7 @@ class misc(_Methods_Base):
             except:
                 logger.warn('error coverting sql ret to dict')
                 pass
-            
+
             # move file out of the tmp upload directory
             if host in upload['permanent_url']:
                 # save to cache permanently
@@ -303,10 +312,10 @@ class misc(_Methods_Base):
         else:
             # send callback early, then continue working
             callback(True)
-            
+
             # upload to another site
             cb2 = partial(self._handle_upload_reupload_callback2,upload['uid'])
-            cb = partial(self.site_to_site_upload, path,
+            cb = partial(self.misc_site_to_site_upload, path,
                          upload['permanent_url'], callback=cb2)
             self.db.non_blocking_task(cb)
     def _handle_upload_reupload_callback2(self,uid,ret=None):
@@ -317,7 +326,8 @@ class misc(_Methods_Base):
             def cb(ret2):
                 pass
             self.db.sql_write_task(sql,bindings,callback=cb)
-    
+
+    @dbmethod
     def check_upload(self,url,callback=None):
         """Check an upload's status"""
         sql = 'select uid,status from upload where url = ?'
@@ -331,19 +341,21 @@ class misc(_Methods_Base):
             callback(Exception('sql error in check_upload'))
         else:
             callback(ret[0][1])
-    
-    
+
+
     ### site to site ###
-    
+
+    @dbmethod
     def misc_site_to_site_upload(self,src,dest,callback=None):
         if callback:
             callback()
         # TODO: actually write this method
-    
+
+    @dbmethod
     def misc_get_tables_for_task(self,task_ids,callback=None):
         """
         Get all tables necessary to run task(s).
-        
+
         :param task_ids: Either a single, or an iterable of task_ids.
         :returns: (via callback) dict of table entries.
         """
@@ -358,7 +370,7 @@ class misc(_Methods_Base):
     def _misc_get_tables_for_task_blocking(self,task_ids,callback=None):
         conn,archive_conn = self.db._dbsetup()
         tables = {}
-        
+
         sql = 'select * from search where task_id in ('
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
@@ -373,7 +385,7 @@ class misc(_Methods_Base):
         if not ret:
             callback({})
             return
-        
+
         search_table = {}
         keys = []
         for row in ret:
@@ -381,7 +393,7 @@ class misc(_Methods_Base):
             if not keys:
                 keys = search_table[row[0]].keys()
         tables['search'] = {'keys':keys,'values':ret}
-        
+
         sql = 'select * from task where task_id in ('
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
@@ -402,7 +414,7 @@ class misc(_Methods_Base):
                 if not keys:
                     keys = row2.keys()
             tables['task'] = {'keys':keys,'values':ret}
-        
+
         sql = 'select * from task_rel where task_rel_id in ('
         sql += ','.join('?' for _ in task_rel_ids)
         sql += ')'
@@ -421,7 +433,7 @@ class misc(_Methods_Base):
                     keys = self._list_to_dict('task',row).keys()
                     break
             tables['task'] = {'keys':keys,'values':ret}
-        
+
         job_ids = set(search_table[id]['job_id'] for id in task_ids)
         sql = 'select * from job where job_id in ('
         sql += ','.join('?' for _ in job_ids)
@@ -441,7 +453,7 @@ class misc(_Methods_Base):
                     keys = self._list_to_dict('job',row).keys()
                     break
             tables['job'] = {'keys':keys,'values':ret}
-        
+
         dataset_ids = set(search_table[id]['dataset_id'] for id in task_ids)
         sql = 'select * from dataset where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)
@@ -464,7 +476,7 @@ class misc(_Methods_Base):
                 if not keys:
                     keys = row2.keys()
             tables['dataset'] = {'keys':keys,'values':ret}
-        
+
         sql = 'select * from config where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
@@ -483,7 +495,7 @@ class misc(_Methods_Base):
                     keys = self._list_to_dict('config',row).keys()
                     break
             tables['config'] = {'keys':keys,'values':ret}
-        
+
         categorydef_ids = set()
         if categoryvalue_ids:
             sql = 'select * from categoryvalue where categoryvalue_id in ('
@@ -505,7 +517,7 @@ class misc(_Methods_Base):
                     if not keys:
                         keys = row2.keys()
                 tables['categoryvalue'] = {'keys':keys,'values':ret}
-        
+
         if categorydef_ids:
             sql = 'select * from categorydef where categorydef_id in ('
             sql += ','.join('?' for _ in categorydef_ids)
@@ -525,13 +537,14 @@ class misc(_Methods_Base):
                         keys = self._list_to_dict('categorydef',row).keys()
                         break
                 tables['categorydef'] = {'keys':keys,'values':ret}
-        
+
         callback(tables)
 
+    @dbmethod
     def misc_update_tables(self,tables,callback=None):
         """
         Update the DB tables with the incoming information.
-        
+
         :param tables: A dict of {table_name:{keys:[],values:[[]]}}
         :returns: (via callback) success or failure
         """

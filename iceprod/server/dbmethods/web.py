@@ -19,20 +19,21 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, filtered_input
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime, filtered_input
 
 logger = logging.getLogger('dbmethods.web')
 
 class web(_Methods_Base):
     """
     The website DB methods.
-    
+
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
-    
+
+    @dbmethod
     def web_get_tasks_by_status(self,gridspec=None,dataset_id=None,callback=None):
-        """Get the number of tasks in each state on this site and plugin, 
+        """Get the number of tasks in each state on this site and plugin,
            returning {status:num}
         """
         sql = 'select search.task_status, count(*) as num from search '
@@ -60,9 +61,10 @@ class web(_Methods_Base):
                     for status,num in ret:
                         task_groups[status] = num
                 callback(task_groups)
-    
+
+    @dbmethod
     def web_get_datasets(self,gridspec=None,groups=None,callback=None,**filters):
-        """Get the number of datasets in each state on this site and plugin, 
+        """Get the number of datasets in each state on this site and plugin,
            returning {status:num}
         """
         sql = 'select '
@@ -88,7 +90,7 @@ class web(_Methods_Base):
             sql += ' group by ' + ','.join(groups)
         cb = partial(self._web_get_datasets_callback,groups,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
-            
+
     def _web_get_datasets_grouper(self, data,groups,val):
         if len(groups) == 1:
             data[groups[0]] = val
@@ -106,10 +108,11 @@ class web(_Methods_Base):
                 callback(dataset_groups)
             else:
                 callback([self._list_to_dict('dataset',x) for x in ret])
-    
+
+    @dbmethod
     def web_get_datasets_details(self,dataset_id=None,status=None,gridspec=None,
                           callback=None):
-        """Get the number of datasets in each state on this site and plugin, 
+        """Get the number of datasets in each state on this site and plugin,
            returning {status:num}
         """
         sql = 'select dataset.* from dataset '
@@ -144,10 +147,11 @@ class web(_Methods_Base):
                         tmp = self._list_to_dict('dataset',row)
                         datasets[tmp['dataset_id']] = tmp
                 callback(datasets)
-    
+
+    @dbmethod
     def web_get_tasks_details(self,task_id=None,status=None,gridspec=None,
                           dataset_id=None,callback=None):
-        """Get the number of tasks in each state on this site and plugin, 
+        """Get the number of tasks in each state on this site and plugin,
            returning {status:num}
         """
         sql = 'select search.*,task.* from search '
@@ -188,7 +192,8 @@ class web(_Methods_Base):
                         tmp = self._list_to_dict(['search','task'],row)
                         tasks[tmp['task_id']] = tmp
                 callback(tasks)
-    
+
+    @dbmethod
     def web_get_logs(self,task_id,lines=None,callback=None):
         """Get the logs for a task, returns {log_name:text}"""
         sql = 'select * from task_log where task_id = ?'
@@ -208,7 +213,8 @@ class web(_Methods_Base):
                         data = '\n'.join(data.rsplit('\n',lines+1)[-1*lines:])
                     logs[tmp['name']] = data
             callback(logs)
-    
+
+    @dbmethod
     def web_get_gridspec(self,callback=None):
         """Get the possible gridspecs that we know about"""
         sql = 'select site_id,queues from site'
@@ -226,7 +232,8 @@ class web(_Methods_Base):
                 except:
                     pass
             callback(gridspecs)
-    
+
+    @dbmethod
     def web_get_sites(self,callback=None,**kwargs):
         """Get sites matching kwargs"""
         # TODO: finish this
