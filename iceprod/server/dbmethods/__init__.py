@@ -6,11 +6,9 @@ import logging
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import inspect
-from functools import update_wrapper, wraps, partial
+from functools import update_wrapper, partial
 
 import tornado.ioloop
-from tornado.stack_context import wrap as stack_wrap
-from tornado.stack_context import StackContext
 
 from iceprod.functools_future import partialmethod
 import iceprod.server
