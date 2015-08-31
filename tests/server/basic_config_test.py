@@ -13,11 +13,14 @@ import os, sys, time
 import shutil
 import tempfile
 import random
+import socket
 
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+
+import flexmock
 
 import iceprod.server.basic_config
 
@@ -58,16 +61,29 @@ class basic_config_test(unittest.TestCase):
         except Exception as e:
             logger.error('init returned exception: %r',e,exc_info=True)
             raise Exception('init returned exception')
+        logger.info(cfg.messaging_url)
 
-        if (cfg.db is not True or
-            cfg.proxy is not False or
-            cfg.queue is not True or
-            cfg.schedule is not True or
-            cfg.website is not True or
-            cfg.config is not True or
-            cfg.messaging_url != os.path.join('ipc://',os.getcwd(),'unix_socket.sock') or
-            cfg.logging != {'logfile':'iceprod.log'}):
-            raise Exception('failed default check')
+        for mod in cfg.start_order:
+            if not isinstance(getattr(cfg,mod),bool):
+                raise Exception('%s is not a bool'%mod)
+        if '://' not in cfg.messaging_url:
+            logger.info(cfg.messaging_url)
+            raise Exception('invalid messaging_url')
+        if 'logfile' not in cfg.logging:
+            raise Exception('invalid logging default')
+
+        if hasattr(socket, 'AF_UNIX'):
+            # forceful test of tcp-based address
+            try:
+                cfg = iceprod.server.basic_config.BasicConfig(force_tcp=True)
+            except Exception as e:
+                logger.error('init returned exception: %r',e,exc_info=True)
+                raise Exception('init returned exception')
+            logger.info(cfg.messaging_url)
+
+            if '://' not in cfg.messaging_url:
+                logger.info(cfg.messaging_url)
+                raise Exception('invalid messaging_url')
 
     @unittest_reporter
     def test_03_read_file(self):
