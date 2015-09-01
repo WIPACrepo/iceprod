@@ -121,6 +121,31 @@ class master_communication_test(unittest.TestCase):
         else:
             raise Exception('did not raise exception')
 
+        # try with passkey
+        cfg = {'master':{'url':'localhost','passkey':'tmpkey'}}
+        method = 'mymethod'
+        cb.called = False
+        iceprod.server.master_communication.send_master(cfg,method,callback=cb)
+        if not client.called:
+            raise Exception('client not called')
+        client_body = json_decode(client.kwargs['body'])
+        expected = {'passkey':cfg['master']['passkey']}
+        if client_body['params'] != expected:
+            raise Exception('params not correct')
+
+        cfg = {'master':{'url':'localhost','passkey':'tmpkey'}}
+        method = 'mymethod'
+        cb.called = False
+        iceprod.server.master_communication.send_master(cfg,method,
+                                                        passkey='otherkey',
+                                                        callback=cb)
+        if not client.called:
+            raise Exception('client not called')
+        client_body = json_decode(client.kwargs['body'])
+        expected = {'passkey':'otherkey'}
+        if client_body['params'] != expected:
+            raise Exception('params not correct')
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(master_communication_test))

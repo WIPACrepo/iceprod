@@ -48,6 +48,10 @@ def send_master(cfg,method,callback=None,**kwargs):
                 logger.warn('error receiving: no result')
                 callback(Exception('bad response'))
 
+    if ('passkey' not in kwargs and 'master' in cfg and
+        'passkey' in cfg['master']):
+        kwargs['passkey'] = cfg['master']['passkey']
+
     args = {'connect_timeout': 30,
             'request_timeout': 120,
             'validate_cert': True,
