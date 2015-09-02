@@ -4,7 +4,7 @@ Test script for grid
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('grid_test')
@@ -42,7 +42,7 @@ class grid_test(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
 
         # override self.db_handle
-        self.messaging = _messaging()
+        self.messaging = messaging_mock()
         self.check_run_stop = False
 
     def tearDown(self):
