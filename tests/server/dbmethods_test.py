@@ -4,7 +4,7 @@ Test script for dbmethods
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('dbmethods_test')
@@ -264,6 +264,46 @@ class dbmethods_test(dbmethods_base):
             ret = self._db.subclasses[0]._list_to_dict(groupkeys,groupvalues)
             if ret != groupans:
                 raise Exception('got %r but should be %r'%(ret,groupans))
+
+    @unittest_reporter
+    def test_010_send_to_master(self):
+        """Test send_to_master"""
+        m = messaging_mock()
+        self._db.db.messaging = m
+
+        def cb(ret=None):
+            cb.ret = ret
+        cb.ret = None
+
+        # special note: use DB.subclasses[0] to get the first subclass,
+        #               which will have access to _Methods_Base methods
+        arg = {'table':['sql1','sql2']}
+        m.ret = {'master_updater':{'add':True}}
+        self._db.subclasses[0]._send_to_master(arg,callback=cb)
+        if cb.ret is not True:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return True')
+        logger.info('m args: %r',m.called)
+        if not m.called:
+            raise Exception('did not call messaging to master')
+        if m.called[0][0] != 'master_updater':
+            raise Exception('did not call master_updater')
+        if m.called[0][1] != 'add':
+            raise Exception('did not call master_updater.add')
+        if m.called[0][2][0] != arg:
+            raise Exception('did not call with arg')
+
+        m.ret = {'master_updater':{'add':False}}
+        self._db.subclasses[0]._send_to_master(arg,callback=cb)
+        if cb.ret is not False:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return False')
+
+        m.ret = {'master_updater':{'add':Exception('test')}}
+        self._db.subclasses[0]._send_to_master(arg,callback=cb)
+        if cb.ret != m.ret['master_updater']['add']:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return Exception')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

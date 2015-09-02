@@ -4,7 +4,7 @@ Test script for database server module
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('modules_db_test')
@@ -112,7 +112,7 @@ class modules_db_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = db.db(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         if not q:
             raise Exception('did not return db object')
         if start.called is not True:
@@ -137,7 +137,7 @@ class modules_db_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = db.db(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
 
         q.start()
         if start.called is not True:
@@ -185,7 +185,7 @@ class modules_db_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = db.db(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         local_db = _DB()
         q.db = local_db
 
@@ -288,7 +288,7 @@ class dbapi_test(unittest.TestCase):
         init.called = False
 
         cfg = {'test':1}
-        newdb = self._dbclass(cfg)
+        newdb = self._dbclass(cfg,None)
         if not newdb:
             raise Exception('init did not return db object')
         elif tables.called != True:
@@ -324,7 +324,7 @@ class dbapi_test(unittest.TestCase):
 
         # test start
         cfg = {'db':{'name':'name','numthreads':1,'sqlite_cachesize':1000}}
-        newdb = self._dbclass(cfg)
+        newdb = self._dbclass(cfg,None)
         if not newdb:
             raise Exception('start_stop did not return db object')
 

@@ -78,7 +78,6 @@ class DBMethods():
                 logger.error('Error importing module',exc_info=True)
             else:
                 for m,obj in inspect.getmembers(self.subclasses[-1],callable):
-                    logger.info('%s %r',m,obj)
                     if m.startswith('_'):
                         continue
                     if m in self.methods:
@@ -121,6 +120,9 @@ class _Methods_Base():
                          table,input)
             raise
         return ret
+
+    def _send_to_master(self, updates, callback=None):
+        self.db.messaging.master_updater.add(updates, callback=callback)
 
 def filtered_input(input):
     """Filter input to sql in cases where we can't use bindings.

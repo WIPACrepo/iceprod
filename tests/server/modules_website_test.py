@@ -4,7 +4,7 @@ Test script for the website module.
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('modules_website_test')
@@ -38,7 +38,6 @@ try:
     from iceprod.server import openssl
 except ImportError:
     openssl = None
-
 
 class _Nginx(object):
     def __init__(self,*args,**kwargs):
@@ -125,7 +124,7 @@ class modules_website_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = website(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         if not q:
             raise Exception('did not return website object')
         if start.called is not True:
@@ -150,7 +149,7 @@ class modules_website_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = website(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         ngx = _Nginx()
         q.nginx = ngx
 
@@ -194,7 +193,7 @@ class modules_website_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         web = website(bcfg)
-        web.messaging = _messaging()
+        web.messaging = messaging_mock()
         web.messaging.ret = {'db':{'auth_authorize_task':True,
                                    'echo':'e',
                                    'rpc_test':'testing'}}
@@ -254,7 +253,7 @@ class modules_website_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         web = website(bcfg)
-        web.messaging = _messaging()
+        web.messaging = messaging_mock()
         web.cfg = self.cfg
         web._start()
 
@@ -332,7 +331,7 @@ class modules_website_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         web = website(bcfg)
-        web.messaging = _messaging()
+        web.messaging = messaging_mock()
         web.messaging.ret = {'db':{'auth_new_passkey':passkey,
                                    'web_get_gridspec':gridspec,
                                    'web_get_datasets_details':dataset_details,

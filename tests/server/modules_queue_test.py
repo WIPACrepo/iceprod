@@ -4,7 +4,7 @@ Test script for queue module
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('queue_test')
@@ -105,7 +105,7 @@ class queue_test(unittest.TestCase):
         if start.called is not True:
             raise Exception('init did not call start')
 
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         new_cfg = {'new':1}
         q.messaging.BROADCAST.reload(cfg=new_cfg)
         if not q.messaging.called:
@@ -148,7 +148,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.cfg = cfg
         if not q:
             raise Exception('did not return queue object')
@@ -214,7 +214,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.cfg = cfg
         if not q:
             raise Exception('did not return queue object')
@@ -280,7 +280,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.cfg = cfg
         if not q:
             raise Exception('did not return queue object')
@@ -340,7 +340,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
         if not q:
@@ -410,7 +410,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
         if not q:
@@ -493,7 +493,7 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
         if not q:
@@ -558,7 +558,7 @@ class queue_test(unittest.TestCase):
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
         resources = {'cpus':12,'gpus':3}
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'node_get_site_resources':resources,
                                  'misc_update_tables':None}
                           }

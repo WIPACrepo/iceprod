@@ -4,7 +4,7 @@ Test script for the schedule module.
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('modules_proxy_test')
@@ -31,49 +31,6 @@ import iceprod.core.logger
 from iceprod.server import module
 from iceprod.server import basic_config
 from iceprod.server.modules.schedule import schedule
-
-
-class _messaging(object):
-    def __init__(self):
-        self.called = False
-        self.args = []
-        self.ret = None
-    def start(self):
-        pass
-    def stop(self):
-        pass
-    def kill(self):
-        pass
-    def __request(self, service, method, kwargs):
-        self.called = [service,method,kwargs]
-        if 'callback' in kwargs:
-            if ret:
-                kwargs['callback'](ret)
-            else:
-                kwargs['callback']()
-        elif 'async' in kwargs and kwargs['async'] is False:
-            return ret
-    def __getattr__(self,name):
-        class _Method:
-            def __init__(self,send,service,name):
-                self.__send = send
-                self.__service = service
-                self.__name = name
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,
-                               "%s.%s"%(self.__name,name))
-            def __call__(self,**kwargs):
-                return self.__send(self.__service,self.__name,kwargs)
-        class _Service:
-            def __init__(self,send,service):
-                self.__send = send
-                self.__service = service
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,name)
-            def __call__(self,**kwargs):
-                raise Exception('Service %s, method name not specified'%(
-                                self.__service))
-        return _Service(self.__request,name)
 
 class _Schedule(object):
     def __init__(self,*args,**kwargs):
@@ -135,13 +92,13 @@ class modules_schedule_test(unittest.TestCase):
         if start.called != True:
             raise Exception('init did not call start')
 
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
 
         new_cfg = {'new':1}
         q.messaging.BROADCAST.reload(cfg=new_cfg)
         if not q.messaging.called:
             raise Exception('init did not call messaging')
-        if q.messaging.called != ['BROADCAST','reload',{'cfg':new_cfg}]:
+        if q.messaging.called[0] != ['BROADCAST','reload',tuple(),{'cfg':new_cfg}]:
             raise Exception('init did not call correct message')
 
     @unittest_reporter
@@ -156,7 +113,7 @@ class modules_schedule_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = schedule(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         q.cfg = {'site_id':'1'}
 
         q.scheduler = _Schedule()
@@ -176,7 +133,7 @@ class modules_schedule_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = schedule(bcfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         sch = _Schedule()
         q.scheduler = sch
 

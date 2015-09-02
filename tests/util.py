@@ -98,7 +98,7 @@ def listmodules(package_name=''):
     return ret
 
 
-class _messaging(object):
+class messaging_mock(object):
     """
     A fake :class:`iceprod.server.RPCinternal.Service` object.
     Designed to replace module.messaging.
@@ -117,7 +117,7 @@ class _messaging(object):
     def __request(self, service, method, args, kwargs):
         self.called.append([service,method,args,kwargs])
         logging.info(self.called[-1])
-        if 'callback' in kwargs:
+        if 'callback' in kwargs and kwargs['callback']:
             if self.ret and service in self.ret and method in self.ret[service]:
                 kwargs['callback'](self.ret[service][method])
             else:

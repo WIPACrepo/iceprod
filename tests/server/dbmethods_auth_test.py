@@ -34,7 +34,6 @@ from iceprod.server import dbmethods
 
 from .dbmethods_test import dbmethods_base,DB
 
-
 class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_010_auth_get_site_auth(self):

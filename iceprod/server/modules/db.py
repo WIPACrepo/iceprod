@@ -28,20 +28,20 @@ class db(module.module):
         self.service_class = DBService(self)
         self.db = None
         self.start()
-        
+
     def start(self):
         """Start thread"""
         super(db,self).start(callback=self._start)
-    
+
     def _start(self):
         try:
             t = self.cfg['db']['type']
             if t.lower() == 'mysql':
                 logger.info('attempting to start MySQL db')
-                self.db = MySQL(self.cfg)
+                self.db = MySQL(self.cfg,self.messaging)
             elif t.lower() == 'sqlite':
                 logger.info('attempting to start SQLite db')
-                self.db = SQLite(self.cfg)
+                self.db = SQLite(self.cfg,self.messaging)
             else:
                 logger.critical('Unknown database type: %s',t)
                 raise Exception('Unknown database type: %s'%t)
@@ -53,12 +53,12 @@ class db(module.module):
         if self.db:
             self.db.stop()
         super(db,self).stop()
-    
+
     def kill(self):
         if self.db:
             self.db.stop(force=True)
         super(db,self).kill()
-    
+
     def update_cfg(self,new_cfg):
         self.cfg = new_cfg
         if self.db:
@@ -103,7 +103,7 @@ class DBAPI(object):
     """
     API for database interaction
     """
-    
+
     # define tables
     tables = {'site':OrderedDict([('site_id',str),
                                   ('name',str),
@@ -313,41 +313,42 @@ class DBAPI(object):
                       'task':{'waiting', 'queued', 'processing', 'complete',
                               'suspended', 'failed', 'resume', 'reset'}
                      }
-    
+
     ### basic functions ###
-    
-    def __init__(self, cfg):
+
+    def __init__(self, cfg, messaging):
         # set cfg
         self.cfg = cfg
+        self.messaging = messaging
         self.dbmethods = None
-        
+
         # thread pools
         self.write_pool = None
         self.read_pool = None
         self.blocking_pool = None # self-imposed blocking of certain sections
         self.non_blocking_pool = None # things that need to run somewhere else
-        
+
         # set up status variables
         self.backup_in_progress = False
-        
+
         self._setup_tables()
         try:
             self.init()
         except:
             logger.error('settings table init failed',exc_info=True)
             raise
-    
+
     def start(self):
         # start thread pools
         self._start_db()
-        
+
         # set up RPCServer
         logger.info('setting dbmethods')
         self.dbmethods = dbmethods.DBMethods(self)
-        
+
     def stop(self,force=False):
         self._stop_db(force=force)
-    
+
     def backup(self):
         if not self.backup_in_progress:
             self.backup_in_progress = True
@@ -355,7 +356,7 @@ class DBAPI(object):
             Thread(target=self._backup_worker).start()
         else:
             logger.warn('Attempted to backup, but backup already in progress')
-    
+
     def update_cfg(self,newcfg):
         """Update config in real time"""
         stop = None
@@ -367,7 +368,7 @@ class DBAPI(object):
         if (self.cfg['db']['numthreads'] != newcfg['db']['numthreads']):
             # change in number of threads
             stop = 'dbpools'
-        
+
         if stop == 'db':
             # db pause and resume for read and write pool
             self.write_pool.pause()
@@ -387,7 +388,7 @@ class DBAPI(object):
             self.read_pool.start(numthreads)
             self.blocking_pool.start(numthreads)
             self.non_blocking_pool.start(numthreads)
-    
+
     def init(self):
         """Initialize the settings table if there is nothing there"""
         conn,archive_conn = self._dbsetup()
@@ -421,35 +422,35 @@ class DBAPI(object):
             ret = self._db_write(conn,sql,bindings,None,None,None)
             if isinstance(ret,Exception):
                 raise ret
-    
+
     def increment_id(self,table):
         """Increment the id of the table, returning the id"""
         return self._increment_id_helper(table)
-    
-    
+
+
     ### Threadpool Tasks ###
-    
+
     def sql_read_task(self,sql=None,bindings=None,archive_sql=None,archive_bindings=None,callback=None):
         """Add task to the read pool"""
         self.read_pool.add_task(self._sql_read_helper,sql,bindings,archive_sql,archive_bindings,callback=callback)
-    
+
     def _sql_read_helper(self,sql=None,bindings=None,archive_sql=None,archive_bindings=None,init=None):
         """
         Read sql from database by calling _db_read()
-        
+
         init = (db_conn,archive_db_conn)
         either read from sql or sql_archive, not both, returning result
         """
         conn, archive_conn = init
         return self._db_read(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
-    
+
     def sql_write_task(self,sql=None,bindings=None,archive_sql=None,archive_bindings=None,callback=None):
         self.write_pool.add_task(self._sql_write_helper,sql,bindings,archive_sql,archive_bindings,callback=callback)
-    
+
     def _sql_write_helper(self,sql=None,bindings=None,archive_sql=None,archive_bindings=None,tasks=None,init=None):
         """
         Write sql to database by calling _db_write()
-        
+
         init = (db_conn,archive_db_conn)
         if singular, sql and/or sql_archive has executable instructions
         if multiple, tasks has multiple executable instructions
@@ -457,22 +458,22 @@ class DBAPI(object):
         conn, archive_conn = init
         def w(sql=None,bindings=None,archive_sql=None,archive_bindings=None):
             self._db_write(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
-            
+
         if sql is not None or archive_sql is not None:
             w(sql,bindings,archive_sql,archive_bindings)
         if tasks is not None:
             for args,kwargs in tasks:
                 w(*args,**kwargs)
-    
+
     def blocking_task(self,name,func,*args,**kwargs):
         self.blocking_pool.add_task(name,func,*args,**kwargs)
-    
+
     def non_blocking_task(self,func,*args,**kwargs):
         self.non_blocking_pool.add_task(func,*args,**kwargs)
-    
-    
+
+
     ### Functions that can be overwritten in subclasses ###
-    
+
     def _start_db(self):
         # set up threadpools
         numthreads = 1
@@ -497,36 +498,36 @@ class DBAPI(object):
         self.non_blocking_pool.disable_output_queue()
         self.non_blocking_pool.start()
         logger.debug('started threadpools')
-    
+
     def _stop_db(self,force=False):
         logger.info('stop threadpools')
         self.write_pool.finish(not force)
         self.read_pool.finish(not force)
         self.blocking_pool.finish(not force)
         self.non_blocking_pool.finish(not force)
-    
-    
+
+
     ### Functions that must be overwritten in subclasses ###
-    
+
     def _setup_tables(self):
         """Set up tables if they are not present"""
         raise NotImplementedError()
-    
+
     def _backup_worker(self):
         """Back up databases"""
         raise NotImplementedError()
-    
+
     def _dbsetup(self):
         """Set up database connections.  Should return (conn,archive_conn)"""
         raise NotImplementedError()
-    
+
     def _db_read(self,sql,bindings,archive_sql,archive_bindings):
         """Do a read query from the database"""
         raise NotImplementedError()
     def _db_write(self,sql,bindings,archive_sql,archive_bindings):
         """Do a write query from the database"""
         raise NotImplementedError()
-    
+
     def _increment_id_helper(self,table,conn=None):
         """Increment the id of the table, returning the id"""
         raise NotImplementedError()
@@ -538,7 +539,7 @@ except ImportError:
 else:
     class SQLite(DBAPI):
         """SQLite 3 implementation of DBAPI"""
-        
+
         def _setup_tables(self):
             """Setup tables, or modify existing tables to match new config"""
             (conn,archive_conn) = self._dbsetup()
@@ -556,7 +557,7 @@ else:
                 sql_create += ')'
                 scols = set(cols)
                 with conn:
-                    cur = conn.cursor()  
+                    cur = conn.cursor()
                     try:
                         curcols = set()
                         for cid,name,type,notnull,dflt,pk in cur.execute("pragma table_info("+table_name+")"):
@@ -568,10 +569,10 @@ else:
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
-                            
+
                             # get similar cols
                             keepcols = curcols & scols
-                            
+
                             full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
                             full_sql += 'insert into '+table_name+'_backup select '+','.join(keepcols)+' from '+table_name+';'
                             full_sql += 'drop table '+table_name+';'
@@ -585,13 +586,13 @@ else:
                     except apsw.Error, e:
                         # something went wrong
                         logger.warning(e)
-                        raise 
-            
+                        raise
+
             for table_name in self.tables.keys():
                 _create(table_name)
             for table_name in self.archive_tables:
                 _create(table_name)
-        
+
         def _backup_worker(self):
             """Back up databases"""
             try:
@@ -623,7 +624,7 @@ else:
                 logger.warning('backup failed with message %s',str(e))
             finally:
                 self.backup_in_progress = False
-        
+
         def _dbsetup(self):
             """Set up database connections. Should return (conn,archive_conn)"""
             logger.debug('_dbsetup()')
@@ -637,7 +638,7 @@ else:
             conn.setbusytimeout(1000)
             archive_conn.setbusytimeout(1000)
             return (conn,archive_conn)
-        
+
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
             logger.debug('running query %s',sql)
@@ -657,7 +658,7 @@ else:
                     raise # just kill for other db errors
                 return True
             return False
-        
+
         def _db_read(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
             """Do a read query from the database"""
             ret = None
@@ -683,7 +684,7 @@ else:
                 return e
             logger.debug('_db_read returns %r',ret)
             return ret
-        
+
         def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
             """Do a write query from the database"""
             try:
@@ -728,7 +729,7 @@ else:
                     logger.debug('archive_bindings: %r',archive_bindings)
                 logger.warning(e)
                 raise
-        
+
         def _increment_id_helper(self,table,conn=None):
             """Increment the id of the table, returning the id"""
             if not conn:
@@ -769,7 +770,7 @@ except ImportError:
 else:
     class MySQL(DBAPI):
         """MySQL 5 implementation of DBAPI"""
-        
+
         def _setup_tables(self):
             """Setup tables, or modify existing tables to match new config"""
             (conn,archive_conn) = self._dbsetup()
@@ -801,7 +802,7 @@ else:
                 sql_create += ')'
                 scols = set(cols)
                 try:
-                    cur = con.cursor()  
+                    cur = con.cursor()
                     try:
                         curcols = set()
                         curdatatypes = {}
@@ -816,7 +817,7 @@ else:
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
-                            
+
                             # differences
                             rmcols = curcols - scols
                             addcols = []
@@ -836,7 +837,7 @@ else:
                                     elif t == MediumText:
                                         sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                                 addcols.append(x)
-                            
+
                             full_sql = 'alter table '+table_name+' add column ('+','.join(addcols)+'), drop column '+', drop column '.join(rmcols)
                             cur.execute(full_sql)
                         else:
@@ -854,13 +855,13 @@ else:
                     raise
                 else:
                     con.commit()
-            
+
             for table_name in self.tables.keys():
                 _create(conn,table_name)
             for table_name in self.archive_tables:
                 _create(archive_conn,table_name)
-            
-        
+
+
         def _backup_worker(self):
             """Back up databases"""
             try:
@@ -922,13 +923,13 @@ else:
                 logger.warning('backup failed',exc_info=True)
             finally:
                 self.backup_in_progress = False
-        
+
         def _backup_worker_helper(self,conn,backup_conn):
             """Iterate over tables and backup conn to backup_conn"""
             cursor = conn.cursor()
             backup_cursor = backup_conn.cursor()
             tables = []
-            
+
             def grouper(l):
                 try:
                     i = 0
@@ -938,18 +939,18 @@ else:
                         i += step
                 except:
                     pass
-            
+
             backup_cursor.execute('show tables')
             for row in backup_cursor.fetchall():
                 tables.append(row[0])
-            
+
             for table in tables:
                 if table not in self.tables:
                     # drop tables that have been deleted
                     backup_cursor.execute('drop table '+table)
                     backup_conn.commit()
                     continue
-                
+
                 # update existing tables
                 cols = self.tables[table].keys()
                 scols = set(cols)
@@ -959,11 +960,11 @@ else:
                 for name,datatype in backup_cursor.fetchall():
                     curcols.add(name)
                     curdatatypes[name] = datatype
-                
+
                 if curcols != scols:
                     # table not the same
                     logger.info('modify table '+table)
-                    
+
                     # differences
                     rmcols = curcols - scols
                     addcols = []
@@ -983,43 +984,43 @@ else:
                             elif t == MediumText:
                                 sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                         addcols.append(x)
-                    
+
                     full_sql = 'alter table '+table+' add column ('+','.join(addcols)+'), drop column '+', drop column '.join(rmcols)
                     cur.execute(full_sql)
-                
-                ind = cols[0]             
+
+                ind = cols[0]
                 rowids = set()
                 cursor.execute('select '+ind+' from '+table)
                 for row in cursor.fetchall():
-                    rowids.add(row[0])     
+                    rowids.add(row[0])
                 backup_rowids = set()
                 backup_cursor.execute('select '+ind+' from '+table)
                 for row in backup_cursor.fetchall():
                     backup_rowids.add(row[0])
-                
+
                 delids = backup_rowids - rowids
                 addids = rowids - backup_rowids
                 updateids = rowids & backup_rowids
-                
+
                 # delete old rows
                 for d in gen(list(delids)):
                     backup_cursor.execute('delete from '+table+' where '+ind+' in ('+','.join(map(str,d))+')')
                 backup_conn.commit()
-                
+
                 # insert new rows
                 for a in gen(list(addids)):
                     cursor.execute('select * from '+table+' where '+ind+' in ('+','.join(map(str,a))+')')
                     for row in cursor.fetchall():
                         backup_cursor.execute('insert into '+table+' ('+','.join(cols)+') values (\''+'\',\''.join(map(str,row))+'\')')
                     backup_conn.commit()
-                
+
                 # update remaining rows
                 for a in gen(list(updateids)):
                     cursor.execute('select * from '+table+' where '+ind+' in ('+','.join(map(str,a))+')')
                     for row in cursor.fetchall():
                         backup_cursor.execute('update '+table+' set '+','.join(map(lambda a,b:str(a)+'=\''+str(b)+'\'',cols,row))+' where '+ind+' = '+str(row[0]))
                     backup_conn.commit()
-                
+
             # add tables that don't exist yet
             for table in [x for x in self.tables if x not in tables]:
                 sql_create = ' ('
@@ -1046,19 +1047,19 @@ else:
                 sql_create += ')'
                 backup_cursor.execute('create table '+table+sql_create+' CHARACTER SET utf8 COLLATE utf8_general_ci')
                 backup_conn.commit()
-                
+
                 rowids = []
                 ind = cols[0]
                 cursor.execute('select '+ind+' from '+table)
                 for row in cursor.fetchall():
                     rowids.append(row[0])
-                
+
                 for a in gen(rowids):
                     cursor.execute('select * from '+table+' where '+ind+' in ('+','.join(map(str,a))+')')
                     for row in cursor.fetchall():
                         backup_cursor.execute('insert into '+table+' ('+','.join(cols)+') values (\''+'\',\''.join(map(str,row))+'\')')
-                    backup_conn.commit()        
-        
+                    backup_conn.commit()
+
         def _dbsetup(self):
             """Set up database connections.  Should return (conn,archive_conn)"""
             name = self.cfg['db']['name']
@@ -1082,17 +1083,17 @@ else:
             kwargs['db'] = name+'_archive'
             archive_conn = MySQLdb.Connection(**kwargs)
             return (conn,archive_conn)
-        
+
         def _convert_to_mysql(self,sql,bindings):
             num = sql.count('?')
             if num < 1:
                 return sql,bindings
-                
+
             if bindings is None:
                 raise Exception('bindings is None, but expected %d bindings'%(num,))
             elif num != len(bindings):
                 raise Exception('wrong number of bindings - expected %d and got %d'%(num,len(bindings)))
-            
+
             newsql = ''
             pieces = sql.replace('%','%%').split('?')
             for i,s in enumerate(pieces[:-1]):
@@ -1106,9 +1107,9 @@ else:
                     newsql += '\'%s\''
                     bindings[i] = str(b)
             newsql += pieces[-1]
-            
+
             return newsql,bindings
-        
+
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
             sql,bindings = self._convert_to_mysql(sql,bindings)
@@ -1120,7 +1121,7 @@ else:
             except MySQLdb.MySQLError:
                 raise # just kill for other db errors
             return True
-        
+
         def _db_read(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
             """Do a read query from the database"""
             ret = None
@@ -1155,9 +1156,9 @@ else:
                 logger.warning(e)
                 return e
             return ret
-        
+
         def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
-            """Do a write query from the database"""            
+            """Do a write query from the database"""
             try:
                 if sql is not None and archive_sql is not None:
                     try:
@@ -1221,7 +1222,7 @@ else:
             except MySQLdb.MySQLError, e:
                 logger.warning(e)
                 raise
-        
+
         def _increment_id_helper(self,table,conn=None):
             """Increment the id of the table, returning the id"""
             if not conn:
@@ -1265,5 +1266,4 @@ else:
             else:
                 raise Exception('not in setting table')
             return new_id
-    
-    
+
