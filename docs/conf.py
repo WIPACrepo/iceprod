@@ -3,6 +3,13 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 import iceprod
 
+# the dbmethod decorator and docstrings don't get along
+# so turn the decorator off
+def nodecorate(func):
+    return func
+import iceprod.server.dbmethods
+iceprod.server.dbmethods.dbmethod = nodecorate
+
 master_doc = "index"
 
 project = 'IceProd'

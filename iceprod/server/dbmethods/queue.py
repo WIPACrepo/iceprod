@@ -638,7 +638,7 @@ class queue(_Methods_Base):
                 bindings.extend(tasks)
                 bindings = tuple(bindings)
                 try:
-                    ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception as e:
                     logger.debug('error setting gridspec',exc_info=True)
                     ret = e
@@ -675,8 +675,8 @@ class queue(_Methods_Base):
     def queue_get_cfg_for_dataset(self,dataset_id,callback=None):
         """Get a cfg for a dataset"""
         if not dataset_id:
-            raise Exception('bad datset_id')
-        sql = 'select config_id,config_data from config where dataset_id = ?'
+            raise Exception('bad dataset_id')
+        sql = 'select dataset_id,config_data from config where dataset_id = ?'
         bindings = (dataset_id,)
         cb = partial(self._queue_get_cfg_for_dataset_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
@@ -687,12 +687,7 @@ class queue(_Methods_Base):
             callback(Exception('get_cfg_for_dataset did not return a config'))
         else:
             logger.debug('config for dataset: %r',ret)
-            values = {}
-            for config_id,config_data in ret:
-                values = {'config_id':config_id,
-                          'config_data':config_data,
-                         }
-            if 'config_data' in values:
-                callback(values['config_data'])
-            else:
-                callback(None)
+            data = None
+            for dataset_id,config_data in ret:
+                data = config_data
+            callback(data)

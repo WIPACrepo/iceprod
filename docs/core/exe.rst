@@ -12,9 +12,7 @@ Environment Functions
 ---------------------
 The internal IceProd environment, designed to be nested and clean up after itself.
 
-.. autofunction:: parseValue
-
-.. autofunction:: parseObject
+.. autoclass:: Config
 
 .. autofunction:: setupenv
 

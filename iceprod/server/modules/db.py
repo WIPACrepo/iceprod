@@ -185,8 +185,7 @@ class DBAPI(object):
                                       ('name',str),
                                       ('data',MediumText),
                                      ]),
-              'config':OrderedDict([('config_id',str),
-                                    ('dataset_id',str),
+              'config':OrderedDict([('dataset_id',str),
                                     ('config_data',MediumText), # serialized
                                     ('difplus_data',MediumText), # serialized
                                    ]),
@@ -288,7 +287,6 @@ class DBAPI(object):
                                      ('task_offset',str),
                                      ('task_stat_offset',str),
                                      ('task_log_offset',str),
-                                     ('config_offset',str),
                                      ('data_offset',str),
                                      ('resource_offset',str),
                                      ('categorydef_offset',str),

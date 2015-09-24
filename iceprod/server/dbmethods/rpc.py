@@ -387,7 +387,6 @@ class rpc(_Methods_Base):
                                      callback=None):
         conn,archive_conn = self.db._dbsetup()
         dataset_id = self.db._increment_id_helper('dataset',conn)
-        config_id = self.db._increment_id_helper('config',conn)
         if isinstance(config_data,dict):
             config = config_data
             try:
@@ -414,9 +413,9 @@ class rpc(_Methods_Base):
                         exc_info=True)
             callback(e)
             return
-        sql = 'insert into config (config_id,dataset_id,config_data,difplus_data)'
-        sql += ' values (?,?,?,?)'
-        bindings = (config_id,dataset_id,config_data,difplus)
+        sql = 'insert into config (dataset_id,config_data,difplus_data)'
+        sql += ' values (?,?,?)'
+        bindings = (dataset_id,config_data,difplus)
         try:
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:
