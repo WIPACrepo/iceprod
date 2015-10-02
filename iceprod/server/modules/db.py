@@ -275,6 +275,11 @@ class DBAPI(object):
                                    ('status',str),
                                    ('delete_priority',int),
                                   ]),
+              'master_update_history':OrderedDict([('master_update_history_id',str),
+                                                   ('table',str),
+                                                   ('index',str),
+                                                   ('timestamp',str),
+                                                  ]),
               'setting':OrderedDict([('setting_id',str),
                                      ('site_id',str),
                                      ('node_offset',str),  # these tables have the site+offset id type
@@ -301,6 +306,7 @@ class DBAPI(object):
                                      ('cache_last',str),
                                      ('download_last',str),
                                      ('upload_last',str),
+                                     ('master_update_history_last',str),
                                     ]),
              }
     archive_tables = ('site','node','dataset','dataset_notes',
@@ -319,6 +325,13 @@ class DBAPI(object):
         self.cfg = cfg
         self.messaging = messaging
         self.dbmethods = None
+
+        # indexes
+        self.indexes = {}
+        for k in self.tables:
+            v = self.tables[k].keys()[0]
+            if v.replace('_id','_offset') in self.tables['setting']:
+                self.indexes[k] = v
 
         # thread pools
         self.write_pool = None
