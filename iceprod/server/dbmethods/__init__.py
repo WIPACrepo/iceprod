@@ -50,7 +50,7 @@ def dbmethod(*args,**kwargs):
             obj2 = partialmethod(wrapper,_defaults=kwargs)
         else:
             obj2 = update_wrapper(partial(wrapper,_defaults=kwargs),obj,
-                    ('__name__','__module__','__doc__'),('__dict__'))
+                    ('__name__','__module__','__doc__'),('__dict__',))
         return obj2
     if kwargs:
         return make_wrapper
