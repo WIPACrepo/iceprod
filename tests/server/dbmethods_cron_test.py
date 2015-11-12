@@ -44,27 +44,6 @@ class dbmethods_cron_test(dbmethods_base):
             cb.ret = ret
         cb.called = False
 
-        datasets = [['d1',1,1],
-                    ['d2',2,4],
-                    ['d3',3,9],
-                    ['d4',1,1]]
-        status = [[datasets[0][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[3][0],'suspended']
-                 ]
-
         # everything working
         tables = {
             'dataset':[
