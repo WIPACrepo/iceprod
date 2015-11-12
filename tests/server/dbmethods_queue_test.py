@@ -39,14 +39,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_100_queue_get_site_id(self):
         """Test queue_get_site_id"""
-        raise Exception('fixme')
         site_id = 'asdfasdfsdf'
-
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
 
         def cb(ret):
             cb.called = True
@@ -54,7 +47,14 @@ class dbmethods_queue_test(dbmethods_base):
         cb.called = False
 
         # normal site test
-        sql_read_task.ret = [[site_id]]
+        tables = {
+            'setting':[
+                {'site_id':site_id},
+            ],
+        }
+
+        cb.called = False
+        self.mock.setup(tables)
 
         self._db.queue_get_site_id(callback=cb)
 
@@ -64,7 +64,7 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('normal site: callback ret != site_id')
 
         # site not in db
-        sql_read_task.ret = []
+        self.mock.setup({'setting':[]})
         cb.called = False
 
         self._db.queue_get_site_id(callback=cb)
@@ -75,7 +75,8 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('not in db: callback ret != Exception')
 
         # sql error
-        sql_read_task.ret = Exception('sql error')
+        self.mock.setup(tables)
+        self.mock.failures = 1
         cb.called = False
 
         self._db.queue_get_site_id(callback=cb)
@@ -88,46 +89,8 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_110_queue_get_active_tasks(self):
         """Test queue_get_active_tasks"""
-        raise Exception('fixme')
-        task = OrderedDict([('task_id','asdf'),
-                ('status','queued'),
-                ('prev_status','waiting'),
-                ('error_message',None),
-                ('status_changed',datetime.now()),
-                ('submit_dir',self.test_dir),
-                ('grid_queue_id','lkn'),
-                ('failures',0),
-                ('evictions',0),
-                ('task_rel_id',None),
-               ])
-        task2 = OrderedDict([('task_id','gdf'),
-                ('status','queued'),
-                ('prev_status','waiting'),
-                ('error_message',None),
-                ('status_changed',datetime.now()),
-                ('submit_dir',self.test_dir),
-                ('grid_queue_id','lkn'),
-                ('failures',0),
-                ('evictions',0),
-                ('task_rel_id',None),
-               ])
-        task3 = OrderedDict([('task_id','ertert'),
-                ('status','processing'),
-                ('prev_status','queued'),
-                ('error_message',None),
-                ('status_changed',datetime.now()),
-                ('submit_dir',self.test_dir),
-                ('grid_queue_id','lkn'),
-                ('failures',0),
-                ('evictions',1),
-                ('task_rel_id',None),
-               ])
         gridspec = 'klsjdfl.grid1'
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
+        now = dbmethods.nowstr()
 
         def cb(ret):
             cb.called = True
@@ -135,24 +98,35 @@ class dbmethods_queue_test(dbmethods_base):
         cb.called = False
 
         # single task
+        tables = {
+            'task':[
+                {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+            ],
+            'search':[
+                {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                 'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+            ],
+        }
+
         cb.called = False
-        sql_read_task.ret = [task.values()]
+        self.mock.setup(tables)
 
         self._db.queue_get_active_tasks(gridspec,callback=cb)
 
         if cb.called is False:
             raise Exception('normal task: callback not called')
-        ret_should_be = {task['status']:{task['task_id']:task}}
+        ret_should_be = {'queued':{'asdf':tables['task'][0]}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('normal task: callback ret != task')
-        if not sql_read_task.sql.startswith('select task.* from search join task on search.task_id = task.task_id '):
-            raise Exception('normal task: sql incorrect')
 
         # no tasks
         cb.called = False
-        sql_read_task.ret = []
+        self.mock.setup({'task':[],'search':[]})
 
         self._db.queue_get_active_tasks(gridspec,callback=cb)
 
@@ -161,30 +135,52 @@ class dbmethods_queue_test(dbmethods_base):
         if cb.ret != {}:
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('no task: callback ret != {}')
-        if not sql_read_task.sql.startswith('select task.* from search join task on search.task_id = task.task_id '):
-            raise Exception('no task: sql incorrect')
 
         # several tasks
+        tables2 = {
+            'task':[
+                {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':1, 'task_rel_id':None},
+            ],
+            'search':[
+                {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                 'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+                {'task_id':'gdf', 'job_id':'gew', 'dataset_id':'d1',
+                 'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+                {'task_id':'ertert', 'job_id':'asd', 'dataset_id':'d1',
+                 'gridspec':gridspec, 'name':'0', 'task_status':'processing'},
+            ],
+        }
         cb.called = False
-        sql_read_task.ret = [task.values(),task2.values(),task3.values()]
+        self.mock.setup(tables2)
 
         self._db.queue_get_active_tasks(gridspec,callback=cb)
 
         if cb.called is False:
             raise Exception('several tasks: callback not called')
-        ret_should_be = {task['status']:{task['task_id']:task,
-                                         task2['task_id']:task2},
-                         task3['status']:{task3['task_id']:task3}}
+        ret_should_be = {'queued':{'asdf':tables2['task'][0],
+                                   'gdf':tables2['task'][1]},
+                         'processing':{'ertert':tables2['task'][2]}
+                        }
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('several tasks: callback ret != task task2 task3')
-        if not sql_read_task.sql.startswith('select task.* from search join task on search.task_id = task.task_id '):
-            raise Exception('several tasks: sql incorrect')
 
         # sql error
-        sql_read_task.ret = Exception('sql error')
         cb.called = False
+        self.mock.setup(tables)
+        self.mock.failures = 1
 
         self._db.queue_get_active_tasks(gridspec,callback=cb)
 
@@ -196,40 +192,29 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_111_queue_set_task_status(self):
         """Test queue_set_task_status"""
-        raise Exception('fixme')
-        def _db_write(conn,sql,bindings,*args):
-            def w(s,b):
-                _db_write.sql.append(s)
-                _db_write.bindings.append(b)
-                if b[0] in _db_write.task_ret:
-                    return True
-                else:
-                    raise Exception('sql error')
-            if isinstance(sql,basestring):
-                return w(sql,bindings)
-            elif isinstance(sql,Iterable):
-                ret = None
-                for s,b in izip(sql,bindings):
-                    ret = w(s,b)
-                return ret
-        flexmock(DB).should_receive('_db_write').replace_with(_db_write)
-        def non_blocking_task(cb):
-            non_blocking_task.called = True
-            cb()
-        flexmock(DB).should_receive('non_blocking_task').replace_with(non_blocking_task)
-
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
 
         # single task
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('waiting')
+        now = dbmethods.nowstr()
+        tables = {
+            'task':[
+                {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+            ],
+            'search':[
+                {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                 'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
+            ],
+        }
         cb.called = False
-        task = 'asfsd'
+        task = 'asdf'
         status = 'waiting'
+        self.mock.setup(tables)
 
         self._db.queue_set_task_status(task,status,callback=cb)
 
@@ -238,20 +223,19 @@ class dbmethods_queue_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.info('%r',cb.ret)
             raise Exception('single task: callback ret == Exception')
-        if (len(_db_write.bindings) != 2 or
-            _db_write.bindings[0] != (status,task) or
-            _db_write.bindings[1][0] != status or
-            _db_write.bindings[1][-1] != task):
-            logger.info('sql bindings: %r',_db_write.bindings)
-            raise Exception('single task: sql bindings != (status,task_id)')
+        end_tables = self.mock.get(tables.keys())
+        if (end_tables['task'][0]['status'] != status or
+            end_tables['task'][0]['prev_status'] != 'queued' or
+            end_tables['task'][0]['status_changed'] <= now or
+            end_tables['search'][0]['task_status'] != status):
+            logger.info('%r',end_tables)
+            raise Exception('set status failed')
 
         # no task
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('waiting')
         cb.called = False
         task = None
         status = 'waiting'
+        self.mock.setup({'task':[],'search':[]})
 
         try:
             self._db.queue_set_task_status(task,status,callback=cb)
@@ -264,12 +248,34 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('no task: callback called')
 
         # multiple tasks (dict)
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('waiting')
+        tables2 = {
+            'task':[
+                {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':1, 'task_rel_id':None},
+            ],
+            'search':[
+                {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                 'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
+                {'task_id':'gdf', 'job_id':'gew', 'dataset_id':'d1',
+                 'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
+                {'task_id':'ertert', 'job_id':'asd', 'dataset_id':'d1',
+                 'gridspec':'skldfnk', 'name':'0', 'task_status':'processing'},
+            ],
+        }
         cb.called = False
-        task = OrderedDict([('asfsd',{}),('gsdf',{})])
+        task = {'asdf':{},'gdf':{}}
         status = 'waiting'
+        self.mock.setup(tables2)
 
         self._db.queue_set_task_status(task,status,callback=cb)
 
@@ -278,22 +284,26 @@ class dbmethods_queue_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.info('%r',cb.ret)
             raise Exception('multiple tasks (dict): callback ret == Exception')
-        expected = [(status,'asfsd','gsdf'),(status,'asfsd','gsdf')]
-        if (len(_db_write.bindings) != 2 or
-            _db_write.bindings[0] != expected[0] or
-            _db_write.bindings[1][0] != expected[1][0] or
-            _db_write.bindings[1][2:] != expected[1][1:]):
-            logger.info('sql bindings: %r',_db_write.bindings)
-            logger.info('expected bindings: %r',expected)
-            raise Exception('multiple tasks (dict): sql bindings incorrect')
+        end_tables = self.mock.get(tables.keys())
+        if (end_tables['task'][0]['status'] != status or
+            end_tables['task'][1]['status'] != status or
+            end_tables['task'][2]['status'] != 'processing' or
+            end_tables['task'][0]['prev_status'] != 'queued' or
+            end_tables['task'][1]['prev_status'] != 'queued' or
+            end_tables['task'][0]['status_changed'] <= now or
+            end_tables['task'][1]['status_changed'] <= now or
+            end_tables['task'][2]['status_changed'] != now or
+            end_tables['search'][0]['task_status'] != status or
+            end_tables['search'][1]['task_status'] != status or
+            end_tables['search'][2]['task_status'] != 'processing'):
+            logger.info('%r',end_tables)
+            raise Exception('multiple tasks (dict): set status failed')
 
         # multiple tasks (list)
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('waiting')
         cb.called = False
-        task = ['asfsd','gsdf']
+        task = ['asdf','gdf']
         status = 'waiting'
+        self.mock.setup(tables2)
 
         self._db.queue_set_task_status(task,status,callback=cb)
 
@@ -302,22 +312,27 @@ class dbmethods_queue_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.info('%r',cb.ret)
             raise Exception('multiple tasks (list): callback ret == Exception')
-        expected = [(status,'asfsd','gsdf'),(status,'asfsd','gsdf')]
-        if (len(_db_write.bindings) != 2 or
-            _db_write.bindings[0] != expected[0] or
-            _db_write.bindings[1][0] != expected[1][0] or
-            _db_write.bindings[1][2:] != expected[1][1:]):
-            logger.info('sql bindings: %r',_db_write.bindings)
-            logger.info('expected bindings: %r',expected)
-            raise Exception('multiple tasks (list): sql bindings incorrect')
+        end_tables = self.mock.get(tables.keys())
+        if (end_tables['task'][0]['status'] != status or
+            end_tables['task'][1]['status'] != status or
+            end_tables['task'][2]['status'] != 'processing' or
+            end_tables['task'][0]['prev_status'] != 'queued' or
+            end_tables['task'][1]['prev_status'] != 'queued' or
+            end_tables['task'][0]['status_changed'] <= now or
+            end_tables['task'][1]['status_changed'] <= now or
+            end_tables['task'][2]['status_changed'] != now or
+            end_tables['search'][0]['task_status'] != status or
+            end_tables['search'][1]['task_status'] != status or
+            end_tables['search'][2]['task_status'] != 'processing'):
+            logger.info('%r',end_tables)
+            raise Exception('multiple tasks (list): set status failed')
 
         # sql error
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = {}
         cb.called = False
-        task = 'asfsd'
+        task = 'asdf'
         status = 'waiting'
+        self.mock.setup(tables)
+        self.mock.failures = 1
 
         self._db.queue_set_task_status(task,status,callback=cb)
 

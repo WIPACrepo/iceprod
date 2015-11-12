@@ -155,6 +155,9 @@ def filtered_input(input_data):
 def datetime2str(dt):
     """Convert a datetime object to ISO 8601 string"""
     return dt.isoformat()
+def nowstr():
+    """Get an ISO 8601 string of the current time in UTC"""
+    return datetime.utcnow().isoformat()
 def str2datetime(st):
     """Convert a ISO 8601 string to datetime object"""
     if '.' in st:
