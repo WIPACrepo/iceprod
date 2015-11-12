@@ -32,29 +32,107 @@ from flexmock import flexmock
 from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
-from iceprod.server.modules.db import DBAPI
+from iceprod.server.modules.db import DBAPI, SQLite
 
-class DB():
-    cfg = {}
-    tables = DBAPI.tables
-    def sql_read_task(*args):
-        raise Exception('read task called')
-    def sql_write_task(*args):
-        raise Exception('write task called')
-    def blocking_task(*args):
-        raise Exception('blocking task called')
-    def non_blocking_task(*args):
-        raise Exception('non-blocking task called')
-    def increment_id(*args):
-        raise Exception('increment_id called')
-    def _increment_id_helper(*args):
-        raise Exception('_increment_id_helper called')
-    def _dbsetup(*args):
-        return (None,None)
-    def _db_read(*args):
-        raise Exception('_db_read called')
-    def _db_write(*args):
-        raise Exception('_db_write called')
+class FakeThreadPool:
+    """
+    Fakes a threadpool interface and runs immediately.
+    """
+    def __init__(self,init=None):
+        self.init = init
+    def start(self,*args,**kwargs):
+        pass
+    def finish(self,*args,**kwargs):
+        pass
+    def disable_output_queue(self,*args,**kwargs):
+        pass
+    def add_task(self,func,*args,**kwargs):
+        cb = None
+        if 'callback' in kwargs:
+            cb = kwargs.pop('callback')
+        kwargs['init'] = self.init()
+        try:
+            ret = func(*args,**kwargs)
+        except Exception as e:
+            ret = e
+        if cb:
+            cb(ret)
+
+class DB(SQLite):
+    """
+    A fake :class:`iceprod.server.db.SQLite` object.
+    """
+    def __init__(self,cfg=None,messaging=None,**kwargs):
+        if not cfg:
+            cfg = {}
+        self.tmpdir = tempfile.mkdtemp()
+        self.queries = []
+        self.failures = None
+        cfg['db'] = {}
+        cfg['db']['name'] = os.path.join(self.tmpdir,'db')
+        super(DB,self).__init__(cfg,messaging,**kwargs)
+
+    def setup(self, tables={}):
+        for t in tables:
+            conn,archive_conn = self._dbsetup()
+            super(DB,self)._db_write(conn,'delete from %s'%t,tuple(),None,None,None)
+            for row in tables[t]:
+                sql = ('insert into %s ('%t)+','.join('"'+k+'"' for k in row.keys())
+                sql += ') values ('+','.join('?' for _ in row)+')'
+                bindings = row.values()
+                super(DB,self)._db_write(conn,sql,bindings,None,None,None)
+        self.queries = []
+        self.failures = None
+
+    def get(self, tables=None):
+        output = {}
+        class A:
+            def __init__(s2):
+                s2.db = self
+        base = dbmethods._Methods_Base(A())
+        if tables:
+            conn,archive_conn = self._dbsetup()
+            for t in tables:
+                output[t] = []
+                sql = 'select * from %s'%t
+                ret = super(DB,self)._db_read(conn,sql,tuple(),None,None,None)
+                for row in ret:
+                    output[t].append(base._list_to_dict(t,row))
+        return output
+
+    def get_trace(self):
+        return queries
+
+    # overrides below
+
+    def start(self):
+        # start fake thread pools
+        self.write_pool = FakeThreadPool(init=self._dbsetup)
+        self.read_pool = FakeThreadPool(init=self._dbsetup)
+        self.blocking_pool = FakeThreadPool(init=self._dbsetup)
+        self.non_blocking_pool = FakeThreadPool(init=self._dbsetup)
+        logger.debug('started threadpools')
+
+    def stop(self):
+        super(DB,self).stop()
+        shutil.rmtree(self.tmpdir)
+
+    def _db_read(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
+        self.queries.append((sql,bindings))
+        if (self.failures is True or len(self.queries) == self.failures
+            or (isinstance(self.failures,dict) and len(self.queries) in self.failures)):
+            logger.warn('injected SQLError')
+            raise Exception('SQLError')
+        return super(DB,self)._db_read(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
+
+    def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
+        self.queries.append((sql,bindings))
+        if (self.failures is True or len(self.queries) == self.failures
+            or (isinstance(self.failures,dict) and len(self.queries) in self.failures)):
+            logger.warn('injected SQLError')
+            raise Exception('SQLError')
+        return super(DB,self)._db_write(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
+
 
 class dbmethods_base(unittest.TestCase):
     def setUp(self):
@@ -70,9 +148,12 @@ class dbmethods_base(unittest.TestCase):
         self.hostname = hostname
 
         # mock DB
-        self._db = dbmethods.DBMethods(DB())
+        self.mock = DB()
+        self.mock.start()
+        self._db = dbmethods.DBMethods(self.mock)
 
     def tearDown(self):
+        self.mock.stop()
         shutil.rmtree(self.test_dir)
         super(dbmethods_base,self).tearDown()
 

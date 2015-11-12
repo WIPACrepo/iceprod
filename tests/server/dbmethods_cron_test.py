@@ -4,7 +4,7 @@ Test script for dbmethods.cron
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import unittest_reporter, glob_tests, cmp_dict
 
 import logging
 logger = logging.getLogger('dbmethods_test')
@@ -39,25 +39,6 @@ class dbmethods_cron_test(dbmethods_base):
     @unittest_reporter
     def test_600_cron_dataset_completion(self):
         """Test cron_dataset_completion"""
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            if bindings[0] in sql_read_task.task_ret:
-                callback(sql_read_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        def sql_write_task(sql,bindings,callback):
-            sql_write_task.sql = sql
-            sql_write_task.bindings = bindings
-            if isinstance(sql,Iterable):
-                bindings = bindings[0]
-            if bindings[0] in sql_write_task.task_ret:
-                callback(sql_write_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
-        flexmock(DB).should_receive('sql_write_task').replace_with(sql_write_task)
-
         def cb(ret):
             cb.called = True
             cb.ret = ret
@@ -85,11 +66,22 @@ class dbmethods_cron_test(dbmethods_base):
                  ]
 
         # everything working
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:status[0:1]}
-        sql_write_task.task_ret = {'complete':{}}
+        tables = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':1,'status':'processing'},
+                {'dataset_id':'d2','jobs_submitted':2,'tasks_submitted':4,'status':'processing'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'complete'},
+                {'task_id':'t2','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t3','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t4','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t5','dataset_id':'d2','task_status':'complete'},
+            ],
+        }
 
+        cb.called = False
+        self.mock.setup(tables)
         self._db.cron_dataset_completion(callback=cb)
 
         if cb.called is False:
@@ -97,12 +89,17 @@ class dbmethods_cron_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('everything working: callback ret is Exception')
+        end_tables = self.mock.get(tables.keys())
+        if 'dataset' not in end_tables:
+            logger.info('tables: %r',end_tables)
+            raise Exception('bad end tables')
+        if any(row['status'] != 'complete' for row in end_tables['dataset']):
+            logger.info('tables: %r',end_tables)
+            raise Exception('datasets not marked complete')
 
         # no processing datasets
         cb.called = False
-        sql_read_task.task_ret = {'processing':[]}
-        sql_write_task.task_ret = {}
-
+        # use previous output's mock
         self._db.cron_dataset_completion(callback=cb)
 
         if cb.called is False:
@@ -110,13 +107,26 @@ class dbmethods_cron_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('no processing datasets: callback ret is Exception')
+        if end_tables != self.mock.get(tables.keys()):
+            logger.info('%r\n%r',end_tables,self.mock.get(tables.keys()))
+            raise Exception('no processing datasets: tables changed')
 
         # tasks not completed
+        tables2 = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':1,'status':'processing'},
+                {'dataset_id':'d2','jobs_submitted':2,'tasks_submitted':4,'status':'complete'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'processing'},
+                {'task_id':'t2','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t3','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t4','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t5','dataset_id':'d2','task_status':'complete'},
+            ],
+        }
         cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:[[datasets[0][0],'processing']]}
-        sql_write_task.task_ret = {}
-
+        self.mock.setup(tables2)
         self._db.cron_dataset_completion(callback=cb)
 
         if cb.called is False:
@@ -124,11 +134,15 @@ class dbmethods_cron_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('tasks not completed: callback ret is Exception')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables2,end_tables):
+            logger.info('%r\n%r',tables2,end_tables)
+            raise Exception('tasks not completed: bad end_tables')
 
         # sql_read_task error
         cb.called = False
-        sql_read_task.task_ret = {}
-        sql_write_task.task_ret = {'complete':{}}
+        self.mock.setup(tables)
+        self.mock.failures = 1
 
         self._db.cron_dataset_completion(callback=cb)
 
@@ -139,8 +153,8 @@ class dbmethods_cron_test(dbmethods_base):
 
         # sql_read_task error2
         cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1]}
-        sql_write_task.task_ret = {'complete':{}}
+        self.mock.setup(tables)
+        self.mock.failures = 2
 
         self._db.cron_dataset_completion(callback=cb)
 
@@ -151,40 +165,33 @@ class dbmethods_cron_test(dbmethods_base):
 
         # sql_write_task error
         cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:status[0:1]}
-        sql_write_task.task_ret = {}
+        self.mock.setup(tables)
+        self.mock.failures = 3
 
         self._db.cron_dataset_completion(callback=cb)
 
         if cb.called is False:
             raise Exception('sql_write_task error: callback not called')
         if not isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
             raise Exception('sql_write_task error: callback ret != Exception')
 
-        # multiple datasets of same status
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:2],
-                                  datasets[0][0]:status[0:5]}
-        sql_write_task.task_ret = {'complete':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('multiple datasets of same status: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('read_sql %r %r',sql_read_task.sql,sql_read_task.bindings)
-            logger.info('write_sql %r %r',sql_write_task.sql,sql_write_task.bindings)
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('multiple datasets of same status: callback ret is Exception')
-
         # multiple datasets of different status
+        tables3 = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':1,'status':'processing'},
+                {'dataset_id':'d2','jobs_submitted':2,'tasks_submitted':4,'status':'processing'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'errors'},
+                {'task_id':'t2','dataset_id':'d2','task_status':'complete'},
+                {'task_id':'t3','dataset_id':'d2','task_status':'errors'},
+                {'task_id':'t4','dataset_id':'d2','task_status':'suspended'},
+                {'task_id':'t5','dataset_id':'d2','task_status':'suspended'},
+            ],
+        }
         cb.called = False
-        sql_read_task.task_ret = {'processing':datasets,
-                                  datasets[0][0]:status}
-        sql_write_task.task_ret = {'complete':{},
-                                   'errors':{},
-                                   'suspended':{}}
+        self.mock.setup(tables3)
 
         self._db.cron_dataset_completion(callback=cb)
 
@@ -193,6 +200,10 @@ class dbmethods_cron_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('multiple datasets of different status: callback ret is Exception')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables3,end_tables):
+            logger.info('%r\n%r',tables2,end_tables)
+            raise Exception('multiple datasets of different status: bad end_tables')
 
 
 def load_tests(loader, tests, pattern):

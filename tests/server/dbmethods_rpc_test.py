@@ -39,6 +39,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_200_rpc_new_task(self):
         """Test rpc_new_task"""
+        raise Exception('fixme')
         search = OrderedDict([('task_id','gdf'),
                 ('job_id','3ns8'),
                 ('dataset_id','sdj43'),
@@ -228,6 +229,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_201_rpc_finish_task(self):
         """Test rpc_finish_task"""
+        raise Exception('fixme')
         def blocking_task(name,cb):
             blocking_task.called = True
             cb()
@@ -431,6 +433,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_202_rpc_task_error(self):
         """Test rpc_task_error"""
+        raise Exception('fixme')
         def non_blocking_task(cb):
             non_blocking_task.called = True
             cb()
@@ -544,6 +547,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_203_rpc_upload_logfile(self):
         """Test rpc_upload_logfile"""
+        raise Exception('fixme')
         def blocking_task(name,cb):
             blocking_task.called = True
             cb()
@@ -654,6 +658,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_204_rpc_stillrunning(self):
         """Test rpc_stillrunning"""
+        raise Exception('fixme')
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
             sql_read_task.bindings = bindings
@@ -827,6 +832,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_121_rpc_queue_master(self):
         """Test rpc_queue_master"""
+        raise Exception('fixme')
         now = datetime.utcnow()
         dataset = OrderedDict([('dataset_id','adnj'),
                                ('name','test dataset'),

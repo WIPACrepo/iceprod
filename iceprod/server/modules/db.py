@@ -560,8 +560,8 @@ else:
                 sep = ''
                 cols = self.tables[table_name].keys()
                 for col in cols:
-                    sql_create += sep+col
-                    sql_select += sep+col
+                    sql_create += sep+'"'+col+'"'
+                    sql_select += sep+'"'+col+'"'
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '
@@ -575,7 +575,7 @@ else:
                             curcols.add(name)
                         if not curcols or len(curcols) < 1:
                             # table does not exist
-                            logger.info('create table '+table_name)
+                            logger.info('create table '+table_name+sql_create)
                             cur.execute('create table '+table_name+sql_create)
                         elif curcols != scols:
                             # table not the same

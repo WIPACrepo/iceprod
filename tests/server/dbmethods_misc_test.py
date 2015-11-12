@@ -39,6 +39,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_020_in_cache(self):
         """Test in_cache"""
+        raise Exception('fixme')
         uid = 'asdsdf'
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
@@ -86,6 +87,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_021_remove_from_cache(self):
         """Test remove_from_cache"""
+        raise Exception('fixme')
         uid = 'asdsdf'
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
@@ -133,6 +135,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_022_get_cache_checksum(self):
         """Test get_cache_checksum"""
+        raise Exception('fixme')
         url = 'asdsdf'
         checksum = 'lksdfn'
         checksum_type = 'sha512'
@@ -182,6 +185,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_023_get_cache_size(self):
         """Test get_cache_size"""
+        raise Exception('fixme')
         url = 'asdsdf'
         size = 403
         def sql_read_task(sql,bindings,callback):
@@ -230,6 +234,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_025_check_cache_space(self):
         """Test check_cache_space"""
+        raise Exception('fixme')
         download_dir = self.test_dir
         priority = 5
         size = 403
@@ -440,6 +445,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_029_add_to_cache(self):
         """Test add_to_cache"""
+        raise Exception('fixme')
         priority = 5
         size = 403
         url = 'http://test.ing/test'
@@ -483,6 +489,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_300_new_upload(self):
         """Test new_upload"""
+        raise Exception('fixme')
         def blocking_task(name,cb):
             blocking_task.called = True
             cb()
@@ -542,6 +549,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_301_is_upload_addr(self):
         """Test is_upload_addr"""
+        raise Exception('fixme')
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
             sql_read_task.bindings = bindings
@@ -597,6 +605,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_302_handle_upload(self):
         """Test handle_upload"""
+        raise Exception('fixme')
         cfg = {'webserver':{'tmp_upload_dir':os.path.join(self.test_dir,'tmpupload'),
                             'upload_dir':os.path.join(self.test_dir,'upload'),
                             'static_dir':os.path.join(self.test_dir,'static'),
@@ -829,6 +838,7 @@ class dbmethods_misc_test(dbmethods_base):
     @unittest_reporter
     def test_303_check_upload(self):
         """Test check_upload"""
+        raise Exception('fixme')
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
             sql_read_task.bindings = bindings

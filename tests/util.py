@@ -146,3 +146,43 @@ class messaging_mock(object):
                 raise Exception('Service %s, method name not specified'%(
                                 self.__service))
         return _Service(self.__request,name)
+
+def cmp_list(a,b):
+    """Compare all items in a with b"""
+    for aa,bb in zip(a,b):
+        a_list = isinstance(aa,(list,tuple))
+        b_list = isinstance(bb,(list,tuple))
+        a_dict = isinstance(aa,dict)
+        b_dict = isinstance(bb,dict)
+        if a_list != b_list or a_dict != b_dict:
+            return False
+        if a_list:
+            if not cmp_list(aa,bb):
+                return False
+        elif a_dict:
+            if not cmp_dict(aa,bb):
+                return False
+        elif aa != bb:
+            return False
+    return True
+
+def cmp_dict(a,b):
+    """Compare all items in a with b"""
+    for k in a:
+        if k not in b:
+            return False
+        a_list = isinstance(a[k],(list,tuple))
+        b_list = isinstance(a[k],(list,tuple))
+        a_dict = isinstance(a[k],dict)
+        b_dict = isinstance(b[k],dict)
+        if a_list != b_list or a_dict != b_dict:
+            return False
+        if a_list:
+            if not cmp_list(a[k],b[k]):
+                return False
+        elif a_dict:
+            if not cmp_dict(a[k],b[k]):
+                return False
+        elif a[k] != b[k]:
+            return False
+    return True

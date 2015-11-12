@@ -98,7 +98,7 @@ class _Methods_Base():
         self.db = parent.db
         self.parent = parent
 
-    def _list_to_dict(self,table,input):
+    def _list_to_dict(self,table,input_row):
         """Convert an input that is a list of values from a table
            into a dict of values from that table."""
         if isinstance(table,basestring):
@@ -115,17 +115,17 @@ class _Methods_Base():
         ret = OrderedDict()
         try:
             for i,k in enumerate(keys):
-                ret[k] = input[i]
+                ret[k] = input_row[i]
         except:
             logger.warn('error making table %s dict from return values %r',
-                         table,input)
+                         table,input_row)
             raise
         return ret
 
     def _send_to_master(self, updates, callback=None):
         self.db.messaging.master_updater.add(updates, callback=callback)
 
-def filtered_input(input):
+def filtered_input(input_data):
     """Filter input to sql in cases where we can't use bindings.
        Just remove all " ' ; : ? characters, since
        those won't be needed in proper names"""
@@ -137,20 +137,20 @@ def filtered_input(input):
         else: # if it's not a basic type, discard it
             return ''
 
-    if isinstance(input, list):
-        return map(filter,input)
-    elif isinstance(input,dict):
+    if isinstance(input_data, list):
+        return map(filter,input_data)
+    elif isinstance(input_data,dict):
         ret = {}
-        for x in input:
-            ret[filter(x)] = filter(input[x])
+        for x in input_data:
+            ret[filter(x)] = filter(input_data[x])
         return ret
-    elif isinstance(input,OrderedDict):
+    elif isinstance(input_data,OrderedDict):
         ret = OrderedDict()
-        for x in input:
-            ret[filter(x)] = filter(input[x])
+        for x in input_data:
+            ret[filter(x)] = filter(input_data[x])
         return ret
     else:
-        return filter(input)
+        return filter(input_data)
 
 def datetime2str(dt):
     """Convert a datetime object to ISO 8601 string"""

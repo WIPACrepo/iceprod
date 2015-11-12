@@ -38,6 +38,7 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_010_auth_get_site_auth(self):
         """Test auth_get_site_auth"""
+        raise Exception('fixme')
         data = {'site_id':1,'auth_key':'key'}
 
         def sql_read_task(sql,bindings,callback):
@@ -108,6 +109,7 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_011_auth_authorize_site(self):
         """Test auth_authorize_site"""
+        raise Exception('fixme')
         data = {'site_id':1,'auth_key':'key'}
 
         def sql_read_task(sql,bindings,callback):
@@ -178,6 +180,7 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_012_auth_authorize_task(self):
         """Test auth_authorize_task"""
+        raise Exception('fixme')
         data = {'passkey':1,'expire':'2100-01-01T01:01:01'}
 
         def sql_read_task(sql,bindings,callback):
@@ -248,6 +251,7 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_400_auth_new_passkey(self):
         """Test auth_new_passkey"""
+        raise Exception('fixme')
         def sql_write_task(sql,bindings,callback):
             sql_write_task.sql = sql
             sql_write_task.bindings = bindings
@@ -357,6 +361,7 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_401_auth_get_passkey(self):
         """Test auth_get_passkey"""
+        raise Exception('fixme')
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
             sql_read_task.bindings = bindings

@@ -39,6 +39,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_100_queue_get_site_id(self):
         """Test queue_get_site_id"""
+        raise Exception('fixme')
         site_id = 'asdfasdfsdf'
 
         def sql_read_task(sql,bindings,callback):
@@ -87,6 +88,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_110_queue_get_active_tasks(self):
         """Test queue_get_active_tasks"""
+        raise Exception('fixme')
         task = OrderedDict([('task_id','asdf'),
                 ('status','queued'),
                 ('prev_status','waiting'),
@@ -194,6 +196,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_111_queue_set_task_status(self):
         """Test queue_set_task_status"""
+        raise Exception('fixme')
         def _db_write(conn,sql,bindings,*args):
             def w(s,b):
                 _db_write.sql.append(s)
@@ -326,6 +329,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_112_queue_reset_tasks(self):
         """Test queue_reset_tasks"""
+        raise Exception('fixme')
         def _db_write(conn,sql,bindings,*args):
             def w(s,b):
                 _db_write.sql.append(s)
@@ -513,6 +517,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_113_queue_get_task(self):
         """Test queue_get_task"""
+        raise Exception('fixme')
         task = OrderedDict([('task_id','asdf'),
                 ('status','queued'),
                 ('prev_status','waiting'),
@@ -651,6 +656,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_114_queue_get_task_by_grid_queue_id(self):
         """Test queue_get_task_by_grid_queue_id"""
+        raise Exception('fixme')
         task = OrderedDict([('task_id','asdf'),
                 ('status','queued'),
                 ('prev_status','waiting'),
@@ -789,6 +795,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_115_queue_set_submit_dir(self):
         """Test queue_set_submit_dir"""
+        raise Exception('fixme')
         def sql_write_task(sql,bindings,callback):
             sql_write_task.sql = sql
             sql_write_task.bindings = bindings
@@ -848,6 +855,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_119_queue_buffer_jobs_tasks(self):
         """Test queue_buffer_jobs_tasks"""
+        raise Exception('fixme')
         def non_blocking_task(cb):
             non_blocking_task.called = True
             cb()
@@ -1253,6 +1261,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_120_queue_get_queueing_datasets(self):
         """Test queue_get_queueing_datasets"""
+        raise Exception('fixme')
         dataset_id = 'asdfasdf'
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
@@ -1335,6 +1344,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_121_queue_get_queueing_tasks(self):
         """Test queue_get_queueing_tasks"""
+        raise Exception('fixme')
         task = OrderedDict([
                 ('task_id','asdf'),
                 ('job_id','nsdf'),

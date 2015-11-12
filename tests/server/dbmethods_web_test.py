@@ -39,6 +39,7 @@ class dbmethods_web_test(dbmethods_base):
     @unittest_reporter
     def test_600_cron_dataset_completion(self):
         """Test cron_dataset_completion"""
+        raise Exception('fixme')
         def sql_read_task(sql,bindings,callback):
             sql_read_task.sql = sql
             sql_read_task.bindings = bindings
