@@ -38,8 +38,9 @@ class FakeThreadPool:
     """
     Fakes a threadpool interface and runs immediately.
     """
-    def __init__(self,init=None):
+    def __init__(self,init=None,named=False):
         self.init = init
+        self.named = named
     def start(self,*args,**kwargs):
         pass
     def finish(self,*args,**kwargs):
@@ -48,9 +49,12 @@ class FakeThreadPool:
         pass
     def add_task(self,func,*args,**kwargs):
         cb = None
+        if self.named:
+            func = args[0]
         if 'callback' in kwargs:
             cb = kwargs.pop('callback')
-        kwargs['init'] = self.init()
+        if self.init:
+            kwargs['init'] = self.init()
         try:
             ret = func(*args,**kwargs)
         except Exception as e:
@@ -109,8 +113,8 @@ class DB(SQLite):
         # start fake thread pools
         self.write_pool = FakeThreadPool(init=self._dbsetup)
         self.read_pool = FakeThreadPool(init=self._dbsetup)
-        self.blocking_pool = FakeThreadPool(init=self._dbsetup)
-        self.non_blocking_pool = FakeThreadPool(init=self._dbsetup)
+        self.blocking_pool = FakeThreadPool(named=True)
+        self.non_blocking_pool = FakeThreadPool()
         logger.debug('started threadpools')
 
     def stop(self):
