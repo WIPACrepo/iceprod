@@ -1052,67 +1052,57 @@ class dbmethods_queue_test(dbmethods_base):
                 logger.info('%r',end_tables)
                 raise Exception('tables have changed')
 
-
     @unittest_reporter
     def test_120_queue_get_queueing_datasets(self):
         """Test queue_get_queueing_datasets"""
-        raise Exception('fixme')
-        dataset_id = 'asdfasdf'
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
-
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
 
         gridspec = 'lksdf.grid1'
-        now = datetime.utcnow()
-        dataset = OrderedDict([('dataset_id','lknser834'),
-                               ('name','test dataset'),
-                               ('description','a simple test'),
-                               ('gridspec',gridspec),
-                               ('status','processing'),
-                               ('username','user'),
-                               ('institution','inst'),
-                               ('submit_host','localhost'),
-                               ('priority',0),
-                               ('jobs_submitted',2),
-                               ('trays',1),
-                               ('tasks_submitted',2),
-                               ('start_date',dbmethods.datetime2str(now)),
-                               ('end_date',''),
-                               ('temporary_storage',''),
-                               ('global_storage',''),
-                               ('parent_id','sdf'),
-                               ('stat_keys','[]'),
-                               ('categoryvalue_ids',''),
-                               ('debug',True),
-                              ])
+        now = dbmethods.nowstr()
+
+        tables = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'idle'},
+            ],
+        }
 
         # single dataset
         cb.called = False
-        sql_read_task.ret = [dataset.values()]
+        self.mock.setup(tables)
 
         self._db.queue_get_queueing_datasets(gridspec,callback=cb)
 
         if cb.called is False:
             raise Exception('single dataset: callback not called')
-        expected = {dataset['dataset_id']:dataset}
+        expected = {'d1':tables['dataset'][0]}
         if cb.ret != expected:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',expected)
-            raise Exception('single dataset: callback ret != task')
-        if not sql_read_task.sql.startswith('select dataset.* from dataset '):
-            raise Exception('single dataset: sql incorrect')
+            raise Exception('single dataset: callback ret != dataset')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
         # no dataset
         cb.called = False
-        sql_read_task.ret = []
-        gridspec = 'lksdf.grid1'
+        self.mock.setup({'dataset':[],'search':[]})
 
         self._db.queue_get_queueing_datasets(gridspec,callback=cb)
 
@@ -1121,13 +1111,15 @@ class dbmethods_queue_test(dbmethods_base):
         if cb.ret != {}:
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('no dataset: callback ret != {}')
-        if not sql_read_task.sql.startswith('select dataset.* from dataset '):
-            raise Exception('no dataset: sql incorrect')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
         # sql error
         cb.called = False
-        sql_read_task.ret = Exception('sql error')
-        gridspec = 'lksdf.grid1'
+        self.mock.setup(tables)
+        self.mock.failures = 1
 
         self._db.queue_get_queueing_datasets(gridspec,callback=cb)
 
@@ -1135,79 +1127,81 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('sql error: callback not called')
         if not isinstance(cb.ret,Exception):
             raise Exception('sql error: callback ret != Exception')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
     @unittest_reporter
     def test_121_queue_get_queueing_tasks(self):
         """Test queue_get_queueing_tasks"""
-        raise Exception('fixme')
-        task = OrderedDict([
-                ('task_id','asdf'),
-                ('job_id','nsdf'),
-                ('dataset_id','adnj'),
-                ('gridspec','ggg.g1'),
-                ('name','1'),
-                ('task_status','waiting'),
-                ('debug',True),
-               ])
-        task2 = OrderedDict([
-                ('task_id','bgdf'),
-                ('job_id','nsdf'),
-                ('dataset_id','adnj'),
-                ('gridspec','ggg.g1'),
-                ('name','1'),
-                ('task_status','waiting'),
-                ('debug',False),
-               ])
-        task3 = OrderedDict([
-                ('task_id','erte'),
-                ('job_id','nsdf'),
-                ('dataset_id','adnj'),
-                ('gridspec','ggg.g1'),
-                ('name','1'),
-                ('task_status','waiting'),
-                ('debug',False),
-               ])
-        task4 = OrderedDict([
-                ('task_id','sdtr'),
-                ('job_id','nsdf'),
-                ('dataset_id','adnj'),
-                ('gridspec','ggg.g1'),
-                ('name','1'),
-                ('task_status','waiting'),
-                ('debug',True),
-               ])
-
-        def _db_read(conn,sql,bindings,*args):
-            _db_read.sql.append(sql)
-            _db_read.bindings.append(bindings)
-            if bindings[0] in _db_read.task_ret:
-                return _db_read.task_ret[bindings[0]]
-            else:
-                raise Exception('sql error')
-        def non_blocking_task(cb):
-            non_blocking_task.called = True
-            cb()
-        flexmock(DB).should_receive('_db_read').replace_with(_db_read)
-        flexmock(DB).should_receive('non_blocking_task').replace_with(non_blocking_task)
-
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
 
+        gridspec = 'ggg.g1'
+        now = dbmethods.nowstr()
+        tables = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':4,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t2', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t3', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t4', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'task':[
+                {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'task_rel_id':'tr1'},
+                {'task_id':'t2', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'task_rel_id':'tr2'},
+                {'task_id':'t3', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'task_rel_id':'tr3'},
+                {'task_id':'t4', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'task_rel_id':'tr4'},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','depends':None,'requirements':None},
+                {'task_rel_id':'tr2','depends':None,'requirements':None},
+                {'task_rel_id':'tr3','depends':None,'requirements':None},
+                {'task_rel_id':'tr4','depends':None,'requirements':None},
+            ],
+        }
+
         # single dataset
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        _db_read.task_ret = {'adnj':[['adnj',task['task_id'],'','',task['task_status']]],
-                             task['task_id']:[task.values()]}
-        dataset_prios = {'adnj':1}
+        dataset_prios = {'d1':1}
+        self.mock.setup(tables)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
 
         if cb.called is False:
             raise Exception('single dataset: callback not called')
-        ret_should_be = {task['task_id']:task}
+        ret_should_be = {'t1':dict(tables['search'][0])}
+        ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1215,12 +1209,9 @@ class dbmethods_queue_test(dbmethods_base):
 
         # no tasks
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        _db_read.task_ret = {'adnj':[]}
-        dataset_prios = {'adnj':1}
+        self.mock.setup({'search':[],'task':[]})
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
 
         if cb.called is False:
             raise Exception('no task: callback not called')
@@ -1232,27 +1223,27 @@ class dbmethods_queue_test(dbmethods_base):
 
         # no tasks sql error
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        _db_read.task_ret = {}
-        dataset_prios = {'adnj':1}
+        self.mock.setup({'search':[],'task':[]})
+        self.mock.failures = 1
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
 
         if cb.called is False:
             raise Exception('_db_read error: callback not called')
         if not isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('_db_read error: callback ret != Exception')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
         # no dataset_prios
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        dataset_prios = None
+        self.mock.setup(tables)
 
         try:
-            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1,callback=cb)
+            self._db.queue_get_queueing_tasks(None,gridspec,1,callback=cb)
         except:
             pass
         else:
@@ -1263,14 +1254,10 @@ class dbmethods_queue_test(dbmethods_base):
 
         # no callback
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        _db_read.task_ret = {'adnj':[['adnj',task['task_id'],'','',task['task_status']]],
-                             task['task_id']:[task.values()]}
-        dataset_prios = {'adnj':1}
+        self.mock.setup(tables)
 
         try:
-            self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',1)
+            self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1)
         except:
             pass
         else:
@@ -1278,71 +1265,92 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is not False:
             raise Exception('no callback: callback called, but not supposed to be')
+        end_tables = self.mock.get(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
         # several tasks in same dataset
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        _db_read.task_ret = {'adnj':[['adnj',task['task_id'],'','',task['task_status']],
-                                     ['adnj',task2['task_id'],'','',task2['task_status']],
-                                     ['adnj',task3['task_id'],'','',task3['task_status']],
-                                    ],
-                             task['task_id']:[task.values(),task2.values(),task3.values()]}
-        dataset_prios = {'adnj':1}
+        self.mock.setup(tables)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
 
         if cb.called is False:
             raise Exception('several tasks in same dataset: callback not called')
-        ret_should_be = {task['task_id']:task,task2['task_id']:task2,task3['task_id']:task3}
+        ret_should_be = {x['task_id']:dict(x) for x in tables['search'][:3]}
+        for k in ret_should_be:
+            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('several tasks in same dataset: callback ret != task task2 task3')
 
         # several tasks in diff dataset
+        tables2 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':4,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+                {'dataset_id':'d2', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':4,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t2', 'job_id': 'j1', 'dataset_id': 'd2',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t3', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t4', 'job_id': 'j1', 'dataset_id': 'd2',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'task':tables['task'],
+            'task_rel':tables['task_rel'],
+        }
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        sql1 = [['adnj',task['task_id'],'','',task['task_status']],
-                ['nksd',task2['task_id'],'','',task2['task_status']],
-                ['nksd',task3['task_id'],'','',task3['task_status']],
-               ]
-        _db_read.task_ret = {'adnj':sql1,
-                             'nksd':sql1,
-                             task2['task_id']:[task.values(),task2.values(),task3.values()]}
-        dataset_prios = {'adnj':.3,'nksd':.7}
+        dataset_prios = {'d1':1.1,'d2':1}
+        self.mock.setup(tables2)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
 
         if cb.called is False:
             raise Exception('several tasks in diff dataset: callback not called')
-        ret_should_be = {task['task_id']:task,task2['task_id']:task2,task3['task_id']:task3}
+        ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't4'}
+        for k in ret_should_be:
+            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
         if cb.ret != ret_should_be:
-            logger.info('sql = %r, bindings = %r',_db_read.sql,_db_read.bindings)
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('several tasks in diff dataset: callback ret != task task2 task3')
 
         # priority weighted towards one dataset
         cb.called = False
-        _db_read.sql = []
-        _db_read.bindings = []
-        sql1 = [['adnj',task['task_id'],'','',task['task_status']],
-                ['nksd',task2['task_id'],'','',task2['task_status']],
-                ['nksd',task3['task_id'],'','',task3['task_status']],
-                ['nksd',task4['task_id'],'','',task4['task_status']],
-               ]
-        _db_read.task_ret = {'adnj':sql1,
-                             'nksd':sql1,
-                             task2['task_id']:[task2.values(),task3.values(),task4.values()]}
-        dataset_prios = {'adnj':.2,'nksd':.8}
+        dataset_prios = {'d1':.2,'d2':.8}
+        self.mock.setup(tables2)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,'ggg.g1',3,callback=cb)
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
 
         if cb.called is False:
             raise Exception('priority weighting dataset: callback not called')
-        ret_should_be = {task2['task_id']:task2,task3['task_id']:task3,task4['task_id']:task4}
+        ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't3'}
+        for k in ret_should_be:
+            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)

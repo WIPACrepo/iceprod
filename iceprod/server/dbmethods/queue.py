@@ -569,7 +569,7 @@ class queue(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
         sql = 'select search.dataset_id, task.task_id, task_rel.depends, '
-        sql += ' task_rel.requrements, task.status '
+        sql += ' task_rel.requirements, task.status '
         sql += ' from search join task on search.task_id = task.task_id '
         sql += ' join task_rel on task.task_rel_id = task_rel.task_rel_id '
         sql += ' where dataset_id in ('+','.join(['?' for _ in dataset_prios])
@@ -636,18 +636,28 @@ class queue(_Methods_Base):
             callback(ret)
             return
         if ret:
-            tasks = {}
             for row in ret:
                 tmp = self._list_to_dict('search',row[:-1])
                 tmp['debug'] = row[-1]
                 tasks[tmp['task_id']] = tmp
             if tasks:
                 # set status to waiting
-                sql = 'update search join task on search.task_id = task.task_id'
-                sql += ' set search.task_status="waiting", '
-                sql += ' task.prev_status = task.status, '
-                sql += ' task.status="waiting", '
-                sql += ' task.status_changed = ? '
+                sql = 'update search set task_status="waiting" '
+                sql += 'where task_id in ('
+                sql += ','.join('?' for _ in tasks)
+                sql += ')'
+                bindings = tuple(tasks)
+                try:
+                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                except Exception as e:
+                    logger.debug('error setting status',exc_info=True)
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
+                sql = 'update task set prev_status = status, '
+                sql += 'status="waiting", '
+                sql += 'status_changed = ? '
                 bindings = [datetime2str(datetime.utcnow())]
                 if gridspec_assignment:
                     sql += ', gridspec = ? '
@@ -666,9 +676,9 @@ class queue(_Methods_Base):
                     callback(ret)
                     return
                 for t in tasks:
-                    tasks['task_status'] = 'waiting'
+                    tasks[t]['task_status'] = 'waiting'
                     if gridspec_assignment:
-                        tasks['gridspec'] = gridspec_assignment
+                        tasks[t]['gridspec'] = gridspec_assignment
             # TODO: mark tasks such that they won't get queued on the next cycle
             #       maybe 'queueing'? something else?
         callback(tasks)
