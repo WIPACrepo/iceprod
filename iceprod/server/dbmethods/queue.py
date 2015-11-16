@@ -261,8 +261,8 @@ class queue(_Methods_Base):
         sql = 'select dataset_id,status,gridspec,jobs_submitted,'
         sql += 'tasks_submitted from dataset where '
         if isinstance(gridspec,String):
-            sql += 'gridspec like "%?%"'
-            bindings = (gridspec,)
+            sql += 'gridspec like ?'
+            bindings = ('%'+gridspec+'%',)
             gridspec = [gridspec]
         elif isinstance(gridspec,Iterable):
             if len(gridspec) < 1:
@@ -292,7 +292,7 @@ class queue(_Methods_Base):
                     gs = json_decode(gs)
                 except:
                     logger.debug('gs not a json object, must be str')
-                    if gs not in gridspec:
+                    if gs != gridspec and gs not in gridspec:
                         continue # not a local dataset
                 else:
                     logger.debug('gs is json object %r',gs)
@@ -441,20 +441,29 @@ class queue(_Methods_Base):
                     task_names.append(str(t))
                     task_depends.append([])
             tasks = []
+            task_rels = []
             search = []
             task_bindings = []
+            task_rel_bindings = []
             search_bindings = []
-            q_10 = '('+(','.join(['?' for _ in xrange(10)]))+')'
-            q_6 = '('+(','.join(['?' for _ in xrange(6)]))+')'
+            q_10 = '('+(','.join(['?' for _ in range(10)]))+')'
+            q_6 = '('+(','.join(['?' for _ in range(6)]))+')'
+            q_3 = '('+(','.join(['?' for _ in range(3)]))+')'
             for job_id,job_status,n in jobs:
                 task_ids = [self.db._increment_id_helper('task',conn)
-                            for t in xrange(tasks_per_job)]
-                for t in xrange(tasks_per_job):
+                            for t in range(tasks_per_job)]
+                task_rel_ids = [self.db._increment_id_helper('task_rel',conn)
+                            for t in range(tasks_per_job)]
+                for t in range(tasks_per_job):
                     task_id = task_ids[t]
-                    depends = ','.join([task_ids[n] for n in task_depends[t]])
+                    task_rel_id = task_rel_ids[t]
                     tasks.append((task_id, 'idle', 'idle', '', now,
-                                 '', '', 0, 0, depends))
+                                 '', '', 0, 0, task_rel_id))
                     task_bindings.append(q_10)
+                    depends = ','.join([task_ids[n] for n in task_depends[t]])
+                    reqs = '' # TODO: set requirements
+                    task_rels.append((task_rel_id,depends,reqs))
+                    task_rel_bindings.append(q_3)
                     name = task_names[t]
                     if isinstance(possible_datasets[dataset]['gridspec'],String):
                         gs = possible_datasets[dataset]['gridspec']
@@ -472,9 +481,20 @@ class queue(_Methods_Base):
                     search_bindings.append(q_6)
             sql = 'insert into task (task_id,status,prev_status,'
             sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
-            sql += 'failures,evictions,depends) values '
+            sql += 'failures,evictions,task_rel_id) values '
             sql += ','.join(task_bindings)
             bindings = reduce(lambda a,b:a+b,tasks)
+            try:
+                ret = self.db._db_write(conn,sql,bindings,None,None,None)
+            except Exception as e:
+                ret = e
+            if isinstance(ret,Exception):
+                callback(ret)
+                return
+            sql = 'insert into task_rel (task_rel_id, depends, '
+            sql += 'requirements) values '
+            sql += ','.join(task_rel_bindings)
+            bindings = reduce(lambda a,b:a+b,task_rels)
             try:
                 ret = self.db._db_write(conn,sql,bindings,None,None,None)
             except Exception as e:

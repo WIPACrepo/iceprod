@@ -1,7 +1,10 @@
-SPHINXOPTS=-n -W -d build/doctrees .
+SPHINXOPTS=-n -d build/doctrees .
 
-dbtables: server/details/dbtables.rst
-	PYTHONPATH=$PWD/..:$PYTHONPATH python make_dbtables.py server/details/dbtables.rst
+all: dbtables sphinx
+
+.PHONY: dbtables
+dbtables:
+	PYTHONPATH=$$PWD/..:$$PYTHONPATH python make_dbtables.py server/details/dbtables.rst
 
 .PHONY: sphinx
 sphinx:

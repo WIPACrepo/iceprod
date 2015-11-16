@@ -163,7 +163,7 @@ class DBAPI(object):
                                      ]),
               'task_rel':OrderedDict([('task_rel_id',str),
                                       ('depends',Text), # comma separated list of task_rel_ids
-                                      ('requrements',Text), # json of {name:value}
+                                      ('requirements',Text), # json of {name:value}
                                      ]),
               'task':OrderedDict([('task_id',str),
                                   ('status',str), # possible statuses: {idle, waiting, queued, processing, complete, suspended, failed, resume, reset}
