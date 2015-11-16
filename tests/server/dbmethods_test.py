@@ -51,6 +51,7 @@ class FakeThreadPool:
         cb = None
         if self.named:
             func = args[0]
+            args = args[1:]
         if 'callback' in kwargs:
             cb = kwargs.pop('callback')
         if self.init:
