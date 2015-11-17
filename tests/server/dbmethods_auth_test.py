@@ -38,23 +38,28 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_010_auth_get_site_auth(self):
         """Test auth_get_site_auth"""
-        raise Exception('fixme')
         data = {'site_id':1,'auth_key':'key'}
 
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
 
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
 
-        # normal site test
-        sql_read_task.ret = [[data['site_id'],data['auth_key']]]
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+                {'site_id':2,'auth_key':'key'},
+                {'site_id':3,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+            ],
+        }
 
+        # normal site test
+        cb.called = False
+        self.mock.setup(tables)
         self._db.auth_get_site_auth(callback=cb)
 
         if cb.called is False:
@@ -63,9 +68,19 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('normal site: callback ret != data')
 
         # site not in db
-        sql_read_task.ret = []
-        cb.called = False
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+                {'site_id':2,'auth_key':'key'},
+                {'site_id':3,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':4},
+            ],
+        }
 
+        cb.called = False
+        self.mock.setup(tables)
         self._db.auth_get_site_auth(callback=cb)
 
         if cb.called is False:
@@ -73,10 +88,21 @@ class dbmethods_auth_test(dbmethods_base):
         if not isinstance(cb.ret,Exception):
             raise Exception('not in db: callback did not receive exception')
 
-        # site in db twice
-        sql_read_task.ret = [[1,2],[3,4]]
-        cb.called = False
 
+        # site in db twice
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+                {'site_id':2,'auth_key':'key'},
+                {'site_id':3,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+                {'site_id':2},
+            ],
+        }
+        self.mock.setup(tables)
+        cb.called = False
         self._db.auth_get_site_auth(callback=cb)
 
         if cb.called is False:
@@ -85,9 +111,10 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('in db twice: callback did not receive exception')
 
         # bad db info
-        sql_read_task.ret = [[data['site_id']]]
-        cb.called = False
+        tables['site'] = [{'site_id':1}]
+        self.mock.setup(tables)
 
+        cb.called = False
         self._db.auth_get_site_auth(callback=cb)
 
         if cb.called is False:
@@ -96,9 +123,8 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('bad db info: callback did not receive exception')
 
         # sql error
-        sql_read_task.ret = Exception('sql error')
         cb.called = False
-
+        self.mock.failures = True
         self._db.auth_get_site_auth(callback=cb)
 
         if cb.called is False:
@@ -109,14 +135,18 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_011_auth_authorize_site(self):
         """Test auth_authorize_site"""
-        raise Exception('fixme')
         data = {'site_id':1,'auth_key':'key'}
-
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+            ],
+            'passkey':[
+                {'passkey_id':1,'expire':'2100-01-01T01:01:01'}
+            ],
+        }
 
         def cb(ret):
             cb.called = True
@@ -124,8 +154,7 @@ class dbmethods_auth_test(dbmethods_base):
         cb.called = False
 
         # normal site
-        sql_read_task.ret = [[data['site_id'],data['auth_key']]]
-
+        self.mock.setup(tables)
         self._db.auth_authorize_site(1,'key',callback=cb)
 
         if cb.called is False:
@@ -134,29 +163,17 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('normal site: callback ret != True')
 
         # site not in db
-        sql_read_task.ret = []
         cb.called = False
-
-        self._db.auth_authorize_site(1,'key',callback=cb)
+        self._db.auth_authorize_site(2,'key',callback=cb)
 
         if cb.called is False:
             raise Exception('not in db: callback not called')
         if not isinstance(cb.ret,Exception):
             raise Exception('not in db: callback did not receive exception')
 
-        # site in db twice
-        sql_read_task.ret = [[1,2],[3,4]]
-        cb.called = False
-
-        self._db.auth_authorize_site(1,'key',callback=cb)
-
-        if cb.called is False:
-            raise Exception('in db twice: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('in db twice: callback did not receive exception')
-
         # bad db info
-        sql_read_task.ret = [[data['site_id']]]
+        tables['site'] = [{'site_id':1}]
+        self.mock.setup(tables)
         cb.called = False
 
         self._db.auth_authorize_site(1,'key',callback=cb)
@@ -167,7 +184,7 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('bad db info: callback did not receive exception')
 
         # sql error
-        sql_read_task.ret = Exception('sql error')
+        self.mock.failures = True
         cb.called = False
 
         self._db.auth_authorize_site(1,'key',callback=cb)
@@ -180,14 +197,19 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_012_auth_authorize_task(self):
         """Test auth_authorize_task"""
-        raise Exception('fixme')
-        data = {'passkey':1,'expire':'2100-01-01T01:01:01'}
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+            ],
+            'passkey':[
+                {'key':1,'expire':'2100-01-01T01:01:01'}
+            ],
+        }
 
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            callback(sql_read_task.ret)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
+        self.mock.setup(tables)
 
         def cb(ret):
             cb.called = True
@@ -195,8 +217,6 @@ class dbmethods_auth_test(dbmethods_base):
         cb.called = False
 
         # normal task
-        sql_read_task.ret = [[data['passkey'],data['expire']]]
-
         self._db.auth_authorize_task(1,callback=cb)
 
         if cb.called is False:
@@ -205,29 +225,19 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('normal task: callback ret != True')
 
         # site not in db
-        sql_read_task.ret = []
         cb.called = False
 
-        self._db.auth_authorize_task(1,callback=cb)
+        self._db.auth_authorize_task(2,callback=cb)
 
         if cb.called is False:
             raise Exception('not in db: callback not called')
         if not isinstance(cb.ret,Exception):
             raise Exception('not in db: callback did not receive exception')
 
-        # site in db twice
-        sql_read_task.ret = [[1,2],[3,4]]
-        cb.called = False
-
-        self._db.auth_authorize_task(1,callback=cb)
-
-        if cb.called is False:
-            raise Exception('in db twice: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('in db twice: callback did not receive exception')
 
         # bad db info
-        sql_read_task.ret = [[data['passkey']]]
+        tables['passkey'] = [{'key':1}]
+        self.mock.setup(tables)
         cb.called = False
 
         self._db.auth_authorize_task(1,callback=cb)
@@ -238,7 +248,7 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('bad db info: callback did not receive exception')
 
         # sql error
-        sql_read_task.ret = Exception('sql error')
+        self.mock.failures = True
         cb.called = False
 
         self._db.auth_authorize_task(1,callback=cb)
@@ -251,22 +261,21 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_400_auth_new_passkey(self):
         """Test auth_new_passkey"""
-        raise Exception('fixme')
-        def sql_write_task(sql,bindings,callback):
-            sql_write_task.sql = sql
-            sql_write_task.bindings = bindings
-            if bindings[0] in sql_write_task.task_ret:
-                callback(sql_write_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        def increment_id(table,conn=None):
-            increment_id.table = table
-            if table in increment_id.ret:
-                return increment_id.ret[table]
-            else:
-                raise Exception('sql error')
-        flexmock(DB).should_receive('sql_write_task').replace_with(sql_write_task)
-        flexmock(DB).should_receive('increment_id').replace_with(increment_id)
+        #raise Exception('fixme')
+
+        exp = datetime.utcnow()
+        key = 'thekey'
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+            ],
+            'passkey':[
+                {'key':key,'expire':dbmethods.datetime2str(exp)}
+            ],
+        }
 
         def cb(ret):
             cb.called = True
@@ -274,54 +283,50 @@ class dbmethods_auth_test(dbmethods_base):
         cb.called = False
 
         # everything working
-        newid = 'theid'
         cb.called = False
-        increment_id.ret = {'passkey':newid}
-        sql_write_task.task_ret = {newid:{}}
 
         self._db.auth_new_passkey(callback=cb)
 
         if cb.called is False:
             raise Exception('everything working: callback not called')
-        if newid not in sql_write_task.bindings:
-            raise Exception('expiration: newid not in sql')
+
+        # Now check if the entry is there
+        cb.called = False
+        self._db.auth_authorize_task(cb.ret,callback=cb)
+        if cb.called is False:
+            raise Exception('everything working/check id: callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('everything working/check id: newid not in database')
 
         # expiration
-        newid = 'theid'
         exp = datetime.utcnow()+timedelta(seconds=10)
         cb.called = False
-        increment_id.ret = {'passkey':newid}
-        sql_write_task.task_ret = {newid:{}}
 
         self._db.auth_new_passkey(exp,callback=cb)
 
         if cb.called is False:
             raise Exception('expiration: callback not called')
-        if newid not in sql_write_task.bindings:
-            raise Exception('expiration: newid not in sql')
-        if dbmethods.datetime2str(exp) not in sql_write_task.bindings:
-            raise Exception('expiration: expiration not in sql')
+
+        cb.called = False
+        self._db.auth_get_passkey(cb.ret,callback=cb)
+        if cb.called is False:
+            raise Exception('expiration check: callback not called')
+        if exp != cb.ret:
+            raise Exception('expiration check: expiration does not match')
 
         # expiration2
-        newid = 'theid'
         exp = 10
         cb.called = False
-        increment_id.ret = {'passkey':newid}
-        sql_write_task.task_ret = {newid:{}}
 
         self._db.auth_new_passkey(exp,callback=cb)
 
         if cb.called is False:
             raise Exception('expiration2: callback not called')
-        if newid not in sql_write_task.bindings:
-            raise Exception('expiration2: newid not in sql')
+
 
         # bad expiration
-        newid = 'theid'
         exp = 'theexp'
         cb.called = False
-        increment_id.ret = {'passkey':newid}
-        sql_write_task.task_ret = {newid:{}}
 
         try:
             self._db.auth_new_passkey(exp,callback=cb)
@@ -331,56 +336,57 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('bad expiration: did not raise Exception')
 
         # sql_write_task error
-        newid = 'theid'
+        self.mock.failures = True
         exp = 10
         cb.called = False
-        increment_id.ret = {'passkey':newid}
-        sql_write_task.task_ret = {}
 
         self._db.auth_new_passkey(exp,callback=cb)
 
         if cb.called is False:
             raise Exception('sql_write_task error: callback not called')
         if not isinstance(cb.ret,Exception):
-            raise Exception('sql_write_task error: callback not called')
+            raise Exception('sql_write_task error: did not raise exception')
 
         # increment_id error
-        newid = 'theid'
         exp = 10
         cb.called = False
-        increment_id.ret = {}
-        sql_write_task.task_ret = {}
 
-        try:
-            self._db.auth_new_passkey(exp,callback=cb)
-        except:
-            pass
+        self.mock.failures = False
+        self._db.auth_new_passkey(exp,callback=cb)
+        cb.called = False
+        self._db.auth_authorize_task(cb.ret,callback=cb)
+
+        if cb.ret is False:
+            raise Exception('increment_id error: callback not called')
         else:
             raise Exception('increment_id error: did not raise Exception')
 
     @unittest_reporter
     def test_401_auth_get_passkey(self):
         """Test auth_get_passkey"""
-        raise Exception('fixme')
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            if bindings[0] in sql_read_task.task_ret:
-                callback(sql_read_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
+
+        exp = datetime.utcnow()
+        key = 'thekey'
+        tables = {
+            'site':[
+                {'site_id':1,'auth_key':'key'},
+            ],
+            'setting':[
+                {'site_id':1},
+            ],
+            'passkey':[
+                {'key':key,'expire':dbmethods.datetime2str(exp)}
+            ],
+        }
 
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
+        self.mock.setup(tables)
 
         # everything working
-        key = 'thekey'
-        exp = datetime.utcnow()
         cb.called = False
-        sql_read_task.task_ret = {key:[['theid',key,dbmethods.datetime2str(exp)]]}
 
         self._db.auth_get_passkey(key,callback=cb)
 
@@ -394,7 +400,6 @@ class dbmethods_auth_test(dbmethods_base):
         key = None
         exp = 'expiration'
         cb.called = False
-        sql_read_task.task_ret = {key:[['theid',key,exp]]}
 
         try:
             self._db.auth_get_passkey(key,callback=cb)
@@ -405,9 +410,8 @@ class dbmethods_auth_test(dbmethods_base):
 
         # sql_read_task error
         key = 'thekey'
-        exp = 'expiration'
+        self.mock.failures = True
         cb.called = False
-        sql_read_task.task_ret = {}
 
         self._db.auth_get_passkey(key,callback=cb)
 
@@ -419,8 +423,10 @@ class dbmethods_auth_test(dbmethods_base):
         # sql_read_task error2
         key = 'thekey'
         exp = 'expiration'
+        tables['passkey'] = [{'key':key,'expire':exp}]
+        self.mock.failures = 0
+        self.mock.setup(tables)
         cb.called = False
-        sql_read_task.task_ret = {key:[]}
 
         self._db.auth_get_passkey(key,callback=cb)
 
@@ -428,19 +434,6 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('sql_read_task error2: callback not called')
         if not isinstance(cb.ret,Exception):
             raise Exception('sql_read_task error2: callback ret != Exception')
-
-        # sql_read_task error3
-        key = 'thekey'
-        exp = 'expiration'
-        cb.called = False
-        sql_read_task.task_ret = {key:[['id','key']]}
-
-        self._db.auth_get_passkey(key,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_read_task error3: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql_read_task error3: callback ret != Exception')
 
 
 def load_tests(loader, tests, pattern):

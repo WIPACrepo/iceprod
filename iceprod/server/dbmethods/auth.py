@@ -37,7 +37,8 @@ class auth(_Methods_Base):
                     callback(Exception('No site match for current site name'))
                 elif len(ret) > 1:
                     callback(Exception('More than one site match for current site name'))
-                elif len(ret[0]) < 2:
+                elif len(ret[0]) < 2 or ret[0][1] is None: 
+                    # DB will return None if column is empty
                     callback(Exception('Row does not have both site and key'))
                 else:
                     r = {'site_id':ret[0][0],
@@ -61,7 +62,8 @@ class auth(_Methods_Base):
                     callback(Exception('No site match for current site id'))
                 elif len(ret) > 1:
                     callback(Exception('More than one site match for current site id'))
-                elif len(ret[0]) < 2:
+                elif len(ret[0]) < 2 or ret[0][1] is None:
+                    # DB will return None if column is empty
                     callback(Exception('Row does not have both site and key'))
                 else:
                     callback(key == ret[0][1])
@@ -83,7 +85,8 @@ class auth(_Methods_Base):
                     callback(Exception('No match for passkey'))
                 elif len(ret) > 1:
                     callback(Exception('More than one match for passkey'))
-                elif len(ret[0]) < 2:
+                elif len(ret[0]) < 2 or ret[0][1] is None:
+                    # DB will return None if column is empty
                     callback(Exception('Row does not have both key and expiration time'))
                 else:
                     k = ret[0][0]
