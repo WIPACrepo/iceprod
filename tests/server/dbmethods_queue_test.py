@@ -1038,7 +1038,7 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('did not create 1 job')
 
         # now make some errors
-        for i in range(10):
+        for i in range(1,10):
             cb.called = False
             self.mock.setup(tables4)
             self.mock.failures = i
@@ -1355,6 +1355,285 @@ class dbmethods_queue_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('priority weighting dataset: callback ret != task2 task3 task4')
+
+    @unittest_reporter
+    def test_130_queue_get_cfg_for_task(self):
+        """Test queue_get_cfg_for_task"""
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        config_data = """
+{"version":3,
+ "parent_id":0,
+ "tasks":[
+    {"name":"task1",
+     "trays":[
+        {"name":"Corsika",
+         "modules":[
+            {"name":"generate_corsika",
+             "class":"generators.CorsikaIC"
+            }
+        ]}
+    ]}
+]}
+"""
+        tables = {
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': 'grid', 'name': '1', 'task_status': 'waiting'},
+            ],
+            'config':[
+                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
+            ],
+        }
+
+        cb.called = False
+        self.mock.setup(tables)
+
+        self._db.queue_get_cfg_for_task('t1',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if cb.ret != config_data:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return config')
+
+        # sql error
+        cb.called = False
+        self.mock.setup(tables)
+        self.mock.failures = 1
+
+        self._db.queue_get_cfg_for_task('t1',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not raise exception')
+
+        # bad task
+        self._db.queue_get_cfg_for_task('t32',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not raise exception')
+
+        # bad task_id
+        try:
+            self._db.queue_get_cfg_for_task(None,callback=cb)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
+
+    @unittest_reporter
+    def test_131_queue_get_cfg_for_dataset(self):
+        """Test queue_get_cfg_for_dataset"""
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        config_data = """
+{"version":3,
+ "parent_id":0,
+ "tasks":[
+    {"name":"task1",
+     "trays":[
+        {"name":"Corsika",
+         "modules":[
+            {"name":"generate_corsika",
+             "class":"generators.CorsikaIC"
+            }
+        ]}
+    ]}
+]}
+"""
+        tables = {
+            'config':[
+                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
+            ],
+        }
+
+        cb.called = False
+        self.mock.setup(tables)
+
+        self._db.queue_get_cfg_for_dataset('d1',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if cb.ret != config_data:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return config')
+
+        # sql error
+        cb.called = False
+        self.mock.setup(tables)
+        self.mock.failures = 1
+
+        self._db.queue_get_cfg_for_dataset('d1',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not raise exception')
+
+        # bad dataset
+        self._db.queue_get_cfg_for_dataset('d32',callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not raise exception')
+
+        # bad dataset_id
+        try:
+            self._db.queue_get_cfg_for_dataset(None,callback=cb)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
+
+    @unittest_reporter
+    def test_150_queue_set_site_queues(self):
+        """Test queue_set_site_queues"""
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        now = dbmethods.nowstr()
+        tables = {
+            'site':[
+                {'site_id':'s1','name':'n','institution':'inst',
+                 'queues':'{}','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+
+        cb.called = False
+        self.mock.setup({})
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        self._db.queue_set_site_queues('s0',queues,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if cb.ret is not True:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return True')
+        endtables = self.mock.get(['site'])
+        if ((not endtables['site']) or
+            endtables['site'][0]['site_id'] != 's0'):
+            raise Exception('did not set site')
+        expected = json_encode(queues)
+        if endtables['site'][0]['queues'] != expected:
+            logger.info('expected: %r',expected)
+            logger.info('received: %r',endtables['site'][0]['queues'])
+            raise Exception('did not set queues')
+
+        # update no queue
+        cb.called = False
+        self.mock.setup(tables)
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        self._db.queue_set_site_queues('s1',queues,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if cb.ret is not True:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return True')
+        endtables = self.mock.get(['site'])
+        if ((not endtables['site']) or
+            endtables['site'][0]['site_id'] != 's1'):
+            raise Exception('did not set site')
+        expected = json_encode(queues)
+        if endtables['site'][0]['queues'] != expected:
+            logger.info('expected: %r',expected)
+            logger.info('received: %r',endtables['site'][0]['queues'])
+            raise Exception('did not set queues')
+
+        # update existing
+        tables2 = {
+            'site':[
+                {'site_id':'s1','name':'n','institution':'inst',
+                 'queues':'{"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+        cb.called = False
+        self.mock.setup(tables2)
+        queues = {"g1":{"type":"b","description":"desc","resources":{"disk":[20,10]}}}
+
+        self._db.queue_set_site_queues('s1',queues,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if cb.ret is not True:
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return True')
+        endtables = self.mock.get(['site'])
+        if ((not endtables['site']) or
+            endtables['site'][0]['site_id'] != 's1'):
+            raise Exception('did not set site')
+        expected = json_encode({"g1":{"type":"b","description":"desc","resources":{"mem":[20,10],"disk":[20,10]}}})
+        if endtables['site'][0]['queues'] != expected:
+            logger.info('expected: %r',expected)
+            logger.info('received: %r',endtables['site'][0]['queues'])
+            raise Exception('did not set queues')
+
+        # bad queue db info
+        tables3 = {
+            'site':[
+                {'site_id':'s0','name':'n','institution':'inst',
+                 'queues':'garbage','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+        cb.called = False
+        self.mock.setup(tables3)
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        self._db.queue_set_site_queues('s0',queues,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return Exception')
+        endtables = self.mock.get(['site'])
+        if not cmp_dict(tables3,endtables):
+            raise Exception('tables modified')
+
+        # bad queue insert info
+        cb.called = False
+        self.mock.setup({'site':[]})
+        queues = lambda a:a+1 # something that can't be json
+
+        self._db.queue_set_site_queues('s0',queues,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.info('ret: %r',cb.ret)
+            raise Exception('did not return Exception')
+        endtables = self.mock.get(['site'])
+        if not cmp_dict(tables3,endtables):
+            raise Exception('tables modified')
+
+        # sql error
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+        for i in range(1,3):
+            cb.called = False
+            self.mock.setup({'site':[]})
+            self.mock.failures = i
+            logger.info('failure: %d',i)
+
+            self._db.queue_set_site_queues('s0',queues,callback=cb)
+            if cb.called is False:
+                raise Exception('callback not called')
+            if not isinstance(cb.ret,Exception):
+                logger.info('ret: %r',cb.ret)
+                raise Exception('did not raise exception')
+            endtables = self.mock.get(['site'])
+            if endtables['site']:
+                raise Exception('tables modified')
 
 
 def load_tests(loader, tests, pattern):

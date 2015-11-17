@@ -75,8 +75,8 @@ class queue(_Methods_Base):
                 old_site = self._list_to_dict('site',ret[0])
                 old_queues = json_decode(old_site['queues'])
                 for k in set(queues) & set(old_queues):
-                    for kk in set(old_queues[k]) - set(queues[k]):
-                        queues[k][kk] = old_queues[k][kk]
+                    for kk in set(old_queues[k]['resources']) - set(queues[k]['resources']):
+                        queues[k]['resources'][kk] = old_queues[k]['resources'][kk]
                 queues = json_encode(queues)
             except Exception as e:
                 logger.warn('set_site_queues(): cannot encode queues to json')
