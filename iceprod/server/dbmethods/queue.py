@@ -568,7 +568,7 @@ class queue(_Methods_Base):
                                            callback=None):
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
-        sql = 'select search.dataset_id, task.task_id, task_rel.depends, '
+        sql = 'select search.dataset_id, task.task_id, task.depends, '
         sql += ' task_rel.requirements, task.status '
         sql += ' from search join task on search.task_id = task.task_id '
         sql += ' join task_rel on task.task_rel_id = task_rel.task_rel_id '
@@ -590,25 +590,53 @@ class queue(_Methods_Base):
         tasks = {}
         datasets = {k:OrderedDict() for k in dataset_prios}
         if ret:
-            for dataset,id,depends,reqs,status in ret:
+            for dataset,task_id,depends,reqs,status in ret:
                 if status in ('idle','waiting'):
-                    datasets[dataset][id] = (depends,reqs)
-                tasks[id] = status
+                    datasets[dataset][task_id] = (depends,reqs)
+                tasks[task_id] = status
         # get actual tasks
         task_prio = []
         for dataset in dataset_prios:
             limit = int(math.ceil(dataset_prios[dataset]*num))
             for task_id in datasets[dataset]:
-                depends = datasets[dataset][task_id][1]
+                depends, reqs = datasets[dataset][task_id]
                 satisfied = True
-                if depends:
+                if depends == 'unknown': # depends not yet computed
+                    satisfied = False
+                elif depends:
                     for dep in depends.split(','):
-                        if dep not in tasks or tasks[dep] != 'complete':
+                        if dep not in tasks:
+                            sql = 'select task_status from search where task_id = ?'
+                            bindings = (dep,)
+                            try:
+                                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                            except Exception as e:
+                                logger.info('error getting depend task status for %s',
+                                            dep, exc_info=True)
+                                satisfied = False
+                                break
+                            if not ret or len(ret[0]) < 0:
+                                logger.info('bad depend task status result: %r',ret)
+                                satisfied = False
+                                break
+                            elif ret[0][0] != 'complete':
+                                satisfied = False
+                                break
+                        elif tasks[dep] != 'complete':
                             satisfied = False
                             break
-                if satisfied:
+                if satisfied and reqs and resources is not None:
                     # now match based on resources
-                    # TODO: complete this *******************************************************
+                    try:
+                        reqs = json_decode(reqs)
+                        for r in reqs:
+                            if r not in resources:
+                                satisfied = False
+                                break
+                    except:
+                        logger.info('failed to check resources',
+                                    exc_info=True)
+                if satisfied:
                     # task can be queued now
                     task_prio.append((dataset_prios[dataset],task_id))
                     limit -= 1

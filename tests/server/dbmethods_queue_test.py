@@ -104,7 +104,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -143,15 +144,18 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'task_rel_id':None},
+                 'failures':0, 'evictions':1, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -205,7 +209,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -254,15 +259,18 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'task_rel_id':None},
+                 'failures':0, 'evictions':1, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -357,7 +365,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -389,15 +398,18 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'task_rel_id':None},
+                 'failures':0, 'evictions':1, 'depends': '',
+                 'task_rel_id':None},
             ],
             'search':[
                 {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
@@ -555,7 +567,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
         }
         cb.called = False
@@ -607,15 +620,18 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'task_rel_id':None},
+                 'failures':0, 'evictions':1, 'depends': '',
+                 'task_rel_id':None},
             ],
         }
 
@@ -663,7 +679,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
         }
         cb.called = False
@@ -716,15 +733,18 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn2',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn3',
-                 'failures':0, 'evictions':1, 'task_rel_id':None},
+                 'failures':0, 'evictions':1, 'depends': '',
+                 'task_rel_id':None},
             ],
         }
         cb.called = False
@@ -771,7 +791,8 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':None},
             ],
         }
         cb.called = False
@@ -1169,19 +1190,23 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'task_rel_id':'tr1'},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':'tr1'},
                 {'task_id':'t2', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'task_rel_id':'tr2'},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':'tr2'},
                 {'task_id':'t3', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'task_rel_id':'tr3'},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':'tr3'},
                 {'task_id':'t4', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'task_rel_id':'tr4'},
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':'tr4'},
             ],
             'task_rel':[
                 {'task_rel_id':'tr1','depends':None,'requirements':None},
@@ -1355,6 +1380,172 @@ class dbmethods_queue_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('priority weighting dataset: callback ret != task2 task3 task4')
+
+        # testing dependencies
+        tables3 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':4,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'complete'},
+                {'task_id':'t2', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'processing'},
+                {'task_id':'t3', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t4', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t5', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t6', 'job_id': 'j2', 'dataset_id': 'd2',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+                {'task_id':'t7', 'job_id': 'j3', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'task':[
+                {'task_id':'t1', 'status':'complete', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': '',
+                 'task_rel_id':'tr1'},
+                {'task_id':'t2', 'status':'processing', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': 't1',
+                 'task_rel_id':'tr2'},
+                {'task_id':'t3', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': 't1,t2',
+                 'task_rel_id':'tr3'},
+                {'task_id':'t4', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': 't25',
+                 'task_rel_id':'tr4'},
+                {'task_id':'t5', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': 't6',
+                 'task_rel_id':'tr5'},
+                {'task_id':'t7', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': 'unknown',
+                 'task_rel_id':'tr1'},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','depends':None,'requirements':None},
+                {'task_rel_id':'tr2','depends':'tr1','requirements':None},
+                {'task_rel_id':'tr3','depends':'tr2','requirements':None},
+                {'task_rel_id':'tr4','depends':'tr25','requirements':None},
+                {'task_rel_id':'tr5','depends':'tr6','requirements':None},
+            ],
+        }
+        cb.called = False
+        dataset_prios = {'d1':1}
+        self.mock.setup(tables3)
+
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
+
+        if cb.called is False:
+            raise Exception('dependencies: callback not called')
+        ret_should_be = {}
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('dependencies: callback ret != {}')
+
+        # testing resources
+        tables4 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'trays':1, 'tasks_submitted':4,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'task':[
+                {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':'', 'grid_queue_id':'',
+                 'failures':0, 'evictions':0, 'depends': None,
+                 'task_rel_id':'tr1'},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','depends':None,'requirements':'["cpu","gpu"]'},
+            ],
+        }
+        cb.called = False
+        dataset_prios = {'d1':1}
+        self.mock.setup(tables4)
+        resources = {'cpu':200,'gpu':10}
+
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
+                                          resources=resources,callback=cb)
+
+        if cb.called is False:
+            raise Exception('resources: callback not called')
+        ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
+        for k in ret_should_be:
+            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('resources: callback ret')
+
+        # resources no match
+        cb.called = False
+        self.mock.setup(tables4)
+        resources = {}
+
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
+                                          resources=resources,callback=cb)
+
+        if cb.called is False:
+            raise Exception('no resources: callback not called')
+        ret_should_be = {}
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('no resources: callback ret != {}')
+
+        # bad resource json
+        tables4['task_rel'][0]['requirements'] = 'blah'
+        cb.called = False
+        self.mock.setup(tables4)
+        resources = {'cpu':200}
+
+        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
+                                          resources=resources,callback=cb)
+
+        if cb.called is False:
+            raise Exception('resources bad json: callback not called')
+        ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
+        for k in ret_should_be:
+            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('resources: callback ret')
 
     @unittest_reporter
     def test_130_queue_get_cfg_for_task(self):
