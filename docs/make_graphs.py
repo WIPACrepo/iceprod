@@ -4,10 +4,15 @@ Make graphs (lifecycles, ...)
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import json
 from collections import OrderedDict
 
-import pygraphviz as pgv
+try:
+    import pygraphviz as pgv
+except ImportError:
+    print('(optional) install pygraphviz to generate graphs')
+    sys.exit(0)
 
 from iceprod.server import get_pkgdata_filename
 
