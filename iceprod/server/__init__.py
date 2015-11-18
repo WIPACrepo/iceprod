@@ -255,6 +255,7 @@ def mktar(libdir,outfile):
     os.chdir(curdir)
 
 def get_pkgdata_filename(package, resource):
+    """Get a filename for a resource bundled within the package"""
     loader = get_loader(package)
     if loader is None or not hasattr(loader, 'get_data'):
         return None
@@ -270,7 +271,7 @@ def get_pkgdata_filename(package, resource):
     return os.path.join(*parts)
 
 def get_pkg_binary(package, binary):
-    # try finding the binary path based on the python package
+    """Try finding the binary path based on the python package"""
     try:
         loader = get_loader(package)
         f = loader.get_filename()

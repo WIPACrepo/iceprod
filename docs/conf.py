@@ -98,7 +98,7 @@ coverage_ignore_functions = [
 
 # -- Options for HTML output ---------------------------------------------------
 
-html_static_path = ['iceprod.css']
+#html_static_path = ['iceprod.css']
 html_theme = 'default'
 html_style = 'iceprod.css'
 #highlight_language = 'none'

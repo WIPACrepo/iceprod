@@ -248,6 +248,24 @@ class modules_db_test(unittest.TestCase):
         else:
             raise Exception('rpc db func did not raise error when db is None')
 
+class conf_test(unittest.TestCase):
+    @unittest_reporter
+    def test_01_read_db_conf(self):
+        d = db.read_db_conf()
+        if not d:
+            raise Exception('cannot load conf')
+        if 'tables' not in d:
+            raise Exception('tables not in conf')
+
+        t = db.read_db_conf('tables')
+        if not t:
+            raise Exception('cannot get only tables')
+        if d['tables'] != t:
+            raise Exception('only tables != all["tables"]')
+        if 'site' not in t:
+            raise Exception('missing site table')
+        if 'queues' not in t['site']:
+            raise Exception('cannot find site queues')
 
 class dbapi_test(unittest.TestCase):
     def setUp(self):
@@ -382,6 +400,8 @@ def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(modules_db_test))
     suite.addTests(loader.loadTestsFromNames(alltests,modules_db_test))
+    alltests = glob_tests(loader.getTestCaseNames(conf_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,conf_test))
     alltests = glob_tests(loader.getTestCaseNames(dbapi_test))
     suite.addTests(loader.loadTestsFromNames(alltests,dbapi_test))
     if sqlite_test:

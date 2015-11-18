@@ -1,11 +1,14 @@
 """
 Database server module
 """
+from __future__ import absolute_import, division, print_function
 
 from threading import Thread, Event, Condition
+import os
 import logging
 import time
 import random
+import json
 from itertools import izip
 from functools import partial
 from contextlib import contextmanager
@@ -14,7 +17,7 @@ from collections import OrderedDict, Iterable
 from iceprod.server.pool import PriorityThreadPool,SingleGrouping,NamedThreadPool
 from iceprod.server import module
 from iceprod.server import dbmethods
-from iceprod.server import GlobalID
+from iceprod.server import GlobalID, get_pkgdata_filename
 
 logger = logging.getLogger('modules_db')
 
@@ -92,206 +95,43 @@ class DBService(module.Service):
         else:
             raise Exception('db is not running')
 
-class Text(str):
-    """Define a text type for long strings up to 2^16 char"""
-    pass
-class MediumText(Text):
-    """Define a text type for long strings up to 2^24 char"""
-    pass
+def read_db_conf(field_name=None):
+    """
+    Read the DB conf data from file.
+
+    :param field_name: (optional) field to return
+    :returns: either a specific field, or all fields in a dict
+    """
+    if not read_db_conf.cache:
+        filename = get_pkgdata_filename('iceprod.server','data/etc/db_config.json')
+        if not os.path.exists(filename):
+            raise Exception('cannot find db_config.json')
+        d = json.load(open(filename))
+        # strip comments out of tables
+        for t in d['tables']:
+            tmp = OrderedDict()
+            for row in d['tables'][t]:
+                tmp[row[0]] = row[1]
+            d['tables'][t] = tmp
+        read_db_conf.cache = d
+    if not field_name:
+        return read_db_conf.cache
+    if field_name in read_db_conf.cache:
+        return read_db_conf.cache[field_name]
+    raise Exception('cannot find field name')
+read_db_conf.cache = None
 
 class DBAPI(object):
     """
     API for database interaction
+
+    Config data (such as tables) are found at :ref:`dbconfig`.
     """
 
     # define tables
-    tables = {'site':OrderedDict([('site_id',str),
-                                  ('name',str),
-                                  ('institution',str),
-                                  ('queues',Text), # json of {gridspec:{type,description,resources:{k:(total,empty)}}}
-                                  ('auth_key',str),
-                                  ('website_url',str),
-                                  ('version',str),
-                                  ('last_update',str), # datetime
-                                  ('admin_name',str),
-                                  ('admin_email',str),
-                                 ]),
-              'node':OrderedDict([('node_id',str),
-                                  ('hostname',str),
-                                  ('domain',str),
-                                  ('last_update',str), # datetime
-                                  ('stats',Text), # json of {name:value}
-                                 ]),
-              'dataset':OrderedDict([('dataset_id',str),
-                                     ('name',str),
-                                     ('description',str),
-                                     ('gridspec',Text), # json of {task:[gridspec]}
-                                     ('status',str), # possible statuses: {processing, complete, suspended, errors}
-                                     ('username',str),
-                                     ('institution',str),
-                                     ('submit_host',str),
-                                     ('priority',int),
-                                     ('jobs_submitted',int),
-                                     ('trays',int),
-                                     ('tasks_submitted',int),
-                                     ('start_date',str), # datetime
-                                     ('end_date',str), # datetime
-                                     ('temporary_storage',Text),
-                                     ('global_storage',Text),
-                                     ('parent_id',str),
-                                     ('stat_keys',Text), # json of [key1,key2]
-                                     ('categoryvalue_ids',Text), # list of categoryvalues
-                                     ('debug',bool),
-                                    ]),
-              'dataset_notes':OrderedDict([('dataset_nodes_id',str),
-                                           ('dataset_id',str),
-                                           ('username',str),
-                                           ('date',str), # datetime
-                                           ('comment',MediumText),
-                                          ]),
-              'dataset_stat':OrderedDict([('dataset_stat_id',str),
-                                          ('dataset_id',str),
-                                          ('stat',MediumText), # json of {name:value}
-                                         ]),
-              'job':OrderedDict([('job_id',str),
-                                 ('status',str), # possible statuses: {processing, complete, suspended, errors}
-                                 ('status_changed',str), # datetime
-                                ]),
-              'job_stat':OrderedDict([('job_stat_id',str),
-                                      ('job_id',str),
-                                      ('stat',MediumText), # json of {name:value}
-                                     ]),
-              'task_rel':OrderedDict([('task_rel_id',str),
-                                      ('depends',Text), # comma separated list of task_rel_ids
-                                      ('requirements',Text), # json of {name:value}
-                                     ]),
-              'task':OrderedDict([('task_id',str),
-                                  ('status',str), # possible statuses: {idle, waiting, queued, processing, complete, suspended, failed, resume, reset}
-                                  ('prev_status',str),
-                                  ('error_message',Text),
-                                  ('status_changed',str), # datetime
-                                  ('submit_dir',Text),
-                                  ('grid_queue_id',str),
-                                  ('failures',int),
-                                  ('evictions',int),
-                                  ('task_rel_id',str),
-                                 ]),
-              'task_stat':OrderedDict([('task_stat_id',str),
-                                       ('task_id',str),
-                                       ('stat',MediumText), # json of {name:value}
-                                      ]),
-              'task_log':OrderedDict([('task_log_id',str),
-                                      ('task_id',str),
-                                      ('name',str),
-                                      ('data',MediumText),
-                                     ]),
-              'config':OrderedDict([('dataset_id',str),
-                                    ('config_data',MediumText), # serialized
-                                    ('difplus_data',MediumText), # serialized
-                                   ]),
-              'data':OrderedDict([('data_id',str),
-                                  ('task_id',str),
-                                  ('url',Text),
-                                  ('compression',str),
-                                  ('type',str),
-                                 ]),
-              'resource':OrderedDict([('resource_id',str),
-                                      ('url',Text),
-                                      ('compression',str),
-                                      ('arch',str),
-                                     ]),
-              'categorydef':OrderedDict([('categorydef_id',str),
-                                         ('name',str),
-                                         ('description',str),
-                                        ]),
-              'categoryvalue':OrderedDict([('categoryvalue_id',str),
-                                           ('categorydef_id',str),
-                                           ('name',str),
-                                           ('description',Text),
-                                          ]),
-              'search':OrderedDict([('task_id',str),
-                                    ('job_id',str),
-                                    ('dataset_id',str),
-                                    ('gridspec',str),
-                                    ('name',str), # identifies the task in job by name or number
-                                    ('task_status',str), # a replica of task:status
-                                   ]),
-              'history':OrderedDict([('history_id',str),
-                                     ('username',str),
-                                     ('cmd',Text),
-                                     ('timestamp',str), # datetime
-                                    ]),
-              'passkey':OrderedDict([('passkey_id',str),
-                                     ('key',str),
-                                     ('expire',str), # datetime
-                                    ]),
-              'user':OrderedDict([('user_id',str),
-                                  ('username',str),
-                                  ('password',str),
-                                  ('email',str),
-                                  ('admin',bool),
-                                  ('last_login_time',str), # datetime
-                                 ]),
-              'session':OrderedDict([('session_id',str),
-                                     ('session_key',str),
-                                     ('pass_key',str),
-                                     ('last_time',str), # datetime
-                                    ]),
-              'webstat':OrderedDict([('webstat_id',str),
-                                     ('name',str),
-                                     ('value',MediumText),
-                                     ('last_update_time',str), # datetime
-                                    ]),
-              'webnote':OrderedDict([('webnote_id',str),
-                                     ('page',str),
-                                     ('username',str),
-                                     ('timestamp',str), # datetime
-                                     ('note',Text),
-                                    ]),
-              'graph':OrderedDict([('graph_id',str),
-                                   ('name',str),
-                                   ('value',Text),
-                                   ('timestamp',str), # datetime
-                                  ]),
-              'master_update_history':OrderedDict([('master_update_history_id',str),
-                                                   ('table',str),
-                                                   ('index',str),
-                                                   ('timestamp',str),
-                                                  ]),
-              'setting':OrderedDict([('setting_id',str),
-                                     ('site_id',str),
-                                     ('node_offset',str),  # these tables have the site+offset id type
-                                     ('dataset_offset',str),
-                                     ('dataset_notes_offset',str),
-                                     ('dataset_stat_offset',str),
-                                     ('job_offset',str),
-                                     ('job_stat_offset',str),
-                                     ('task_rel_offset',str),
-                                     ('task_offset',str),
-                                     ('task_stat_offset',str),
-                                     ('task_log_offset',str),
-                                     ('data_offset',str),
-                                     ('resource_offset',str),
-                                     ('categorydef_offset',str),
-                                     ('categoryvalue_offset',str),
-                                     ('history_offset',str),
-                                     ('passkey_last',str),
-                                     ('user_offset',str),
-                                     ('session_last',str),
-                                     ('webstat_last',str),
-                                     ('webnote_last',str),
-                                     ('graph_offset',str),
-                                     ('master_update_history_last',str),
-                                    ]),
-             }
-    archive_tables = ('site','node','dataset','dataset_notes',
-                      'dataset_stat','job','job_stat','task','task_stat',
-                      'task_log','config','resource','data')
-    status_options = {'dataset':{'processing', 'complete', 'suspended', 'errors'},
-                      'job':{'processing', 'complete', 'suspended', 'errors'},
-                      'task':{'waiting', 'queued', 'processing', 'complete',
-                              'suspended', 'failed', 'resume', 'reset'}
-                     }
+    tables = read_db_conf('tables')
+    archive_tables = read_db_conf('archive_tables')
+    status_options = read_db_conf('status_options')
 
     ### basic functions ###
 
@@ -770,17 +610,17 @@ else:
                     sql_create += sep+col
                     sql_select += sep+col
                     t = self.tables[table_name][col]
-                    if t == str:
+                    if t == 'str':
                         sql_create += ' VARCHAR(255) NOT NULL DEFAULT "" '
-                    elif t == int:
+                    elif t == 'int':
                         sql_create += ' INT NOT NULL DEFAULT 0 '
-                    elif t == bool:
+                    elif t == 'bool':
                         sql_create += ' BOOL NOT NULL DEFAULT 0 '
-                    elif t == float:
+                    elif t == 'float':
                         sql_create += ' DOUBLE NOT NULL DEFAULT 0.0 '
-                    elif t == Text:
+                    elif t == 'Text':
                         sql_create += ' TEXT NOT NULL DEFAULT "" '
-                    elif t == MediumText:
+                    elif t == 'MediumText':
                         sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
@@ -810,17 +650,17 @@ else:
                             for x in cols:
                                 if x not in curcols:
                                     t = self.tables[table_name][x]
-                                    if t == str:
+                                    if t == 'str':
                                         x += ' VARCHAR(255) NOT NULL DEFAULT "" '
-                                    elif t == int:
+                                    elif t == 'int':
                                         x += ' INT NOT NULL DEFAULT 0 '
-                                    elif t == bool:
+                                    elif t == 'bool':
                                         x += ' BOOL NOT NULL DEFAULT 0 '
-                                    elif t == float:
+                                    elif t == 'float':
                                         x += ' DOUBLE NOT NULL DEFAULT 0.0 '
-                                    elif t == Text:
+                                    elif t == 'Text':
                                         x += ' TEXT NOT NULL DEFAULT "" '
-                                    elif t == MediumText:
+                                    elif t == 'MediumText':
                                         sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                                 addcols.append(x)
 
