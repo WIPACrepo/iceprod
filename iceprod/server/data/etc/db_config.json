@@ -1,0 +1,265 @@
+{
+    "values": {
+        "str": "A short string up to 256 characters",
+        "Text": "A string up to 2^16 characters",
+        "MediumText": "A string up to 2^24 characters",
+        "bool": "A boolean (true/false)",
+        "int": "An integer",
+        "float": "A floating point number"
+    },
+    "tables": {
+        "site": [
+            ["site_id", "str"],
+            ["name", "str"],
+            ["institution", "str"],
+            ["queues", "Text", "json of {gridspec:{type,description,resources:{k:[total,empty]}}}"],
+            ["auth_key", "str"],
+            ["website_url", "str"],
+            ["version", "str"],
+            ["last_update", "str", "datetime"],
+            ["admin_name", "str"],
+            ["admin_email", "str"]
+        ],
+        "node": [
+            ["node_id", "str"],
+            ["hostname", "str"],
+            ["domain", "str"],
+            ["last_update", "str", "datetime"],
+            ["stats", "Text", "json of {name:value}"]
+        ],
+        "dataset": [
+            ["dataset_id", "str"],
+            ["name", "str"],
+            ["description", "str"],
+            ["gridspec", "Text", "json of {task:[gridspec]}"],
+            ["status", "str"],
+            ["username", "str"],
+            ["institution", "str"],
+            ["submit_host", "str"],
+            ["priority", "int"],
+            ["jobs_submitted", "int"],
+            ["trays", "int"],
+            ["tasks_submitted", "int"],
+            ["start_date", "str", "datetime"],
+            ["end_date", "str", "datetime"],
+            ["temporary_storage", "Text"],
+            ["global_storage", "Text"],
+            ["parent_id", "str"],
+            ["stat_keys", "Text", "json of [key1,key2]"],
+            ["categoryvalue_ids", "Text", "csv list of categoryvalues"],
+            ["debug", "bool"]
+        ],
+        "dataset_notes": [
+            ["dataset_nodes_id", "str"],
+            ["dataset_id", "str"],
+            ["username", "str"],
+            ["date", "str", "datetime"],
+            ["comment", "MediumText"]
+        ],
+        "dataset_stat": [
+            ["dataset_stat_id", "str"],
+            ["dataset_id", "str"],
+            ["stat", "MediumText", "json of {name:value}"]
+        ],
+        "job": [
+            ["job_id", "str"],
+            ["status", "str"],
+            ["status_changed", "str", "datetime"]
+        ],
+        "job_stat": [
+            ["job_stat_id", "str"],
+            ["job_id", "str"],
+            ["stat", "MediumText", "json of {name:value}"]
+        ],
+        "task_rel": [
+            ["task_rel_id", "str"],
+            ["depends", "Text", "csv list of task_rel_ids"],
+            ["requirements", "Text", "json of {name:value}"]
+        ],
+        "task": [
+            ["task_id", "str"],
+            ["status", "str"],
+            ["prev_status", "str"],
+            ["error_message", "Text"],
+            ["status_changed", "str", "datetime"],
+            ["submit_dir", "Text"],
+            ["grid_queue_id", "str"],
+            ["failures", "int"],
+            ["evictions", "int"],
+            ["depends", "Text", "csv list of task_ids"],
+            ["task_rel_id", "str"]
+        ],
+        "task_stat": [
+            ["task_stat_id", "str"],
+            ["task_id", "str"],
+            ["stat", "MediumText", "json of {name:value}"]
+        ],
+        "task_log": [
+            ["task_log_id", "str"],
+            ["task_id", "str"],
+            ["name", "str", "logfile name"],
+            ["data", "MediumText", "logfile text"]
+        ],
+        "config": [
+            ["dataset_id", "str"],
+            ["config_data", "MediumText", "serialized config"],
+            ["difplus_data", "MediumText", "serialized config"]
+        ],
+        "data": [
+            ["data_id", "str"],
+            ["task_id", "str"],
+            ["url", "Text"],
+            ["compression", "str"],
+            ["type", "str"]
+        ],
+        "resource": [
+            ["resource_id", "str"],
+            ["url", "Text"],
+            ["compression", "str"],
+            ["arch", "str"]
+        ],
+        "categorydef": [
+            ["categorydef_id", "str"],
+            ["name", "str"],
+            ["description", "str"]
+        ],
+        "categoryvalue": [
+            ["categoryvalue_id", "str"],
+            ["categorydef_id", "str"],
+            ["name", "str"],
+            ["description", "Text"]
+        ],
+        "search": [
+            ["task_id", "str"],
+            ["job_id", "str"],
+            ["dataset_id", "str"],
+            ["gridspec", "str"],
+            ["name", "str", "identifies the task in job by name or number"],
+            ["task_status", "str", "a replica of task:status"]
+        ],
+        "history": [
+            ["history_id", "str"],
+            ["username", "str"],
+            ["cmd", "Text"],
+            ["timestamp", "str", "datetime"]
+        ],
+        "passkey": [
+            ["passkey_id", "str"],
+            ["key", "str"],
+            ["expire", "str", "datetime"]
+        ],
+        "user": [
+            ["user_id", "str"],
+            ["username", "str"],
+            ["password", "str"],
+            ["email", "str"],
+            ["admin", "bool"],
+            ["last_login_time", "str", "datetime"]
+        ],
+        "session": [
+            ["session_id", "str"],
+            ["session_key", "str"],
+            ["pass_key", "str"],
+            ["last_time", "str", "datetime"]
+        ],
+        "webstat": [
+            ["webstat_id", "str"],
+            ["name", "str"],
+            ["value", "MediumText", "json data"],
+            ["last_update_time", "str", "datetime"]
+        ],
+        "webnote": [
+            ["webnote_id", "str"],
+            ["page", "str"],
+            ["username", "str"],
+            ["timestamp", "str", "datetime"],
+            ["note", "Text"]
+        ],
+        "graph": [
+            ["graph_id", "str"],
+            ["name", "str"],
+            ["value", "Text", "json data"],
+            ["timestamp", "str", "datetime"]
+        ],
+        "master_update_history": [
+            ["master_update_history_id", "str"],
+            ["table", "str"],
+            ["index", "str"],
+            ["timestamp", "str"]
+        ],
+        "setting": [
+            ["setting_id", "str"],
+            ["site_id", "str"],
+            ["node_offset", "str", "these tables have the site+offset id type"],
+            ["dataset_offset", "str"],
+            ["dataset_notes_offset", "str"],
+            ["dataset_stat_offset", "str"],
+            ["job_offset", "str"],
+            ["job_stat_offset", "str"],
+            ["task_rel_offset", "str"],
+            ["task_offset", "str"],
+            ["task_stat_offset", "str"],
+            ["task_log_offset", "str"],
+            ["data_offset", "str"],
+            ["resource_offset", "str"],
+            ["categorydef_offset", "str"],
+            ["categoryvalue_offset", "str"],
+            ["history_offset", "str"],
+            ["passkey_last", "str"],
+            ["user_offset", "str"],
+            ["session_last", "str"],
+            ["webstat_last", "str"],
+            ["webnote_last", "str"],
+            ["graph_offset", "str"],
+            ["master_update_history_last", "str"]
+        ]
+    },
+    "archive_tables": [
+        "site", "node", "dataset", "dataset_notes",
+        "dataset_stat", "job", "job_stat", "task", "task_stat",
+        "task_log", "config", "resource", "data"
+    ],
+    "status_options": {
+        "dataset": [
+            "processing", "complete", "suspended", "errors"
+        ],
+        "job": [
+            "processing", "complete", "suspended", "errors"
+        ],
+        "task": [
+            "idle", "waiting", "queued", "processing", "complete",
+            "suspended", "failed", "resume", "reset"
+        ]
+    },
+    "status_graphs": {
+        "dataset": [
+            ["processing","complete","std"],
+            ["processing","suspended","debug"],
+            ["processing","errors","auto"],
+            ["suspended","processing","manual"],
+            ["errors","processing","manual"]
+        ],
+        "job": [
+            ["processing","complete","std"],
+            ["processing","suspended","debug"],
+            ["processing","errors","auto"],
+            ["suspended","processing","manual"],
+            ["errors","processing","manual"]
+        ],
+        "task": [
+            ["idle","waiting","std"],
+            ["waiting","queued","std"],
+            ["queued","processing","std"],
+            ["processing","complete","std"],
+            ["processing","reset","auto"],
+            ["processing","failed","auto"],
+            ["processing","suspended","debug"],
+            ["resume","waiting","std"],
+            ["reset","waiting","std"],
+            ["suspended","reset","manual"],
+            ["failed","reset","manual"],
+            ["suspended","resume","manual"],
+            ["failed","resume","manual"]
+        ]
+    }
+}
