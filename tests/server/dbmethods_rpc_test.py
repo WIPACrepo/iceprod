@@ -39,7 +39,6 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_200_rpc_new_task(self):
         """Test rpc_new_task"""
-        raise Exception('fixme')
         search = OrderedDict([('task_id','gdf'),
                 ('job_id','3ns8'),
                 ('dataset_id','sdj43'),
@@ -59,79 +58,52 @@ class dbmethods_rpc_test(dbmethods_base):
                 ('evictions',0),
                 ('depends',None),
                ])
-        def blocking_task(name,cb):
-            blocking_task.called = True
-            cb()
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            if bindings[0] in sql_read_task.task_ret:
-                callback(sql_read_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        def _db_read(conn,sql,bindings,*args):
-            _db_read.sql = sql
-            _db_read.bindings = bindings
-            if bindings[0] in _db_read.task_ret:
-                return _db_read.task_ret[bindings[0]]
-            else:
-                raise Exception('sql error')
-        def _db_write(conn,sql,bindings,*args):
-            def w(s,b):
-                _db_write.sql.append(s)
-                _db_write.bindings.append(b)
-                if b[0] in _db_write.task_ret:
-                    return True
-                else:
-                    raise Exception('sql error')
-            if isinstance(sql,basestring):
-                return w(sql,bindings)
-            elif isinstance(sql,Iterable):
-                ret = None
-                for s,b in izip(sql,bindings):
-                    ret = w(s,b)
-                return ret
-        flexmock(DB).should_receive('blocking_task').replace_with(blocking_task)
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
-        flexmock(DB).should_receive('_db_read').replace_with(_db_read)
-        flexmock(DB).should_receive('_db_write').replace_with(_db_write)
 
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
+        
+        
+        now = dbmethods.nowstr()
+        
+        gridspec = 'nsd89n3'
+
+        # single task
+        tables = {
+            'task':[
+                    {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                    'error_message':None, 'status_changed':now,
+                    'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                    'failures':0, 'evictions':0, 'task_rel_id':None},
+                    ],
+                    'search':[
+                              {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                              'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+                              ],
+            'config': [{'dataset_id':'d1', 'config_data': 'somedata', 'difplus_data':'' }]
+        }
+
+        self.mock.setup(tables)
+
 
         # everything working
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:[search.values()]}
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = {'processing':[]}
-        sql_read_task.task_ret = {search['dataset_id']:[['configid','somedata']]}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
-
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
         if cb.called is False:
             raise Exception('everything working: callback not called')
+
         ret_should_be = 'somedata'
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('everything working: callback ret != task')
-
+        
         # no queued jobs
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:[]}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
 
         if cb.called is False:
             raise Exception('no queued jobs: callback not called')
@@ -141,16 +113,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('no queued jobs: callback ret != task')
 
+
         # _db_read error
+        self.mock.setup()
+        self.mock.failures = 1
         cb.called = False
-        _db_read.task_ret = {}
+        #_db_read.task_ret = {}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
-
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
         if cb.called is False:
             raise Exception('_db_read error: callback not called')
         if not isinstance(cb.ret,Exception):
@@ -158,14 +128,10 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('_db_read error: callback ret != Exception')
 
         # _db_read error2
+        self.mock.failures = 2
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:None}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
 
         if cb.called is False:
             raise Exception('_db_read error2: callback not called')
@@ -174,15 +140,10 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('_db_read error2: callback ret != Exception')
 
         # _db_write error
+        self.mock.failures = 3
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:[search.values()]}
-        _db_write.task_ret = {}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
 
         if cb.called is False:
             raise Exception('_db_write error: callback not called')
@@ -191,16 +152,10 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('_db_write error: callback ret != Exception')
 
         # sql_read_task error
+        self.mock.failures = 4
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:[search.values()]}
-        _db_write.task_ret = {'processing':[]}
-        sql_read_task.task_ret = {}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
 
         if cb.called is False:
             raise Exception('sql_read_task error: callback not called')
@@ -209,23 +164,17 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('sql_read_task error: callback ret != Exception')
 
         # sql_read_task error2
+        self.mock.failures = 5
         cb.called = False
-        _db_read.task_ret = {search['gridspec']:[search.values()]}
-        _db_write.task_ret = {'processing':[]}
-        sql_read_task.task_ret = {search['dataset_id']:[]}
 
-        self._db.rpc_new_task(gridspec=search['gridspec'],
-                              platform='platform',
-                              hostname=self.hostname,
-                              ifaces=None,
-                              callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
 
         if cb.called is False:
             raise Exception('sql_read_task error2: callback not called')
         if not isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('sql_read_task error2: callback ret != Exception')
-
+'''
     @unittest_reporter
     def test_201_rpc_finish_task(self):
         """Test rpc_finish_task"""
@@ -969,7 +918,7 @@ class dbmethods_rpc_test(dbmethods_base):
         if not isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('_db_read error: callback ret != Exception')
-
+'''
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

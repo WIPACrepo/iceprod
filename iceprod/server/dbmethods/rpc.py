@@ -56,7 +56,7 @@ class rpc(_Methods_Base):
         """
         conn,archive_conn = self.db._dbsetup()
         sql = 'select * from search '
-        sql += ' where search.gridspec = ? and search.task_status = queued'
+        sql += ' where search.gridspec = ? and search.task_status = "queued"'
         sql += ' limit 1'
         bindings = (args['gridspec'],)
         try:
