@@ -36,6 +36,7 @@ from .dbmethods_test import dbmethods_base,DB
 
 
 class dbmethods_rpc_test(dbmethods_base):
+
     @unittest_reporter
     def test_200_rpc_new_task(self):
         """Test rpc_new_task"""
@@ -66,7 +67,6 @@ class dbmethods_rpc_test(dbmethods_base):
         
         
         now = dbmethods.nowstr()
-        
         gridspec = 'nsd89n3'
 
         # single task
@@ -114,136 +114,67 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('no queued jobs: callback ret != task')
 
 
-        # _db_read error
+        # db errors
         self.mock.setup()
-        self.mock.failures = 1
-        cb.called = False
-        #_db_read.task_ret = {}
+        for i in range(5):
+            self.mock.failures = i + 1
+            cb.called = False
+            self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
+            if cb.called is False:
+                raise Exception('db errors: callback not called')
+            if not isinstance(cb.ret,Exception):
+                logger.error('cb.ret = %r',cb.ret)
+                raise Exception('db errors: callback ret != Exception')
 
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
-        if cb.called is False:
-            raise Exception('_db_read error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error: callback ret != Exception')
 
-        # _db_read error2
-        self.mock.failures = 2
-        cb.called = False
-
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_read error2: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error2: callback ret != Exception')
-
-        # _db_write error
-        self.mock.failures = 3
-        cb.called = False
-
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_write error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_write error: callback ret != Exception')
-
-        # sql_read_task error
-        self.mock.failures = 4
-        cb.called = False
-
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_read_task error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('sql_read_task error: callback ret != Exception')
-
-        # sql_read_task error2
-        self.mock.failures = 5
-        cb.called = False
-
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_read_task error2: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('sql_read_task error2: callback ret != Exception')
-'''
     @unittest_reporter
     def test_201_rpc_finish_task(self):
         """Test rpc_finish_task"""
-        raise Exception('fixme')
-        def blocking_task(name,cb):
-            blocking_task.called = True
-            cb()
-        def _db_read(conn,sql,bindings,*args):
-            _db_read.sql = sql
-            _db_read.bindings = bindings
-            selects = sql[:sql.find('from')].replace('select','')
-            selects = ','.join(selects.replace(' ','').split(','))
-            if selects in _db_read.task_ret:
-                return _db_read.task_ret[selects]
-            else:
-                raise Exception('sql error')
-        def _db_write(conn,sql,bindings,*args):
-            def w(s,b):
-                _db_write.sql.append(s)
-                _db_write.bindings.append(b)
-                if b[0] in _db_write.task_ret:
-                    return True
-                else:
-                    raise Exception('sql error')
-            if isinstance(sql,basestring):
-                return w(sql,bindings)
-            elif isinstance(sql,Iterable):
-                ret = None
-                for s,b in izip(sql,bindings):
-                    ret = w(s,b)
-                return ret
-        def increment_id(table,conn=None):
-            increment_id.table = table
-            if table in increment_id.ret:
-                return increment_id.ret[table]
-            else:
-                raise Exception('sql error')
-        flexmock(DB).should_receive('blocking_task').replace_with(blocking_task)
-        flexmock(DB).should_receive('_db_read').replace_with(_db_read)
-        flexmock(DB).should_receive('_db_write').replace_with(_db_write)
-        flexmock(DB).should_receive('_increment_id_helper').replace_with(increment_id)
+       
 
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
+        
+        
+        now = dbmethods.nowstr()
+        gridspec = 'nsd89n3'
+        task_id = 'asdf'
+        tables = {
+            'task':[
+                    {'task_id':task_id, 'status':'queued', 'prev_status':'waiting',
+                    'error_message':None, 'status_changed':now,
+                    'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                    'failures':0, 'evictions':0, 'task_rel_id':None},
+                    ],
+            'search':[
+                    {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
+                    'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+                    ],
+            'config': [{'dataset_id':'d1', 'config_data': 'somedata', 'difplus_data':'' }],
+            'task_stat': [{'task_stat_id': 0, 'task_id': task_id}],
+            'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2, 'tasks_submitted': 2}],
+        }
+        self.mock.setup(tables)
+
+        
 
         # everything working
         cb.called = False
-        _db_read.task_ret = {'task_stat_id,task_id':[],
-                             'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
-                             'task_id,task_status':[['task','complete']]}
-        increment_id.ret = {'task_stat':'new_task_stat'}
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete','new_task_stat')
+        
 
         stats = {'name1':123123,'name2':968343}
-        self._db.rpc_finish_task('task',stats,callback=cb)
+        self._db.rpc_finish_task(task_id,stats,callback=cb)
 
         if cb.called is False:
             raise Exception('everything working: callback not called')
         if isinstance(cb.ret,Exception):
-            logger.info('read_sql %r %r',_db_read.sql,_db_read.bindings)
-            logger.info('write_sql %r %r',_db_write.sql,_db_write.bindings)
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('everything working: callback ret is Exception')
 
         # distributed job
+        '''
         cb.called = False
         _db_read.task_ret = {'task_stat_id,task_id':[],
                              'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',1,2]],
@@ -257,103 +188,30 @@ class dbmethods_rpc_test(dbmethods_base):
         if cb.called is False:
             raise Exception('distributed job: callback not called')
         if isinstance(cb.ret,Exception):
-            logger.info('read_sql %r %r',_db_read.sql,_db_read.bindings)
-            logger.info('write_sql %r %r',_db_write.sql,_db_write.bindings)
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('distributed job: callback ret is Exception')
         if _db_write.sql[-1].startswith('update job set status'):
             raise Exception('distributed job: wrongly updated job status')
+        '''
+        
+        # db error
+        for i in range(6):
+            cb.called = False
+            self.mock.setup()
+            self.mock.failures = i + 1
+            self._db.rpc_finish_task(task_id,stats,callback=cb)
+            if cb.called is False:
+                raise Exception('db error error: callback not called')
+            if not isinstance(cb.ret,Exception):
+                logger.error('cb.ret = %r',cb.ret)
+                raise Exception('db error error: callback ret != Exception')
 
-        # set_status error
-        cb.called = False
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('new_task_stat')
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('set_status error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('set_status error: callback ret != Exception')
-
-        # _db_read error
-        cb.called = False
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete')
-        _db_read.task_ret = {}
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_read error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error: callback ret != Exception')
-
-        # _db_read error2
-        cb.called = False
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete')
-        _db_read.task_ret = {'task_stat_id,task_id':[],
-                             'task_id,task_status':[['task','complete']]}
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_read error2: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error2: callback ret != Exception')
-
-        # _db_read error3
-        cb.called = False
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete')
-        _db_read.task_ret = {'task_stat_id,task_id':[],
-                             'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]]}
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_read error3: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error3: callback ret != Exception')
-
-        # _db_write error
-        cb.called = False
-        _db_read.task_ret = {'task_stat_id,task_id':[],
-                             'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
-                             'task_id,task_status':[['task','complete']]}
-        increment_id.ret = {'task_stat':'new_task_stat'}
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete')
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_write error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_write error: callback ret != Exception')
 
         # update stats
         cb.called = False
-        _db_read.task_ret = {'task_stat_id,task_id':[['new_task_stat','task']],
-                             'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
-                             'task_id,task_status':[['task','complete']]}
-        increment_id.ret = {}
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete',json_encode(stats))
+        self.mock.setup()
 
-        self._db.rpc_finish_task('task',stats,callback=cb)
+        self._db.rpc_finish_task(task_id,stats,callback=cb)
 
         if cb.called is False:
             raise Exception('update stats: callback not called')
@@ -361,23 +219,6 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('update stats: callback ret is Exception')
 
-        # _db_write update error
-        cb.called = False
-        _db_read.task_ret = {'task_stat_id,task_id':[['new_task_stat','task']],
-                             'search.dataset_id,job_id,jobs_submitted,tasks_submitted':[['d','j',2,2]],
-                             'task_id,task_status':[['task','complete']]}
-        increment_id.ret = {}
-        _db_write.sql = []
-        _db_write.bindings = []
-        _db_write.task_ret = ('complete',)
-
-        self._db.rpc_finish_task('task',stats,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_write update error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_write update error: callback ret != Exception')
 
     @unittest_reporter
     def test_202_rpc_task_error(self):
@@ -492,7 +333,7 @@ class dbmethods_rpc_test(dbmethods_base):
         if not isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('sql_write_task error: callback ret != Exception')
-
+        '''
     @unittest_reporter
     def test_203_rpc_upload_logfile(self):
         """Test rpc_upload_logfile"""
