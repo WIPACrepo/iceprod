@@ -24,29 +24,33 @@ logger = logging.getLogger('config')
 class IceProdConfig(dict):
     """
     IceProd configuration.
-    
+
     The main iceprod configuration. Designed to be modified in-program,
     not worrying about hand-editing. Currently uses a json file as backing.
-    
+
     Use just like a dictionary. Note that load() and save() are called
     automatically, but are available for manual calling.
-    
+
     Note that this class is not thread-safe.
-    
+
     :param filename: filename for config file (optional)
+    :param defaults: use default values (optional: default True)
+    :param validate: turn validation on/off (optional: default True)
     """
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, defaults=True, validate=True):
         if filename:
             self.filename = filename
         else:
             self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
+        self.validate = validate
         self.loading = False
-        
+
         # load user input, apply defaults, and save
         self.load()
-        self.defaults()
+        if defaults:
+            self.defaults()
         self.save()
-    
+
     def defaults(self):
         """Set default values if unset."""
         try:
@@ -80,10 +84,10 @@ class IceProdConfig(dict):
             logger.info('with defaults: %s',self)
         except Exception:
             logger.warn('failed to load from default config file %s',
-                        self.filename, exc_info=True)
+                        filename, exc_info=True)
         finally:
             self.loading = False
-    
+
     def load(self):
         """Load config from file, overwriting current contents."""
         try:
@@ -91,21 +95,20 @@ class IceProdConfig(dict):
             if os.path.exists(self.filename):
                 text = open(self.filename).read()
                 obj = json_decode(text)
-                
-                filename = get_pkgdata_filename('iceprod.server',
-                                                'data/etc/iceprod_schema.json')
-                schema = json.load(open(filename))
 
-                try:
-                    if validate:
+                if validate and self.validate:
+                    try:
+                        filename = get_pkgdata_filename('iceprod.server',
+                                                        'data/etc/iceprod_schema.json')
+                        schema = json.load(open(filename))
                         validate(obj, schema)
-                    else:
-                        logger.warn('skipping validation of config')
-                except ValidationError as e:
-                    path = '.'.join(e.path)
-                    logger.warn('Validation error at "%s": %s' % (path, e.message))
-                    raise e
-                
+                    except ValidationError as e:
+                        path = '.'.join(e.path)
+                        logger.warn('Validation error at "%s": %s' % (path, e.message))
+                        raise e
+                else:
+                    logger.warn('skipping validation of config')
+
                 for key in obj:
                     self[key] = obj[key]
         except Exception:
@@ -113,18 +116,20 @@ class IceProdConfig(dict):
                         exc_info=True)
         finally:
             self.loading = False
-    
+
     def save(self):
         """Save config from file."""
         if not self.loading:
             try:
                 text = json_encode(self)
-                with open(self.filename,'w') as f:
+                # save securely
+                with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0600),'w') as f:
                     f.write(text)
+                os.rename(self.filename+'.tmp',self.filename)
             except Exception:
                 logger.warn('failed to save to config file %s',self.filename,
                             exc_info=True)
-    
+
     # insert save function into dict methods
     def __setitem__(self, key, value):
         super(IceProdConfig,self).__setitem__(key, value)

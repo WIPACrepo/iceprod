@@ -14,6 +14,7 @@ import tornado.httpclient
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
+from iceprod.server.gridftp import SiteGlobusProxy
 import iceprod.core.functions
 
 class StopException(Exception):
@@ -36,6 +37,7 @@ class queue(module.module):
         self.thread_running = 0
         self.thread_running_cv = Condition()
         self.global_queueing_lock = False
+        self.proxy = None
 
         self.start()
 
@@ -98,6 +100,12 @@ class queue(module.module):
         # get site_id
         site_id = self.cfg['site_id']
 
+        # set up x509 proxy
+        proxy_kwargs = {}
+        if 'gridftp_cfgfile' in self.cfg['queue']:
+            proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
+        self.proxy = SiteGlobusProxy(**proxy_kwargs)
+
         # some setup
         plugins = []
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
@@ -141,6 +149,7 @@ class queue(module.module):
 
         # instantiate all plugins that are required
         gridspec_types = {}
+        max_duration = 0
         for p,p_name,p_cfg in plugins_tmp:
             logger.warn('queueing plugin found: %s = %s',p_name,p_cfg['type'])
             # try instantiating the plugin
@@ -154,6 +163,10 @@ class queue(module.module):
                 desc = p_cfg['description'] if 'description' in p_cfg else ''
                 gridspec_types[site_id+'.'+p_name] = {'type':p_cfg['type'],
                         'description':desc}
+                duration = (self.cfg['queue']['max_task_queued_time'] +
+                            self.cfg['queue']['max_task_processing_time'])
+                if duration > max_duration:
+                    max_duration = duration
 
         # add gridspec and types to the db
         try:
@@ -182,7 +195,7 @@ class queue(module.module):
                 with self.check_run():
                     # check proxy cert
                     try:
-                        self.check_proxy()
+                        self.check_proxy(max_duration)
                     except Exception:
                         logger.error('error checking proxy',exc_info=True)
 
@@ -238,10 +251,12 @@ class queue(module.module):
             logger.warn('queue_loop stopped because of exception',
                                exc_info=True)
 
-    def check_proxy(self):
+    def check_proxy(self, duration=None):
         """Check the x509 proxy"""
-        # TODO: implement this
-        pass
+        if duration:
+            self.proxy.set_duration(duration)
+        self.proxy.update_proxy()
+        self.proxy.get_proxy()
 
     def global_queueing(self, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0,
