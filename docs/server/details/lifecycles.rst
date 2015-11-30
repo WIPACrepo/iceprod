@@ -25,3 +25,15 @@ Tasks
 -----
 
 .. image:: /static/lifecycle_task.png
+
+* idle: tasks in global queue
+* waiting: tasks in local queue
+* queued: tasks queued to a batch system
+* processing: tasks are running
+* suspended: if ``debug = True`` `suspend` instead of `reset` or `fail`
+* reset: shallow reset
+
+  * by default goes back to `waiting`
+  * if reset >= 3, back to `idle`
+
+* resume: hard reset

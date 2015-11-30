@@ -22,7 +22,7 @@ def main():
 
     for k in db_tables['status_graphs']:
         outfile_name = os.path.join('static','lifecycle_'+k+'.png')
-        if os.path.exists(outfile_name):
+        if os.path.exists(outfile_name) and os.path.getmtime(outfile_name) > os.path.getmtime(table_filename):
             print('graph',outfile_name,'already exists. skipping')
             continue
 
