@@ -18,7 +18,7 @@ except ImportError:
 from tornado.netutil import bind_sockets
 
 from iceprod.server import get_pkgdata_filename
-from iceprod.core.functions import getInterfaces
+from iceprod.core.functions import getInterfaces, get_local_ip_address
 
 def locateconfig():
     """Locate a config file"""
@@ -72,27 +72,12 @@ class BasicConfig(object):
         if (not force_tcp) and not is_mac and hasattr(socket, 'AF_UNIX'):
             self.messaging_url = 'ipc:/'+os.path.join(os.getcwd(),'unix_socket.sock')
         else:
-            # get a list of all ip addresses on this machine
-            ifaces = getInterfaces()
-            possible_ips = []
-            for i in ifaces:
-                for link in i.link:
-                    if link['type'] == 'ipv4':
-                        pos = 0
-                        for ip in possible_ips:
-                            if ip.startswith('127'):
-                                pos += 1
-                            else:
-                                break
-                        possible_ips.insert(pos,link['ip'])
-                    elif link['type'] == 'ipv6' and socket.has_ipv6:
-                        possible_ips.append(link['ip'])
             # attempt to bind to an ip
-            for ip in possible_ips:
-                for port in (random.randrange(1024,65535) for _ in range(8)):
-                    if bind_sockets(port,ip):
-                        self.messaging_url = 'tcp://%s:%d'%(ip,port)
-                        break
+            ip = get_local_ip_address()
+            for port in (random.randrange(1024,65535) for _ in range(8)):
+                if bind_sockets(port,ip):
+                    self.messaging_url = 'tcp://%s:%d'%(ip,port)
+                    break
                 else:
                     continue
                 break
