@@ -518,7 +518,7 @@ class queue(_Methods_Base):
         callback(True)
 
     @dbmethod
-    def queue_get_queueing_datasets(self,gridspec=None,callback=None):
+    def queue_get_queueing_datasets(self, gridspec=None, callback=None):
         """Get datasets that are currently in processing status on gridspec.
            Returns a list of dataset_ids"""
         def cb(ret):
@@ -543,9 +543,9 @@ class queue(_Methods_Base):
         self.db.sql_read_task(sql,bindings,callback=cb)
 
     @dbmethod
-    def queue_get_queueing_tasks(self,dataset_prios,gridspec=None,num=20,
-                                 resources=None,gridspec_assignment=None,
-                                 callback=None):
+    def queue_get_queueing_tasks(self, dataset_prios, gridspec=None, num=20,
+                                 resources=None, gridspec_assignment=None,
+                                 global_queueing=False, callback=None):
         """Get tasks to queue based on dataset priorities.
 
         :param dataset_prios: a dict of {dataset_id:priority} where sum(priorities)=1
@@ -553,18 +553,22 @@ class queue(_Methods_Base):
         :param num: (optional) number of tasks to queue
         :param resources: (optional) availble resources on grid
         :param gridspec_assignment: (optional) the grid to assign the tasks to
+        :param global_queueing: Global queueing mode (default: False)
         :returns: {task_id:task}
         """
         if callback is None:
             raise Exception('need a callback')
         if dataset_prios is None or not isinstance(dataset_prios,dict):
             raise Exception('dataset_prios not a dict')
-        cb = partial(self._queue_get_queueing_tasks_blocking,dataset_prios,
-                     gridspec,num,resources,gridspec_assignment,
+        cb = partial(self._queue_get_queueing_tasks_blocking,
+                     dataset_prios, gridspec, num, resources,
+                     gridspec_assignment, global_queueing=global_queueing,
                      callback=callback)
         self.db.non_blocking_task(cb)
-    def _queue_get_queueing_tasks_blocking(self,dataset_prios,gridspec,num,
-                                           resources,gridspec_assignment,
+    def _queue_get_queueing_tasks_blocking(self, dataset_prios, gridspec,
+                                           num, resources,
+                                           gridspec_assignment,
+                                           global_queueing,
                                            callback=None):
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
@@ -591,7 +595,8 @@ class queue(_Methods_Base):
         datasets = {k:OrderedDict() for k in dataset_prios}
         if ret:
             for dataset,task_id,depends,reqs,status in ret:
-                if status in ('idle','waiting'):
+                if (status == 'idle' or
+                    (not global_queueing and status == 'waiting')):
                     datasets[dataset][task_id] = (depends,reqs)
                 tasks[task_id] = status
         # get actual tasks
@@ -707,8 +712,6 @@ class queue(_Methods_Base):
                     tasks[t]['task_status'] = 'waiting'
                     if gridspec_assignment:
                         tasks[t]['gridspec'] = gridspec_assignment
-            # TODO: mark tasks such that they won't get queued on the next cycle
-            #       maybe 'queueing'? something else?
         callback(tasks)
 
     @dbmethod

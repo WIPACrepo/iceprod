@@ -33,7 +33,7 @@ from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 
-from .dbmethods_test import dbmethods_base,DB
+from .dbmethods_test import dbmethods_base
 
 
 class dbmethods_queue_test(dbmethods_base):

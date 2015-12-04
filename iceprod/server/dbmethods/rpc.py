@@ -518,6 +518,7 @@ class rpc(_Methods_Base):
                 logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
                 self.parent.queue_get_queueing_tasks(dataset_prios,
                                                      resources=resources,
+                                                     global_queueing=True,
                                                      callback=cb2)
 
         self.parent.queue_get_queueing_datasets(callback=cb)
