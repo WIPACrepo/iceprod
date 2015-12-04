@@ -19,7 +19,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
 logger = logging.getLogger('dbmethods.node')
 
@@ -32,7 +32,7 @@ class node(_Methods_Base):
     """
 
     @dbmethod
-    def node_update(self,hostname=None,domain=None,**kwargs):
+    def node_update(self,hostname=None,domain=None,callback=None,**kwargs):
         """
         Update node data.
 
@@ -44,14 +44,14 @@ class node(_Methods_Base):
         """
         if not (hostname and domain):
             logger.debug('node_update(): missing hostname or domain')
+            return
         elif 'gridspec' not in kwargs:
             logger.debug('node_update(): missing gridspec')
-        else:
-            cb = partial(self._node_update_blocking,hostname,domain,**kwargs)
-            self.db.blocking_task('node_stats',cb)
-    def _node_update_blocking(self,hostname,domain,ret,**kwargs):
+        cb = partial(self._node_update_blocking,hostname,domain,**kwargs)
+        self.db.blocking_task('node_stats',cb)
+    def _node_update_blocking(self,hostname,domain,**kwargs):
         conn,archive_conn = self.db._dbsetup()
-        now = datetime2str(datetime.utcnow())
+        now = nowstr()
         sql = 'select * from node where hostname = ? and domain = ?'
         bindings = (hostname,domain)
         try:
@@ -69,15 +69,22 @@ class node(_Methods_Base):
                         hostname,domain,now,json_encode(kwargs))
         else:
             # update row
-            row = self._list_to_dict('node',ret[0])
-            old_stats = json_decode(row['stats'])
-            stats = kwargs.copy()
-            for k in set(stats) & set(old_stats):
-                for kk in set(old_stats[k]) - set(stats):
-                    stats[k][kk] = old_stats[k][kk]
-            sql = 'update node set last_update=?, stats=? where node_id = ?'
-            bindings = (now,json_encode(stats),row['node_id'])
-
+            try:
+                row = self._list_to_dict('node',ret[0])
+                old_stats = json_decode(row['stats'])
+                stats = kwargs.copy()
+                for k in set(stats) & set(old_stats):
+                    if (isinstance(old_stats[k],dict) and
+                        isinstance(stats[k],dict)):
+                        for kk in set(old_stats[k]) - set(stats[k]):
+                            stats[k][kk] = old_stats[k][kk]
+                for k in set(old_stats) - set(stats):
+                    stats[k] = old_stats[k]
+                sql = 'update node set last_update=?, stats=? where node_id = ?'
+                bindings = (now,json_encode(stats),row['node_id'])
+            except Exception:
+                logger.warn('error in _node_update_blocking()',
+                            exc_info=True)
         try:
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:
@@ -103,7 +110,7 @@ class node(_Methods_Base):
         old_date = datetime.utcnow()-timedelta(days=node_include_age)
         bindings = (datetime2str(old_date),)
         cb = partial(self._node_collate_resources_cb,site_id=site_id)
-        self.db.sql_read_task(sql,tuple(),callback=cb)
+        self.db.sql_read_task(sql,bindings,callback=cb)
     def _node_collate_resources_cb(self,ret,site_id=None):
         if isinstance(ret,Exception):
             logger.info('exception in node_collate_resources: %r',ret)
@@ -119,10 +126,12 @@ class node(_Methods_Base):
                     if gridspec not in grid_resources:
                         grid_resources[gridspec] = {}
                     for resource in set(Node_Resources)&set(stats):
-                        if resource in grid_resources[gridspec]:
-                            if (isinstance(grid_resources[gridspec][resource],Number)
-                                and isinstance(stats[resource],Number)):
-                                grid_resources[gridspec][resource] += stats[resource]
+                        if not stats[resource]:
+                            continue # resource is 0 or False
+                        if (resource in grid_resources[gridspec]
+                            and isinstance(grid_resources[gridspec][resource],Number)
+                            and isinstance(stats[resource],Number)):
+                            grid_resources[gridspec][resource] += stats[resource]
                         else:
                             grid_resources[gridspec][resource] = stats[resource]
                 if grid_resources:
@@ -156,6 +165,8 @@ class node(_Methods_Base):
                             queues[gridspec]['resources'] = dict.from_keys(gg.keys(),[0,0])
                         qq = queues[gridspec]['resources']
                         for r in gg:
+                            if r not in qq:
+                                qq[r] = [0,0]
                             if isinstance(gg[r],Number):
                                 qq[r][1] += gg[r]-qq[r][0]
                                 if qq[r][1] < 0:
@@ -166,7 +177,7 @@ class node(_Methods_Base):
                         for r in set(qq)-set(gg):
                             qq[r] = [0,0]
                 sql = 'update site set queues = ? where site_id = ?'
-                bindings = (json_encode(queues),suite_id)
+                bindings = (json_encode(queues),site_id)
                 try:
                     self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception:
@@ -188,7 +199,7 @@ class node(_Methods_Base):
         if not site_id:
             callback(Exception('no site_id defined'))
             return
-        sql = 'select queues from sites where site_id = ?'
+        sql = 'select queues from site where site_id = ?'
         bindings = (site_id,)
         cb = partial(self._node_get_site_resources_cb,site_id,empty_only=empty_only,
                      callback=callback)
@@ -207,11 +218,14 @@ class node(_Methods_Base):
                     if 'resources' not in grids:
                         continue
                     for k in grids['resources']:
-                        if (k in resources and
-                            isinstance(grids['resources'][k][0],Number)):
-                            resources[k] += grids['resources'][k][index]
+                        if isinstance(grids['resources'][k][0],Number):
+                            if k in resources:
+                                resources[k] += grids['resources'][k][index]
+                            else:
+                                resources[k] = grids['resources'][k][index]
                         else:
                             resources[k] = grids['resources'][k][0]
-                return resources
+                callback(resources)
             except Exception as e:
+                logger.warn('error in get_site_resources',exc_info=True)
                 callback(e)

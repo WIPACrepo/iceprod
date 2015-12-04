@@ -270,7 +270,7 @@ class dbmethods_auth_test(dbmethods_base):
                 {'site_id':1,'auth_key':'key'},
             ],
             'setting':[
-                {'site_id':1},
+                {'site_id':1,'passkey_last':'0'},
             ],
             'passkey':[
                 {'key':key,'expire':dbmethods.datetime2str(exp)}
@@ -284,6 +284,7 @@ class dbmethods_auth_test(dbmethods_base):
 
         # everything working
         cb.called = False
+        self.mock.setup(tables)
 
         self._db.auth_new_passkey(callback=cb)
 
@@ -335,31 +336,18 @@ class dbmethods_auth_test(dbmethods_base):
         else:
             raise Exception('bad expiration: did not raise Exception')
 
-        # sql_write_task error
-        self.mock.failures = True
+        # sql error
+        self.mock.setup(tables)
+        self.mock.failures = 1
         exp = 10
         cb.called = False
-
         self._db.auth_new_passkey(exp,callback=cb)
 
         if cb.called is False:
-            raise Exception('sql_write_task error: callback not called')
+            raise Exception('sql error %d: callback not called',i)
         if not isinstance(cb.ret,Exception):
-            raise Exception('sql_write_task error: did not raise exception')
-
-        # increment_id error
-        exp = 10
-        cb.called = False
-
-        self.mock.failures = False
-        self._db.auth_new_passkey(exp,callback=cb)
-        cb.called = False
-        self._db.auth_authorize_task(cb.ret,callback=cb)
-
-        if cb.ret is False:
-            raise Exception('increment_id error: callback not called')
-        else:
-            raise Exception('increment_id error: did not raise Exception')
+            logger.info('ret: %r',cb.ret)
+            raise Exception('sql error %d: did not raise exception',i)
 
     @unittest_reporter
     def test_401_auth_get_passkey(self):

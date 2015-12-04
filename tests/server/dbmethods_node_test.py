@@ -4,7 +4,7 @@ Test script for dbmethods.node
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import unittest_reporter, glob_tests, cmp_dict
 
 import logging
 logger = logging.getLogger('dbmethods_test')
@@ -32,168 +32,321 @@ from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 
-from .dbmethods_test import dbmethods_base,DB
+from .dbmethods_test import dbmethods_base
 
 
 class dbmethods_node_test(dbmethods_base):
     @unittest_reporter
-    def test_600_cron_dataset_completion(self):
-        """Test cron_dataset_completion"""
-        raise Exception('fixme')
-        def sql_read_task(sql,bindings,callback):
-            sql_read_task.sql = sql
-            sql_read_task.bindings = bindings
-            if bindings[0] in sql_read_task.task_ret:
-                callback(sql_read_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        def sql_write_task(sql,bindings,callback):
-            sql_write_task.sql = sql
-            sql_write_task.bindings = bindings
-            if isinstance(sql,Iterable):
-                bindings = bindings[0]
-            if bindings[0] in sql_write_task.task_ret:
-                callback(sql_write_task.task_ret[bindings[0]])
-            else:
-                callback(Exception('sql error'))
-        flexmock(DB).should_receive('sql_read_task').replace_with(sql_read_task)
-        flexmock(DB).should_receive('sql_write_task').replace_with(sql_write_task)
+    def test_01_node_update(self):
+        """Test node_update"""
+        self.mock.setup({'node':[]})
+        hostname = 'host'
+        domain = 'domain'
+        stats = {'stat1':1,'stat2':2}
+
+        self._db.node_update(hostname=hostname,domain=domain,**stats)
+
+        endtables = self.mock.get(['node'])
+        if len(endtables['node']) != 1:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('node table does not have 1 entry')
+        if endtables['node'][0]['hostname'] != hostname:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('bad hostname')
+        if endtables['node'][0]['domain'] != domain:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('bad domain')
+        if json_decode(endtables['node'][0]['stats']) != stats:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('bad stats')
+
+        # add more stats to same node
+        morestats = {'stat2':4,'stat3':3}
+        self._db.node_update(hostname=hostname,domain=domain,**morestats)
+
+        endtables = self.mock.get(['node'])
+        if len(endtables['node']) != 1:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('node table does not have 1 entry')
+        retstats = stats.copy()
+        retstats.update(morestats)
+        if json_decode(endtables['node'][0]['stats']) != retstats:
+            logger.info('stats: %s',endtables['node'][0]['stats'])
+            logger.info('expecting: %r',retstats)
+            raise Exception('bad more stats')
+
+        # failed updates
+        self.mock.setup({'node':[]})
+        self._db.node_update()
+        endtables = self.mock.get(['node'])
+        if endtables['node']:
+            raise Exception('node updated when nothing to update')
+
+        # failed updates
+        for i in range(1,3):
+            self.mock.setup({'node':[]})
+            self.mock.failures = i
+            self._db.node_update(hostname=hostname,domain=domain,**stats)
+            endtables = self.mock.get(['node'])
+            if endtables['node']:
+                raise Exception('node updated when failure occurred')
+
+    @unittest_reporter
+    def test_02_node_collate_resources(self):
+        """Test node_collate_resources"""
+        site_id = 'thesite'
+        gridspec = 'gspec'
+        tables = {
+            'site':[
+                {'site_id':site_id,'name':'n','institution':'inst',
+                 'queues':'{"'+gridspec+'":{"type":"condor","description":"desc","resources":{}}}',
+                 'auth_key':None,'website_url':'','version':'2',
+                 'last_update':dbmethods.nowstr(),
+                 'admin_name':'','admin_email':''},
+            ],
+            'node':[
+                {'node_id':'a','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","memory":4}'},
+            ],
+        }
+
+        self.mock.setup(tables)
+        self._db.node_collate_resources(site_id)
+
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        queues = json_decode(endtables['site'][0]['queues'])
+        if gridspec not in queues:
+            logger.info('queues: %r',queues)
+            raise Exception('bad queues')
+        if 'memory' not in queues[gridspec]['resources']:
+            logger.info('queues: %r',queues)
+            raise Exception('no memory')
+        if queues[gridspec]['resources']['memory'] != [4,4]:
+            logger.info('queues: %r',queues)
+            raise Exception('memory != [4,4]')
+
+        # test for no site_id
+        self.mock.setup(tables)
+        self._db.node_collate_resources()
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        if not cmp_dict(endtables['site'][0],tables['site'][0]):
+            logger.info('begin: %r',tables['site'][0])
+            logger.info('end: %r',endtables['site'][0])
+            raise Exception('site table modified')
+
+        # test for no nodes
+        self.mock.setup({'site':tables['site'],'node':[]})
+        self._db.node_collate_resources(site_id)
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        if not cmp_dict(endtables['site'][0],tables['site'][0]):
+            logger.info('begin: %r',tables['site'][0])
+            logger.info('end: %r',endtables['site'][0])
+            raise Exception('site table modified')
+
+        tables2 = {
+            'site':tables['site'],
+            'node':[
+                {'node_id':'a','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","memory":4,"cpu":0}'},
+            ],
+        }
+
+        # test for 0 or false resources
+        self.mock.setup(tables2)
+        self._db.node_collate_resources(site_id)
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        queues = json_decode(endtables['site'][0]['queues'])
+        if 'memory' not in queues[gridspec]['resources']:
+            logger.info('queues: %r',queues)
+            raise Exception('no memory')
+        if 'cpu' in queues[gridspec]['resources']:
+            logger.info('queues: %r',queues)
+            raise Exception('cpu appeared but was 0')
+
+        tables3 = {
+            'site':tables['site'],
+            'node':[
+                {'node_id':'a','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","memory":4}'},
+                {'node_id':'b','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","memory":4}'},
+                {'node_id':'c','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","memory":4}'},
+            ],
+        }
+
+        # test for summing resources
+        self.mock.setup(tables3)
+        self._db.node_collate_resources(site_id)
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        queues = json_decode(endtables['site'][0]['queues'])
+        if 'memory' not in queues[gridspec]['resources']:
+            logger.info('queues: %r',queues)
+            raise Exception('no memory')
+        if queues[gridspec]['resources']['memory'] != [12,12]:
+            logger.info('queues: %r',queues)
+            raise Exception('memory != [12,12]')
+
+        tables4 = {
+            'site':tables['site'],
+            'node':[
+                {'node_id':'a','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","gpu":"gtx980"}'},
+                {'node_id':'b','hostname':'host1','domain':'d1',
+                 'last_update':dbmethods.nowstr(),
+                 'stats':'{"gridspec":"'+gridspec+'","gpu":"gtx980"}'},
+            ],
+        }
+
+        # test for non-number resources
+        self.mock.setup(tables4)
+        self._db.node_collate_resources(site_id)
+        endtables = self.mock.get(['site'])
+        if len(endtables['site']) != 1:
+            logger.info('site: %r',endtables['site'])
+            raise Exception('site table does not have 1 entry')
+        queues = json_decode(endtables['site'][0]['queues'])
+        if 'gpu' not in queues[gridspec]['resources']:
+            logger.info('queues: %r',queues)
+            raise Exception('missing gpu')
+        if queues[gridspec]['resources']['gpu'] != ["gtx980",0]:
+            logger.info('queues: %r',queues)
+            raise Exception('gpu != ["gtx980",0]')
+
+        # test for sql errors
+        for i in range(1,4):
+            self.mock.setup(tables)
+            self.mock.failures = i
+            self._db.node_collate_resources(site_id)
+            endtables = self.mock.get(['site'])
+            if len(endtables['site']) != 1:
+                logger.info('site: %r',endtables['site'])
+                raise Exception('site table does not have 1 entry')
+            if not cmp_dict(endtables['site'][0],tables['site'][0]):
+                logger.info('begin: %r',tables['site'][0])
+                logger.info('end: %r',endtables['site'][0])
+                raise Exception('site table modified')
+
+    @unittest_reporter
+    def test_03_node_get_site_resources(self):
+        """Test node_get_site_resources"""
+        site_id = 'thesite'
+        gridspec = 'gspec'
+        resources = '{"memory":[4,2],"cpu":[8,6]}'
+        tables = {
+            'site':[
+                {'site_id':site_id,'name':'n','institution':'inst',
+                 'queues':'{"'+gridspec+'":{"type":"condor","description":"desc","resources":'+resources+'}}',
+                 'auth_key':None,'website_url':'','version':'2',
+                 'last_update':dbmethods.nowstr(),
+                 'admin_name':'','admin_email':''},
+            ],
+        }
 
         def cb(ret):
-            cb.called = True
             cb.ret = ret
-        cb.called = False
 
-        datasets = [['d1',1,1],
-                    ['d2',2,4],
-                    ['d3',3,9],
-                    ['d4',1,1]]
-        status = [[datasets[0][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[1][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'failed'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[2][0],'complete'],
-                  [datasets[3][0],'suspended']
-                 ]
+        self.mock.setup(tables)
+        cb.ret = False
+        self._db.node_get_site_resources(site_id,callback=cb)
 
-        # everything working
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:status[0:1]}
-        sql_write_task.task_ret = {'complete':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('everything working: callback not called')
         if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('everything working: callback ret is Exception')
+            logger.info(cb.ret)
+            raise Exception('exception raised in get_site_resources')
+        ret_resources = {"memory":2,"cpu":6}
+        if cb.ret != ret_resources:
+            logger.info('expected: %r',ret_resources)
+            logger.info('got: %r',cb.ret)
+            raise Exception('did not get expected resources')
 
-        # no processing datasets
-        cb.called = False
-        sql_read_task.task_ret = {'processing':[]}
-        sql_write_task.task_ret = {}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('no processing datasets: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no processing datasets: callback ret is Exception')
-
-        # tasks not completed
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:[[datasets[0][0],'processing']]}
-        sql_write_task.task_ret = {}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('tasks not completed: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('tasks not completed: callback ret is Exception')
-
-        # sql_read_task error
-        cb.called = False
-        sql_read_task.task_ret = {}
-        sql_write_task.task_ret = {'complete':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_read_task error: callback not called')
+        # test no site_id
+        self.mock.setup(tables)
+        cb.ret = False
+        self._db.node_get_site_resources(callback=cb)
         if not isinstance(cb.ret,Exception):
-            raise Exception('sql_read_task error: callback ret != Exception')
+            raise Exception('did not return exception')
 
-        # sql_read_task error2
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1]}
-        sql_write_task.task_ret = {'complete':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_read_task error2: callback not called')
+        # test no sites
+        self.mock.setup({'site':[]})
+        cb.ret = False
+        self._db.node_get_site_resources(site_id,callback=cb)
         if not isinstance(cb.ret,Exception):
-            raise Exception('sql_read_task error2: callback ret != Exception')
+            raise Exception('did not return exception')
 
-        # sql_write_task error
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:status[0:1]}
-        sql_write_task.task_ret = {}
+        # test no resources
+        tables2 = {
+            'site':[
+                {'site_id':site_id,'name':'n','institution':'inst',
+                 'queues':'{"'+gridspec+'":{"type":"condor","description":"desc"}}',
+                 'auth_key':None,'website_url':'','version':'2',
+                 'last_update':dbmethods.nowstr(),
+                 'admin_name':'','admin_email':''},
+            ],
+        }
+        self.mock.setup(tables2)
+        cb.ret = False
+        self._db.node_get_site_resources(site_id,callback=cb)
+        if isinstance(cb.ret,Exception):
+            logger.info(cb.ret)
+            raise Exception('exception raised in get_site_resources')
+        if cb.ret != {}:
+            logger.info('got: %r',cb.ret)
+            raise Exception('did not no resources')
 
-        self._db.cron_dataset_completion(callback=cb)
+        # test multiple queues
+        resources2 = '{"memory":[4,2],"gpu":["gtx980",0]}'
+        tables = {
+            'site':[
+                {'site_id':site_id,'name':'n','institution':'inst',
+                 'queues':'{"'+gridspec+'":{"type":"condor","description":"desc","resources":'+resources+'},'
+                           '"gs2":{"type":"condor","description":"desc","resources":'+resources2+'}}',
+                 'auth_key':None,'website_url':'','version':'2',
+                 'last_update':dbmethods.nowstr(),
+                 'admin_name':'','admin_email':''},
+            ],
+        }
+        self.mock.setup(tables)
+        cb.ret = False
+        self._db.node_get_site_resources(site_id,callback=cb)
+        if isinstance(cb.ret,Exception):
+            logger.info(cb.ret)
+            raise Exception('exception raised in get_site_resources')
+        ret_resources = {"memory":4,"cpu":6,"gpu":"gtx980"}
+        if cb.ret != ret_resources:
+            logger.info('expected: %r',ret_resources)
+            logger.info('got: %r',cb.ret)
+            raise Exception('did not get expected resources')
 
-        if cb.called is False:
-            raise Exception('sql_write_task error: callback not called')
+
+        # test sql error
+        self.mock.setup(tables)
+        self.mock.failures = 1
+        cb.ret = False
+        self._db.node_get_site_resources(site_id,callback=cb)
         if not isinstance(cb.ret,Exception):
-            raise Exception('sql_write_task error: callback ret != Exception')
+            raise Exception('did not return exception')
 
-        # multiple datasets of same status
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets[0:2],
-                                  datasets[0][0]:status[0:5]}
-        sql_write_task.task_ret = {'complete':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('multiple datasets of same status: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('read_sql %r %r',sql_read_task.sql,sql_read_task.bindings)
-            logger.info('write_sql %r %r',sql_write_task.sql,sql_write_task.bindings)
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('multiple datasets of same status: callback ret is Exception')
-
-        # multiple datasets of different status
-        cb.called = False
-        sql_read_task.task_ret = {'processing':datasets,
-                                  datasets[0][0]:status}
-        sql_write_task.task_ret = {'complete':{},
-                                   'errors':{},
-                                   'suspended':{}}
-
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('multiple datasets of different status: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('multiple datasets of different status: callback ret is Exception')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
