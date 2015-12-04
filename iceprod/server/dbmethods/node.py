@@ -40,7 +40,7 @@ class node(_Methods_Base):
 
         :param hostname: hostname of node
         :param domain: domain of node
-        :param **kwargs: gridspec and other statistics
+        :param \*\*kwargs: gridspec and other statistics
         """
         if not (hostname and domain):
             logger.debug('node_update(): missing hostname or domain')
@@ -102,6 +102,7 @@ class node(_Methods_Base):
         :param site_id: The site to assign resources to
         :param node_include_age: The number of days a node can age before
                                  not being included.
+
         (Note: callback is a dummy parameter)
         """
         if not site_id:
