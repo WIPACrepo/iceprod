@@ -150,6 +150,10 @@ class queue(module.module):
         # instantiate all plugins that are required
         gridspec_types = {}
         max_duration = 0
+        if 'max_task_queued_time' in self.cfg['queue']:
+            max_duration += self.cfg['queue']['max_task_queued_time']
+        if 'max_task_processing_time' in self.cfg['queue']:
+            max_duration += self.cfg['queue']['max_task_processing_time']
         for p,p_name,p_cfg in plugins_tmp:
             logger.warn('queueing plugin found: %s = %s',p_name,p_cfg['type'])
             # try instantiating the plugin
@@ -163,8 +167,11 @@ class queue(module.module):
                 desc = p_cfg['description'] if 'description' in p_cfg else ''
                 gridspec_types[site_id+'.'+p_name] = {'type':p_cfg['type'],
                         'description':desc}
-                duration = (self.cfg['queue']['max_task_queued_time'] +
-                            self.cfg['queue']['max_task_processing_time'])
+                duration = 0
+                if 'max_task_queued_time' in p_cfg:
+                    duration += p_cfg['max_task_queued_time']
+                if 'max_task_processing_time' in p_cfg:
+                    duration += p_cfg['max_task_processing_time']
                 if duration > max_duration:
                     max_duration = duration
 
@@ -256,7 +263,7 @@ class queue(module.module):
         if duration:
             self.proxy.set_duration(duration)
         self.proxy.update_proxy()
-        self.proxy.get_proxy()
+        self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
 
     def global_queueing(self, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0,

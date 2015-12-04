@@ -38,6 +38,18 @@ from iceprod.server import module
 from iceprod.server import basic_config
 from iceprod.server.modules.queue import queue
 
+
+class FakeProxy:
+    def __init__(self,cfgfile=None,duration=None):
+        self.called = []
+    def set_duration(self,dur):
+        self.called.append(['set_duration',dur])
+    def update_proxy(self):
+        self.called.append(['update_proxy'])
+    def get_proxy(self):
+        self.called.append(['get_proxy'])
+        return 'theproxy'
+
 class queue_test(unittest.TestCase):
     def setUp(self):
         super(queue_test,self).setUp()
@@ -334,17 +346,22 @@ class queue_test(unittest.TestCase):
                'queue':{'init_queue_interval':0.1,
                         'queue_interval':1,
                         'task_buffer':10,
-                        'plugin1':{'type':'Test1','description':'d'},
+                        'max_task_queued_time':20,
+                        'max_task_processing_time':30,
+                        'plugin1':{'type':'Test1','description':'d',
+                                   'max_task_queued_time':40,
+                                   'max_task_processing_time':60},
                        }
               }
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
+        if not q:
+            raise Exception('did not return queue object')
         q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
-        if not q:
-            raise Exception('did not return queue object')
+        q.proxy = FakeProxy()
 
         q._start()
         time.sleep(1)
@@ -410,11 +427,12 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
+        if not q:
+            raise Exception('did not return queue object')
         q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
-        if not q:
-            raise Exception('did not return queue object')
+        q.proxy = FakeProxy()
 
         q._start()
         time.sleep(1)
@@ -493,11 +511,12 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
+        if not q:
+            raise Exception('did not return queue object')
         q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'queue_buffer_jobs_tasks':None}}
         q.cfg = cfg
-        if not q:
-            raise Exception('did not return queue object')
+        q.proxy = FakeProxy()
 
         q._start()
         time.sleep(1)
@@ -523,6 +542,59 @@ class queue_test(unittest.TestCase):
             time.sleep(0.5)
             if q.queue_thread.is_alive():
                 raise Exception('queue thread still running')
+
+    @unittest_reporter
+    def test_19_check_proxy(self):
+        """Test check_proxy"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(queue).should_receive('start').replace_with(start)
+
+        # make cfg
+        cfg = {'site_id':'thesite',
+               'queue':{'init_queue_interval':0.1,
+                        'queue_interval':1,
+                        'task_buffer':10,
+                        'plugin1':{'type':'Test1dag','description':'d'},
+                       },
+               'master':{'url':'a://url'}
+              }
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        q = queue(bcfg)
+        resources = {'cpus':12,'gpus':3}
+        q.messaging = messaging_mock()
+        q.messaging.ret = {'db':{'node_get_site_resources':resources,
+                                 'misc_update_tables':None}
+                          }
+        q.cfg = cfg
+        if not q:
+            raise Exception('did not return queue object')
+
+        q.proxy = FakeProxy()
+        q.check_proxy()
+
+        if not q.proxy.called:
+            raise Exception('FakeProxy not called')
+        if q.proxy.called[0] != ['update_proxy']:
+            raise Exception('update_proxy not called')
+        if q.proxy.called[1] != ['get_proxy']:
+            raise Exception('get_proxy not called')
+
+        # now try to set duration as well
+        q.proxy = FakeProxy()
+        q.check_proxy(12)
+
+        if not q.proxy.called:
+            raise Exception('FakeProxy not called')
+        if q.proxy.called[0] != ['set_duration',12]:
+            raise Exception('set_duration not called')
+        if q.proxy.called[1] != ['update_proxy']:
+            raise Exception('update_proxy not called')
+        if q.proxy.called[2] != ['get_proxy']:
+            raise Exception('get_proxy not called')
+
 
     @unittest_reporter
     def test_20_global_queueing(self):
@@ -557,14 +629,15 @@ class queue_test(unittest.TestCase):
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'
         q = queue(bcfg)
+        if not q:
+            raise Exception('did not return queue object')
         resources = {'cpus':12,'gpus':3}
         q.messaging = messaging_mock()
         q.messaging.ret = {'db':{'node_get_site_resources':resources,
                                  'misc_update_tables':None}
                           }
         q.cfg = cfg
-        if not q:
-            raise Exception('did not return queue object')
+        q.proxy = FakeProxy()
 
         http.ret = Response(error=None,body='{"jsonrpc":"2.0","result":{},"id":1}')
         http.called = False
