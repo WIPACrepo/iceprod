@@ -184,6 +184,40 @@ class dbmethods_cron_test(dbmethods_base):
             logger.info('%r\n%r',tables2,end_tables)
             raise Exception('multiple datasets of different status: bad end_tables')
 
+    @unittest_reporter
+    def test_100_cron_remove_old_passkeys(self):
+        from datetime import datetime, timedelta
+        now = datetime.utcnow()
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        tables = {
+            'passkey':[
+                {'passkey_id': 'p0', 'key': 'k0', 'expire': (now + timedelta(1)).isoformat()},
+                {'passkey_id': 'p1', 'key': 'k1', 'expire': (now + timedelta(2)).isoformat()},
+                {'passkey_id': 'p2', 'key': 'k2', 'expire': (now + timedelta(-2)).isoformat()},
+                {'passkey_id': 'p3', 'key': 'k3', 'expire': (now + timedelta(-1)).isoformat()},
+            ]
+        }
+        self.mock.setup(tables)
+        cb.called = False
+        self._db.cron_remove_old_passkeys(callback = cb)
+        if not cb.called: raise Exception('Callback not called')
+        if isinstance(cb.ret, Exception): raise Exception('Callback ret is Exception: "%r"' % cb.ret)
+
+        passkeys = self.mock.get(['passkey'])['passkey']
+        keys = [k['key'] for k in passkeys]
+        correct = ('k0' in keys) and ('k1' in keys) and (not 'k2' in keys) and (not 'k3' in keys)
+        if not correct: raise Exception('Function result not correct')
+
+
+        self.mock.setup()
+        self.mock.failures = 1
+        cb.called = False
+        self._db.cron_remove_old_passkeys(callback = cb)
+        if not cb.called: raise Exception('Callback not called')
+        if not isinstance(cb.ret, Exception): raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
