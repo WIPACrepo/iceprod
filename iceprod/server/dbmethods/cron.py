@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import partial
 from collections import OrderedDict
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
 logger = logging.getLogger('dbmethods.cron')
 
@@ -74,7 +74,7 @@ class cron(_Methods_Base):
                         dataset_status[dataset_id] = 'suspended'
             if dataset_status:
                 # update dataset statuses
-                now = datetime2str(datetime.utcnow())
+                now = nowstr()
                 statuses = {}
                 for dataset_id in dataset_status:
                     status = dataset_status[dataset_id]
@@ -84,6 +84,8 @@ class cron(_Methods_Base):
                     statuses[status].add(dataset_id)
                 multi_sql = []
                 multi_bindings = []
+                master_sql = []
+                master_bindings = []
                 for s in statuses:
                     bindings = (s,)
                     sql = 'update dataset set status = ?'
@@ -96,15 +98,40 @@ class cron(_Methods_Base):
                     bindings += tuple([d for d in statuses[s]])
                     multi_sql.append(sql)
                     multi_bindings.append(bindings)
+                    # now prepare individual master sqls
+                    bindings = (s,)
+                    sql = 'update dataset set status = ?'
+                    if s == 'complete':
+                        sql += ', end_date = ? '
+                        bindings += (now,)
+                    sql += ' where dataset_id = ? '
+                    for d in statuses[s]:
+                        master_sql.append(sql)
+                        master_bindings.append(bindings+(d,))
                 cb = partial(self._cron_dataset_completion_callback3,
+                             master_sql,master_bindings,now,
                              callback=callback)
                 self.db.sql_write_task(multi_sql,multi_bindings,callback=cb)
             else:
                 callback(True)
-    def _cron_dataset_completion_callback3(self,ret,callback=None):
+    def _cron_dataset_completion_callback3(self,master_sql,
+                                           master_bindings,now,ret,
+                                           callback=None):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                for sql,bindings in zip(master_sql,master_bindings):
+                    bindings3 = ('dataset',bindings[-1],now)
+                    try:
+                        self.db._db_write(conn,sql3,bindings3,None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+            else:
+                for sql,bindings in zip(master_sql,master_bindings):
+                    self._send_to_master(('dataset',bindings[-1],now,sql,bindings))
             # TODO: consolidate dataset statistics
             callback(True)
 

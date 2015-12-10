@@ -59,6 +59,8 @@ class FakeThreadPool:
         try:
             ret = func(*args,**kwargs)
         except Exception as e:
+            logger.debug('caught exception from threadpool thread',
+                         exc_info=True)
             ret = e
         if cb:
             cb(ret)
@@ -156,6 +158,7 @@ class dbmethods_base(unittest.TestCase):
         self.mock = DB()
         self.mock.start()
         self._db = dbmethods.DBMethods(self.mock)
+        self._db.db.messaging = messaging_mock()
 
     def tearDown(self):
         self.mock.stop()
@@ -354,8 +357,7 @@ class dbmethods_test(dbmethods_base):
     @unittest_reporter
     def test_010_send_to_master(self):
         """Test send_to_master"""
-        m = messaging_mock()
-        self._db.db.messaging = m
+        m = self._db.db.messaging
 
         def cb(ret=None):
             cb.ret = ret

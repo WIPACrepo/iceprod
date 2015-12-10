@@ -123,7 +123,18 @@ class _Methods_Base():
         return ret
 
     def _send_to_master(self, updates, callback=None):
-        self.db.messaging.master_updater.add(updates, callback=callback)
+        """Send an update to the master"""
+        try:
+            self.db.messaging.master_updater.add(updates, callback=callback)
+        except Exception:
+            logger.warn('_send_to_master() error',exc_info=True)
+
+    def _is_master(self):
+        """Test if this is the master"""
+        return ('master' in self.db.cfg and
+                'status' in self.db.cfg['master'] and
+                self.db.cfg['master']['status'])
+
 
 def filtered_input(input_data):
     """Filter input to sql in cases where we can't use bindings.

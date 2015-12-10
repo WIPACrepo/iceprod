@@ -14,7 +14,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
 logger = logging.getLogger('dbmethods.queue')
 
@@ -101,6 +101,16 @@ class queue(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('site',site_id,nowstr())
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('site',site_id,nowstr(),sql,bindings))
             callback(True)
 
     @dbmethod
@@ -138,7 +148,7 @@ class queue(_Methods_Base):
         self.db.non_blocking_task(cb)
     def _queue_set_task_status_blocking(self,task,status,callback=None):
         conn,archive_conn = self.db._dbsetup()
-        now = datetime.utcnow()
+        now = nowstr()
         if isinstance(task,String):
             # single task
             sql = 'update search set task_status = ? '
@@ -146,7 +156,7 @@ class queue(_Methods_Base):
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, status_changed = ? where task_id = ?'
             bindings = (status,task)
-            bindings2 = (status,datetime2str(now),task)
+            bindings2 = (status,now,task)
         elif isinstance(task,Iterable):
             b = ','.join(['?' for _ in xrange(len(task))])
             sql = 'update search set task_status = ? '
@@ -154,7 +164,10 @@ class queue(_Methods_Base):
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, status_changed = ? where task_id in ('+b+')'
             bindings = (status,)+tuple(task)
-            bindings2 = (status,datetime2str(now))+tuple(task)
+            bindings2 = (status,now)+tuple(task)
+        else:
+            callback(Exception('unknown type for task'))
+            return
         try:
             ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
         except Exception as e:
@@ -162,6 +175,27 @@ class queue(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if isinstance(task,String):
+                task=(task,)
+            for t in task:
+                sql = 'update search set task_status = ? '
+                sql += ' where task_id = ?'
+                sql2 = 'update task set prev_status = status, '
+                sql2 += ' status = ?, status_changed = ? where task_id = ?'
+                bindings = (status,t)
+                bindings2 = (status,now,t)
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    bindings3 = ('search',t,now)
+                    bindings4 = ('task',t,now)
+                    try:
+                        self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master(('search',t,now,sql,bindings))
+                    self._send_to_master(('task',t,now,sql2,bindings2))
             callback(True)
 
     @dbmethod
@@ -253,7 +287,20 @@ class queue(_Methods_Base):
         sql = 'update task set submit_dir = ? '
         sql += ' where task_id = ?'
         bindings = (submit_dir,task)
-        self.db.sql_write_task(sql,bindings,callback=callback)
+        def cb(ret):
+            if not isinstance(ret,Exception):
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    bindings3 = ('task',task,nowstr())
+                    try:
+                        self.db._db_write(conn,sql3,bindings3,None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master(('task',task,nowstr(),sql,bindings))
+            callback(ret)
+        self.db.sql_write_task(sql,bindings,callback=cb)
 
     @dbmethod
     def queue_buffer_jobs_tasks(self,gridspec,num_tasks,callback=None):
@@ -369,7 +416,7 @@ class queue(_Methods_Base):
                                     callback=None):
         logger.debug('in _buffer_jobs_tasks_blocking')
         conn,archive_conn = self.db._dbsetup()
-        now = datetime2str(datetime.utcnow())
+        now = nowstr()
 
         # get dataset config
         sql = 'select dataset_id,config_data from config where dataset_id in '
@@ -411,6 +458,20 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
+            else:
+                if self._is_master():
+                    for j in jobs:
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('job',j[0],now)
+                        try:
+                            self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                else:
+                    sql = 'insert into job (job_id,status,status_changed) values (?,?,?)'
+                    for j in jobs:
+                        self._send_to_master(('job',j[0],now,sql,tuple(j)))
 
             # make tasks
             task_names = []
@@ -479,6 +540,7 @@ class queue(_Methods_Base):
                     search.append((task_id, job_id, dataset, gs,
                                    name, 'idle'))
                     search_bindings.append(q_6)
+            # insert task
             sql = 'insert into task (task_id,status,prev_status,'
             sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
             sql += 'failures,evictions,task_rel_id) values '
@@ -491,6 +553,24 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
+            else:
+                if self._is_master():
+                    for t in tasks:
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('task',t[0],now)
+                        try:
+                            self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                else:
+                    sql = 'insert into task (task_id,status,prev_status,'
+                    sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
+                    sql += 'failures,evictions,task_rel_id) values '
+                    sql += '(?,?,?,?,?,?,?,?,?,?)'
+                    for t in tasks:
+                        self._send_to_master(('task',t[0],now,sql,tuple(t)))
+            # insert task_rel
             sql = 'insert into task_rel (task_rel_id, depends, '
             sql += 'requirements) values '
             sql += ','.join(task_rel_bindings)
@@ -502,6 +582,22 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
+            else:
+                if self._is_master():
+                    for t in task_rels:
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('task_rel',t[0],now)
+                        try:
+                            self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                else:
+                    sql = 'insert into task_rel (task_rel_id, depends, '
+                    sql += 'requirements) values (?,?,?)'
+                    for t in task_rels:
+                        self._send_to_master(('task_rel',t[0],now,sql,tuple(t)))
+            # insert search
             sql = 'insert into search (task_id,job_id,dataset_id,gridspec,'
             sql += 'name,task_status) values '
             sql += ','.join(search_bindings)
@@ -513,6 +609,21 @@ class queue(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
+            else:
+                if self._is_master():
+                    for s in search:
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('search',s[0],now)
+                        try:
+                            self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                else:
+                    sql = 'insert into search (task_id,job_id,dataset_id,gridspec,'
+                    sql += 'name,task_status) values (?,?,?,?,?,?)'
+                    for s in search:
+                        self._send_to_master(('search',s[0],now,sql,tuple(s)))
 
         # done buffering
         callback(True)
@@ -675,6 +786,7 @@ class queue(_Methods_Base):
                 tasks[tmp['task_id']] = tmp
             if tasks:
                 # set status to waiting
+                now = nowstr()
                 sql = 'update search set task_status="waiting" '
                 sql += 'where task_id in ('
                 sql += ','.join('?' for _ in tasks)
@@ -688,6 +800,22 @@ class queue(_Methods_Base):
                 if isinstance(ret,Exception):
                     callback(ret)
                     return
+                else:
+                    if self._is_master():
+                        for t in tasks:
+                            sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                            bindings3 = ('search',t,now)
+                            try:
+                                self.db._db_write(conn,sql3,bindings3,None,None,None)
+                            except Exception as e:
+                                logger.info('error updating master_update_history',
+                                            exc_info=True)
+                    else:
+                        sql = 'update search set task_status="waiting" '
+                        sql += 'where task_id = ?'
+                        for t in tasks:
+                            bindings = (t,)
+                            self._send_to_master(('search',t,now,sql,bindings))
                 sql = 'update task set prev_status = status, '
                 sql += 'status="waiting", '
                 sql += 'status_changed = ? '
@@ -708,6 +836,22 @@ class queue(_Methods_Base):
                 if isinstance(ret,Exception):
                     callback(ret)
                     return
+                else:
+                    if self._is_master():
+                        for t in tasks:
+                            sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                            bindings3 = ('task',t,now)
+                            try:
+                                self.db._db_write(conn,sql3,bindings3,None,None,None)
+                            except Exception as e:
+                                logger.info('error updating master_update_history',
+                                            exc_info=True)
+                    else:
+                        sql = 'update task set task_status="waiting" '
+                        sql += 'where task_id = ?'
+                        for t in tasks:
+                            bindings = (t,)
+                            self._send_to_master(('task',t,now,sql,bindings))
                 for t in tasks:
                     tasks[t]['task_status'] = 'waiting'
                     if gridspec_assignment:

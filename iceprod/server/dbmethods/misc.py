@@ -261,3 +261,45 @@ class misc(_Methods_Base):
                     callback(ret)
                     return
         callback()
+
+    @dbmethod
+    def misc_update_master_db(self, table, index, timestamp, sql,
+                       bindings, callback=None):
+        """
+        Update the DB with incoming information (query provided).
+
+        :param table: The table affected.
+        :param index: That table's index id.
+        :param timestamp: An ISO 8601 UTC timestamp.
+        :param sql: An sql statement.
+        :param bindings: Bindings for the sql statement.
+        :returns: (via callback) success or failure
+        """
+        if not tables or not isinstance(tables,dict):
+            callback(Exception('tables not a dict'))
+        else:
+            cb = partial(self._misc_update_db_blocking, table, index,
+                         timestamp, sql, bindings, callback=callback)
+            self.db.blocking_task(cb)
+    def _misc_misc_update_db_blocking(table, index, timestamp, sql,
+                                      bindings, callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        try:
+            sql2 = 'select timestamp from master_update_history '
+            sql2 += 'where table = ? and index = ?'
+            bindings2 = (table,index)
+            ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
+            if ret and ret[0][0] >= timestamp:
+                raise Exception('newer data already present')
+            ret = self.db._db_write(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        else:
+            sql2 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+            bindings2 = (table,index,timestamp)
+            try:
+               ret = self.db._db_write(conn,sql2,bindings2,None,None,None)
+            except Exception as e:
+                ret = e
+        if callback:
+            callback(ret)

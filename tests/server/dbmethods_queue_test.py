@@ -32,6 +32,7 @@ from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
+import iceprod.server.dbmethods.queue
 
 from .dbmethods_test import dbmethods_base
 
@@ -1826,9 +1827,10 @@ class dbmethods_queue_test(dbmethods_base):
             if endtables['site']:
                 raise Exception('tables modified')
 
-
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(dbmethods_queue_test))
     suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_queue_test))
+    alltests = glob_tests(loader.getTestCaseNames(dbmethods_queue_master_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_queue_master_test))
     return suite

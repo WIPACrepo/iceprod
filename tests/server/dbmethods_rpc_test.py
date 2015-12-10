@@ -50,7 +50,7 @@ def get_tables(test_dir):
 
 
 class dbmethods_rpc_test(dbmethods_base):
-    
+
     @unittest_reporter
     def test_200_rpc_new_task(self):
         """Test rpc_new_task"""
@@ -59,11 +59,9 @@ class dbmethods_rpc_test(dbmethods_base):
             cb.called = True
             cb.ret = ret
         cb.called = False
-        
-        
+
         tables = get_tables(self.test_dir)
         self.mock.setup(tables)
-
 
         # everything working
         cb.called = False
@@ -77,7 +75,7 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('everything working: callback ret != task')
-        
+
         # no queued jobs
         cb.called = False
 
@@ -108,22 +106,22 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_201_rpc_finish_task(self):
         """Test rpc_finish_task"""
-       
+
 
         def cb(ret):
             cb.called = True
             cb.ret = ret
         cb.called = False
-        
-        
+
+
         tables = get_tables(self.test_dir)
         self.mock.setup(tables)
 
-        
+
 
         # everything working
         cb.called = False
-        
+
 
         stats = {'name1':123123,'name2':968343}
         self._db.rpc_finish_task(task_id,stats,callback=cb)
@@ -154,7 +152,7 @@ class dbmethods_rpc_test(dbmethods_base):
         if _db_write.sql[-1].startswith('update job set status'):
             raise Exception('distributed job: wrongly updated job status')
         '''
-        
+
         # db error
         for i in range(6):
             cb.called = False
@@ -192,7 +190,7 @@ class dbmethods_rpc_test(dbmethods_base):
             cb.called = True
             cb.ret = ret
         cb.called = False
-        
+
         #
         tables = get_tables(self.test_dir)
         self.mock.setup(tables)
@@ -200,7 +198,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
         # everything working
         cb.called = False
-    
+
 
         self._db.rpc_task_error(task_id,callback=cb)
 
@@ -239,7 +237,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_203_rpc_upload_logfile(self):
         """Test rpc_upload_logfile"""
-        
+
         tables = get_tables(self.test_dir)
         self.mock.setup(tables)
 
@@ -260,11 +258,11 @@ class dbmethods_rpc_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('everything working: callback ret is Exception')
-        
+
         # update stats
         cb.called = False
         self._db.rpc_upload_logfile(task_id,name,data,callback=cb)
-        
+
         if cb.called is False:
             raise Exception('update stats: callback not called')
         if isinstance(cb.ret,Exception):
@@ -286,11 +284,11 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_204_rpc_stillrunning(self):
         """Test rpc_stillrunning"""
-        
+
         def cb(ret):
             cb.called = True
             cb.ret = ret
-        
+
         cb.called = False
         tables = get_tables(self.test_dir)
 
@@ -430,7 +428,7 @@ class dbmethods_rpc_test(dbmethods_base):
     @unittest_reporter
     def test_121_rpc_queue_master(self):
         """Test rpc_queue_master"""
-        
+
         def cb(ret):
             cb.called = True
             cb.ret = ret

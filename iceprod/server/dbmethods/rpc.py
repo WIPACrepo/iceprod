@@ -13,7 +13,7 @@ from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import calc_datasets_prios
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
 logger = logging.getLogger('dbmethods.rpc')
 
@@ -79,13 +79,13 @@ class rpc(_Methods_Base):
                 pass
             if not newtask:
                 callback(newtask)
-            now = datetime.utcnow()
+            now = nowstr()
             sql = 'update search set task_status = ? '
             sql += ' where task_id = ?'
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, status_changed = ? where task_id = ?'
             bindings = ('processing',newtask['task_id'])
-            bindings2 = ('processing',datetime2str(now),newtask['task_id'])
+            bindings2 = ('processing',now,newtask['task_id'])
             try:
                 ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
             except Exception as e:
@@ -93,6 +93,18 @@ class rpc(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
             else:
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    bindings3 = ('search',newtask['task_id'],now)
+                    bindings4 = ('task',newtask['task_id'],now)
+                    try:
+                        self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
+                    self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
                 callback(newtask)
     def _rpc_new_task_callback(self,args,task,callback=None):
         if isinstance(task,Exception):
@@ -123,13 +135,13 @@ class rpc(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
 
         # update task status
-        now = datetime.utcnow()
+        now = nowstr()
         sql = 'update search set task_status = ? '
         sql += ' where task_id = ?'
         sql2 = 'update task set prev_status = status, '
         sql2 += ' status = ?, status_changed = ? where task_id = ?'
         bindings = ('complete',task)
-        bindings2 = ('complete',datetime2str(now),task)
+        bindings2 = ('complete',now,task)
         try:
             ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
         except Exception as e:
@@ -137,6 +149,19 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
+        else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('search',newtask['task_id'],now)
+                bindings4 = ('task',newtask['task_id'],now)
+                try:
+                    self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('search',task,now,sql,bindings))
+                self._send_to_master(('task',task,now,sql2,bindings2))
 
         # update task statistics
         sql = 'select task_stat_id,task_id from task_stat where task_id = ?'
@@ -169,6 +194,17 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
+        else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('task_stat',task_stat_id,now)
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('task_stat',task_stat_id,now,sql,bindings))
 
         # check if whole job is finished
         sql = 'select search.dataset_id,job_id,jobs_submitted,tasks_submitted '
@@ -226,7 +262,7 @@ class rpc(_Methods_Base):
             logger.info('job %s marked as %s',job_id,job_status)
             sql = 'update job set status = ?, status_changed = ? '
             sql += ' where job_id = ?'
-            bindings = (job_status,datetime2str(now),job_id)
+            bindings = (job_status,now,job_id)
             try:
                 ret = self.db._db_write(conn,sql,bindings,None,None,None)
             except Exception as e:
@@ -234,6 +270,17 @@ class rpc(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
+            else:
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    bindings3 = ('job',job_id,now)
+                    try:
+                        self.db._db_write(conn,sql3,bindings3,None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master(('job',job_id,now,sql,bindings))
 
             if job_status == 'complete':
                 # TODO: collate task stats
@@ -291,13 +338,13 @@ class rpc(_Methods_Base):
                 else:
                     status = 'reset'
 
-                now = datetime.utcnow()
+                now = nowstr()
                 sql = 'update search set task_status = ? '
                 sql += ' where task_id = ?'
                 bindings = (status,task)
                 sql2 = 'update task set prev_status = status, '
                 sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
-                bindings2 = (status,failures,datetime2str(now),task)
+                bindings2 = (status,failures,now,task)
                 try:
                     ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
                 except Exception as e:
@@ -305,6 +352,18 @@ class rpc(_Methods_Base):
                 if isinstance(ret,Exception):
                     callback(ret)
                 else:
+                    if self._is_master():
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('search',task,now)
+                        bindings4 = ('task',task,now)
+                        try:
+                            self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                    else:
+                        self._send_to_master(('search',task,now,sql,bindings))
+                        self._send_to_master(('task',task,now,sql2,bindings2))
                     callback(True)
 
     @dbmethod
@@ -346,6 +405,16 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('task_log',task_log_id,nowstr())
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('task_log',task_log_id,nowstr(),sql,bindings))
             callback(True)
     def _rpc_upload_logfile_callback(self,ret,callback=None):
         if isinstance(ret,Exception):
@@ -387,6 +456,7 @@ class rpc(_Methods_Base):
                                      callback=None):
         conn,archive_conn = self.db._dbsetup()
         dataset_id = self.db._increment_id_helper('dataset',conn)
+        now = nowstr()
         if isinstance(config_data,dict):
             config = config_data
             try:
@@ -423,6 +493,17 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
+        else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('config',dataset_id,now)
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('config',dataset_id,now,sql,bindings))
         if isinstance(gridspec,dict):
             gridspec = json_encode(gridspec)
         stat_keys = json_encode(stat_keys)
@@ -444,6 +525,16 @@ class rpc(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('dataset',dataset_id,now)
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('dataset',dataset_id,now,sql,bindings))
             callback(True)
 
     @dbmethod
@@ -460,12 +551,23 @@ class rpc(_Methods_Base):
 
         sql = 'update config set config_data = ? where dataset_id = ?'
         bindings = (data,dataset_id)
-        cb = partial(self._rpc_update_dataset_config_callback,callback=callback)
+        cb = partial(self._rpc_update_dataset_config_callback,
+                     dataset_id, sql, bindings, callback=callback)
         self.db.sql_write_task(sql,bindings,callback=cb)
-    def _rpc_update_dataset_config_callback(self,ret,callback=None):
+    def _rpc_update_dataset_config_callback(self,dataset_id,sql,bindings,ret,callback=None):
         if isinstance(ret,Exception):
             callback(ret)
         else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('dataset',dataset_id,nowstr())
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('dataset',dataset_id,nowstr(),sql,bindings))
             callback(True)
 
     @dbmethod

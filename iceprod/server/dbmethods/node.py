@@ -63,14 +63,15 @@ class node(_Methods_Base):
             return
         elif not ret or len(ret) < 1 or len(ret[0]) < 1:
             # insert new row
+            node_id = self.db._increment_id_helper('node',conn)
             sql = 'insert into node (node_id,hostname,domain,last_update,stats)'
             sql += ' values (?,?,?,?,?)'
-            bindings = (self.db._increment_id_helper('node',conn),
-                        hostname,domain,now,json_encode(kwargs))
+            bindings = (node_id,hostname,domain,now,json_encode(kwargs))
         else:
             # update row
             try:
                 row = self._list_to_dict('node',ret[0])
+                node_id = row['node_id']
                 old_stats = json_decode(row['stats'])
                 stats = kwargs.copy()
                 for k in set(stats) & set(old_stats):
@@ -81,7 +82,7 @@ class node(_Methods_Base):
                 for k in set(old_stats) - set(stats):
                     stats[k] = old_stats[k]
                 sql = 'update node set last_update=?, stats=? where node_id = ?'
-                bindings = (now,json_encode(stats),row['node_id'])
+                bindings = (now,json_encode(stats),node_id)
             except Exception:
                 logger.warn('error in _node_update_blocking()',
                             exc_info=True)
@@ -91,6 +92,17 @@ class node(_Methods_Base):
             ret = e
         if isinstance(ret,Exception):
             logger.info('exception2 from _node_update_blocking(): %r',ret)
+        else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                bindings3 = ('node',node_id,now)
+                try:
+                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('node',node_id,now,sql,bindings))
 
     @dbmethod
     def node_collate_resources(self,site_id=None,node_include_age=30, callback=None):
@@ -183,10 +195,21 @@ class node(_Methods_Base):
                     self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception:
                     logger.info('failed to update resources for site %r',
-                                     site_id,exc_info=True)
+                                site_id,exc_info=True)
+                else:
+                    if self._is_master():
+                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        bindings3 = ('site',site_id,now)
+                        try:
+                            self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                    else:
+                        self._send_to_master(('site',site_id,now,sql,bindings))
             except Exception:
                 logger.info('error in _node_collate_resources_blocking',
-                                 exc_info=True)
+                            exc_info=True)
 
     @dbmethod
     def node_get_site_resources(self,site_id=None,empty_only=True,callback=None):
