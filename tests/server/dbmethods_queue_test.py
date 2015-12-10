@@ -1831,6 +1831,4 @@ def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(dbmethods_queue_test))
     suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_queue_test))
-    alltests = glob_tests(loader.getTestCaseNames(dbmethods_queue_master_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_queue_master_test))
     return suite
