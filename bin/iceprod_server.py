@@ -309,18 +309,24 @@ def main(cfgfile,cfgdata=None):
     # start modules specified in cfg
     for mod in cfg.start_order:
         if mod in available_modules and getattr(cfg,mod) is True:
+            logger.info('starting module %s',mod)
             running_modules[mod] = module_start(available_modules[mod])
             time.sleep(1) # wait 1 second between starts
 
     # wait for messages
-    messaging.setup()
-    messaging.start()
+    try:
+        logger.info('starting server messaging')
+        messaging.setup()
+        messaging.start()
+    except Exception:
+        logger.error("messaging error",exc_info=True)
+        raise
+    finally:
+        # terminate all modules
+        for mod in running_modules.values():
+            mod.kill()
 
-    # terminate all modules
-    for mod in running_modules.values():
-        mod.kill()
-
-    logger.warn('shutdown')
+        logger.warn('shutdown')
 
 if __name__ == '__main__':
     import argparse

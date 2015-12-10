@@ -27,7 +27,7 @@ class ZmqProcess(object):
 
         self.io_loop = io_loop
         """PyZMQ's event loop (:class:`~zmq.eventloop.ioloop.IOLoop`)."""
-        
+
         self._restart = False
 
     def setup(self):
@@ -55,11 +55,11 @@ class ZmqProcess(object):
                 logger.warn('ioloop error',exc_info=True)
                 raise
         self.io_loop.close()
-    
+
     def restart(self):
         self._restart = True
         self.io_loop.stop()
-    
+
     def stop(self):
         self.io_loop.stop()
 
@@ -102,7 +102,7 @@ class ZmqProcess(object):
 
         if bind:
             # addr may be 'host:port' or ('host', port)
-            logger.debug('binding to address %s',addr)
+            logger.info('binding to address %s',addr)
             if isinstance(addr, str):
                 addr = addr.rsplit(':',1)
             logger.debug('after transformation: %s',addr)
@@ -124,13 +124,14 @@ class ZmqProcess(object):
                         a = '%s:%s' % (a[0], a[1])
                     else:
                         a = '%s' % (a[0],)
+                logger.info('attempting to connect to %s',a)
                 sock.connect(a)
                 logger.debug('socket connected to %s',a)
 
         # Add a default subscription for SUB sockets
         if sock_type == zmq.SUB:
             sock.setsockopt(zmq.SUBSCRIBE, subscribe)
-        
+
         # Add an identity for DEALER sockets
         if sock_type == zmq.DEALER:
             if not identity:
@@ -142,7 +143,7 @@ class ZmqProcess(object):
         stream = zmqstream.ZMQStream(sock, self.io_loop)
         if callback:
             stream.on_recv(callback)
-        
+
         return stream,port
 
 class AsyncSendReceive(ZmqProcess):
@@ -157,10 +158,10 @@ class AsyncSendReceive(ZmqProcess):
         self.identity = identity
         self.bind = bind
         self.recv_handler = recv_handler
-        
+
         self.stream = None
         self.port = None
-        
+
     def setup(self):
         """Sets up PyZMQ and creates all streams."""
         super(AsyncSendReceive,self).setup()
@@ -178,7 +179,7 @@ class AsyncSendReceive(ZmqProcess):
         except Exception:
             logger.warn('make_stream error',exc_info=True)
             raise
-    
+
     def send(self,msg):
         """Sends a message on the stream."""
         if self.stream:
@@ -199,4 +200,3 @@ class AsyncSendReceive(ZmqProcess):
                 raise
         else:
             logger.error('zmq stream not available')
-    

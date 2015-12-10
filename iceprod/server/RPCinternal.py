@@ -21,7 +21,7 @@ logger = logging.getLogger('RPCinternal')
 class Serializer():
     """
     A (de)serializer that wraps a certain serialization protocol.
-    
+
     Currently it only supports the standard pickle protocol.
     """
     try:
@@ -41,13 +41,13 @@ class Serializer():
 class MessageFactory():
     """
     A message factory for creating and parsing binary messages.
-    
+
     See the Python library `struct`_ module for info about struct packing.
-    
+
     .. _struct: https://docs.python.org/2/library/struct.html#format-characters
     """
     import binascii,struct,ctypes
-    
+
     # big endian (id, version, sequenceNumber, bodyLen, bodyChecksum,
     #             messageType, headerChecksum)
     HEADERFMT = '!4sBLLLBL'
@@ -62,22 +62,22 @@ class MessageFactory():
     class MESSAGE_TYPE:
         """Enum:"""
         SERVER, BROADCAST, BROADCAST_ACK, SERVICE, RESPONSE = range(5)
-    
+
     @classmethod
     def getChecksum(cls,data):
         """Get 4 byte checksum"""
         return cls.binascii.crc32(data) & 0xffffffff
-        
+
     @classmethod
     def verifyChecksum(cls,data,checksum):
         """Verify a checksum"""
         return (cls.getChecksum(data) == checksum)
-    
+
     @classmethod
     def createMessage(cls,data,seq,msg_type,service_name=None,serialized=False):
         """
         Convert data to binary (creating header in the process).
-        
+
         :param data: the data to convert
         :param seq: the sequence number
         :param msg_type: the message type
@@ -103,18 +103,18 @@ class MessageFactory():
                     cls.getChecksum(data), msg_type)
         else:
             raise Exception('invalid message type')
-        
+
         header = cls.ctypes.create_string_buffer(header_size)
         cls.struct.pack_into(header_fmt[:-1],header,0,*args)
         header_chk = cls.getChecksum(header[:header_size-4])
         cls.struct.pack_into('!L',header,header_size-4,header_chk)
         return [header.raw,data]
-    
+
     @classmethod
     def parseMessageHeader(cls,header):
         """
         Parse the header
-        
+
         :param header: the binary header to parse
         :returns: {sequence_number, body_length, body_checksum, message_type,
                    service_name}
@@ -125,7 +125,7 @@ class MessageFactory():
         id,ver,seq,body_len,body_chk,msg_type = parts
         if id != cls.ID_TAG or ver != cls.PROTOCOL_VERSION:
             raise Exception('invalid data or unsupported protocol version')
-        
+
         service = None
         if msg_type == cls.MESSAGE_TYPE.SERVICE:
             service_len = cls.struct.unpack_from('!B',header,
@@ -137,7 +137,7 @@ class MessageFactory():
             header_size = cls.HEADERSIZE
         else:
             raise Exception('invalid message type')
-        
+
         # check header checksum
         headerChk = cls.struct.unpack_from('!L',header,header_size-4)[0]
         expectedHChk = cls.getChecksum(header[:header_size-4])
@@ -149,12 +149,12 @@ class MessageFactory():
                 'message_type':msg_type,
                 'service_name':service,
                }
-    
+
     @classmethod
     def getMessage(cls,body,header):
         """
         Parse the body.
-        
+
         :param body: raw message body
         :param header: decoded message header
         :returns: decoded data
@@ -177,30 +177,30 @@ class MessageFactory():
 class Base(AsyncSendReceive):
     """
     ZMQ messaging base.
-    
+
     :param history_length: Amount of history to keep track of, optional
     :param immediate_setup: Setup socket immediately
     :param address: Address to connect to
     """
     def __init__(self,history_length=10000,immediate_setup=True,**kwargs):
         super(Base,self).__init__(**kwargs)
-        
+
         # set some variables
         self.history_length = history_length
         self.send_history = OrderedDict()
         self.send_history_lock = RLock()
         self.recv_history = OrderedDict()
         self.recv_history_lock = RLock()
-        
+
         if immediate_setup:
             super(Base,self).setup()
-    
+
     def send(self, data, serialized=False, seq=None, timeout=60.0,
              client_id=None, type=MessageFactory.MESSAGE_TYPE.SERVICE,
              service=None, callback=None):
         """
         Send a message.
-        
+
         :param data: The actual data to send
         :param serialzed: Is the data already serialized?, optional
         :param seq: The sequence number to respond to, optional
@@ -214,12 +214,12 @@ class Base(AsyncSendReceive):
         if self.stream.closed():
             # try to reconnect
             self.restart()
-        
+
         if client_id:
             message = [client_id]
         else:
             message = []
-        
+
         old_request = None
         if type in (MessageFactory.MESSAGE_TYPE.RESPONSE,
                     MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
@@ -260,14 +260,14 @@ class Base(AsyncSendReceive):
                     old_request = self.send_history.popitem(last=False)
             # format data for sending
             message.extend(MessageFactory.createMessage(data,seq,type,**kwargs))
-        
+
         # send message (make sure we're on the ioloop thread)
         self.io_loop.add_callback(partial(super(Base,self).send,message))
         logger.debug('sending message:%s',str(data))
-        
+
         if old_request:
             self._send_history_full(item[0],item[1][0],item[1][1])
-    
+
     def _handle_stream_error(self):
         # stream is corrupted at this point, so reset
         logger.error('stream error on socket. resetting...')
@@ -285,7 +285,7 @@ class Base(AsyncSendReceive):
             self.send_history = OrderedDict()
             self.recv_history = OrderedDict()
         self.restart()
-    
+
     def _send_history_full(self,seq,callback,tt):
         logger.info('send history full, popped request for seq %d',seq)
         # remove timeout
@@ -299,7 +299,7 @@ class Base(AsyncSendReceive):
                 callback(Exception('response timeout'))
             except Exception:
                 pass
-    
+
     def _response_timeout(self,seq):
         # TODO: consider doing a few retries before giving up
         logger.info('timeout in send request for seq %d',seq)
@@ -328,14 +328,14 @@ class Base(AsyncSendReceive):
 class Client(Base):
     """
     ZMQ messaging client/service.
-    
+
     Start a client in a separate thread so it doesn't block the caller.
-    
+
     :param service_name: Name of service, optional
     :param service_callback: Callback for service, optional
-        
+
         Function signature must be fn( data, callback=writer(msg) )
-    
+
     :param address: Address to connect to
     :param immediate_setup: Setup socket immediately, optional
     :param history_length: Amount of history to keep track of, optional
@@ -344,13 +344,13 @@ class Client(Base):
         kwargs['bind'] = False
         kwargs['recv_handler'] = self._get_response
         super(Client,self).__init__(**kwargs)
-        
+
         # set some variables
         self.service_name = service_name
         self.service_callback = service_callback
         if service_name and not service_callback:
             raise Exception('service name, but no callback')
-    
+
     def _register_service(self):
         logger.info('_register_service: %r',self.service_name)
         if self.service_name:
@@ -361,16 +361,16 @@ class Client(Base):
                 if ret and isinstance(ret,Exception):
                     logger.error('failed to register service name %s',
                                  self.service_name, exc_info=True)
-                    # TODO: figure out what to do in this case
+                    self.kill()
             self.send(data,type=MessageFactory.MESSAGE_TYPE.SERVER,
                       timeout=1.0,
                       callback=cb)
-    
+
     def start(self,*args,**kwargs):
         """Start the Client"""
         self._register_service()
         self.run()
-    
+
     def stop(self):
         """Stop the Client"""
         if self.service_name:
@@ -385,11 +385,11 @@ class Client(Base):
                       callback=cb)
         else:
             super(Client,self).stop()
-    
+
     def kill(self):
         """Kill the Client, skipping the unregister step."""
         super(Client,self).stop()
-    
+
     def _get_response(self,frames):
         # decode message
         try:
@@ -405,18 +405,18 @@ class Client(Base):
                 # handle service request
                 cb = partial(self.send,seq=header['sequence_number'],
                              type=MessageFactory.MESSAGE_TYPE.RESPONSE)
-                if (not header['service_name'] or 
+                if (not header['service_name'] or
                     header['service_name'] != self.service_name):
                     cb({'error':'service name does not match'})
                 elif self.service_callback:
                     self.service_callback(data,callback=cb)
-                
+
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
                 # handle broadcast request, send an ACK back
                 cb = partial(self.send,seq=header['sequence_number'],
                              type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
                 self.service_callback(data,callback=cb)
-                
+
             elif (header['message_type'] == MessageFactory.MESSAGE_TYPE.RESPONSE
                   or header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
                 # response to one of our messages
@@ -444,7 +444,7 @@ class Client(Base):
                             callback(data)
                         except Exception:
                             pass
-                
+
             else:
                 logger.warn('invalid message type: %s',msg_type)
 
@@ -453,12 +453,12 @@ class ThreadedClient(Thread,Client):
         Thread.__init__(self)
         Client.__init__(self,**kwargs)
         self.daemon = True
-    
+
     def start(self,*args,**kwargs):
         """Start the Client"""
         self._register_service()
         Thread.start(self)
-    
+
     def run(self,*args,**kwargs):
         """Thread runner"""
         Client.run(self)
@@ -466,11 +466,11 @@ class ThreadedClient(Thread,Client):
 class Server(Base):
     """
     ZMQ messaging server.
-    
+
     Start a server in the current thread (blocking).
-    
+
     TODO: handle case of 2+ instances of same service
-    
+
     :param history_length: Amount of history to keep track of
     :param immediate_setup: Setup socket immediately, optional
     :param address: Address to bind to
@@ -479,15 +479,15 @@ class Server(Base):
         kwargs['bind'] = True
         kwargs['recv_handler'] = self._get_response
         super(Server,self).__init__(**kwargs)
-        
+
         # define some variables
         self.services = {}
-    
+
     def start(self):
         # start the server
         logger.warning("starting RPCinternal.Server(%s)",self.address)
         self.run()
-    
+
     def _server_handler(self,client_id,msg,callback=None):
         # handle any messages for the server
         try:
@@ -518,7 +518,7 @@ class Server(Base):
         except Exception as e:
             logger.info('general _server_handler error',exc_info=True)
             callback({'error':'server error: %s'%e})
-    
+
     def _get_response(self,frames):
         # decode message
         if not frames:
@@ -551,7 +551,7 @@ class Server(Base):
                               client_id=service_id, callback=cb,
                               type=MessageFactory.MESSAGE_TYPE.SERVICE,
                               service=header['service_name'])
-                
+
             elif (header['message_type'] == MessageFactory.MESSAGE_TYPE.RESPONSE
                   or header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
                 # response to one of our messages
@@ -568,7 +568,7 @@ class Server(Base):
                     self._handle_stream_error()
                 else:
                     logger.debug('RESPONSE: got msg for seq: %d'%header['sequence_number'])
-                    
+
                     try:
                         logger.debug('RESPONSE: removing timeout for seq %d',
                                      header['sequence_number'])
@@ -580,7 +580,7 @@ class Server(Base):
                             callback(frames[2],serialized=True)
                         except Exception:
                             pass
-                
+
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
                 # broadcast to all registered services
                 logger.info('BROADCAST message from %r',client_id)
@@ -590,7 +590,7 @@ class Server(Base):
                 self.send({'result':'ack'},seq=header['sequence_number'],
                           client_id=client_id,
                           type=MessageFactory.MESSAGE_TYPE.BROADCAST_ACK)
-                
+
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVER:
                 # a message for us, so decode it
                 logger.info('SERVER message from %r',client_id)
@@ -603,7 +603,7 @@ class Server(Base):
                                  client_id=client_id,
                                  type=MessageFactory.MESSAGE_TYPE.RESPONSE)
                     self._server_handler(client_id,data,cb)
-                
+
             else:
                 logger.warn('invalid message type: %s',header['message_type'])
 
@@ -611,18 +611,18 @@ class Server(Base):
 class RPCService():
     """
     An RPC version of the :class:`Client`
-    
+
     Once initialized, call like RPCService.service_name.method_name(kwargs)
     with a named parameter 'callback' for results.
-    Callback function gets one arg as the result, which could be an 
+    Callback function gets one arg as the result, which could be an
     Exception class.
-    
+
     RPC service functions are defined in a service_class via either static
     or regular methods. Each function is called with kwargs from the client
     and a 'callback' response function for async.
-    
+
     Example RPC class::
-    
+
         class RPC():
             def test(self,var1,var2,callback):
                 # do something with vars
@@ -637,7 +637,7 @@ class RPCService():
             def test3(callback):
                 # this is a bare method with no args, just a callback
                 pass # and we don't even have to use it
-    
+
     :param address: the address of the :class:`Server`
     :param block: whether to block or start a separate thread, optional,
             defaults to True
@@ -675,24 +675,24 @@ class RPCService():
             self._cl = Client(**kwargs)
         else:
             self._cl = ThreadedClient(**kwargs)
-    
+
     def setup(self):
         self._cl.setup()
-    
+
     def start(self):
         self._cl.start()
-    
+
     def stop(self):
         self._cl.stop()
-    
+
     def kill(self):
         self._cl.kill()
 
     def __repr__(self):
         return ("<RPC Client to %s>" % (str(self._cl.address)))
-    
+
     __str__ = __repr__
-    
+
     def __service_handler(self,data,callback=None):
         logger.debug('got message:%s',str(data))
         """Unpack data from RPC format"""
@@ -712,7 +712,7 @@ class RPCService():
                     callback({'error':'Cannot use RPC for private methods'})
                 logger.warning('cannot use RPC for private methods')
                 return
-            
+
             # check for function
             try:
                 func = getattr(self.service_class,methodname)
@@ -741,7 +741,7 @@ class RPCService():
             else:
                 if ret is not None:
                     callback({'result':ret})
-    
+
     def __response(self,data=None,callback=None):
         """Pack data into RPC format"""
         if isinstance(data,Exception):
@@ -750,7 +750,7 @@ class RPCService():
                 callback({'error':str(data)})
         elif callback:
             callback({'result':data})
-    
+
     def __callback(self,callback,data):
         """Parse response from server and send to callback"""
         logger.debug('__callback %r',data)
@@ -764,14 +764,14 @@ class RPCService():
                 logger.warning('data does not contain a result')
                 callback(Exception('data does not contain a result'))
             callback(data['result'])
-    
+
     def __request(self,service,methodname,kwargs):
         """Send request to RPC Server"""
         # check method name for bad characters
         if methodname[0] == '_':
             logger.warning('cannot use RPC for private methods')
             raise Exception('Cannot use RPC for private methods')
-    
+
         # get callback, if available
         try:
             callback = kwargs.pop('callback')
@@ -780,7 +780,7 @@ class RPCService():
         except:
             callback = None
             logger.info('no callback')
-        
+
         # check what type of request we're making
         timeout = self.timeout
         if 'timeout' in kwargs:
@@ -822,14 +822,14 @@ class RPCService():
                 if isinstance(cb.ret,Exception):
                     raise cb.ret
                 return cb.ret
-        
+
         # make async request to server
         self._cl.send({'method':methodname,'params':kwargs}, **request_args)
         logger.info('sent method %s with params %r',methodname,kwargs)
-    
+
     def __nonzero__(self):
         return not not self._cl
-    
+
     def __getattr__(self,name):
         class _Method:
             def __init__(self,send,service,name):

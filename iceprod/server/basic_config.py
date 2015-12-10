@@ -70,7 +70,7 @@ class BasicConfig(object):
         # messaging server url
         is_mac = platform.system().lower() == 'darwin'
         if (not force_tcp) and not is_mac and hasattr(socket, 'AF_UNIX'):
-            self.messaging_url = 'ipc:/'+os.path.join(os.getcwd(),'unix_socket.sock')
+            self.messaging_url = 'ipc://'+os.path.join(os.getcwd(),'unix_socket.sock')
         else:
             # attempt to bind to an ip
             ip = get_local_ip_address()
