@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import partial
 from collections import OrderedDict
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime, nowstr
 
 logger = logging.getLogger('dbmethods.cron')
 
@@ -134,4 +134,16 @@ class cron(_Methods_Base):
                     self._send_to_master(('dataset',bindings[-1],now,sql,bindings))
             # TODO: consolidate dataset statistics
             callback(True)
+
+    @dbmethod
+    def cron_remove_old_passkeys(self,callback=None):
+        now = nowstr()
+        sql = 'delete from passkey where expire < ?'
+        bindings = (now,)
+        cb = partial(self._cron_remove_old_passkeys_cb,callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
+    def _cron_remove_old_passkeys_cb(self,ret,callback=None):
+        callback(ret)
+
+
 

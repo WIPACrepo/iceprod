@@ -73,6 +73,7 @@ class schedule(module.module):
         self.scheduler.schedule('every 1 hours',
                 partial(self._db_call,'node_collate_resources',
                         site_id=self.cfg['site_id']))
+        self.scheduler.schedule('every 6 hours', partial(self._db_call, 'cron_remove_old_passkeys'))
     
     def _db_call(self,func,**kwargs):
         """Call DB func, handling any errors"""
