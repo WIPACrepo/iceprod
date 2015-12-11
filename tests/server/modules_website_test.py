@@ -29,15 +29,16 @@ import tornado.ioloop
 import iceprod.core.logger
 from iceprod.core import functions
 from iceprod.core import util
+from iceprod.core import to_log
 import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
 import iceprod.server
 from iceprod.server import basic_config
 from iceprod.server.modules.website import website
 try:
-    from iceprod.server import openssl
+    from iceprod.server import ssl_cert
 except ImportError:
-    openssl = None
+    ssl_cert = None
 
 class _Nginx(object):
     def __init__(self,*args,**kwargs):
@@ -57,6 +58,7 @@ class modules_website_test(unittest.TestCase):
     def setUp(self):
         super(modules_website_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        os.environ['I3PROD'] = self.test_dir
 
         self.ca_cert = os.path.join(self.test_dir,'ca.crt')
         self.ca_key = os.path.join(self.test_dir,'ca.key')
@@ -65,14 +67,6 @@ class modules_website_test(unittest.TestCase):
 
         # set hostname
         self.hostname = 'localhost'
-
-        # make certs
-        if openssl:
-            openssl.create_ca(self.ca_cert,self.ca_key,days=1,
-                              hostname=self.hostname)
-            openssl.create_cert(self.ssl_cert,self.ssl_key,days=1,
-                                cacert=self.ca_cert,cakey=self.ca_key,
-                                hostname=self.hostname)
 
         # make cfg
         self.cfg = {'webserver':{'tornado_port':random.randint(10000,32000),
@@ -85,11 +79,7 @@ class modules_website_test(unittest.TestCase):
                     'db':{'address':'localhost',
                           'ssl':True,
                          },
-                    'system':{'ssl_cert':self.ssl_cert,
-                              'ssl_key':self.ssl_key,
-                              #'ssl_cacert':self.ssl_cert,
-                              'ssl_cacert':self.ca_cert,
-                             },
+                    'system':{},
                     'download':{'http_username':None,
                                 'http_password':None,
                                },
@@ -180,6 +170,164 @@ class modules_website_test(unittest.TestCase):
             raise Exception('website = None and exception raised')
 
     @unittest_reporter
+    def test_03_start_no_ssl(self):
+        """Test _start without ssl"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(website).should_receive('start').replace_with(start)
+        start.called = False
+
+        passkey = 'key'
+
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        web = website(bcfg)
+        web.messaging = messaging_mock()
+        datasets_status = {'processing':3}
+        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
+        web.cfg = self.cfg
+        with to_log(sys.stderr):
+            web._start()
+
+        # actual start
+        ioloop = tornado.ioloop.IOLoop.instance()
+        t = threading.Thread(target=ioloop.start)
+        t.start()
+
+        ssl_opts = {'username': self.cfg['download']['http_username'],
+                    'password': self.cfg['download']['http_password'],
+                   }
+
+        pycurl_handle = util.PycURL()
+        try:
+            address = 'localhost:%d'%(self.cfg['webserver']['port'])
+            logger.info('try connecting directly to tornado at %s',address)
+
+            outfile = os.path.join(self.test_dir,
+                                   str(random.randint(0,10000)))
+            pycurl_handle.fetch(address,outfile,**ssl_opts)
+            if not os.path.exists(outfile):
+                raise Exception('file not fetched')
+
+        finally:
+            ioloop.stop()
+
+    @unittest_reporter(skip=not ssl_cert)
+    def test_04_start_ssl(self):
+        """Test _start with ssl"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(website).should_receive('start').replace_with(start)
+        start.called = False
+
+        # trigger self-signed cert
+        if ssl_cert:
+            self.cfg['system']['ssl'] = {}
+
+        passkey = 'key'
+
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        web = website(bcfg)
+        web.messaging = messaging_mock()
+        datasets_status = {'processing':3}
+        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
+        web.cfg = self.cfg
+        with to_log(sys.stderr):
+            web._start()
+            if not any(x[0] == 'config' and x[1] == 'set' for x in web.messaging.called):
+                logger.info('%r',web.messaging.called)
+                raise Exception('did not call config')
+            web._start()
+
+        # actual start
+        ioloop = tornado.ioloop.IOLoop.instance()
+        t = threading.Thread(target=ioloop.start)
+        t.start()
+
+        ssl_opts = {'cacert': web.cfg['system']['ssl']['cert'],
+                    'username': self.cfg['download']['http_username'],
+                    'password': self.cfg['download']['http_password'],
+                   }
+
+        pycurl_handle = util.PycURL()
+        try:
+            hostname = functions.gethostname()
+            if isinstance(hostname,set):
+                hostname = hostname.pop()
+            address = '%s:%d'%(hostname, self.cfg['webserver']['port'])
+            logger.info('try connecting directly to tornado at %s',address)
+
+            outfile = os.path.join(self.test_dir,
+                                   str(random.randint(0,10000)))
+            pycurl_handle.fetch(address,outfile,**ssl_opts)
+            if not os.path.exists(outfile):
+                raise Exception('file not fetched')
+
+        finally:
+            ioloop.stop()
+
+    @unittest_reporter(skip=not ssl_cert)
+    def test_05_start_ssl_ca(self):
+        """Test _start with ssl"""
+        # mock some functions so we don't go too far
+        def start():
+            start.called = True
+        flexmock(website).should_receive('start').replace_with(start)
+        start.called = False
+
+        # make certs
+        if ssl_cert:
+            ssl_cert.create_ca(self.ca_cert,self.ca_key,days=1,
+                              hostname=self.hostname)
+            ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
+                                cacert=self.ca_cert,cakey=self.ca_key,
+                                hostname=self.hostname)
+            self.cfg['system']['ssl'] = {
+                'cert':self.ssl_cert,
+                'key':self.ssl_key,
+                'cacert':self.ca_cert,
+            }
+
+        passkey = 'key'
+
+        bcfg = basic_config.BasicConfig()
+        bcfg.messaging_url = 'localhost'
+        web = website(bcfg)
+        web.messaging = messaging_mock()
+        datasets_status = {'processing':3}
+        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
+        web.cfg = self.cfg
+        with to_log(sys.stderr):
+            web._start()
+
+        # actual start
+        ioloop = tornado.ioloop.IOLoop.instance()
+        t = threading.Thread(target=ioloop.start)
+        t.start()
+
+        ssl_opts = {'cacert': self.ca_cert,
+                    'username': self.cfg['download']['http_username'],
+                    'password': self.cfg['download']['http_password'],
+                   }
+
+        pycurl_handle = util.PycURL()
+        try:
+            address = 'localhost:%d'%(self.cfg['webserver']['port'])
+            logger.info('try connecting directly to tornado at %s',address)
+
+            outfile = os.path.join(self.test_dir,
+                                   str(random.randint(0,10000)))
+            pycurl_handle.fetch(address,outfile,**ssl_opts)
+            if not os.path.exists(outfile):
+                raise Exception('file not fetched')
+
+        finally:
+            ioloop.stop()
+
+    @unittest_reporter
     def test_10_JSONRPCHandler(self):
         """Test JSONRPCHandler"""
         # mock some functions so we don't go too far
@@ -198,7 +346,8 @@ class modules_website_test(unittest.TestCase):
                                    'echo':'e',
                                    'rpc_test':'testing'}}
         web.cfg = self.cfg
-        web._start()
+        with to_log(sys.stderr):
+            web._start()
 
         # actual start
         ioloop = tornado.ioloop.IOLoop.instance()
@@ -210,8 +359,7 @@ class modules_website_test(unittest.TestCase):
                       self.cfg['webserver']['port'])
             logger.info('try connecting directly to tornado at %s',address)
 
-            ssl_opts = {'ca_certs': self.cfg['system']['ssl_cacert'],
-                        'username': self.cfg['download']['http_username'],
+            ssl_opts = {'username': self.cfg['download']['http_username'],
                         'password': self.cfg['download']['http_password'],
                        }
 
@@ -255,7 +403,8 @@ class modules_website_test(unittest.TestCase):
         web = website(bcfg)
         web.messaging = messaging_mock()
         web.cfg = self.cfg
-        web._start()
+        with to_log(sys.stderr):
+            web._start()
 
         # actual start
         ioloop = tornado.ioloop.IOLoop.instance()
@@ -323,7 +472,8 @@ class modules_website_test(unittest.TestCase):
         passkey = 'key'
         datasets = {'d1':1,'d2':2}
         datasets_status = {'processing':3}
-        dataset_details = {'a':1,'b':2}
+        datasets_full = [{'dataset_id':'d1','name':'dataset 1','status':'processing','description':'desc','gridspec':gridspec}]
+        dataset_details = datasets_full
         tasks = {'task_1':3,'task_2':4}
         task_details = {'waiting':{'c':1,'d':2}}
         tasks_status = {'waiting':10,'queued':30}
@@ -339,10 +489,10 @@ class modules_website_test(unittest.TestCase):
                                    'web_get_tasks_by_status':tasks_status,
                                    'web_get_datasets_by_status':datasets,
                                    'web_get_tasks_details':task_details,
-                                   #'web_get_tasks':tasks,
                             }}
         web.cfg = self.cfg
-        web._start()
+        with to_log(sys.stderr):
+            web._start()
 
         # actual start
         ioloop = tornado.ioloop.IOLoop.instance()
@@ -382,25 +532,26 @@ class modules_website_test(unittest.TestCase):
             os.unlink(outfile)
 
             # dataset
+            web.messaging.ret['db']['web_get_datasets'] = datasets_full
             # TODO: simulate web_get_datasets (no-groupings)
             logger.info('url: /dataset')
             pycurl_handle.fetch(address+'dataset',outfile,**ssl_opts)
             if not os.path.exists(outfile):
                 raise Exception('dataset: file not fetched')
             data = open(outfile).read()
-            if any(k not in data for k in datasets):
+            if any(k['dataset_id'] not in data for k in datasets_full):
                 raise Exception('dataset: fetched file data incorrect')
             os.unlink(outfile)
 
             # dataset by status
-            logger.info('url: /dataset?status=waiting')
+            logger.info('url: /dataset?status=processing')
             dataset_browse = {'waiting':{'d1':1,'d2':2}}
             web.messaging.ret['db']['web_get_datasets_details'] = dataset_browse
             pycurl_handle.fetch(address+'dataset?status=waiting',outfile,**ssl_opts)
             if not os.path.exists(outfile):
                 raise Exception('dataset by status: file not fetched')
             data = open(outfile).read()
-            if any(k not in data for k in dataset_browse['waiting']):
+            if any(k['dataset_id'] not in data for k in datasets_full):
                 raise Exception('dataset by status: fetched file data incorrect')
             os.unlink(outfile)
 

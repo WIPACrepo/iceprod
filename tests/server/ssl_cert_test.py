@@ -75,6 +75,18 @@ class ssl_cert_test(unittest.TestCase):
         if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is False:
             raise Exception('verify failed')
 
+    @unittest_reporter(name='verify_cert expired')
+    def test_10_expired_cert(self):
+        """Test expired cert"""
+        ssl_cert = os.path.join(self.test_dir,'self.crt')
+        ssl_key = os.path.join(self.test_dir,'self.key')
+
+        # make cert
+        iceprod.server.ssl_cert.create_cert(ssl_cert,ssl_key,days=-1)
+
+        # verify cert
+        if iceprod.server.ssl_cert.verify_cert(ssl_cert,ssl_key) is True:
+            raise Exception('verify did not flag expired cert')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

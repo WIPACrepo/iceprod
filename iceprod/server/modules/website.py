@@ -45,7 +45,8 @@ import tornado.gen
 import iceprod
 from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
-from iceprod.server.nginx import Nginx
+from iceprod.server.nginx import Nginx, find_nginx
+from iceprod.server.ssl_cert import create_cert, verify_cert
 from iceprod.server.file_io import AsyncFileIO
 from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
@@ -56,25 +57,25 @@ logger = logging.getLogger('website')
 class website(module.module):
     """
     The main website module.
-    
+
     Run the website, which is required for anything to work.
     """
-    
+
     def __init__(self,*args,**kwargs):
         # run default init
         super(website,self).__init__(*args,**kwargs)
         self.service_class = WebsiteService(self)
-        
+
         # set up local variables
         self.nginx = None
-        
+
         # start website
         self.start()
-        
+
     def start(self):
         """Start thread"""
         super(website,self).start(callback=self._start)
-        
+
     def stop(self):
         """Stop thread"""
         # stop nginx
@@ -84,7 +85,7 @@ class website(module.module):
         except Exception as e:
             logger.error('cannot stop Nginx: %r',e)
         super(website,self).stop()
-    
+
     def restart(self):
         """restart website"""
         logger.warn('restarting website')
@@ -104,7 +105,7 @@ class website(module.module):
         except Exception:
             logger.warn('error during restart',exc_info=True)
             raise
-    
+
     def kill(self):
         """Kill thread"""
         # kill nginx
@@ -114,8 +115,8 @@ class website(module.module):
         except Exception as e:
             logger.error('cannot kill Nginx: %r',e)
         super(website,self).kill()
-        
-    
+
+
     def _start(self):
         """Run the website"""
         try:
@@ -128,7 +129,7 @@ class website(module.module):
                         os.makedirs(path)
                     except:
                         pass
-            
+
             # get package data
             static_path = get_pkgdata_filename('iceprod.server','data/www')
             if static_path is None:
@@ -136,50 +137,86 @@ class website(module.module):
             template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
             if template_path is None:
                 raise Exception('bad template path')
-            
-            # configure nginx
-            kwargs = {}
-            if (self.cfg and 'webserver' in self.cfg and
-                'request_timeout' in self.cfg['webserver']):
-                try:
-                    timeout = int(self.cfg['webserver']['request_timeout'])
-                except Exception:
-                    pass
-                else:
-                    kwargs['request_timeout'] = timeout
-                    self.messaging.timeout = timeout
-            if ('download' in self.cfg and 'http_username' in self.cfg['download']
-                and self.cfg['download']['http_username']):
-                kwargs['username'] = self.cfg['download']['http_username']
-            if ('download' in self.cfg and 'http_password' in self.cfg['download']
-                and self.cfg['download']['http_password']):
-                kwargs['password'] = self.cfg['download']['http_password']
-            if ('system' in self.cfg and 'ssl_cert' in self.cfg['system'] and
-                self.cfg['system']['ssl_cert'] and 'ssl_key' in self.cfg['system']
-                and self.cfg['system']['ssl_key']):
-                kwargs['sslcert'] = self.cfg['system']['ssl_cert']
-                kwargs['sslkey'] = self.cfg['system']['ssl_key']
-            if ('system' in self.cfg and 'ssl_cacert' in self.cfg['system'] and
-                self.cfg['system']['ssl_cacert']):
-                kwargs['cacert'] = self.cfg['system']['ssl_cacert']
-            kwargs['port'] = self.cfg['webserver']['port']
-            kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
-            kwargs['static_dir'] = static_path
-            
-            # start nginx
+
+            # detect nginx
             try:
-                self.nginx = Nginx(**kwargs)
+                find_nginx()
             except Exception:
+                if 'system' in self.cfg and 'ssl' in self.cfg['system']:
+                    logger.error('Nginx not present')
+                    raise
                 logger.error('Nginx not present, running Tornado directly')
-                logger.error('(Note that this mode is not very secure)')
+                logger.error('(Note that this mode is not secure)')
                 self.nginx = None
             else:
+                # configure nginx
+                kwargs = {}
+                if (self.cfg and 'webserver' in self.cfg and
+                    'request_timeout' in self.cfg['webserver']):
+                    try:
+                        timeout = int(self.cfg['webserver']['request_timeout'])
+                    except Exception:
+                        pass
+                    else:
+                        kwargs['request_timeout'] = timeout
+                        self.messaging.timeout = timeout
+                if ('download' in self.cfg and 'http_username' in self.cfg['download']
+                    and self.cfg['download']['http_username']):
+                    kwargs['username'] = self.cfg['download']['http_username']
+                if ('download' in self.cfg and 'http_password' in self.cfg['download']
+                    and self.cfg['download']['http_password']):
+                    kwargs['password'] = self.cfg['download']['http_password']
+                if 'system' in self.cfg and 'ssl' in self.cfg['system']:
+                    cert = None
+                    key = None
+                    if ('autogen' in self.cfg['system']['ssl']
+                        and self.cfg['system']['ssl']['autogen']):
+                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
+                            and os.path.exists(self.cfg['system']['ssl']['key'])):
+                            cert = self.cfg['system']['ssl']['cert']
+                            key = self.cfg['system']['ssl']['key']
+                            if not verify_cert(cert,key):
+                                cert = None
+                                key = None
+                    elif ('cert' in self.cfg['system']['ssl']
+                          and 'key' in self.cfg['system']['ssl']):
+                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
+                            and os.path.exists(self.cfg['system']['ssl']['key'])):
+                            cert = self.cfg['system']['ssl']['cert']
+                            key = self.cfg['system']['ssl']['key']
+                        else:
+                            raise Exception('Bad ssl cert or key')
+                    if not cert:
+                        # auto-generate self-signed cert
+                        create_cert('$PWD/cert','$PWD/key',days=30)
+                        cert = os.path.expandvars('$PWD/cert')
+                        key = os.path.expandvars('$PWD/key')
+                        self.cfg['system']['ssl']['autogen'] = True
+                        self.cfg['system']['ssl']['cert'] = cert
+                        self.cfg['system']['ssl']['key'] = key
+                        self.messaging.config.set('system',self.cfg['system'])
+                        logger.warn('prepare for cfg reload')
+                        return
+                    else:
+                        kwargs['sslcert'] = cert
+                        kwargs['sslkey'] = key
+
+                    if 'cacert' in self.cfg['system']['ssl']:
+                        if not os.path.exists(self.cfg['system']['ssl']['cacert']):
+                            raise Exception('Bad path to cacert')
+                        kwargs['cacert'] = self.cfg['system']['ssl']['cacert']
+                kwargs['port'] = self.cfg['webserver']['port']
+                kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
+                kwargs['static_dir'] = static_path
+
+                # start nginx
                 try:
+                    self.nginx = Nginx(**kwargs)
                     self.nginx.start()
                 except Exception:
                     logger.critical('cannot start Nginx:',exc_info=True)
                     raise
-            
+
             # configure tornado
             def tornado_logger(handler):
                 if handler.get_status() < 400:
@@ -221,7 +258,7 @@ class website(module.module):
             self.http_server = tornado.httpserver.HTTPServer(
                     self.application,
                     xheaders=True)
-            
+
             # start tornado
             if self.nginx is None:
                 tornado_port = self.cfg['webserver']['port']
@@ -236,7 +273,8 @@ class website(module.module):
             logger.warn('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)
-    
+            self.messaging.daemon.stop()
+
     def logrotate(self):
         """Rotate the Nginx logs."""
         logger.warn('got a logrotate() call')
@@ -266,7 +304,7 @@ class MyHandler(tornado.web.RequestHandler):
     def initialize(self, cfg, messaging, fileio, debug=False):
         """
         Get some params from the website module
-        
+
         :param cfg: the global config
         :param messaging: the messaging handle
         :param fileio: AsyncFileIO object
@@ -276,7 +314,7 @@ class MyHandler(tornado.web.RequestHandler):
         self.messaging = messaging
         self.fileio = fileio
         self.debug = debug
-    
+
     @tornado.concurrent.return_future
     def db_call(self,func_name,**kwargs):
         """Turn a DB messaging call into a `Futures` object"""
@@ -286,11 +324,11 @@ class MyHandler(tornado.web.RequestHandler):
         except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
-        
+
     def get(self):
         """GET is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
-        
+
     def post(self):
         """POST is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'POST is invalid.  Use GET')
@@ -298,7 +336,7 @@ class MyHandler(tornado.web.RequestHandler):
 
 class JSONRPCHandler(MyHandler):
     """JSONRPC 2.0 Handler.
-    
+
        Call DB methods using RPC over json.
     """
     @tornado.gen.coroutine
@@ -311,7 +349,7 @@ class JSONRPCHandler(MyHandler):
             request = tornado.escape.json_decode(self.request.body)
         except Exception as e:
             raise tornado.web.HTTPError(400,'POST request is not valid json')
-        
+
         # check for all parts of jsonrpc 2.0 spec
         if 'jsonrpc' not in request or (request['jsonrpc'] != '2.0' and
             request['jsonrpc'] != 2.0):
@@ -326,7 +364,7 @@ class JSONRPCHandler(MyHandler):
             self.json_error({'code':-32600,'message':'Invalid Request',
                              'data':'method name cannot start with underscore'})
             return
-            
+
         # add rpc_ to method name to prevent calling other DB methods
         method = 'rpc_'+request['method']
         if 'params' in request:
@@ -344,7 +382,7 @@ class JSONRPCHandler(MyHandler):
                              'data':'missing passkey'})
             return
         passkey = params.pop('passkey')
-        
+
         if 'site_id' in params:
             # authorize site
             site_id = params.pop('site_id')
@@ -356,13 +394,13 @@ class JSONRPCHandler(MyHandler):
             self.json_error({'code':403,'message':'Not Authorized',
                              'data':'passkey invalid'})
             return
-    
+
         # check for args and kwargs
         if 'args' in params:
             args = params.pop('args')
         else:
             args = []
-        
+
         # call method on DB if exists
         try:
             ret = yield self.db_call(method,*args,**params)
@@ -391,14 +429,14 @@ class JSONRPCHandler(MyHandler):
 
 class LibHandler(MyHandler):
     """Handler for iceprod library downloads.
-    
+
        These are straight http downloads like normal.
     """
-    
+
     def initialize(self, prefix, directory, **kwargs):
         """
         Get some params from the website module
-        
+
         :param messaging: the messaging handle
         :param fileio: AsyncFileIO object
         :param prefix: library url prefix
@@ -407,7 +445,7 @@ class LibHandler(MyHandler):
         super(LibHandler,self).initialize(**kwargs)
         self.prefix = prefix
         self.directory = directory
-    
+
     @tornado.gen.coroutine
     def get(self):
         """Look up a library"""
@@ -442,7 +480,7 @@ class PublicHandler(MyHandler):
         except Exception as e:
             logger.error('render error',exc_info=True)
             self.send_error(message='render error')
-    
+
     def get_template_namespace(self):
         namespace = super(MyHandler,self).get_template_namespace()
         namespace['version'] = iceprod.__version__
@@ -458,7 +496,7 @@ class PublicHandler(MyHandler):
                               'webserver' in self.cfg and
                               'sites' in self.cfg['webserver']) else None)
         return namespace
-    
+
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
         self.set_status(status_code)
@@ -469,7 +507,7 @@ class PublicHandler(MyHandler):
         if 'message' in kwargs:
             self.write('<br />'.join(kwargs['message'].split('\n')))
         self.finish()
-    
+
     @contextmanager
     def catch_error(self,message='Error generating page'):
         """Context manager for catching, logging, and displaying errors."""
@@ -491,6 +529,7 @@ class Default(PublicHandler):
                 raise datasets
             if not datasets:
                 logger.info('no datasets to display: %r',datasets)
+                datasets = [] # set to iterable to prevent None error
             self.render_handle('main.html',datasets=datasets)
 
 class Submit(PublicHandler):

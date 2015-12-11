@@ -1,7 +1,7 @@
 """
-Nginx is used to handle static content and proxy all other requests to 
-the `website module <iceprod.server.modules.website>`_. It also handles 
-most of the web security as a SSL/TLS front-end and more generally as 
+Nginx is used to handle static content and proxy all other requests to
+the `website module <iceprod.server.modules.website>`_. It also handles
+most of the web security as a SSL/TLS front-end and more generally as
 a hardened attack surface.
 
 Nginx is easily capable of handling 100+ https connections per second per
@@ -62,27 +62,27 @@ class Nginx(object):
         """Set up Nginx"""
         # make sure nginx exists
         nginx_path = find_nginx()
-        
+
         if 'prefix' in kwargs:
             prefix = os.path.abspath(os.path.expandvars(kwargs.pop('prefix')))
         elif 'I3PROD' in os.environ:
             prefix = os.path.abspath(os.path.expandvars('$I3PROD'))
         else:
             prefix = os.getcwd()
-        
+
         # defaults
         self._cfg = {
             'username': None,
             'password': None,
             'sslcert': None,
             'sslkey': None,
-            'cacert': os.path.join(prefix,'/etc/cacerts.crt'),
+            'cacert': os.path.join(prefix,'etc/cacerts.crt'),
             'request_timeout': 10000,
             'static_dir': os.path.join(prefix,'var/www'),
             'port': 8080,
             'proxy_port':8081,
             'pid_file': os.path.join(prefix,'var/run/nginx.pid'),
-            'cfg_file': os.path.join(prefix,'conf/nginx.conf'),
+            'cfg_file': os.path.join(prefix,'etc/nginx.conf'),
             'access_log': os.path.join(prefix,'var/log/nginx/access.log'),
             'error_log': os.path.join(prefix,'var/log/nginx/error.log'),
             'nginx_bin': nginx_path,
@@ -105,7 +105,7 @@ class Nginx(object):
             'nginx_bin': 'file',
             'mimetypes_file': 'file',
         }
-        
+
         # setup cfg variables
         for s in kwargs.keys():
             v = kwargs[s]
@@ -134,7 +134,7 @@ class Nginx(object):
             else:
                 raise Exception('%s has an unknown type'%(str(s)))
             self._cfg[s] = v
-        
+
         if self._cfg['username'] is not None and self._cfg['password'] is not None:
             logger.info('enabling auth_basic')
             self.auth_basic = True
@@ -145,23 +145,29 @@ class Nginx(object):
         else:
             logger.info('disabling auth_basic')
             self.auth_basic = False
-        
+
         if self._cfg['sslcert'] is not None and self._cfg['sslkey'] is not None:
             logger.info('enabling SSL for nginx')
             self.ssl = True
         else:
             logger.info('disabling SSL for nginx')
             self.ssl = False
-        
-        # create upload dirs
-        for x in xrange(0,10):
+
+        # create dirs
+        create_dirs = [
+            os.path.dirname(self._cfg['cfg_file']),
+            os.path.dirname(self._cfg['error_log']),
+            os.path.dirname(self._cfg['access_log']),
+            os.path.dirname(self._cfg['pid_file']),
+        ]
+        for d in create_dirs:
             try:
-                os.makedirs(os.path.join(self._cfg['upload_dir'],x))
+                os.makedirs(d)
             except:
                 pass
-        
+
         # write config file
-        self.cfgfile = os.path.abspath(self._cfg['cfg_file'])
+        self.cfgfile = os.path.abspath(os.path.expandvars(self._cfg['cfg_file']))
         with open(self.cfgfile,'w') as file:
             p = partial(print,sep='',file=file)
             # core nginx options
@@ -174,7 +180,7 @@ class Nginx(object):
             p('error_log {} error;'.format(self._cfg['error_log']))
             # http options
             p('http {')
-            if (self._cfg['mimetypes_file'] and 
+            if (self._cfg['mimetypes_file'] and
                 os.path.exists(self._cfg['mimetypes_file'])):
                 p('  include {};'.format(self._cfg['mimetypes_file']))
             p('  default_type application/octet-stream;')
@@ -191,7 +197,7 @@ class Nginx(object):
             p('  root {}/;'.format(self._cfg['static_dir'])) # direct random queries to static dir
             # ssl options
             if self.ssl is True:
-                p('  ssl on;')  
+                p('  ssl on;')
                 p('  ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:AES128-SHA;')
                 p('  ssl_prefer_server_ciphers on;')
                 p('  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;')
@@ -225,20 +231,20 @@ class Nginx(object):
             p('    }')
             p('  }')
             p('}')
-        
+
         self.process = None
-        
+
     def start(self):
         """Start server"""
         if self.process:
             raise Exception('Nginx already running')
-        
+
         logger.warn('starting Nginx...')
         self.process = subprocess.Popen([self._cfg['nginx_bin'],'-c',self.cfgfile])
         time.sleep(1)
         logger.warn('Nginx running on %d, proxying to %d',self._cfg['port'],
                      self._cfg['proxy_port'])
-    
+
     def stop(self):
         """Stop server"""
         if self.process:
@@ -248,7 +254,7 @@ class Nginx(object):
             time.sleep(0.5)
         else:
             logger.warn('Nginx not running')
-    
+
     def kill(self):
         """Stop server"""
         if self.process:

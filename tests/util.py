@@ -116,12 +116,14 @@ class messaging_mock(object):
         self._local_called.append('kill')
     def __request(self, service, method, args, kwargs):
         self.called.append([service,method,args,kwargs])
-        logging.info(self.called[-1])
+        logging.info('__request: %r',self.called[-1])
         if 'callback' in kwargs and kwargs['callback']:
             if self.ret and service in self.ret and method in self.ret[service]:
+                logging.debug('returning %r',self.ret[service][method])
                 kwargs['callback'](self.ret[service][method])
             else:
-                kwargs['callback']()
+                logging.debug('returning None. ret=%r',self.ret)
+                kwargs['callback'](None)
         elif 'async' in kwargs and kwargs['async'] is False:
             if self.ret and service in self.ret and method in self.ret[service]:
                 return self.ret[service][method]

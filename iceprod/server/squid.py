@@ -24,7 +24,7 @@ logger = logging.getLogger('squid')
 
 class Squid(KwargConfig):
     """
-    Wrapper around the `Squid` server. `Squid` is used to proxy and 
+    Wrapper around the `Squid` server. `Squid` is used to proxy and
     cache web requests by IceProd running on worker nodes.
     """
     def __init__(self, *args, **kwargs):
@@ -45,7 +45,7 @@ class Squid(KwargConfig):
             'cfg_file': os.path.expandvars('$I3PROD/etc/squid.conf'),
             'cache_log': os.path.expandvars('$I3PROD/var/log/squid/cache.log'),
             'access_log': os.path.expandvars('$I3PROD/var/log/squid/access.log'),
-            'squid_bin': os.path.expandvars('$I3PREFIX/sbin/squid'),
+            'squid_bin': os.path.expandvars('$I3PROD/sbin/squid'),
         }
         self._cfg_types = {
             'username': 'str',
@@ -66,11 +66,11 @@ class Squid(KwargConfig):
         }
         self.update(**kwargs)
         self.process = None
-    
+
     def update(self,**kwargs):
         # setup cfg variables
         self.validate(kwargs)
-        
+
         if self._cfg['username'] is not None and self._cfg['password'] is not None:
             logger.info('enabling auth_basic')
             self.auth_basic = True
@@ -81,14 +81,14 @@ class Squid(KwargConfig):
         else:
             logger.info('disabling auth_basic')
             self.auth_basic = False
-        
+
         #if self._cfg['sslcert'] is not None and self._cfg['sslkey'] is not None:
         #    logger.info('enabling SSL for squid')
         #    self.ssl = True
         #else:
         #    logger.info('disabling SSL for squid')
         #    self.ssl = False
-        
+
         # write config file
         self.cfgfile = os.path.abspath(self._cfg['cfg_file'])
         with open(self.cfgfile,'w') as file:
@@ -140,17 +140,17 @@ class Squid(KwargConfig):
             p('logfile_rotate 4')
             p('access_log daemon:{} squid'.format(self._cfg['access_log']))
             p('cache_log {} squid'.format(self._cfg['cache_log']))
-        
+
     def start(self):
         """Start server"""
         if self.process:
             raise Exception('Squid already running')
-        
+
         logger.warn('starting Squid...')
         self.process = subprocess.Popen([self._cfg['squid_bin'],'-Nzf',self.cfgfile])
         time.sleep(1)
         logger.warn('Squid running on %d',self._cfg['port'])
-    
+
     def stop(self):
         """Stop server"""
         if self.process:
@@ -160,7 +160,7 @@ class Squid(KwargConfig):
             time.sleep(0.5)
         else:
             raise Exception('Squid not running')
-    
+
     def kill(self):
         """Stop server"""
         if self.process:
@@ -178,7 +178,7 @@ class Squid(KwargConfig):
             time.sleep(0.5)
         else:
             self.start()
-    
+
     def logrotate(self):
         """Rotate log files"""
         if self.process:

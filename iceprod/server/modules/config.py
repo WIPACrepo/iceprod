@@ -1,7 +1,7 @@
 """
-The config module stores and shares configuration settings with the rest of 
-iceprod server. Other modules may request an updated config or make a change 
-to the current config. If a change is made, the new config is BROADCAST to 
+The config module stores and shares configuration settings with the rest of
+iceprod server. Other modules may request an updated config or make a change
+to the current config. If a change is made, the new config is BROADCAST to
 all modules.
 """
 
@@ -15,13 +15,13 @@ from iceprod.server.RPCinternal import RPCService
 class config(module.module):
     """
     Run the config module, which handles iceprod configuration settings.
-    
-    This is a module wrapper around 
+
+    This is a module wrapper around
     :class:`iceprod.server.config.IceProdConfig`.
-    
+
     :param filename: filename for config file (optional)
     """
-    
+
     def __init__(self,*args,**kwargs):
         # pull out config filename, if available
         filename = None
@@ -30,10 +30,10 @@ class config(module.module):
         # run default init
         super(config,self).__init__(*args,**kwargs)
         self.service_class = ConfigService(self)
-        
+
         self.config = IceProdConfig(filename=filename)
         self.start()
-    
+
     def start(self,blocking=True):
         """Start the messaging service"""
         self.config = IceProdConfig()
@@ -47,12 +47,12 @@ class config(module.module):
         self.messaging = RPCService(**kwargs)
         self.messaging.start()
         # if blocking is True, messaging will block the thread until closed
-    
+
     def stop(self):
         """Stop schedule"""
         super(config,self).stop()
         self.config.save()
-    
+
     def kill(self):
         """Kill thread"""
         super(config,self).kill()
@@ -63,10 +63,10 @@ class ConfigService(module.Service):
     Override the basic :class:`Service` handler to handle config messages.
     """
     def reload(self,cfg,callback=None):
-        self.mod.update_cfg(cfg)
+        # do nothing - we are the config source
         if callback:
             callback()
-    
+
     def get(self,key=None,callback=None):
         if callback:
             if key:
@@ -77,15 +77,15 @@ class ConfigService(module.Service):
             else:
                 ret = dict(self.mod.config)
             callback(ret)
-    
+
     def set(self,key,value,callback=None):
         self.mod.config[key] = value
         if callback:
             callback()
-            self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
-    
+        self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
+
     def delete(self,key,callback=None):
         del self.mod.config[key]
         if callback:
             callback()
-            self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
+        self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)

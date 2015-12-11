@@ -7,7 +7,7 @@
 {% block body %}
 <table>
 <tr>
-{% if len(tasks) > 0 %}
+{% if tasks %}
   {%for k in tasks.values()[0] %}
     <th>{{ k }}</th>
   {% end %}
