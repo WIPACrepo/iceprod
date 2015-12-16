@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Site ...{% end %}
+
+{% block body %}
+
+{{ url }}
+<ul>
+    {% for m in modules %}
+    <li>
+        <input type="checkbox" id="{{ m[0] }}" {{ ['', 'checked'][m[1]] }} >
+        <label for = '{{ m[0] }}'> {{ m[0] }} </label>
+
+    </li>
+    {% end %}
+
+</ul>
+
+
+{% end %}
