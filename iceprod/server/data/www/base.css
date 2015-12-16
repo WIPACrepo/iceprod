@@ -115,6 +115,11 @@ header .title {
     color: #189cc4;
     padding: 0 .6em;
 }
+header a:hover
+{
+    text-decoration: none;
+}
+
 div.body {
     width: 100%;
     padding: 0.5em;
@@ -144,7 +149,7 @@ div.contents {
 footer {
     padding: .2em .4em;
     text-align:right;
-    color: #cccccc;
+    color: #999;
     clear: both;
 }
 #page_title {
