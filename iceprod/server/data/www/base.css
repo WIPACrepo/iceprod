@@ -336,3 +336,13 @@ div.logs div.log_body {
     padding: 10px;
     margin: 5px 5px 5px 20px;
 }
+
+body {
+    background-color: #ccc;
+}
+.page {
+    background-color: #eee;
+    max-width: 800px;
+    margin: 20px auto;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}

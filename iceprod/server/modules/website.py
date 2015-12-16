@@ -325,6 +325,15 @@ class MyHandler(tornado.web.RequestHandler):
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
 
+    @tornado.concurrent.return_future
+    def daemon_call(self, func_name, **kwargs):
+        try:
+            getattr(self.messaging.daemon,func_name)(**kwargs)
+        except Exception:
+            logger.warn('daemon_call error for %s',func_name,exc_info=True)
+            raise
+
+
     def get(self):
         """GET is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
@@ -591,11 +600,34 @@ class Site(PublicHandler):
     """Handle /site urls"""
     @tornado.gen.coroutine
     def get(self,url):
-        self.write_error(404,message='Not yet implemented')
-        return
+        #self.write_error(404,message='Not yet implemented')
+        #return
         with self.catch_error(message='error generating site page'):
             if url:
                 url_parts = [x for x in url.split('/') if x]
+
+            def cb(m):
+                print(m)
+    
+            ret = yield self.daemon_call('get_running_modules')
+            print(ret)
+            if isinstance(ret,Exception):
+                raise ret
+            
+            available_modules = {}
+            for mod in iceprod.server.listmodules('iceprod.server.modules'):
+                mod_name = mod.rsplit('.',1)[1]
+                available_modules[mod_name] = mod
+            print(available_modules)
+            
+            module_state = []
+            for mod in available_modules.keys():
+                state = mod in ret
+                module_state.append([mod, state])
+            #self.messaging.daemon.get_running_modules(callback=cb)
+            #print('11111')
+            self.render_handle('site.html', url = url, modules = module_state)
+            '''
             filter_options = {}
             filter_results = {n:self.get_arguments(n) for n in filter_options}
             if url and url_parts:
@@ -619,6 +651,7 @@ class Site(PublicHandler):
                 self.render_handle('site_browse.html',sites=sites,
                                    filter_options=filter_options,
                                    filter_results=filter_results)
+            '''
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""

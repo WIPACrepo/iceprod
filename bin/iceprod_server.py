@@ -151,6 +151,9 @@ def main(cfgfile,cfgdata=None):
         def __init__(self,running_modules):
             self.running_modules = running_modules
             self.broadcast_ignore = set()
+        
+        def get_running_modules(self,callback=None):
+            callback(self.running_modules.keys())
 
         def start(self,mod=None,callback=None):
             if 'START' in self.broadcast_ignore:
