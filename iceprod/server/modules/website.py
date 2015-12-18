@@ -148,8 +148,9 @@ class website(module.module):
             try:
                 find_nginx()
             except Exception:
-                if 'system' in self.cfg and 'ssl' in self.cfg['system']:
-                    logger.error('Nginx not present')
+                if ('system' in self.cfg and 'ssl' in self.cfg['system']
+                    and self.cfg['system']['ssl']):
+                    logger.error('Nginx not present when SSL requested')
                     raise
                 logger.error('Nginx not present, running Tornado directly')
                 logger.error('(Note that this mode is not secure)')
@@ -172,7 +173,8 @@ class website(module.module):
                 if ('download' in self.cfg and 'http_password' in self.cfg['download']
                     and self.cfg['download']['http_password']):
                     kwargs['password'] = self.cfg['download']['http_password']
-                if 'system' in self.cfg and 'ssl' in self.cfg['system']:
+                if ('system' in self.cfg and 'ssl' in self.cfg['system']
+                    and self.cfg['system']['ssl']):
                     cert = None
                     key = None
                     if ('autogen' in self.cfg['system']['ssl']
@@ -614,18 +616,18 @@ class Site(PublicHandler):
 
             def cb(m):
                 print(m)
-    
+
             ret = yield self.daemon_call('get_running_modules')
             print(ret)
             if isinstance(ret,Exception):
                 raise ret
-            
+
             available_modules = {}
             for mod in iceprod.server.listmodules('iceprod.server.modules'):
                 mod_name = mod.rsplit('.',1)[1]
                 available_modules[mod_name] = mod
             print(available_modules)
-            
+
             module_state = []
             for mod in available_modules.keys():
                 state = mod in ret
