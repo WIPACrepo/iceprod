@@ -4,7 +4,7 @@ Test script for module
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, _messaging
+from tests.util import unittest_reporter, glob_tests, messaging_mock
 
 import logging
 logger = logging.getLogger('module_test')
@@ -81,7 +81,7 @@ class module_test(unittest.TestCase):
         if start.called is not True:
             raise Exception('init did not call start')
 
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         new_cfg = {'new':1}
         q.messaging.BROADCAST.reload(cfg=new_cfg)
         if not q.messaging.called:
@@ -100,7 +100,7 @@ class module_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = module.module(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         if not q:
             raise Exception('did not return module object')
 
@@ -125,7 +125,7 @@ class module_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = module.module(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         if not q:
             raise Exception('did not return module object')
 
@@ -161,7 +161,7 @@ class module_test(unittest.TestCase):
         cfg = basic_config.BasicConfig()
         cfg.messaging_url = 'localhost'
         q = module.module(cfg)
-        q.messaging = _messaging()
+        q.messaging = messaging_mock()
         if not q:
             raise Exception('did not return module object')
 

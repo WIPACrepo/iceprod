@@ -149,7 +149,7 @@ class website(module.module):
                 find_nginx()
             except Exception:
                 if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl']):
+                    and self.cfg['system']['ssl'] is not False):
                     logger.error('Nginx not present when SSL requested')
                     raise
                 logger.error('Nginx not present, running Tornado directly')
@@ -174,7 +174,7 @@ class website(module.module):
                     and self.cfg['download']['http_password']):
                     kwargs['password'] = self.cfg['download']['http_password']
                 if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl']):
+                    and self.cfg['system']['ssl'] is not False):
                     cert = None
                     key = None
                     if ('autogen' in self.cfg['system']['ssl']
@@ -743,4 +743,5 @@ class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""
     def get(self):
         path = self.request.path
+        self.set_status(404)
         self.render_handle('404.html',path=path)

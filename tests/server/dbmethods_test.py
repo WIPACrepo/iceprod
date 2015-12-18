@@ -378,7 +378,7 @@ class dbmethods_test(dbmethods_base):
             raise Exception('did not call master_updater')
         if m.called[0][1] != 'add':
             raise Exception('did not call master_updater.add')
-        if m.called[0][2][0] != arg:
+        if 'arg' not in m.called[0][3] or m.called[0][3]['arg'] != arg:
             raise Exception('did not call with arg')
 
         m.ret = {'master_updater':{'add':False}}

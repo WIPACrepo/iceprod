@@ -73,7 +73,7 @@ def uncompress(file):
                 if pos != -1:
                     files.append(os.path.join(dir,line[pos:]))
     logger.info('files: %s',str(files))
-    
+
     # check for existence in cache
     exists = True
     for f in files:
@@ -99,7 +99,7 @@ def uncompress(file):
                             files.append(os.path.join(dir,line[pos:]))
         logger.debug(output)
         logger.info('files: %s',str(files))
-    
+
     if not proc.returncode:
         # if everything went ok, extract tarfile if possible
         if len(files) == 1 and tarfile.is_tarfile(files[0]):
@@ -127,7 +127,7 @@ def uncompress(file):
                             if pos != -1:
                                 files2.append(os.path.join(dir,line[pos:]))
                 logger.info('files: %s',str(files2))
-                
+
                 # check for existence in cache
                 exists = True
                 if file.endswith(('.tgz','.tbz2','.tbz')):
@@ -148,7 +148,7 @@ def uncompress(file):
                     proc = subprocess.Popen('tar -x -C %s -f %s'%(dir,files[0]),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                     output = proc.communicate()[0]
                     logger.info(output)
-                
+
                 if not proc.returncode: # if everything went ok
                     if len(files2) == 0:
                         return ''
@@ -181,13 +181,13 @@ def compress(file,compression='lzma'):
 
 def iscompressed(file):
     """Check if a file is a compressed file, based on file name"""
-    return reduce(partial(_checksuffixes,file), compress_suffixes, None)  
+    return reduce(partial(_checksuffixes,file), compress_suffixes, None)
 
 def istarred(file):
     """Check if a file is a tarred file, based on file name"""
     if '.tar' in file:
         return 'tar'
-    return reduce(partial(_checksuffixes,file), tar_suffixes, None)  
+    return reduce(partial(_checksuffixes,file), tar_suffixes, None)
 
 def tar(tfile,files,workdir=None):
     """tar a list of files"""
@@ -221,7 +221,7 @@ def cksm(filename,type,buffersize=16384,file=True):
     """Return checksum of file using algorithm specified"""
     if type not in ('md5','sha1','sha256','sha512'):
         raise Exception('cannot get checksum for type %r',type)
-    
+
     try:
         digest = getattr(hashlib,type)()
     except:
@@ -247,16 +247,16 @@ def md5sum(filename,buffersize=16384):
 def sha1sum(filename,buffersize=16384):
     """Return sha1 digest of file"""
     return cksm(filename,'sha1',buffersize)
-    
+
 def sha256sum(filename,buffersize=16384):
     """Return sha256 digest of file"""
     return cksm(filename,'sha256',buffersize)
-    
+
 def sha512sum(filename,buffersize=16384):
     """Return sha512 digest of file"""
     return cksm(filename,'sha512',buffersize)
-    
-    
+
+
 def check_cksm(file,type,sum):
     """Check a checksum of a file"""
     if not os.path.exists(file):
@@ -274,19 +274,19 @@ def check_cksm(file,type,sum):
         sum_cksm = sum
     # check sum
     return (file_cksm == sum_cksm)
-    
+
 def check_md5sum(file,sum):
     """Check an md5sum of a file"""
     return check_cksm(file,'md5',sum)
-    
+
 def check_sha1sum(file,sum):
     """Check an sha1sum of a file"""
     return check_cksm(file,'sha1',sum)
-    
+
 def check_sha256sum(file,sum):
     """Check an sha256sum of a file"""
     return check_cksm(file,'sha256',sum)
-    
+
 def check_sha512sum(file,sum):
     """Check an sha512sum of a file"""
     return check_cksm(file,'sha512',sum)
@@ -379,7 +379,7 @@ def find_regex(pathlist,pattern,filetype=None):
                 if regex.search(path):
                     matches.append(os.path.abspath(path))
     return matches
-    
+
 def find(pathlist,pattern,filetype=None):
     return find_regex(pathlist,pattern,filetype)
 
@@ -409,7 +409,7 @@ def freespace(path='$PWD'):
     except OSError,e:
         logger.warning('Error getting free space for %s: %s',(path,e))
         raise
-    return fs.f_bfree*fs.f_frsize    
+    return fs.f_bfree*fs.f_frsize
 
 
 ### Network Functions ###
@@ -432,7 +432,7 @@ def getInterfaces(legacy=False,newkernel=False):
         except OSError, e:
             logger.error('Error calling /sbin/ip: %s'%(str(e)))
             return getInterfaces(True)
-            
+
         # parse results
         groups = [[]]
         i=0
@@ -448,7 +448,7 @@ def getInterfaces(legacy=False,newkernel=False):
             groups[i].extend(words)
         if len(groups[i]) == 0:
             del groups[i]
-            
+
         for g in groups:
             if 'UP' not in g[1] or 'DOWN' in g[1]:
                 continue
@@ -508,7 +508,7 @@ def getInterfaces(legacy=False,newkernel=False):
                 groups[i].append(words)
             if len(groups[i]) == 0:
                 del groups[i]
-        
+
             for g in groups:
                 name = g[0][0][:-1]
                 for iface in interfaces:
@@ -528,7 +528,7 @@ def getInterfaces(legacy=False,newkernel=False):
                 i += 1
             if len(groups[i-2]) == 0:
                 del groups[i-2]
-            
+
             for g in groups:
                 name = g[0].split(':')[0]
                 if g[0].split(':')[1] != '':
@@ -564,76 +564,79 @@ def getInterfaces(legacy=False,newkernel=False):
             groups[i].extend(words)
         if len(groups[i]) == 0:
             del groups[i]
-        
+
         for g in groups:
-            iface = util.IFace()
-            iface.name = g.pop(0)
-            link = {}
-            nextis = None
-            for w in g:
-                if nextis == 'mac':
-                    iface.mac = w
-                    nextis = None
-                elif nextis == 'ip':
-                    if '/' in w:
-                        link['ip'] = w.split('/')[0]
-                        link['Mask'] = '/'+w.split('/')[1]
-                    else:
-                        link['ip'] = w
-                    nextis = None
-                elif nextis == 'rx':
-                    tmp = w.split(':')
-                    if tmp[0] == 'packets':
-                        iface.rx_packets = long(tmp[1])
-                    elif tmp[0] == 'bytes':
-                        iface.rx_bytes = long(tmp[1])
-                    else:
-                        logger.warning('error when nextis=rx')
-                    nextis = None
-                elif nextis == 'tx':
-                    tmp = w.split(':')
-                    if tmp[0] == 'packets':
-                        iface.tx_packets = long(tmp[1])
-                    elif tmp[0] == 'bytes':
-                        iface.tx_bytes = long(tmp[1])
-                    else:
-                        logger.warning('error when nextis=tx')
-                    nextis = None
-                else:
-                    if w.startswith('encap'):
-                        iface.encap = w.split(':')[1]
-                    elif w == 'HWaddr':
-                        nextis = 'mac'
-                    elif w.startswith('addr'):
-                        ip = w.split(':')[1]
-                        if ip == '':
-                            nextis = 'ip'
+            try:
+                iface = util.IFace()
+                iface.name = g.pop(0)
+                link = {}
+                nextis = None
+                for w in g:
+                    if nextis == 'mac':
+                        iface.mac = w
+                        nextis = None
+                    elif nextis == 'ip':
+                        if '/' in w:
+                            link['ip'] = w.split('/')[0]
+                            link['Mask'] = '/'+w.split('/')[1]
                         else:
-                            link['ip'] = ip
-                    elif w.startswith('Bcast'):
-                        link['Bcast'] = w.split(':')[1]
-                    elif w.startswith('Mask'):
-                        link['Mask'] = w.split(':')[1]
-                        if link['Mask'][0] != '/' and '.' in link['Mask']:
-                            link['Mask'] = '/'+str(int(32-log(reduce(lambda a,b:a*256+(255-int(b)),link['Mask'].split('.'),0)+1)/log(2)))
-                    elif w.startswith('inet'):
-                        if link != {}:
-                            iface.link.append(link)
-                        link = {}
-                        if w == 'inet':
-                            link['type'] = 'ipv4'
-                        elif w == 'inet6':
-                            link['type'] = 'ipv6'
+                            link['ip'] = w
+                        nextis = None
+                    elif nextis == 'rx':
+                        tmp = w.split(':')
+                        if tmp[0] == 'packets':
+                            iface.rx_packets = long(tmp[1])
+                        elif tmp[0] == 'bytes':
+                            iface.rx_bytes = long(tmp[1])
                         else:
-                            link['type'] = w
-                    elif w == 'RX':
-                        nextis = 'rx'
-                    elif w == 'TX':
-                        nextis = 'tx'
-            if link != {}:
-                iface.link.append(link)
-            interfaces.append(iface)
-        
+                            logger.warning('error when nextis=rx')
+                        nextis = None
+                    elif nextis == 'tx':
+                        tmp = w.split(':')
+                        if tmp[0] == 'packets':
+                            iface.tx_packets = long(tmp[1])
+                        elif tmp[0] == 'bytes':
+                            iface.tx_bytes = long(tmp[1])
+                        else:
+                            logger.warning('error when nextis=tx')
+                        nextis = None
+                    else:
+                        if w.startswith('encap'):
+                            iface.encap = w.split(':')[1]
+                        elif w == 'HWaddr':
+                            nextis = 'mac'
+                        elif w.startswith('addr'):
+                            ip = w.split(':')[1]
+                            if ip == '':
+                                nextis = 'ip'
+                            else:
+                                link['ip'] = ip
+                        elif w.startswith('Bcast'):
+                            link['Bcast'] = w.split(':')[1]
+                        elif w.startswith('Mask'):
+                            link['Mask'] = w.split(':')[1]
+                            if link['Mask'][0] != '/' and '.' in link['Mask']:
+                                link['Mask'] = '/'+str(int(32-log(reduce(lambda a,b:a*256+(255-int(b)),link['Mask'].split('.'),0)+1)/log(2)))
+                        elif w.startswith('inet'):
+                            if link != {}:
+                                iface.link.append(link)
+                            link = {}
+                            if w == 'inet':
+                                link['type'] = 'ipv4'
+                            elif w == 'inet6':
+                                link['type'] = 'ipv6'
+                            else:
+                                link['type'] = w
+                        elif w == 'RX':
+                            nextis = 'rx'
+                        elif w == 'TX':
+                            nextis = 'tx'
+                if link != {}:
+                    iface.link.append(link)
+                interfaces.append(iface)
+            except Exception:
+                logger.info('nic error',exc_info=True)
+
     return interfaces
 
 def get_local_ip_address():
@@ -723,7 +726,7 @@ pycurl_handle = util.PycURL()
 def wget(url,dest='./',cache=False,proxy=False,options={}):
     """wrapper for downloading from multiple protocols"""
     dest = os.path.expandvars(dest)
-    url  = os.path.expandvars(url)    
+    url  = os.path.expandvars(url)
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
@@ -739,7 +742,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         dest = "file:" + dest
 
     logger.warn('wget(): src: %s, dest: %s',url,dest)
-    
+
     if cache:
         # test for cache hit
         cache_match = incache(url,options)
@@ -748,7 +751,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
             logger.info('cache hit for %s',url)
             copy(cache_match,dest_path)
             return dest_path
-        
+
     if proxy:
         # is this a full proxy?
         if proxy == 'match':
@@ -760,8 +763,8 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                 proxy = True
             else:
                 proxy = False
-        if (proxy is True or (isinstance(proxy,str) and 
-            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and 
+        if (proxy is True or (isinstance(proxy,str) and
+            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and
             reduce(lambda a,b:a or url.startswith(b),proxy,False))):
             # test for proxy hit
             try:
@@ -773,7 +776,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                     # insert in cache
                     insertincache(url,ret,options)
                 return ret
-    
+
     # actually download the file locally
     ret = None
     if url[:5] in ('http:','https','ftp:/','ftps:'):
@@ -849,7 +852,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                 ret = dest_path
     else:
         # command line programs
-        if url.startswith("lfn:"): 
+        if url.startswith("lfn:"):
             cmd = "lcg-cp --vo icecube -v %s %s" % (url,dest)
         else:
             raise Exception("unsupported protocol %s" % url)
@@ -860,7 +863,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         logging.info(cmd)
         if not subprocess.call(cmd,shell=True):
             ret = dest_path
-    
+
     if ret == None:
         if os.path.exists(dest_path):
             os.remove(dest_path)
@@ -868,10 +871,10 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         # insert in cache
         insertincache(url,ret,options)
     return ret
-    
+
 def wget_checksum(url,cache=False,proxy=False,options={}):
     """wrapper for getting checksum from multiple protocols"""
-    url  = os.path.expandvars(url)    
+    url  = os.path.expandvars(url)
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
@@ -885,7 +888,7 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
             # file is cached
             logger.info('cache checksum hit for %s',url)
             return cache_match
-        
+
     if proxy:
         # is this a full proxy?
         if proxy == 'match':
@@ -897,8 +900,8 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                 proxy = True
             else:
                 proxy = False
-        if (proxy is True or (isinstance(proxy,str) and 
-            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and 
+        if (proxy is True or (isinstance(proxy,str) and
+            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and
             reduce(lambda a,b:a or url.startswith(b),proxy,False))):
             # test for proxy hit
             try:
@@ -910,7 +913,7 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                     # insert in cache
                     insertincache_checksum(url,ret[0],ret[1],options)
                 return ret
-    
+
     # actually get the checksum directly
     ret = None
     if url[:5] in ('http:','https','ftp:/','ftps:'):
@@ -1004,7 +1007,7 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                 (f,dest) = tempfile.mkstemp()
                 dest2 = 'file:'+dest
                 f.close()
-                if url2.startswith("lfn:"): 
+                if url2.startswith("lfn:"):
                     cmd = "lcg-cp --vo icecube -v %s %s" % (url2,dest2)
                 else:
                     raise Exception("unsupported protocol %s" % url)
@@ -1025,15 +1028,15 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
             if ret:
                 ret = (ret,type)
                 break
-    
+
     if ret and cache:
         # insert in cache
         insertincache_checksum(url,ret[0],ret[1],options)
     return ret
-    
+
 def wput(source,url,proxy=False,options={}):
     """wrapper for uploading using multiple protocols
-    
+
        options
          :proxy_addr: main address of an iceprod server
          :key: proxy key
@@ -1042,19 +1045,19 @@ def wput(source,url,proxy=False,options={}):
          :ssl_cert: for https, the cert
          :ssl_key: for https, the key
          :ssl_cacert: for https, the CA cert
-       
+
        If using the command line, options should be name,value pairs
        that can be mapped to --name=value arguments.
     """
     global pycurl_handle
     source = os.path.expandvars(source)
-    url  = os.path.expandvars(url)    
+    url  = os.path.expandvars(url)
     if not isurl(url):
         if os.path.exists(os.path.dirname(url)):
             url = 'file:'+url
         else:
             raise Exception("unsupported protocol %s" % url)
-    
+
     source_path = source
     if source_path[:5] == 'file:':
         source_path = source_path[5:]
@@ -1064,14 +1067,14 @@ def wput(source,url,proxy=False,options={}):
         source = "file:"+source_path
     if not source[:5] == "file:":
         source = "file:" + source
-    
+
     logger.warn('wput(): src: %s, dest: %s',source,url)
-    
+
     chksum = sha512sum(source_path)
     chksum_type = 'sha512'
-    
+
     if (proxy is True or (isinstance(proxy,str) and url.startswith(proxy)) or
-        (isinstance(proxy,(list,tuple)) and 
+        (isinstance(proxy,(list,tuple)) and
         reduce(lambda a,b:a or url.startswith(b),proxy,False))):
         # upload to proxy first
         if 'proxy_addr' not in options:
@@ -1079,7 +1082,7 @@ def wput(source,url,proxy=False,options={}):
         if 'key' not in options:
             raise Exception('auth key not in options, so cannot communicate with server')
         proxy_addr = options['proxy_addr']
-        
+
         try:
             kwargs = {}
             if 'http_username' in options:
@@ -1092,7 +1095,7 @@ def wput(source,url,proxy=False,options={}):
                 kwargs['sslkey'] = options['ssl_key']
             if 'ssl_cacert' in options:
                 kwargs['cacert'] = options['ssl_cacert']
-            
+
             # initial json request request
             def reply(data):
                 reply.data += data
@@ -1124,7 +1127,7 @@ def wput(source,url,proxy=False,options={}):
             if data['type'] != 'upload' or data['url'] != url:
                 raise Exception('Received bad response from proxy')
             upload_url = data['upload']
-            
+
             if upload_url:
                 # actual upload
                 for i in xrange(0,2):
@@ -1142,7 +1145,7 @@ def wput(source,url,proxy=False,options={}):
                     else:
                         break
             # else: we've already uploaded this file, so just check the status
-            
+
             # check that upload was successful
             for _ in xrange(100):
                 reply.data = ''
@@ -1177,13 +1180,13 @@ def wput(source,url,proxy=False,options={}):
                 else:
                     # success
                     break
-        
+
         except Exception as e:
             logger.error('error uploading using proxy to url %s : %r',url,e)
             return 1
-        
+
         return 0
-    
+
     # actually upload the file
     ret = None
     urlprefix = url[:5]
@@ -1244,7 +1247,7 @@ def wput(source,url,proxy=False,options={}):
                         ret = 1
     else:
         # command line programs
-        if url.startswith("lfn:"): 
+        if url.startswith("lfn:"):
             cmd = "lcg-cp --vo icecube -v %s %s" % (source,url)
         else:
             raise Exception("unsupported protocol %s" % url)
@@ -1255,7 +1258,7 @@ def wput(source,url,proxy=False,options={}):
         logging.info(cmd)
         if not subprocess.call(cmd,shell=True):
             raise('failed to run cmd: %s'%cmd)
-    
+
     return ret
 
 def isurl(url):
@@ -1279,12 +1282,12 @@ def _getcachedir(options={}):
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     return cache_dir
-    
+
 def insertincache(url,file,options={}):
     """Copy file to cache"""
     if 'debug' in options:
         return None
-    
+
     # check url type
     search_expr = '/svn|code.icecube.wisc.edu|.py$'
     if 'cache_script_expr' in options and options['cache_script_expr']:
@@ -1295,23 +1298,23 @@ def insertincache(url,file,options={}):
         if not re.search('release|candidate|tag',url):
             # don't cache svn files under active development
             return
-    
+
     # get cache directory
     cache_dir = _getcachedir(options)
-    
+
     # get hash of url
     hash = cksm(url,'sha512',file=False)
-    
+
     # copy file
     logger.info('insertincache(%s) = %s',url,hash)
     match = os.path.join(cache_dir,hash)
     copy(file,match)
-    
+
 def insertincache_checksum(url,checksum,type='sha512',options={}):
     """Copy checksum to cache"""
     if 'debug' in options:
         return None
-    
+
     # check url type
     search_expr = '/svn|code.icecube.wisc.edu|.py$'
     if 'cache_script_expr' in options and options['cache_script_expr']:
@@ -1322,13 +1325,13 @@ def insertincache_checksum(url,checksum,type='sha512',options={}):
         if not re.search('release|candidate|tag',url):
             # don't cache svn files under active development
             return
-    
+
     # get cache directory
     cache_dir = _getcachedir(options)
-    
+
     # get hash of url
     hash = cksm(url,'sha512',file=False)
-    
+
     # copy file
     logger.info('insertincache(%s) = %s',url,hash)
     match = os.path.join(cache_dir,hash)+'_cksm'
@@ -1340,13 +1343,13 @@ def incache(url,options={}):
     if 'debug' in options:
         return None
     logger.info('incache(%s)',url)
-    
+
     # get cache directory
     cache_dir = _getcachedir(options)
-    
+
     # get hash of url
     hash = cksm(url,'sha512',file=False)
-    
+
     # check cache dir for url
     match = os.path.join(cache_dir,hash)
     if os.path.exists(match):
@@ -1373,7 +1376,7 @@ def incache(url,options={}):
                 logger.error('error converting cache_age to float: %s',str(cache_age))
             if os.path.getmtime(match) >= (time.time()-cache_age):
                 return match
-    
+
     # no matches in cache
     return None
 
@@ -1383,13 +1386,13 @@ def incache_checksum(url,options={}):
     if 'debug' in options:
         return None
     logger.info('incache(%s)',url)
-    
+
     # get cache directory
     cache_dir = _getcachedir(options)
-    
+
     # get hash of url
     hash = cksm(url,'sha512',file=False)
-    
+
     # check cache dir for url
     match = os.path.join(cache_dir,hash)+'_cksm'
     if os.path.exists(match):
@@ -1418,7 +1421,7 @@ def incache_checksum(url,options={}):
             if os.path.getmtime(match) >= (time.time()-cache_age):
                 cache = pickle.load(open(match))
                 return (cache['cksm'],cache['type'])
-    
+
     # no matches in cache
     return None
 
@@ -1429,10 +1432,10 @@ def inproxy(url,dest_path,options):
     proxy_addr = options['proxy_addr']
     if 'key' not in options:
         raise Exception('auth key not in options, so cannot communicate with server')
-    
+
     # make request body
     body = {'url':url,'key':options['key']}
-    
+
     # use pycurl
     global pycurl_handle
     with open(dest_path,'w') as f:
@@ -1464,7 +1467,7 @@ def inproxy(url,dest_path,options):
                     ret = dest_path
                 break
     return ret
-    
+
 def inproxy_checksum(url,dest_path,options):
     """Ask the proxy to download the checksum"""
     if 'proxy_addr' not in options:
@@ -1472,16 +1475,16 @@ def inproxy_checksum(url,dest_path,options):
     proxy_addr = options['proxy_addr']
     if 'key' not in options:
         raise Exception('auth key not in options, so cannot communicate with server')
-    
+
     # make request body
     body = {'url':url,'key':options['key'],'type':'checksum'}
-    
+
     ret = None
-    
+
     def cb(data):
         cb.data += data
     cb.data = ''
-    
+
     # use pycurl
     global pycurl_handle
     for i in xrange(0,2):
@@ -1511,14 +1514,14 @@ def inproxy_checksum(url,dest_path,options):
             if cb.data:
                 ret = cb.data
             break
-    
+
     return ret
 
 def sendMail(cfg,subject,msg):
     """Send email"""
     smtpuser = "%s@%s" % (os.getlogin(),os.uname()[1].split(".")[0])
     proto = 'sendmail'
-    if cfg.has_option('monitoring','smtphost'): 
+    if cfg.has_option('monitoring','smtphost'):
        try:
           import smtplib
        except ImportError, e:
@@ -1532,7 +1535,7 @@ def sendMail(cfg,subject,msg):
 
        from_addr = "From: " + smtpuser
        to_addrs  = cfg.get('monitoring','smtpnotify').split(',')
-       subject   = "Subject: %s\n" % subject 
+       subject   = "Subject: %s\n" % subject
 
        server = smtplib.SMTP(smtphost)
        server.sendmail(from_addr, to_addrs, subject + msg)
@@ -1550,17 +1553,17 @@ def sendMail(cfg,subject,msg):
        if status != 0:
           raise Exception("Sendmail exited with status %u" % status)
 
-   
+
 ### Other functions ###
 
 def getuser():
     """Get user name of current process owner"""
     import pwd
     return pwd.getpwuid(os.getuid())[0]
-    
+
 def platform():
     """Get the platform
-    
+
     same as $PLATFORM from loader.sh
     returns $ARCH.$OSTYPE.$VER.$PYTHONUNICODE
     """
@@ -1603,12 +1606,12 @@ def myputenv(name,value):
 def getmemusage():
     # Get memory usage info
     stats = {
-        'VmLib:' : 0.0, 
-        'VmData:': 0.0, 
-        'VmExe:' : 0.0, 
-        'VmRSS:' : 0.0, 
-        'VmSize:': 0.0, 
-        'VmLck:' : 0.0, 
+        'VmLib:' : 0.0,
+        'VmData:': 0.0,
+        'VmExe:' : 0.0,
+        'VmRSS:' : 0.0,
+        'VmSize:': 0.0,
+        'VmLck:' : 0.0,
         'VmStk:' : 0.0,
     }
     if os.uname()[0] == 'Linux':
@@ -1627,38 +1630,38 @@ def getmemusage():
 
 def hoerandel_fluxsum(emin,dslope):
    """
-   function to caculate CORSIKA fluxsum 
-   FLUXSUM is the integral in energy of the primary cosmic ray between 
-   the minimum and the maximum set energy. 
+   function to caculate CORSIKA fluxsum
+   FLUXSUM is the integral in energy of the primary cosmic ray between
+   the minimum and the maximum set energy.
 
    The cosmic ray energy spectrum is from Hoerandel polygonato model [Astrop.
    Phys. Vol 19, Issue 2, Pages 193-312 (2003)]. The maximum energy is assumed
-   to be much higher than the minimum energy (the maximum energy actually is not explicitly 
+   to be much higher than the minimum energy (the maximum energy actually is not explicitly
    used in this calculation). Note : DSLOPE = 0 for unweighted CORSIKA sample and = -1 for weighted
-   CORSIKA sample. 
+   CORSIKA sample.
    """
    integral = 0.
    nmax     = 26
    norm = [
-          0.0873, 0.0571, 0.00208, 0.000474,0.000895, 
-          0.0106, 0.00235, 0.0157, 0.000328, 
-          0.0046, 0.000754, 0.00801, 0.00115, 
-          0.00796, 0.00027, 0.00229, 0.000294, 
-          0.000836, 0.000536, 0.00147, 0.000304, 
+          0.0873, 0.0571, 0.00208, 0.000474,0.000895,
+          0.0106, 0.00235, 0.0157, 0.000328,
+          0.0046, 0.000754, 0.00801, 0.00115,
+          0.00796, 0.00027, 0.00229, 0.000294,
+          0.000836, 0.000536, 0.00147, 0.000304,
           0.00113, 0.000631, 0.00136, 0.00135, 0.0204 ]
 
    gamma = [
-         2.71, 2.64, 2.54, 2.75, 2.95, 2.66, 2.72, 2.68, 2.69, 2.64, 
-         2.66, 2.64, 2.66, 2.75, 2.69, 2.55, 2.68, 2.64, 2.65, 2.7, 
+         2.71, 2.64, 2.54, 2.75, 2.95, 2.66, 2.72, 2.68, 2.69, 2.64,
+         2.66, 2.64, 2.66, 2.75, 2.69, 2.55, 2.68, 2.64, 2.65, 2.7,
          2.64, 2.61, 2.63, 2.67, 2.46, 2.59 ]
 
    crs = [
-         1.00797, 4.0026, 6.939, 9.0122, 10.811, 12.0112, 14.0067, 
-         15.9994, 18.9984, 20.183, 22.9898, 24.312, 26.9815, 28.086, 
-         30.984, 32.064, 35.453, 39.948, 39.102, 40.08, 44.956, 47.9, 
+         1.00797, 4.0026, 6.939, 9.0122, 10.811, 12.0112, 14.0067,
+         15.9994, 18.9984, 20.183, 22.9898, 24.312, 26.9815, 28.086,
+         30.984, 32.064, 35.453, 39.948, 39.102, 40.08, 44.956, 47.9,
          50.942, 51.996, 54.938, 55.847]
 
-   for i in range(nmax): 
+   for i in range(nmax):
          prwght     = round(crs[i])
          gamma[i]  += dslope
          integral  += norm[i] * pow( (emin*prwght), (1-gamma[i]) ) / (gamma[i]-1)

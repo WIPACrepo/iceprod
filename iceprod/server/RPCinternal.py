@@ -534,7 +534,10 @@ class Server(Base):
                 client_name = n
                 break
         else:
-            client_name = ''.join("%02X"%ord(x) for x in client_id)
+            try:
+                client_name = ''.join("%02X"%ord(x) for x in client_id)
+            except Exception:
+                client_name = str(client_id)
         try:
             header = MessageFactory.parseMessageHeader(frames[1])
         except Exception as e:
