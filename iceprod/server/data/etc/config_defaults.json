@@ -35,5 +35,8 @@
     "master":{
         "status":"",
         "url":""
+    },
+    "system":{
+        "ssl":{}
     }
 }

@@ -84,6 +84,12 @@ class website(module.module):
                 self.nginx.stop()
         except Exception as e:
             logger.error('cannot stop Nginx: %r',e)
+        # stop tornado
+        try:
+            if self.http_server:
+                self.http_server.stop()
+        except Exception as e:
+            logger.error('cannot stop tornado: %r',e)
         super(website,self).stop()
 
     def restart(self):
@@ -194,7 +200,7 @@ class website(module.module):
                         self.cfg['system']['ssl']['autogen'] = True
                         self.cfg['system']['ssl']['cert'] = cert
                         self.cfg['system']['ssl']['key'] = key
-                        self.messaging.config.set('system',self.cfg['system'])
+                        self.messaging.config.set(key='system',value=self.cfg['system'])
                         logger.warn('prepare for cfg reload')
                         return
                     else:
@@ -732,6 +738,7 @@ class Util(PublicHandler):
         self.write_error(404,message='Not yet implemented')
 
 class Other(PublicHandler):
-    """Handle any other urls"""
+    """Handle any other urls - this is basically all 404"""
     def get(self):
-        self.write_error(404,message='Bad url: '+self.request.uri)
+        path = self.request.path
+        self.render_handle('404.html',path=path)

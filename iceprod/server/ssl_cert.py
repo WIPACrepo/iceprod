@@ -9,6 +9,7 @@ import subprocess
 import hashlib
 import logging
 from datetime import datetime
+import uuid
 
 from OpenSSL import SSL,crypto
 from pyasn1.type import univ
@@ -120,18 +121,14 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
         else:
             # certificate request
             cert = crypto.X509Req()
-        cert.get_subject().C = "US"
-        cert.get_subject().ST = "Wisconsin"
-        cert.get_subject().L = "Madison"
-        cert.get_subject().O = "University of Wisconsin-Madison"
-        cert.get_subject().OU = "IceCube IceProd"
-        cert.get_subject().CN = hostname
 
         if cacert is None or cakey is None:
             # self-sign
+            cert.get_subject().CN = hostname
+
             cert.gmtime_adj_notBefore(0)
             cert.gmtime_adj_notAfter(days*24*60*60)
-            cert.set_serial_number(1)
+            cert.set_serial_number(uuid.uuid4().int)
             cert.set_issuer(cert.get_subject())
             cert.set_pubkey(k)
 
@@ -148,6 +145,13 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert.sign(k, 'sha1')
 
         else:
+            cert.get_subject().C = "US"
+            cert.get_subject().ST = "Wisconsin"
+            cert.get_subject().L = "Madison"
+            cert.get_subject().O = "University of Wisconsin-Madison"
+            cert.get_subject().OU = "IceCube IceProd"
+            cert.get_subject().CN = hostname
+
             # finish cert req
             cert.set_pubkey(k)
             cert.sign(k, 'sha1')

@@ -125,7 +125,7 @@ class _Methods_Base():
     def _send_to_master(self, updates, callback=None):
         """Send an update to the master"""
         try:
-            self.db.messaging.master_updater.add(updates, callback=callback)
+            self.db.messaging.master_updater.add(arg=updates, callback=callback)
         except Exception:
             logger.warn('_send_to_master() error',exc_info=True)
 

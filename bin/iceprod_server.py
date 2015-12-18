@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import time
-from threading import Event
+from threading import Thread,Event
 import multiprocessing
 from functools import partial
 import logging
@@ -309,12 +309,19 @@ def main(cfgfile,cfgdata=None):
         available_modules[mod_name] = mod
     logger.info('available modules: %s',available_modules.keys())
 
-    # start modules specified in cfg
-    for mod in cfg.start_order:
-        if mod in available_modules and getattr(cfg,mod) is True:
-            logger.info('starting module %s',mod)
-            running_modules[mod] = module_start(available_modules[mod])
-            time.sleep(1) # wait 1 second between starts
+    def start_modules():
+        """start modules specified in cfg"""
+        try:
+            for mod in cfg.start_order:
+                if mod in available_modules and getattr(cfg,mod) is True:
+                    logger.info('starting module %s',mod)
+                    running_modules[mod] = module_start(available_modules[mod])
+                    time.sleep(1) # wait 1 second between starts
+        except Exception:
+            pass
+    t = Thread(target=start_modules)
+    t.start()
+    time.sleep(0.1)
 
     # wait for messages
     try:
@@ -326,6 +333,8 @@ def main(cfgfile,cfgdata=None):
         raise
     finally:
         # terminate all modules
+        available_modules = []
+        t.join()
         for mod in running_modules.values():
             mod.kill()
 

@@ -82,10 +82,10 @@ class ConfigService(module.Service):
         self.mod.config[key] = value
         if callback:
             callback()
-        self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
+        self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))
 
     def delete(self,key,callback=None):
         del self.mod.config[key]
         if callback:
             callback()
-        self.mod.messaging.send.BROADCAST.reload(cfg=self.mod.config)
+        self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))

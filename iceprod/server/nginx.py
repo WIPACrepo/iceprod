@@ -23,6 +23,8 @@ from datetime import datetime,timedelta
 import logging
 from functools import partial
 
+from iceprod.core.dataclasses import String,Number,Integral
+
 logger = logging.getLogger('nginx')
 
 def salt():
@@ -56,12 +58,28 @@ def find_nginx():
                 return pp
     raise Exception('Cannot find nginx. Is it installed?')
 
+def find_mime(hints=None):
+    """Locate mime.types file, if possible."""
+    paths = ['/etc/nginx',os.path.expandvars('$PWD')]
+    if hints:
+        if not isinstance(hints,(tuple,list)):
+            paths.insert(0,hints)
+        else:
+            paths = hints+paths
+    for p in paths:
+        pp = os.path.join(p,'mime.types')
+        if os.path.isfile(pp):
+            return pp
+    return None
+
 class Nginx(object):
     """Wrapper around the Nginx webserver."""
     def __init__(self, *args, **kwargs):
         """Set up Nginx"""
         # make sure nginx exists
         nginx_path = find_nginx()
+        mime_path = find_mime([os.path.dirname(nginx_path),
+                               os.path.dirname(os.path.dirname(nginx_path))])
 
         if 'prefix' in kwargs:
             prefix = os.path.abspath(os.path.expandvars(kwargs.pop('prefix')))
@@ -86,7 +104,7 @@ class Nginx(object):
             'access_log': os.path.join(prefix,'var/log/nginx/access.log'),
             'error_log': os.path.join(prefix,'var/log/nginx/error.log'),
             'nginx_bin': nginx_path,
-            'mimetypes_file':None,
+            'mimetypes_file':mime_path,
         }
         self._cfg_types = {
             'username': 'str',
@@ -109,14 +127,14 @@ class Nginx(object):
         # setup cfg variables
         for s in kwargs.keys():
             v = kwargs[s]
-            if not isinstance(s,str):
+            if not isinstance(s,String):
                 raise Exception('parameter name %s is not a string'%(str(s)))
             if not s in self._cfg:
                 logger.warn('%s is not a valid arg',s)
                 continue
             t = self._cfg_types[s]
             if t in ('str','file','dir'):
-                if not isinstance(v,str):
+                if not isinstance(v,String):
                     raise Exception('%s is not a string'%(str(s)))
                 if t in ('file','dir'):
                     v = os.path.expanduser(os.path.expandvars(v))
@@ -126,10 +144,10 @@ class Nginx(object):
                         except Exception:
                             raise Exception('parameter %s with filepath %s does not exist'%(s,v))
             elif t == 'int':
-                if not isinstance(v,int):
+                if not isinstance(v,Integral):
                     raise Exception('%s is not an int'%(str(s)))
             elif t == 'float':
-                if not isinstance(v,float):
+                if not isinstance(v,Number):
                     raise Exception('%s is not a float'%(str(s)))
             else:
                 raise Exception('%s has an unknown type'%(str(s)))

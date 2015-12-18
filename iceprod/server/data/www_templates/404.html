@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd - Error{% end %}
+
+{% block page_title %}Not Found{% end %}
+
+{% block body %}
+
+<div style="margin: 1em 0">
+  <p>You attempted to go to:</p>
+  <p style="padding: 1em">{{ path }}</p>
+  <p>We're sorry, but that page does not exist.</p>
+</div>
+
+{% end %}

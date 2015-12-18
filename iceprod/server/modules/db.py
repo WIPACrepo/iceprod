@@ -188,10 +188,14 @@ class DBAPI(object):
         stop = None
         if (self.cfg['db']['name'] != newcfg['db']['name'] or
             self.cfg['db']['backup_name'] != newcfg['db']['backup_name'] or
-            self.cfg['db']['sqlite_cachesize'] != newcfg['db']['sqlite_cachesize']):
+            ('sqlite_cachesize' in self.cfg['db'] != 'sqlite_cachesize' in newcfg['db']) or
+            ('sqlite_cachesize' in self.cfg['db'] and
+             self.cfg['db']['sqlite_cachesize'] != newcfg['db']['sqlite_cachesize'])):
             # fundamental db change, need to reset db connection
             stop = 'db'
-        if (self.cfg['db']['numthreads'] != newcfg['db']['numthreads']):
+        if ('numthreads' in self.cfg['db'] != 'numthreads' in newcfg['db'] or
+            ('numthreads' in self.cfg['db'] and
+             self.cfg['db']['numthreads'] != newcfg['db']['numthreads'])):
             # change in number of threads
             stop = 'dbpools'
 

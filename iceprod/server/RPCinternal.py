@@ -369,6 +369,8 @@ class Client(Base):
     def start(self,*args,**kwargs):
         """Start the Client"""
         self._register_service()
+        if 'callback' in kwargs and callable(kwargs['callback']):
+            kwargs['callback']()
         self.run()
 
     def stop(self):
@@ -458,6 +460,8 @@ class ThreadedClient(Thread,Client):
         """Start the Client"""
         self._register_service()
         Thread.start(self)
+        if 'callback' in kwargs and callable(kwargs['callback']):
+            kwargs['callback']()
 
     def run(self,*args,**kwargs):
         """Thread runner"""
@@ -525,6 +529,12 @@ class Server(Base):
             logger.error('frames input is empty!')
             return
         client_id = frames[0]
+        for n,cid in self.services.items():
+            if cid == client_id:
+                client_name = n
+                break
+        else:
+            client_name = ''.join("%02X"%ord(x) for x in client_id)
         try:
             header = MessageFactory.parseMessageHeader(frames[1])
         except Exception as e:
@@ -545,8 +555,8 @@ class Server(Base):
                                 header['service_name'])
                     cb({'error':'service not registered'})
                 else:
-                    logger.info('SERVICE message from %r to %r',
-                                client_id,service_id)
+                    logger.info('SERVICE message from %s to %s',
+                                client_name,header['service_name'])
                     self.send(frames[2], serialized=True,
                               client_id=service_id, callback=cb,
                               type=MessageFactory.MESSAGE_TYPE.SERVICE,
@@ -583,7 +593,7 @@ class Server(Base):
 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.BROADCAST:
                 # broadcast to all registered services
-                logger.info('BROADCAST message from %r',client_id)
+                logger.info('BROADCAST message from %s',client_name)
                 for service_id in self.services.values():
                     self.send(frames[2], serialized=True, client_id=service_id,
                               type=MessageFactory.MESSAGE_TYPE.BROADCAST)
@@ -593,7 +603,7 @@ class Server(Base):
 
             elif header['message_type'] == MessageFactory.MESSAGE_TYPE.SERVER:
                 # a message for us, so decode it
-                logger.info('SERVER message from %r',client_id)
+                logger.info('SERVER message from %s',client_name)
                 try:
                     data = MessageFactory.getMessage(frames[2], header)
                 except Exception as e:
@@ -679,8 +689,8 @@ class RPCService():
     def setup(self):
         self._cl.setup()
 
-    def start(self):
-        self._cl.start()
+    def start(self,*args,**kwargs):
+        self._cl.start(*args,**kwargs)
 
     def stop(self):
         self._cl.stop()
