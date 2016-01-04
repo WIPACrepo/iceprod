@@ -73,5 +73,12 @@ How to Run the Server
 
 To run the server::
 
-    $ python iceprod/bin/iceprod_server.py
+    $ python bin/iceprod_server.py
 
+Disabling SSL
+"""""""""""""
+
+To disable SSL support (if you don't have `nginx` installed),
+modify `iceprod.cfg` with the following option::
+
+    {"system":{"ssl":false}}
