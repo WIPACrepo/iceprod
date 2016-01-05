@@ -1032,9 +1032,9 @@ class grid_test(unittest.TestCase):
     @unittest_reporter
     def test_023_setup_submit_directory(self):
         """Test setup_submit_directory"""
-        def generate_submit_file(t,cfg=None,passkey=None):
+        def generate_submit_file(t,cfg=None,passkey=None,filelist=None):
             generate_submit_file.called = True
-            generate_submit_file.args = (t,cfg,passkey)
+            generate_submit_file.args = (t,cfg,passkey,filelist)
             if generate_submit_file.ret:
                 return generate_submit_file.ret
             else:

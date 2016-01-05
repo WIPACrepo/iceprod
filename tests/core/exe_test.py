@@ -213,9 +213,9 @@ inithello(void)
         self.download_return = 'the data'
 
         # create an environment
-        parameters = {'resource_url': 'http://x2100.icecube.wisc.edu/downloads',
-                      'resource_directory': self.test_dir}
-        env = {'parameters':parameters}
+        options = {'resource_url': 'http://blah/downloads',
+                   'resource_directory': self.test_dir}
+        env = {'options':options}
 
         # create a resource object
         r = iceprod.core.dataclasses.Resource()
@@ -308,11 +308,11 @@ inithello(void)
         r['compression'] = None
         try:
             iceprod.core.exe.downloadResource({},r)
-        except Exception as e:
+        except Exception:
             pass
         else:
             # was supposed to throw an exception
-            raise Exception,'failed to throw exception on blank env'
+            raise Exception('failed to throw exception on blank env')
 
     @unittest_reporter
     def test_02_downloadData(self):
@@ -321,9 +321,9 @@ inithello(void)
         self.download_return = 'the data'
 
         # create an environment
-        parameters = {'data_url': 'http://x2100.icecube.wisc.edu/downloads',
-                      'data_directory': self.test_dir}
-        env = {'parameters':parameters}
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
 
         # create a resource object
         r = iceprod.core.dataclasses.Data()
@@ -418,11 +418,11 @@ inithello(void)
         r['compression'] = None
         try:
             iceprod.core.exe.downloadData({},r)
-        except Exception as e:
+        except Exception:
             pass
         else:
             # was supposed to throw an exception
-            raise Exception,'failed to throw exception on blank env'
+            raise Exception('failed to throw exception on blank env')
 
     @unittest_reporter
     def test_03_uploadData(self):
@@ -431,9 +431,9 @@ inithello(void)
         self.download_return = 'the data'
 
         # create an environment
-        parameters = {'data_url': 'http://x2100.icecube.wisc.edu/downloads',
-                      'data_directory': self.test_dir}
-        env = {'parameters':parameters}
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
 
         # create a resource object
         r = iceprod.core.dataclasses.Data()
@@ -559,11 +559,11 @@ inithello(void)
         r['compression'] = None
         try:
             iceprod.core.exe.uploadData({},r)
-        except Exception as e:
+        except Exception:
             pass
         else:
             # was supposed to throw an exception
-            raise Exception,'failed to throw exception on blank env'
+            raise Exception('failed to throw exception on blank env')
 
     @unittest_reporter
     def test_04_setupClass(self):
@@ -577,7 +577,7 @@ inithello(void)
         r['src'] = 'datatransfer.py'
 
         # create an env
-        env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
+        env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
 
         # try setting up the class
         try:
@@ -610,7 +610,7 @@ inithello(void)
         r['env_vars'] = 'I3_BUILD=$CLASS'
 
         # create an env
-        env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
+        env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
 
         # try setting up the class
         try:
@@ -641,7 +641,7 @@ inithello(void)
         r['env_vars'] = 'tester=1:2:3;PATH=$PWD;PYTHONPATH=$PWD/test'
 
         # create an env
-        env = {'parameters':{'local_temp':os.path.join(self.test_dir,'classes')}}
+        env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
 
         # try setting up the class
         try:
@@ -898,7 +898,7 @@ inithello(void)
         # create the env
         try:
             env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'parameters':options})
+                                            {'options':options})
         except:
             logger.error('creating env failed')
             raise
@@ -911,7 +911,7 @@ inithello(void)
 
         # test options
         for p in options:
-            if p not in env['parameters']:
+            if p not in env['options']:
                 raise Exception('Options were not applied ' +
                                 'correctly: missing %r'%p)
 
@@ -975,7 +975,7 @@ inithello(void)
         # create the env
         try:
             env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'parameters':options})
+                                            {'options':options})
         except:
             logger.error('creating env failed')
             raise
@@ -995,7 +995,7 @@ inithello(void)
         # create the env
         try:
             env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'parameters':options})
+                                            {'options':options})
         except:
             logger.error('creating env failed')
             raise
@@ -1017,7 +1017,7 @@ inithello(void)
         # create the env
         try:
             env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'parameters':options,
+                                            {'options':options,
                                              'deletions':[filename]})
         except:
             logger.error('creating env failed')
@@ -1078,7 +1078,7 @@ inithello(void)
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1191,7 +1191,7 @@ class Test(IPBaseClass):
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1257,7 +1257,7 @@ class Test(IPBaseClass):
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1310,7 +1310,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1377,7 +1377,7 @@ if __name__ == '__main__':
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1429,7 +1429,7 @@ echo "test"
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1488,7 +1488,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1567,7 +1567,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1648,7 +1648,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1737,7 +1737,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1849,7 +1849,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1963,7 +1963,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'parameters': options}
+        env = {'options': options}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -2004,7 +2004,6 @@ def Test():
 
         address = 'http://test:9080'
         passkey = 'ksdf8n4'
-        #ssl_options = None
         f.returns = {'echo':'e'}
         try:
             iceprod.core.exe.setupjsonRPC(address, passkey)
@@ -2021,9 +2020,19 @@ def Test():
             ('passkey' not in start.kwargs and
              (len(start.args) < 1 or start.args[0] != passkey))):
             raise Exception('JSONRPC.start() does not have passkey')
-        #if (('ssl_options' in start.kwargs and start.kwargs != ssl_options) or
-        #    args[0] != ssl_options):
-        #    raise Exception('JSONRPC.start() does not have ssl_options')
+
+        kwargs = {'ssl_cert':'cert','ssl_key':'key','cacert':'ca'}
+        try:
+            iceprod.core.exe.setupjsonRPC(address, passkey, **kwargs)
+        except:
+            logger.error('running setupjsonRPC SSL failed')
+            raise
+        if 'ssl_cert' in start.kwargs and start.kwargs['ssl_cert'] != 'cert':
+            raise Exception('JSONRPC.start() does not have ssl_cert')
+        if 'ssl_key' in start.kwargs and start.kwargs['ssl_key'] != 'key':
+            raise Exception('JSONRPC.start() does not have ssl_key')
+        if 'cacert' in start.kwargs and start.kwargs['cacert'] != 'ca':
+            raise Exception('JSONRPC.start() does not have cacert')
 
 
     @unittest_reporter

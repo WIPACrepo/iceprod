@@ -12,8 +12,8 @@ class Client(object):
     """Raw JSONRPC client object"""
     id = 0
     idlock = RLock()
-    
-    def __init__(self,timeout=60.0,address=None,ssl_options=None):
+
+    def __init__(self,timeout=60.0,address=None,**kwargs):
         if address is None:
             raise Exception('need a valid address')
         # establish pycurl connection
@@ -22,12 +22,12 @@ class Client(object):
         self.__timeout = timeout
         # save address
         self.__address = address
-        # save ssl_options
-        self.__sslopts = ssl_options
-    
+        # save connection options
+        self.__opts = kwargs
+
     def close(self):
         self.__pycurl = None
-    
+
     @classmethod
     def newid(cls):
         cls.idlock.acquire()
@@ -42,37 +42,37 @@ class Client(object):
         if methodname[0] == '_':
             logging.warning('cannot use RPC for private methods')
             raise Exception('Cannot use RPC for private methods')
-        
+
         def cb(data):
             if data:
                 cb.data += data
         cb.data = ''
-        
+
         # translate request to json
         body = json_encode({'jsonrpc':'2.0','method':methodname,'params':kwargs,'id':Client.newid()})
-        
+
         # make request to server
         kwargs = {'postbody':body,'timeout':self.__timeout}
-        if self.__sslopts:
+        if self.__opts:
             # convert from ssl.wrap_socket to curl notation
-            if 'keyfile' in self.__sslopts:
-                kwargs['sslkey'] = self.__sslopts['keyfile']
-            if 'certfile' in self.__sslopts:
-                kwargs['sslcert'] = self.__sslopts['certfile']
-            if 'ca_certs' in self.__sslopts:
-                kwargs['cacert'] = self.__sslopts['ca_certs']
+            if 'sslkey' in self.__opts:
+                kwargs['sslkey'] = self.__opts['sslkey']
+            if 'sslcert' in self.__opts:
+                kwargs['sslcert'] = self.__opts['sslcert']
+            if 'cacert' in self.__opts:
+                kwargs['cacert'] = self.__opts['cacert']
             # add options for basic_auth username and password
-            if 'username' in self.__sslopts:
-                kwargs['username'] = self.__sslopts['username']
-            if 'password' in self.__sslopts:
-                kwargs['password'] = self.__sslopts['password']
+            if 'username' in self.__opts:
+                kwargs['username'] = self.__opts['username']
+            if 'password' in self.__opts:
+                kwargs['password'] = self.__opts['password']
         try:
             logging.info('RPC pycurl options: %r',kwargs)
             self.__pycurl.post(self.__address,cb,**kwargs)
         except Exception as e:
             logging.warn('error making jsonrpc request: %r',e)
             raise
-        
+
         # translate response from json
         if not cb.data:
             return None
@@ -81,7 +81,7 @@ class Client(object):
         except:
             logging.info('json data: %r',cb.data)
             raise
-        
+
         if 'error' in data:
             try:
                 raise Exception('Error %r: %r    %r'%data['error'])
@@ -98,10 +98,9 @@ class MetaJSONRPC(type):
     __timeout = None
     __address = None
     __passkey = None
-    __ssl_options = None
-    
+
     @classmethod
-    def start(cls,timeout=None,address=None,passkey=None,ssl_options=None):
+    def start(cls,timeout=None,address=None,passkey=None,**kwargs):
         """Start the JSONRPC Client."""
         if timeout is not None:
             cls.__timeout = timeout
@@ -109,23 +108,21 @@ class MetaJSONRPC(type):
             cls.__address = address
         if passkey is not None:
             cls.__passkey = passkey
-        if ssl_options is not None:
-            cls.__ssl_options = ssl_options
         cls.__rpc = Client(timeout=cls.__timeout,address=cls.__address,
-                           ssl_options=cls.__ssl_options)
-    
+                           **kwargs)
+
     @classmethod
     def stop(cls):
         """Stop the JSONRPC Client."""
         cls.__rpc.close()
         cls.__rpc = None
-    
+
     @classmethod
     def restart(cls):
         """Restart the JSONRPC Client."""
         cls.stop()
         cls.start()
-    
+
     def __getattr__(cls,name):
         if cls.__rpc is None:
             raise Exception('JSONRPC connection not started yet')
@@ -151,13 +148,13 @@ class MetaJSONRPC(type):
 class JSONRPC(object):
     """
     JSONRPC client connection.
-    
+
     Call JSON-RPC functions as regular function calls.
-    
+
     JSON-RPC spec: http://www.jsonrpc.org/specification
-       
+
     Example::
-    
+
         JSONRPC.set_task_status(task_id,'waiting')
     """
     __metaclass__ = MetaJSONRPC

@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from itertools import izip
 
 import tornado.httpclient
+import certifi
 
 import iceprod.server
 from iceprod.server import module
@@ -105,6 +106,19 @@ class queue(module.module):
         if 'gridftp_cfgfile' in self.cfg['queue']:
             proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
         self.proxy = SiteGlobusProxy(**proxy_kwargs)
+
+        # set up job cacert
+        if ('system' in self.cfg and 'ssl' in self.cfg['system'] and
+            'cert' in self.cfg['system']['ssl']):
+            if 'I3PROD' in os.environ:
+                remote_cacert = os.path.expandvars(os.path.join('$I3PROD','remote_cacert'))
+            else:
+                remote_cacert = os.path.expandvars(os.path.join('$PWD','remote_cacert'))
+            with open(remote_cacert,'w') as f:
+                f.write(open(certifi.where()).read())
+                f.write('\n# IceProd local cert\n')
+                f.write(open(self.cfg['system']['ssl']['cert']).read())
+            self.cfg['system']['remote_cacert'] = remote_cacert
 
         # some setup
         plugins = []

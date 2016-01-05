@@ -65,8 +65,6 @@ class grid(object):
                 self.cfg['webserver']['port']):
                 self.web_address += ':'+str(self.cfg['webserver']['port'])
 
-        self.x509 = None # fill with path to proxy cert
-
         self.tasks_queued = 0
         self.tasks_processing = 0
 
@@ -424,11 +422,10 @@ class grid(object):
             raise ret
         passkey = ret
 
-        cfg = None
-        if task['task_id'] != 'pilot':
-            # write cfg
-            cfg = self.write_cfg(task)
+        # write cfg
+        cfg, filelist = self.write_cfg(task)
 
+        if task['task_id'] != 'pilot':
             # update DB
             logger.info('task %s has new submit_dir %s',task['task_id'],task_dir)
             ret = self.db.queue_set_submit_dir(task=task['task_id'],
@@ -439,7 +436,7 @@ class grid(object):
 
         # create submit file
         try:
-            self.generate_submit_file(task,cfg=cfg,passkey=passkey)
+            self.generate_submit_file(task,cfg=cfg,passkey=passkey,filelist=filelist)
         except Exception as e:
             logger.error('Error generating submit file: %s',e,exc_info=True)
             raise
@@ -448,13 +445,18 @@ class grid(object):
         """Write the config file for a task"""
         filename = os.path.join(task['submit_dir'],'task.cfg')
 
-        # get config from database
-        ret = self.db.queue_get_cfg_for_task(task_id=task['task_id'],async=False)
-        if isinstance(ret,Exception):
-            logger.error('error getting task cfg for task_id %r',
-                         task['task_id'])
-            raise ret
-        config = serialization.serialize_json.loads(ret)
+        if task['task_id'] != 'pilot':
+            # get config from database
+            ret = self.db.queue_get_cfg_for_task(task_id=task['task_id'],async=False)
+            if isinstance(ret,Exception):
+                logger.error('error getting task cfg for task_id %r',
+                             task['task_id'])
+                raise ret
+            config = serialization.serialize_json.loads(ret)
+        else:
+            config = dataclasses.Job()
+
+        filelist = [filename]
 
         # add server options
         config['options']['task_id'] = task['task_id']
@@ -464,17 +466,43 @@ class grid(object):
         config['options']['upload'] = 'logging'
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
             and self.cfg['download']['http_username']):
-            config['options']['http_username'] = self.cfg['download']['http_username']
+            config['options']['username'] = self.cfg['download']['http_username']
         if ('download' in self.cfg and 'http_password' in self.cfg['download']
             and self.cfg['download']['http_password']):
-            config['options']['http_password'] = self.cfg['download']['http_password']
-        if self.x509:
-            config['options']['x509'] = self.x509
+            config['options']['password'] = self.cfg['download']['http_password']
+        if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
+            config['options']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
+            src = self.cfg['system']['remote_cacert']
+            dest = os.path.join(task_dir,config['options']['cacert'])
+            try:
+                os.symlink(src,dest)
+            except Exception as e:
+                try:
+                    functions.copy(src,dest)
+                except Exception:
+                    logger.error('Error creating symlink or copy of remote_cacert',
+                                 exc_info=True)
+                    raise
+            filelist.append(dest)
+        if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
+            config['options']['x509'] = os.path.basename(self.cfg['queue']['x509proxy'])
+            src = self.cfg['queue']['x509proxy']
+            dest = os.path.join(task_dir,config['options']['x509'])
+            try:
+                os.symlink(src,dest)
+            except Exception as e:
+                try:
+                    functions.copy(src,dest)
+                except Exception:
+                    logger.error('Error creating symlink or copy of x509 proxy',
+                                 exc_info=True)
+                    raise
+            filelist.append(dest)
 
         # write to file
         serialization.serialize_json.dump(config,filename)
 
-        return config
+        return config, filelist
 
     def get_submit_args(self,task,cfg=None,passkey=None):
         """Get the submit arguments to start the loader script."""
@@ -489,14 +517,11 @@ class grid(object):
             args.append('-p {}'.format(self.cfg['download']['http_password']))
         if 'software_dir' in self.queue_cfg and self.queue_cfg['software_dir']:
             args.append('-s {}'.format(self.queue_cfg['software_dir']))
-        if self.x509:
-            args.append('-x {}'.format(self.x509))
+        if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
+            args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
         if passkey:
             args.append('--passkey {}'.format(passkey))
-        if task['task_id'] != 'pilot':
-            args.append('--cfgfile task.cfg')
-        else:
-            args.append('--gridspec "{}"'.format(self.gridspec))
+        args.append('--cfgfile task.cfg')
         return args
 
     ### Plugin Overrides ###
@@ -509,7 +534,7 @@ class grid(object):
         # the DB method get_task_by_grid_queue_id() may be useful
         return {}
 
-    def generate_submit_file(self,task,cfg=None,passkey=None):
+    def generate_submit_file(self,task,cfg=None,passkey=None,filelist=None):
         """Generate queueing system submit file for task in dir."""
         raise NotImplementedError()
 

@@ -743,12 +743,12 @@ class MyTest(IPBaseClass):
             debug = False
             passkey = 'pass'
             offline = False
-            gridspec = 'testgrid'
+            config = iceprod.core.dataclasses.Job()
+            config['options']['gridspec'] = 'testgrid'
 
             # try to run the config
             try:
-                i3exec.main(None,logfile,url,debug,passkey,offline,
-                            gridspec=gridspec)
+                i3exec.main(config,logfile,url,debug,passkey,offline)
             except:
                 raise
             if 'new_task' not in online_rpc.called_methods:

@@ -157,7 +157,7 @@ def destroyenv(env):
                 uploadData(env, d)
             except util.NoncriticalError, e:
                 logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
-                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug']:
+                if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
                     raise
 
     # delete any files
@@ -175,7 +175,7 @@ def destroyenv(env):
                         del env['ld_local_path'][base] # remove file from dict
             except OSError, e:
                 logger.error('failed to delete file %s - %s',(str(f),str(e)))
-                if 'parameters' in env and 'debug' in env['parameters'] and env['parameters']['debug']:
+                if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
                     raise
 
     # reset environment
@@ -192,19 +192,13 @@ def downloadResource(env, resource, remote_base=None,
                      local_base=None):
     """Download a resource and put location in the env"""
     if not remote_base:
-        if 'resource_url' in env['parameters']:
-            remote_base = env['parameters']['resource_url']
-        else:
-            remote_base = 'http://x2100.icecube.wisc.edu'
+        remote_base = env['options']['resource_url']
     if functions.isurl(resource['remote']):
         url = resource['remote']
     else:
         url = os.path.join(remote_base,resource['remote'])
     if not local_base:
-        if 'resource_directory' in env['parameters']:
-            local_base = env['parameters']['resource_directory']
-        else:
-            local_base = 'resource'
+        local_base = env['options']['resource_directory']
     if not resource['local']:
         resource['local'] = os.path.basename(resource['remote'])
     local = os.path.join(local_base,resource['local'])
@@ -222,10 +216,12 @@ def downloadResource(env, resource, remote_base=None,
     else:
         # download resource
         download_options = {}
-        if 'parameters' in env and 'http_username' in env['parameters']:
-            download_options['http_username'] = env['parameters']['http_username']
-        if 'parameters' in env and 'http_password' in env['parameters']:
-            download_options['http_password'] = env['parameters']['http_password']
+        if 'options' in env and 'username' in env['options']:
+            download_options['username'] = env['options']['username']
+        if 'options' in env and 'password' in env['options']:
+            download_options['password'] = env['options']['password']
+        if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
+            download_options.update(env['options']['ssl'])
 
         if not functions.download(url,local,options=download_options):
             raise util.NoncriticalError('Failed to download %s'%url)
@@ -249,18 +245,17 @@ def downloadResource(env, resource, remote_base=None,
 def downloadData(env, data):
     """Download data and put location in the env"""
     remote_base = data.storage_location(env)
-    if 'data_directory' in env['parameters']:
-        local_base = env['parameters']['data_directory']
+    if 'options' in env and 'data_directory' in env['options']:
+        local_base = env['options']['data_directory']
     else:
         local_base = 'data'
     downloadResource(env,data,remote_base,local_base)
 
 def uploadData(env, data):
     """Upload data"""
-    parameters = env['parameters']
     remote_base = data.storage_location(env)
-    if 'data_directory' in parameters:
-        local_base = parameters['data_directory']
+    if 'options' in env and 'data_directory' in env['options']:
+        local_base = env['options']['data_directory']
     else:
         local_base = 'data'
     url = os.path.join(remote_base,data['remote'])
@@ -298,12 +293,14 @@ def uploadData(env, data):
     # upload file
     proxy = False
     upload_options = {}
-    if 'parameters' in env and 'http_username' in parameters:
-        upload_options['http_username'] = parameters['http_username']
-    if 'parameters' in env and 'http_password' in parameters:
-        upload_options['http_password'] = parameters['http_password']
-    if 'parameters' in env and 'proxy' in parameters:
-        proxy = parameters['proxy']
+    if 'options' in env and 'username' in env['options']:
+        upload_options['username'] = env['options']['username']
+    if 'options' in env and 'password' in env['options']:
+        upload_options['password'] = env['options']['password']
+    if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
+        upload_options.update(env['options']['ssl'])
+    if 'options' in env and 'proxy' in env['options']:
+        proxy = env['options']['proxy']
     try:
         ret = functions.upload(local, url, proxy=proxy,
                                options=upload_options)
@@ -347,21 +344,21 @@ def setupClass(env, class_obj):
             else:
                 if i == 0:
                     # first, look in resources
-                    if 'parameters' in env and 'resource_url' in env['parameters']:
-                        url = os.path.join(env['parameters']['resource_url'],class_obj['src'])
+                    if 'options' in env and 'resource_url' in env['options']:
+                        url = os.path.join(env['options']['resource_url'],class_obj['src'])
                     else:
-                        url = os.path.join('http://x2100.icecube.wisc.edu/downloads/',class_obj['src'])
+                        url = os.path.join('http://prod-exe.icecube.wisc.edu/',class_obj['src'])
                 elif i == 1:
                     # then, look in regular svn
-                    if 'parameters' in env and 'svn_repository' in env['parameters']:
-                        url = os.path.join(env['parameters']['svn_repository'],class_obj['src'])
+                    if 'options' in env and 'svn_repository' in env['options']:
+                        url = os.path.join(env['options']['svn_repository'],class_obj['src'])
                     else:
                         url = os.path.join('http://code.icecube.wisc.edu/svn/projects/',class_obj['src'])
                 else:
                     raise util.NoncriticalError('Cannot find class %s because of bad src url'%class_obj['name'])
 
-            if 'parameters' in env and 'local_temp' in env['parameters']:
-                local_temp = env['parameters']['local_temp']
+            if 'options' in env and 'local_temp' in env['options']:
+                local_temp = env['options']['local_temp']
             else:
                 local_temp = os.path.join(os.getcwd(),'classes')
             if not os.path.exists(local_temp):
@@ -370,10 +367,12 @@ def setupClass(env, class_obj):
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
 
             download_options = {}
-            if 'parameters' in env and 'http_username' in env['parameters']:
-                download_options['http_username'] = env['parameters']['http_username']
-            if 'parameters' in env and 'http_password' in env['parameters']:
-                download_options['http_password'] = env['parameters']['http_password']
+            if 'options' in env and 'username' in env['options']:
+                download_options['username'] = env['options']['username']
+            if 'options' in env and 'password' in env['options']:
+                download_options['password'] = env['options']['password']
+            if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
+                download_options.update(env['options']['ssl'])
 
             # download class
             logger.warn('attempting to download class %s',url)
@@ -613,7 +612,7 @@ def runtray(cfg, globalenv,tray,stats={}):
         tmpenv = globalenv.copy()
         for i in xrange(tray['iterations']):
             # set up local env
-            tmpenv['parameters']['tray_iteration'] = i
+            tmpenv['options']['tray_iteration'] = i
             env = setupenv(cfg, tray, tmpenv)
             tmpret = []
             tmpstat = {}
@@ -907,9 +906,9 @@ def run_module(env,module,queue):
 
 ### Functions for JSONRPC ###
 
-def setupjsonRPC(url, passkey):
+def setupjsonRPC(url, passkey, **kwargs):
     """Setup the JSONRPC communications"""
-    JSONRPC.start(address=url,passkey=passkey) # TODO: add ssl options
+    JSONRPC.start(address=url,passkey=passkey,**kwargs)
     try:
         ret = JSONRPC.echo(value='e')
     except Exception as e:

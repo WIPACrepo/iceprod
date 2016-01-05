@@ -14,7 +14,6 @@ optional arguments:
                         passkey for communcation with iceprod server
   -d, --debug           Enable debug actions and logging
   --offline             Enable offline mode (don't talk with server)
-  --gridspec GRIDSPEC   specify gridspec for pilot jobs
 """
 
 import os
@@ -39,8 +38,31 @@ def handler(signum, frame):
     logger.warn('Exiting...')
     os._exit(0)
 
+def load_config(cfgfile):
+    """Load a config from file, serialized string, dictionary, etc"""
+    config = None
+    if isinstance(cfgfile,str):
+        try:
+            if os.path.exists(cfgfile):
+                config = iceprod.core.serialization.serialize_json.load(cfgfile)
+            else:
+                config = iceprod.core.serialization.serialize_json.loads(cfgfile)
+            if not config:
+                raise Exception('Config not found')
+        except Exception as e:
+            logger.critical('Error loading configuration: %s' % str(e))
+            raise
+    elif isinstance(cfgfile,iceprod.core.dataclasses.Job):
+        config = cfgfile
+    elif isinstance(cfgfile,dict):
+        config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
+    else:
+        logger.warn('cfgfile: %r',cfgfile)
+        raise Exception('cfgfile is not a str or a Job')
+    return config
+
 def main(cfgfile=None, logfile=None, url=None, debug=False,
-         passkey='', offline=False, gridspec=None):
+         passkey='', offline=False):
     """Main task runner for iceprod"""
     global logger
     # set up stdout and stderr
@@ -69,36 +91,49 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         signal.signal(signal.SIGQUIT, handler)
         signal.signal(signal.SIGINT, handler)
 
+        if cfgfile is None:
+            logger.critical('There is no cfgfile')
+            raise Exception('missing cfgfile')
+        config = load_config(cfgfile)
+
         if offline is True:
             # run in offline mode
-            runner(cfgfile,url,debug,offline)
+            runner(config,url,debug,offline)
             return
 
         # setup jsonRPC
-        iceprod.core.exe.setupjsonRPC(url+'/jsonrpc',passkey)
+        kwargs = {}
+        if 'username' in config['options']:
+            kwargs['username'] = config['options']['username']
+        if 'password' in config['options']:
+            kwargs['password'] = config['options']['password']
+        if 'ssl' in config['options'] and config['options']['ssl']:
+            kwargs.update(config['options']['ssl'])
+        iceprod.core.exe.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
-        if cfgfile is not None:
+        if 'tasks' in config and config['tasks']:
             # default configuration - a single task
-            runner(cfgfile,url,debug)
-        elif gridspec is None:
-            logger.critical('There is no cfgfile and no gridspec')
+            runner(config,url,debug)
         else:
             # get many tasks from server
+            if 'gridspec' not in config['options']:
+                logger.critical('gridspec missing')
+                raise Exception('gridspec missing')
             errors = 0
             while errors < 5:
                 try:
-                    cfgfile = iceprod.core.exe.downloadtask(gridspec)
+                    config = iceprod.core.exe.downloadtask(config['options']['gridspec'])
                 except Exception as e:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
                                  errors,exc_info=True)
                     continue
 
-                if cfgfile is None:
+                if config is None:
                     break # assuming server wants client to exit
                 else:
                     try:
-                        runner(cfgfile,url,debug)
+                        runner(config,url,debug)
                     except Exception as e:
                         logger.error('%r',e)
                         errors += 1
@@ -107,30 +142,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 logger.error('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
 
-def runner(cfgfile,url,debug=False,offline=False):
+def runner(config,url,debug=False,offline=False):
     """Run a config"""
-    # load config
-    config = None
-    if isinstance(cfgfile,str):
-        try:
-            if os.path.exists(cfgfile):
-                config = iceprod.core.serialization.serialize_json.load(cfgfile)
-            else:
-                config = iceprod.core.serialization.serialize_json.loads(cfgfile)
-            if not config:
-                raise Exception('Config not found')
-        except Exception as e:
-            logger.critical('Error loading configuration: %s' % str(e))
-            raise
-    elif isinstance(cfgfile,iceprod.core.dataclasses.Job):
-        config = cfgfile
-    elif isinstance(cfgfile,dict):
-        config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
-    else:
-        logger.warn('cfgfile: %r',cfgfile)
-        raise Exception('cfgfile is not a str or a Job')
-    # main options are in config options section now
-
     # set logging verbosity
     if 'debug' in config['options'] and 'loglevel' not in config['options']:
         config['options']['loglevel'] = 'INFO'
@@ -151,7 +164,7 @@ def runner(cfgfile,url,debug=False,offline=False):
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
     if 'data_url' not in config['options']:
-        config['options']['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
+        config['options']['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
     if 'svn_repository' not in config['options']:
         config['options']['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
     if 'job_temp' not in config['options']:
@@ -171,7 +184,7 @@ def runner(cfgfile,url,debug=False,offline=False):
     cfg = iceprod.core.exe.Config(config=config)
 
     # set up global env, based on config['options'] and config.steering
-    env = iceprod.core.exe.setupenv(cfg, config['steering'],{'parameters':config['options']})
+    env = iceprod.core.exe.setupenv(cfg, config['steering'],{'options':config['options']})
 
     logger.warn("config options: %r",config['options'])
 
@@ -271,8 +284,6 @@ if __name__ == '__main__':
                         help='Enable debug actions and logging')
     parser.add_argument('--offline', action='store_true', default=False,
                         help='Enable offline mode (don\'t talk with server)')
-    parser.add_argument('--gridspec', type=str,
-                        help='specify gridspec for pilot jobs')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
 

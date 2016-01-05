@@ -1,7 +1,7 @@
 """
 A set of classes that holds dataset configuration data.
 
-Each class is based on a dictionary and only contains simple elements for 
+Each class is based on a dictionary and only contains simple elements for
 easy serialization to json (or other formats). A full dataset configuration
 can be had by serializing the :class:`Job` class.
 
@@ -38,10 +38,10 @@ _plurals = {
 class Job(dict):
     """
     Holds all information about a running job.
-    
+
     If the `options` are empty, this is the same as a dataset
     configuration.
-    
+
     :ivar dataset: 0
     :ivar parent_id: 0
     :ivar version: 3
@@ -64,7 +64,7 @@ class Job(dict):
         self['description'] = ''
         self['categories']  = []
         super(Job,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -81,9 +81,9 @@ class Job(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
-        if (self['steering'] is not None and 
+        if (self['steering'] is not None and
             not isinstance(self['steering'],Steering)):
             tmp = Steering(self['steering'])
             tmp.convert()
@@ -93,12 +93,12 @@ class Job(dict):
                 tmp = Task(t)
                 tmp.convert()
                 self['tasks'][i] = tmp
-        if (self['difplus'] is not None and 
+        if (self['difplus'] is not None and
             not isinstance(self['difplus'],DifPlus)):
             tmp = DifPlus(self['difplus'])
             tmp.convert()
             self['difplus'] = tmp
-    
+
     def valid(self):
         try:
             return (isinstance(self['dataset'],(Number,String)) and
@@ -123,7 +123,7 @@ class Job(dict):
 class Steering(dict):
     """
     Holds all information that goes in the steering section of a configuration.
-    
+
     :ivar parameters: {}
     :ivar batchsys: None
     :ivar system: {} -- just specialized parameters
@@ -138,7 +138,7 @@ class Steering(dict):
         self['resources']  = []
         self['data']       = []
         super(Steering,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -153,9 +153,9 @@ class Steering(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
-        if (self['batchsys'] is not None and 
+        if (self['batchsys'] is not None and
             not isinstance(self['batchsys'],Batchsys)):
             tmp = Batchsys(self['batchsys'])
             tmp.convert()
@@ -170,7 +170,7 @@ class Steering(dict):
                 tmp = Data(d)
                 tmp.convert()
                 self['data'][i] = tmp
-    
+
     def valid(self):
         try:
             return (isinstance(self['parameters'],dict) and
@@ -192,15 +192,15 @@ class Batchsys(dict):
     Designed as a dict of dicts, one for each grid/cluster type.
     """
     plural = "Batchsys"
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
         return {'*':{}}
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return all(isinstance(v,dict) for v in self.values())
@@ -210,10 +210,10 @@ class Batchsys(dict):
 class _TaskCommon(dict):
     """
     Holds common attributes used by task, tray, module.
-    
+
     :ivar name: ''
     :ivar resources: []
-    :ivar data: [] 
+    :ivar data: []
     :ivar classes: []
     :ivar projects: []
     :ivar parameters: {}
@@ -226,7 +226,7 @@ class _TaskCommon(dict):
         self['projects']   = []
         self['parameters'] = {}
         super(_TaskCommon,self).__init__(*args,**kwargs)
-    
+
     def convert(self):
         for i,r in enumerate(self['resources']):
             if not isinstance(r,Resource):
@@ -248,7 +248,7 @@ class _TaskCommon(dict):
                 tmp = Project(p)
                 tmp.convert()
                 self['projects'][i] = tmp
-    
+
     def valid(self):
         try:
             return (isinstance(self['name'],String) and
@@ -268,7 +268,7 @@ class _TaskCommon(dict):
 class Task(_TaskCommon):
     """
     Holds all information about a task.
-    
+
     :ivar depends: [] -- a list of task names
     :ivar batchsys: None
     :ivar trays: []
@@ -281,7 +281,7 @@ class Task(_TaskCommon):
         self['trays']    = []
         self['requirements'] = {}
         super(Task,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -304,10 +304,10 @@ class Task(_TaskCommon):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         super(Task,self).convert()
-        if (self['batchsys'] is not None and 
+        if (self['batchsys'] is not None and
             not isinstance(self['batchsys'],Batchsys)):
             tmp = Batchsys(self['batchsys'])
             tmp.convert()
@@ -317,7 +317,7 @@ class Task(_TaskCommon):
                 tmp = Tray(t)
                 tmp.convert()
                 self['trays'][i] = tmp
-    
+
     def valid(self):
         try:
             return (super(Task,self).valid() and
@@ -336,7 +336,7 @@ class Task(_TaskCommon):
 class Tray(_TaskCommon):
     """
     Holds all information about a tray.
-    
+
     :ivar iterations: 1
     :ivar modules: []
     """
@@ -345,7 +345,7 @@ class Tray(_TaskCommon):
         self['iterations'] = 1
         self['modules']    = []
         super(Tray,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -364,7 +364,7 @@ class Tray(_TaskCommon):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         super(Tray,self).convert()
         for i,m in enumerate(self['modules']):
@@ -372,7 +372,7 @@ class Tray(_TaskCommon):
                 tmp = Module(m)
                 tmp.convert()
                 self['modules'][i] = tmp
-    
+
     def valid(self):
         try:
             return (super(Tray,self).valid() and
@@ -386,7 +386,7 @@ class Tray(_TaskCommon):
 class Module(_TaskCommon):
     """
     Holds all information about a module.
-    
+
     :ivar running_class: None -- the python class or function to call
     :ivar src: None -- src of class or script
     :ivar args: None -- args to give to class or src if not an iceprod module
@@ -397,7 +397,7 @@ class Module(_TaskCommon):
         self['src']           = ''
         self['args']          = ''
         super(Module,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -414,10 +414,10 @@ class Module(_TaskCommon):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         super(Module,self).convert()
-    
+
     def valid(self):
         try:
             return (super(Module,self).valid() and
@@ -431,7 +431,7 @@ class Module(_TaskCommon):
 class Class(dict):
     """
     A class object, downloaded from a url.
-    
+
     :ivar name: None -- required
     :ivar src: None -- if downloaded from url
     :ivar resource_name: None -- if present in resource object
@@ -448,7 +448,7 @@ class Class(dict):
         self['libs']          = ''
         self['env_vars']      = ''
         super(Class,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -456,10 +456,10 @@ class Class(dict):
         for n in self:
             ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return (isinstance(self['name'],String) and
@@ -475,7 +475,7 @@ class Class(dict):
 class Project(dict):
     """
     A project object, shipped with IceProd.
-    
+
     :ivar class_name: None -- required
     :ivar name: None -- optional
     """
@@ -484,7 +484,7 @@ class Project(dict):
         self['name']       = ''
         self['class_name'] = '' # required
         super(Project,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -492,10 +492,10 @@ class Project(dict):
         for n in self:
             ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return (isinstance(self['name'],String) and
@@ -507,7 +507,7 @@ class Project(dict):
 class _ResourceCommon(dict):
     """
     Holds common attributes used by Resource and Data.
-    
+
     :ivar remote: ''
     :ivar local: ''
     :ivar compression: False
@@ -519,10 +519,10 @@ class _ResourceCommon(dict):
         self['local']       = ''
         self['compression'] = False
         super(_ResourceCommon,self).__init__(*args,**kwargs)
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return (isinstance(self['remote'],String) and
@@ -535,14 +535,14 @@ class _ResourceCommon(dict):
 class Resource(_ResourceCommon):
     """
     A resource object, representing a file to download.
-    
+
     :ivar arch: None
     """
     plural = 'Resources'
     def __init__(self,*args,**kwargs):
         self['arch'] = ''
         super(Resource,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -552,10 +552,10 @@ class Resource(_ResourceCommon):
                 ret[n] = [self[n],self.compression_options]
             ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return (super(Resource,self).valid() and
@@ -567,19 +567,19 @@ class Resource(_ResourceCommon):
 class Data(_ResourceCommon):
     """
     A data object, representing input and/or output of data.
-    
+
     :ivar type: 'permanent' -- required
     :ivar movement: 'both' -- required
     """
     plural = 'Data'
     type_options = ['permanent','tray_temp','task_temp','job_temp','dataset_temp','site_temp']
     movement_options = ['input','output','both']
-    
+
     def __init__(self,*args,**kwargs):
         self['type']     = 'permanent'
         self['movement'] = 'both'
         super(Data,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -594,10 +594,10 @@ class Data(_ResourceCommon):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return (super(Data,self).valid() and
@@ -606,31 +606,31 @@ class Data(_ResourceCommon):
                    )
         except Exception:
             return False
-    
+
     def storage_location(self,env):
         """
         Get storage location from the environment.
-        
+
         :param env: environment
         :returns: storage location as a string, or raises Exception
         """
         type = self['type'].lower()
         if type not in Data.type_options:
             raise Exception('Data.type is undefined')
-        if 'parameters' in env and type in env['parameters']:
-            return env['parameters'][type]
+        if 'options' in env and type in env['options']:
+            return env['options'][type]
         elif type == 'permanent':
-            if 'parameters' in env and 'data_url' in env['parameters']:
-                return env['parameters']['data_url']
+            if 'options' in env and 'data_url' in env['options']:
+                return env['options']['data_url']
             else:
-                raise Exception('data_url not defined in env[\'parameters\']')
+                raise Exception('data_url not defined in env[\'options\']')
         else:
             raise Exception('%s not defined in env' % type)
 
 class DifPlus(dict):
     """
     A DifPlus object.
-    
+
     :ivar dif: None
     :ivar plus: None
     """
@@ -639,7 +639,7 @@ class DifPlus(dict):
         self['dif']  = None
         self['plus'] = None
         super(DifPlus,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -652,7 +652,7 @@ class DifPlus(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         if self['dif'] and not isinstance(self['dif'],Dif):
             tmp = Dif(self['dif'])
@@ -662,7 +662,7 @@ class DifPlus(dict):
             tmp = Plus(self['plus'])
             tmp.convert()
             self['plus'] = tmp
-    
+
     def valid(self):
         try:
             return ((self['dif'] is None or (isinstance(self['dif'],Dif) and
@@ -676,7 +676,7 @@ class DifPlus(dict):
 class Dif(dict):
     """
     A Dif object.
-    
+
    :ivar entry_id: None
    :ivar entry_title: None
    :ivar parameters: ' '
@@ -692,37 +692,37 @@ class Dif(dict):
     """
     plural = 'Dif'
     # TODO: move these to the DB, or somewhere IceCube-specific
-    valid_parameters = [ 
-        "SPACE SCIENCE > Astrophysics > Neutrinos", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Atmospheric", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Extraterrestrial Point Source", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Gamma Ray Burst", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > WIMPS", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Diffuse Source", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Extreme High Energy", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Super Nova", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Cosmic Ray Muon Component", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Tau", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Cascades", 
-        "SPACE SCIENCE > Astrophysics > Neutrinos > Galactic Plane", 
-        "SPACE SCIENCE > Astrophysics > Cosmic Rays", 
-        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Composition", 
-        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Air Shower", 
-        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Cosmic Ray Muons", 
-        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Moon Shadow", 
-        "SPACE SCIENCE > Engineering > Sensor Characteristics", 
-        "SPACE SCIENCE > Engineering > Sensor Characteristics > Photomultiplier Tubes", 
-        "SPACE SCIENCE > Engineering > Sensor Characteristics > Digital Optical Modules", 
-        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets", 
-        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets > Hot Water Drilling", 
-        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets > Hot Water Drilling > Hole Drilling", 
+    valid_parameters = [
+        "SPACE SCIENCE > Astrophysics > Neutrinos",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Atmospheric",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Extraterrestrial Point Source",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Gamma Ray Burst",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > WIMPS",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Diffuse Source",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Extreme High Energy",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Super Nova",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Cosmic Ray Muon Component",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Tau",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Cascades",
+        "SPACE SCIENCE > Astrophysics > Neutrinos > Galactic Plane",
+        "SPACE SCIENCE > Astrophysics > Cosmic Rays",
+        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Composition",
+        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Air Shower",
+        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Cosmic Ray Muons",
+        "SPACE SCIENCE > Astrophysics > Cosmic Rays > Moon Shadow",
+        "SPACE SCIENCE > Engineering > Sensor Characteristics",
+        "SPACE SCIENCE > Engineering > Sensor Characteristics > Photomultiplier Tubes",
+        "SPACE SCIENCE > Engineering > Sensor Characteristics > Digital Optical Modules",
+        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets",
+        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets > Hot Water Drilling",
+        "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets > Hot Water Drilling > Hole Drilling",
         "EARTH SCIENCE > Cryosphere > Glaciers/Ice Sheets > Hot Water Drilling > Hole Refreeze"
     ]
-    valid_source_name = { 
+    valid_source_name = {
         "SIMULATION":"Data which are numerically generated",
         "EXPERIMENTAL":"Data with an instrumentation based source"
     }
-    valid_sensor_name = { 
+    valid_sensor_name = {
         "AMANDA-A":"Prototype Antarctic Muon and Neutrino Detector Array",
         "AMANDA":"Antarctic Muon and Neutrino Detector Array",
         "SPASE-1":"South Pole Air Shower Experiment 1",
@@ -736,7 +736,7 @@ class Dif(dict):
         "SPTR":"South Pole TDRSS Relay",
         "RPSC-MET":"Raytheon Polar Services Corporation Meteorology"
     }
-    
+
     def __init__(self,*args,**kwargs):
         self['entry_id']     = None
         self['entry_title']  = None
@@ -751,7 +751,7 @@ class Dif(dict):
         self['source_name']  = 'SIMULATION'
         self['dif_creation_date'] = time.strftime("%Y-%m-%d")
         super(Dif,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -762,14 +762,14 @@ class Dif(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         for i,p in enumerate(self['personnel']):
             if not isinstance(p,Personnel):
                 tmp = Personnel(p)
                 tmp.convert()
                 self['personnel'][i] = tmp
-    
+
     def valid(self):
         try:
             return ((self['entry_id'] is None or
@@ -795,7 +795,7 @@ class Dif(dict):
 class Plus(dict):
     """
     A Plus object.
-    
+
    :ivar start: None
    :ivar end: None
    :ivar category: None
@@ -809,28 +809,28 @@ class Plus(dict):
    :ivar command_line: None
     """
     plural = 'Plus'
-    
+
     valid_category = [
         "unclassified",
-        "generated", 
+        "generated",
         "propagated",
-        "unbiased", 
-        "filtered", 
-        "calibration", 
-        "monitoring", 
-        "webcam", 
-        "hole", 
+        "unbiased",
+        "filtered",
+        "calibration",
+        "monitoring",
+        "webcam",
+        "hole",
         "TestDAQ",
-        "FAT", 
+        "FAT",
         "log",
         "upmu",
         "minbias",
         "cascades",
-        "high-energy", 
-        "wimp", 
-        "GRB" 
+        "high-energy",
+        "wimp",
+        "GRB"
     ]
-    
+
     def __init__(self,*args,**kwargs):
         self['start']        = None
         self['end']          = None
@@ -844,7 +844,7 @@ class Plus(dict):
         self['log_file']     = None
         self['command_line'] = None
         super(Plus,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -855,10 +855,10 @@ class Plus(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return ((self['start'] is None or
@@ -893,7 +893,7 @@ class Plus(dict):
 class Personnel(dict):
     """
     A Personnel object.
-    
+
    :ivar role: None
    :ivar first_name: None
    :ivar last_name: None
@@ -906,7 +906,7 @@ class Personnel(dict):
         self['last_name']  = None
         self['email']      = None
         super(Personnel,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -914,10 +914,10 @@ class Personnel(dict):
         for n in self:
             ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         pass
-    
+
     def valid(self):
         try:
             return ((self['role'] is None or
@@ -935,18 +935,18 @@ class Personnel(dict):
 class DataCenter(dict):
     """
     A Data Center object.
-    
+
    :ivar name: None
    :ivar personnel: []
     """
     plural = 'DataCenter'
     valid_names = ['UWI-MAD/A3RI > Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison']
-    
+
     def __init__(self,*args,**kwargs):
         self['name']      = None
         self['personnel'] = []
         super(DataCenter,self).__init__(*args,**kwargs)
-    
+
     def output(self):
         """Output dict with values and (optionally) the object name for
         new objects."""
@@ -957,14 +957,14 @@ class DataCenter(dict):
             else:
                 ret[n] = self[n]
         return ret
-    
+
     def convert(self):
         for i,p in enumerate(self['personnel']):
             if not isinstance(p,Personnel):
                 tmp = Personnel(p)
                 tmp.convert()
                 self['personnel'][i] = tmp
-    
+
     def valid(self):
         try:
             return ((self['name'] is None or

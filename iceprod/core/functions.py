@@ -786,16 +786,16 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         for i in xrange(0,2):
             try:
                 kwargs = {}
-                if 'http_username' in options:
-                    kwargs['username'] = options['http_username']
-                if 'http_password' in options:
-                    kwargs['password'] = options['http_password']
-                if 'ssl_cert' in options:
-                    kwargs['ssl_cert'] = options['ssl_cert']
-                if 'ssl_key' in options:
-                    kwargs['ssl_key'] = options['ssl_key']
-                if 'ssl_cacert' in options:
-                    kwargs['cacert'] = options['ssl_cacert']
+                if 'username' in options:
+                    kwargs['username'] = options['username']
+                if 'password' in options:
+                    kwargs['password'] = options['password']
+                if 'sslcert' in options:
+                    kwargs['ssl_cert'] = options['sslcert']
+                if 'sslkey' in options:
+                    kwargs['ssl_key'] = options['sslkey']
+                if 'cacert' in options:
+                    kwargs['cacert'] = options['cacert']
                 if post:
                     # talk the iceprod server language
                     f = open(dest_path,'w')
@@ -923,16 +923,16 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
         for i in xrange(0,2):
             try:
                 kwargs = {}
-                if 'http_username' in options:
-                    kwargs['username'] = options['http_username']
-                if 'http_password' in options:
-                    kwargs['password'] = options['http_password']
-                if 'ssl_cert' in options:
-                    kwargs['ssl_cert'] = options['ssl_cert']
-                if 'ssl_key' in options:
-                    kwargs['ssl_key'] = options['ssl_key']
-                if 'ssl_cacert' in options:
-                    kwargs['cacert'] = options['ssl_cacert']
+                if 'username' in options:
+                    kwargs['username'] = options['username']
+                if 'password' in options:
+                    kwargs['password'] = options['password']
+                if 'sslcert' in options:
+                    kwargs['ssl_cert'] = options['sslcert']
+                if 'sslkey' in options:
+                    kwargs['ssl_key'] = options['sslkey']
+                if 'cacert' in options:
+                    kwargs['cacert'] = options['cacert']
                 def cb(data):
                     cb.data += data
                 cb.data = ''
@@ -1085,16 +1085,16 @@ def wput(source,url,proxy=False,options={}):
 
         try:
             kwargs = {}
-            if 'http_username' in options:
-                kwargs['username'] = options['http_username']
-            if 'http_password' in options:
-                kwargs['password'] = options['http_password']
-            if 'ssl_cert' in options:
-                kwargs['sslcert'] = options['ssl_cert']
-            if 'ssl_key' in options:
-                kwargs['sslkey'] = options['ssl_key']
-            if 'ssl_cacert' in options:
-                kwargs['cacert'] = options['ssl_cacert']
+            if 'username' in options:
+                kwargs['username'] = options['username']
+            if 'password' in options:
+                kwargs['password'] = options['password']
+            if 'sslcert' in options:
+                kwargs['ssl_cert'] = options['sslcert']
+            if 'sslkey' in options:
+                kwargs['ssl_key'] = options['sslkey']
+            if 'cacert' in options:
+                kwargs['cacert'] = options['cacert']
 
             # initial json request request
             def reply(data):

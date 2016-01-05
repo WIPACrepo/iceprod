@@ -1,5 +1,5 @@
 """
-The Condor plugin.  Allows submission to 
+The Condor plugin.  Allows submission to
 `HTCondor <http://research.cs.wisc.edu/htcondor/>`_.
 
 Note: Condor was renamed to HTCondor in 2012.
@@ -23,15 +23,16 @@ logger = logging.getLogger('condor')
 
 
 class condor(grid.grid):
-    
+
     ### Plugin Overrides ###
-    
+
     # let the basic plugin be dumb and implement as little as possible
-    
-    def generate_submit_file(self,task,cfg=None,passkey=None):
+
+    def generate_submit_file(self,task,cfg=None,passkey=None,
+                             filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
-        
+
         # get requirements and batchopts
         requirements = []
         batch_opts = {}
@@ -77,7 +78,7 @@ class condor(grid.grid):
                                 requirements.append(value)
                             else:
                                 batch_opts[bb] = value
-        
+
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'condor.submit')
         with open(submit_file,'w') as f:
@@ -88,19 +89,18 @@ class condor(grid.grid):
             p('output = condor.out')
             p('error = condor.err')
             p('notification = never')
-            if task['task_id'] != 'pilot':
-                p('transfer_input_files = {}'.format(
-                    os.path.join(task['submit_dir'],'task.cfg')))
+            if filelist:
+                p('transfer_input_files = {}'.format(','.join(filelist)))
                 p('should_transfer_files = always')
             p('arguments = ',' '.join(args))
-            
+
             for b in batch_opts:
                 p(b+'='+batch_opts[b])
             if requirements:
                 p('requirements = ('+')&&('.join(requirements)+')')
-            
+
             p('queue')
-    
+
     def submit(self,task):
         """Submit task(s) to queueing system."""
         if isinstance(task,dict) and 'task_id' in task:
@@ -109,5 +109,4 @@ class condor(grid.grid):
                 raise Exception('submit failed for task %r'%task['task_id'])
         else:
             raise NotImplementedError('multiple submission not implemented')
-    
-    
+
