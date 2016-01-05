@@ -10,13 +10,25 @@
 <ul>
     {% for m in modules %}
     <li>
-        <input type="checkbox" id="{{ m[0] }}" {{ ['', 'checked'][m[1]] }} >
+        <input onclick='javascript:toggle_module("{{ m[0] }}");' type="checkbox" id="{{ m[0] }}" {{ ['', 'checked'][m[1]] }} >
         <label for = '{{ m[0] }}'> {{ m[0] }} </label>
 
     </li>
     {% end %}
 
 </ul>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript">
 
+  function toggle_module(module_name)
+  {
+    var is_checked = $('#'+ module_name).is(':checked');
+    var function_name = is_checked ? 'start_module': 'stop_module';
+    RPCclient(function_name, {passkey: "{{ passkey }}", module_name:module_name }, callback=function(return_data){
+              });
+  }
+  
+</script>
 
 {% end %}

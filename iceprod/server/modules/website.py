@@ -618,7 +618,7 @@ class Site(PublicHandler):
                 print(m)
 
             ret = yield self.daemon_call('get_running_modules')
-            print(ret)
+
             if isinstance(ret,Exception):
                 raise ret
 
@@ -626,7 +626,7 @@ class Site(PublicHandler):
             for mod in iceprod.server.listmodules('iceprod.server.modules'):
                 mod_name = mod.rsplit('.',1)[1]
                 available_modules[mod_name] = mod
-            print(available_modules)
+
 
             module_state = []
             for mod in available_modules.keys():
@@ -634,7 +634,12 @@ class Site(PublicHandler):
                 module_state.append([mod, state])
             #self.messaging.daemon.get_running_modules(callback=cb)
             #print('11111')
-            self.render_handle('site.html', url = url, modules = module_state)
+            
+            passkey = yield self.db_call('auth_new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+            
+            self.render_handle('site.html', url = url, modules = module_state, passkey=passkey)
             '''
             filter_options = {}
             filter_results = {n:self.get_arguments(n) for n in filter_options}

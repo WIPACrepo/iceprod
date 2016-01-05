@@ -17,6 +17,7 @@ from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2dat
 
 logger = logging.getLogger('dbmethods.rpc')
 
+
 class rpc(_Methods_Base):
     """
     The RPC DB methods.
@@ -625,4 +626,10 @@ class rpc(_Methods_Base):
 
         self.parent.queue_get_queueing_datasets(callback=cb)
 
+
+    def rpc_stop_module(self, module_name, callback=None):
+        self.db.messaging.daemon.stop(mod = module_name)
+    
+    def rpc_start_module(self, module_name, callback=None):
+        self.db.messaging.daemon.start(mod = module_name)
 
