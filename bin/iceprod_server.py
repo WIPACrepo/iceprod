@@ -151,7 +151,7 @@ def main(cfgfile,cfgdata=None):
         def __init__(self,running_modules):
             self.running_modules = running_modules
             self.broadcast_ignore = set()
-        
+
         def get_running_modules(self,callback=None):
             callback(self.running_modules.keys())
 
@@ -340,6 +340,21 @@ def main(cfgfile,cfgdata=None):
 
         logger.warn('shutdown')
 
+def do_action(cfgfile, action):
+    cfg = load_config(cfgfile)
+    class Response:
+        pass
+    kwargs = {
+        'address':cfg.messaging_url,
+        'block':False,
+        'service_name':'controller',
+        'service_class':Response(),
+        'async':False,
+    }
+    messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
+    messaging.start()
+    getattr(messaging.daemon,action)()
+
 if __name__ == '__main__':
     import argparse
 
@@ -347,8 +362,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='IceProd Server')
     parser.add_argument('-f','--file',dest='file',type=str,default=None,
                         help='Path to config file')
-    parser.add_argument('-d','--daemon',dest='daemon',action='store_true',
-                        help='Daemonize?')
+    parser.add_argument('-n','--non-daemon',dest='daemon',action='store_false',
+                        default=True,help='Do not daemonize')
     parser.add_argument('action',nargs='?',type=str,default='start',
                         choices=['start','stop','kill','hardkill','restart'])
     parser.add_argument('--pidfile',type=str,default='$I3PROD/var/run/iceprod.pid',
@@ -363,16 +378,18 @@ if __name__ == '__main__':
         cfgfile = iceprod.server.basic_config.locateconfig()
     cfgdata = None
 
-    # start iceprod
     if args.daemon:
-        if args.action in ('start','restart'):
-            # try loading cfgfile before daemonizing to catch the bad cfgfile error
-            cfgdata = load_config(cfgfile)
+        # try loading cfgfile before daemonizing to catch the bad cfgfile error
+        cfgdata = load_config(cfgfile)
 
         # now daemonize
         from iceprod.server.daemon import Daemon
         pidfile = os.path.expanduser(os.path.expandvars(args.pidfile))
+        if not os.path.exists(pidfile):
+            pidfile = os.path.join(os.getcwd(),'iceprod.pid')
         chdir = os.path.expanduser(os.path.expandvars('$I3PROD'))
+        if not os.path.exists(chdir):
+            chdir = os.getcwd()
         umask = args.umask
         d = Daemon(pidfile,partial(main,cfgfile,cfgdata),
                    chdir=chdir,
@@ -381,5 +398,8 @@ if __name__ == '__main__':
                    stderr='var/log/err')
         getattr(d,args.action)()
     else:
-        main(cfgfile)
+        if args.action != 'start':
+            do_action(cfgfile,args.action)
+        else:
+            main(cfgfile)
 

@@ -37,7 +37,7 @@ class auth(_Methods_Base):
                     callback(Exception('No site match for current site name'))
                 elif len(ret) > 1:
                     callback(Exception('More than one site match for current site name'))
-                elif len(ret[0]) < 2 or ret[0][1] is None: 
+                elif len(ret[0]) < 2 or ret[0][1] is None:
                     # DB will return None if column is empty
                     callback(Exception('Row does not have both site and key'))
                 else:
@@ -141,3 +141,47 @@ class auth(_Methods_Base):
                 callback(e)
             else:
                 callback(expiration)
+
+    @dbmethod
+    def add_site_to_master(self,site_id,callback=None):
+        """Add a remote site to the master and return a new passkey"""
+        passkey = uuid.uuid4().hex
+        sql = 'insert into site (site_id,auth_key) values (?,?)'
+        bindings = (site_id,passkey)
+        cb = partial(self._add_site_to_master_callback,passkey,
+                     callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
+    def _add_site_to_master_callback(self,passkey,ret=None,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            callback(passkey)
+
+    @dbmethod
+    def join_pool(self,passkey,callback=None):
+        """Join this site with a pool"""
+        cb = partial(self._join_pool_blocking,passkey,callback=callback)
+        self.db.blocking_task('join',cb)
+    def _join_pool_blocking(self,passkey,callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        sql = 'select site_id from setting'
+        bindings = tuple()
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        if not ret or not ret[0]:
+            callback(Exception('could not find site_id'))
+            return
+        site_id = ret[0][0]
+        sql = 'update site set auth_key = ?'
+        bindings = (passkey,)
+        try:
+            self.db._db_write(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            callback(e)
+        else:
+            callback(None)
