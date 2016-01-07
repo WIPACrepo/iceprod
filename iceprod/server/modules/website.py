@@ -2,7 +2,7 @@
 The website module uses `Tornado <http://www.tornadoweb.org>`_,
 a fast and scalable python web server.
 
-There are three handlers:
+There are three groups of handlers:
 
 * Main website
     This is the external website users will see when interacting with IceProd.
@@ -23,6 +23,8 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import time
+import random
+import binascii
 from threading import Thread,Event,Condition
 import logging
 from contextlib import contextmanager
@@ -248,6 +250,14 @@ class website(module.module):
             lib_args['prefix'] = '/lib/'
             lib_args['directory'] = os.path.expanduser(os.path.expandvars(
                     self.cfg['webserver']['lib_dir']))
+            if 'cookie_secret' in self.cfg['webserver']:
+                cookie_secret = self.cfg['webserver']['cookie_secret']
+            else:
+                cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
+                self.cfg['webserver']['cookie_secret'] = cookie_secret
+                self.messaging.config.set(key='webserver',
+                                          value=self.cfg['webserver'],
+                                          update=False)
             self.application = tornado.web.Application([
                 (r"/jsonrpc", JSONRPCHandler, handler_args),
                 (r"/lib/.*", LibHandler, lib_args),
@@ -259,10 +269,14 @@ class website(module.module):
                 (r"/site(/.*)?", Site, handler_args),
                 (r"/util", Util, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
+                (r"/login", Login, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
-              log_function=tornado_logger)
+              log_function=tornado_logger,
+              xsrf_cookies=True,
+              cookie_secret=binascii.unhexlify(cookie_secret),
+              login_url='/login')
             self.http_server = tornado.httpserver.HTTPServer(
                     self.application,
                     xheaders=True)
@@ -514,6 +528,9 @@ class PublicHandler(MyHandler):
                               'sites' in self.cfg['webserver']) else None)
         return namespace
 
+    def get_current_user(self):
+        return self.get_secure_cookie("user")
+
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
         self.set_status(status_code)
@@ -551,6 +568,7 @@ class Default(PublicHandler):
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
+    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
         with self.catch_error(message='error generating submit page'):
@@ -572,6 +590,7 @@ class Submit(PublicHandler):
 
 class Config(PublicHandler):
     """Handle /submit urls"""
+    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
         with self.catch_error(message='error generating config page'):
@@ -606,6 +625,7 @@ class Config(PublicHandler):
 
 class Site(PublicHandler):
     """Handle /site urls"""
+    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self,url):
         #self.write_error(404,message='Not yet implemented')
@@ -634,11 +654,11 @@ class Site(PublicHandler):
                 module_state.append([mod, state])
             #self.messaging.daemon.get_running_modules(callback=cb)
             #print('11111')
-            
+
             passkey = yield self.db_call('auth_new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-            
+
             self.render_handle('site.html', url = url, modules = module_state, passkey=passkey)
             '''
             filter_options = {}
@@ -750,3 +770,20 @@ class Other(PublicHandler):
         path = self.request.path
         self.set_status(404)
         self.render_handle('404.html',path=path)
+
+class Login(PublicHandler):
+    """Handle the login url"""
+    def get(self):
+        if 'password' in self.cfg['webserver']:
+            self.render_handle('login.html',status=None)
+        else:
+            self.set_secure_cookie('user', 'admin', expires_days=1)
+            self.redirect(self.get_argument('next', '/'))
+
+    def post(self):
+        if ('password' in self.cfg['webserver'] and
+            self.get_argument('pwd') == self.cfg['webserver']['password']):
+            self.set_secure_cookie('user', 'admin', expires_days=1)
+            self.redirect(self.get_argument('next', '/'))
+        else:
+            self.render_handle('login.html',status='failed')
