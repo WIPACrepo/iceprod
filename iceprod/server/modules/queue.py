@@ -108,8 +108,8 @@ class queue(module.module):
         self.proxy = SiteGlobusProxy(**proxy_kwargs)
 
         # set up job cacert
-        if ('system' in self.cfg and 'ssl' in self.cfg['system'] and
-            'cert' in self.cfg['system']['ssl']):
+        use_ssl = 'system' in self.cfg and 'ssl' in self.cfg['system'] and self.cfg['system']['ssl']
+        if (use_ssl and 'cert' in self.cfg['system']['ssl']):
             if 'I3PROD' in os.environ:
                 remote_cacert = os.path.expandvars(os.path.join('$I3PROD','remote_cacert'))
             else:
