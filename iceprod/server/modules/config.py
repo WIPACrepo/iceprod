@@ -62,6 +62,11 @@ class ConfigService(module.Service):
     """
     Override the basic :class:`Service` handler to handle config messages.
     """
+    def get_config_string(self, callback=None):
+        if callback:
+            callback(self.mod.config.save_to_string())
+
+    
     def reload(self,cfg,callback=None):
         # do nothing - we are the config source
         if callback:

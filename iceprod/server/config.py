@@ -88,12 +88,12 @@ class IceProdConfig(dict):
         finally:
             self.loading = False
 
-    def load(self):
+    def load(self, text = None):
         """Load config from file, overwriting current contents."""
         try:
             self.loading = True
-            if os.path.exists(self.filename):
-                text = open(self.filename).read()
+            if text != None or os.path.exists(self.filename):
+                if text == None: text = open(self.filename).read()
                 obj = json_decode(text)
 
                 if validate and self.validate:
@@ -116,6 +116,9 @@ class IceProdConfig(dict):
                         exc_info=True)
         finally:
             self.loading = False
+
+    def save_to_string(self):
+        return json_encode(self, indent = 4)
 
     def save(self):
         """Save config from file."""

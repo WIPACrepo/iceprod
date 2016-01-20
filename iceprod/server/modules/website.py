@@ -355,6 +355,14 @@ class MyHandler(tornado.web.RequestHandler):
             logger.warn('daemon_call error for %s',func_name,exc_info=True)
             raise
 
+    @tornado.concurrent.return_future
+    def config_call(self, func_name, **kwargs):
+        try:
+            getattr(self.messaging.config,func_name)(**kwargs)
+        except Exception:
+            logger.warn('config_call error for %s',func_name,exc_info=True)
+            raise
+
 
     def get(self):
         """GET is invalid and returns an error"""
@@ -658,8 +666,10 @@ class Site(PublicHandler):
             passkey = yield self.db_call('auth_new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-
-            self.render_handle('site.html', url = url, modules = module_state, passkey=passkey)
+        
+            config = yield self.config_call('get_config_string')
+        
+            self.render_handle('site.html', url = url, modules = module_state, passkey=passkey, config = config)
             '''
             filter_options = {}
             filter_results = {n:self.get_arguments(n) for n in filter_options}

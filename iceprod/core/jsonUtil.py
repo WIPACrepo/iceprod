@@ -195,9 +195,9 @@ def recursive_unicode(obj):
         return obj
 
 
-def json_encode(value):
+def json_encode(value, indent=0):
     """JSON-encodes the given Python object."""
-    return json.dumps(recursive_unicode(value),default=objToJSON,separators=(',',':')).replace("</", "<\\/")
+    return json.dumps(recursive_unicode(value),default=objToJSON,separators=(',',':'), indent=indent).replace("</", "<\\/")
 
 def json_decode(value):
     """Returns Python objects for the given JSON string."""
