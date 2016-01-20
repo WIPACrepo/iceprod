@@ -351,6 +351,36 @@ body {
     margin: 20px auto;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
-.code {
+.content_box
+{
+    margin: 20px 20px 20px 0;
+    background-color: #ddd;
+}
+.content_box .header
+{
+    background-color: #fff;
+    font-size:18px;
+    padding: 5px;
+}
+.content_box .content
+{
+    padding: 10px;
+}
+.code
+{
      white-space: pre; font-family: monospace;
+     padding: 10px;
+}
+.box_menu
+{
+    color: #16a854;
+    float: right;
+    padding: 5px;
+    margin:-5px;
+}
+.box_menu:hover
+{
+    color: #fff;
+    background-color: #16a854;
+    text-decoration: none;
 }

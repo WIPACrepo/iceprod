@@ -669,7 +669,7 @@ class Site(PublicHandler):
         
             config = yield self.config_call('get_config_string')
         
-            self.render_handle('site.html', url = url, modules = module_state, passkey=passkey, config = config)
+            self.render_handle('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
             '''
             filter_options = {}
             filter_results = {n:self.get_arguments(n) for n in filter_options}
