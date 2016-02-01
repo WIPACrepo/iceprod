@@ -70,7 +70,7 @@ class ConfigService(module.Service):
         if callback:
             callback(True)
 
-        #self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))
+        self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))
 
 
     def reload(self,cfg,callback=None):
