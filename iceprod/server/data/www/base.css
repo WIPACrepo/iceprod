@@ -371,6 +371,7 @@ body {
      white-space: pre; font-family: monospace;
      padding: 10px;
 }
+
 .box_menu
 {
     color: #16a854;
@@ -383,4 +384,14 @@ body {
     color: #fff;
     background-color: #16a854;
     text-decoration: none;
+}
+.inactive .box_menu
+{
+    color: #fff;
+    background-color: #aaa
+}
+.inactive .box_menu:hover
+{
+    color: #fff;
+    background-color: #aaa
 }

@@ -633,3 +633,6 @@ class rpc(_Methods_Base):
     def rpc_start_module(self, module_name, callback=None):
         self.db.messaging.daemon.start(mod = module_name)
 
+    def rpc_update_config(self, config_text, callback=None):
+        self.db.messaging.config.set_config_string(config_text = config_text, callback=callback)
+

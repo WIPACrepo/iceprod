@@ -23,8 +23,8 @@
 </div>
 
 <div class = "content_box">
-    <div class="header"><p>Settings<a href="javascript:update_config();" class = "box_menu">Update</a></p></div>
-<p contentEditable="true" class="code" >
+    <div class="header" id="config_header"><p>Config<a href="javascript:update_config();" class = "box_menu">Update</a></p></div>
+<p contentEditable="true" class="code" id="config_text" >
 {{ config }}
 </p>
 </div>
@@ -42,7 +42,17 @@
   }
     function update_config()
     {
-        
+        $('#config_header').addClass("inactive");
+        var config_text = document.getElementById("config_text").innerHTML;
+        RPCclient('update_config', {passkey: "{{ passkey }}", config_text:config_text }, callback=function(return_data){
+                  
+                  setTimeout(function() {
+                  
+                  $('#config_header').removeClass("inactive");
+                             }, 100);
+
+                  });
+                  
     }
   
 </script>

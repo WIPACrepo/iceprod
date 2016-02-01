@@ -65,8 +65,14 @@ class ConfigService(module.Service):
     def get_config_string(self, callback=None):
         if callback:
             callback(self.mod.config.save_to_string())
+    def set_config_string(self, config_text, callback=None):
+        self.mod.config.load(text = config_text)
+        if callback:
+            callback(True)
 
-    
+        #self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))
+
+
     def reload(self,cfg,callback=None):
         # do nothing - we are the config source
         if callback:

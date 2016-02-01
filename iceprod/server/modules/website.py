@@ -378,6 +378,9 @@ class JSONRPCHandler(MyHandler):
 
        Call DB methods using RPC over json.
     """
+    def check_xsrf_cookie(self):
+        pass
+    
     @tornado.gen.coroutine
     def post(self):
         """Parses json in the jsonrpc format, returning results in
@@ -443,6 +446,7 @@ class JSONRPCHandler(MyHandler):
         # call method on DB if exists
         try:
             ret = yield self.db_call(method,*args,**params)
+
         except AttributeError:
             self.json_error({'code':-32601,'message':'Method not found'})
             return
