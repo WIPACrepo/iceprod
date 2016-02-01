@@ -628,10 +628,10 @@ class rpc(_Methods_Base):
 
 
     def rpc_stop_module(self, module_name, callback=None):
-        self.db.messaging.daemon.stop(mod = module_name)
+        self.db.messaging.daemon.stop(mod = module_name, callback=callback)
     
     def rpc_start_module(self, module_name, callback=None):
-        self.db.messaging.daemon.start(mod = module_name)
+        self.db.messaging.daemon.start(mod = module_name, callback=callback)
 
     def rpc_update_config(self, config_text, callback=None):
         self.db.messaging.config.set_config_string(config_text = config_text, callback=callback)

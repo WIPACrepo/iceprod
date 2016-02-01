@@ -69,7 +69,6 @@ class ConfigService(module.Service):
         self.mod.config.load(text = config_text)
         if callback:
             callback(True)
-
         self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))
 
 
