@@ -66,7 +66,12 @@ class ConfigService(module.Service):
         if callback:
             callback(self.mod.config.save_to_string())
     def set_config_string(self, config_text, callback=None):
-        self.mod.config.load(text = config_text)
+        ok = self.mod.config.load_string(config_text)
+        if not ok:
+            if callback:
+                callback('Failed to parse config')
+            return
+
         if callback:
             callback(True)
         self.mod.messaging.BROADCAST.reload(cfg=dict(self.mod.config))

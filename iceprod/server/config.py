@@ -88,27 +88,27 @@ class IceProdConfig(dict):
         finally:
             self.loading = False
 
-    def load(self, text = None):
+    def do_validate(self, obj):
+        if validate and self.validate:
+            try:
+                filename = get_pkgdata_filename('iceprod.server', 'data/etc/iceprod_schema.json')
+                schema = json.load(open(filename))
+                validate(obj, schema)
+            except ValidationError as e:
+                path = '.'.join(e.path)
+                logger.warn('Validation error at "%s": %s' % (path, e.message))
+                raise e
+        else:
+            logger.warn('skipping validation of config')
+
+    def load(self):
         """Load config from file, overwriting current contents."""
         try:
             self.loading = True
-            if text != None or os.path.exists(self.filename):
-                if text == None: text = open(self.filename).read()
+            if os.path.exists(self.filename):
+                text = open(self.filename).read()
                 obj = json_decode(text)
-
-                if validate and self.validate:
-                    try:
-                        filename = get_pkgdata_filename('iceprod.server',
-                                                        'data/etc/iceprod_schema.json')
-                        schema = json.load(open(filename))
-                        validate(obj, schema)
-                    except ValidationError as e:
-                        path = '.'.join(e.path)
-                        logger.warn('Validation error at "%s": %s' % (path, e.message))
-                        raise e
-                else:
-                    logger.warn('skipping validation of config')
-
+                self.do_validate(obj)
                 for key in obj:
                     self[key] = obj[key]
         except Exception:
@@ -116,6 +116,21 @@ class IceProdConfig(dict):
                         exc_info=True)
         finally:
             self.loading = False
+
+    def load_string(self, text):
+        ok = True
+        try:
+            self.loading = True
+            obj = json_decode(text)
+            self.do_validate(obj)
+            for key in obj:
+                self[key] = obj[key]
+        except Exception:
+            ok = False
+        finally:
+            self.loading = False
+            return ok
+
 
     def save_to_string(self):
         return json_encode(self, indent = 4)

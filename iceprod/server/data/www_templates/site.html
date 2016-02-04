@@ -51,6 +51,8 @@
         //$('#config_header').addClass("inactive");
         var config_text = document.getElementById("config_text").innerHTML;
         RPCclient('update_config', {passkey: "{{ passkey }}", config_text:config_text }, callback=function(return_data){
+                  
+                  if (return_data) alert(return_data);
                   /*
                   setTimeout(function() {
                   
