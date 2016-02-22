@@ -267,7 +267,7 @@ class website(module.module):
                 (r"/dataset(/.*)?", Dataset, handler_args),
                 (r"/task(/.*)?", Task, handler_args),
                 (r"/site(/.*)?", Site, handler_args),
-                (r"/util", Util, handler_args),
+                (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/login", Login, handler_args),
                 (r"/.*", Other, handler_args),
@@ -773,10 +773,13 @@ class Documentation(PublicHandler):
         self.flush()
 
 
-class Util(PublicHandler):
-    """Util Page"""
+class Help(PublicHandler):
+    """Help Page"""
     def get(self):
-        self.write_error(404,message='Not yet implemented')
+        with self.catch_error(message='error generating site page'):
+            self.render_handle('help.html')
+
+
 
 class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""

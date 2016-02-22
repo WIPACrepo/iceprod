@@ -25,7 +25,7 @@
             <li{% if section == '' %} class="current"{% end %}><a href="/">Home</a></li>
             <li{% if section == 'dataset' %} class="current"{% end %}><a href="/dataset">Datasets</a></li>
             <li{% if section == 'site' %} class="current"{% end %}>{% if (not sites) and site_id %}<a href="/site/{{ site_id }}">Site</a>{% else %}<a href="/site">Sites</a>{% end %}</li>
-            <li{% if section == 'util' %} class="current"{% end %}><a href="/util">Utilities</a></li>
+            <li{% if section == 'util' %} class="current"{% end %}><a href="/help">Help</a></li>
             {% if (not master) and master_url %}<li class="master"><a href="{{ master_url }}">Master</a></li>{% end %}
         </nav>
     </header>
