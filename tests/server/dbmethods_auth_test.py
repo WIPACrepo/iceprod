@@ -26,8 +26,6 @@ except ImportError:
 
 import tornado.escape
 
-from flexmock import flexmock
-
 from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods

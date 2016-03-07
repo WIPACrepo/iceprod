@@ -20,8 +20,6 @@ try:
 except ImportError:
     import unittest
 
-import flexmock
-
 import iceprod.server.basic_config
 
 

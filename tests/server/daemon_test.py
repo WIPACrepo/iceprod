@@ -33,8 +33,6 @@ try:
 except ImportError:
     import unittest
 
-from flexmock import flexmock
-
 from iceprod.server import daemon
 
 class daemon_test(unittest.TestCase):
