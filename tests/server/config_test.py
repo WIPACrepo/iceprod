@@ -26,10 +26,9 @@ class config_test(unittest.TestCase):
     def setUp(self):
         super(config_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(config_test,self).tearDown()
+        def cleanup():
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
     @unittest_reporter
     def test_01_IceProdConfig(self):
