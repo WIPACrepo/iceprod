@@ -103,7 +103,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -143,17 +143,17 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'depends': '',
+                 'failures':0, 'evictions':1, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -208,7 +208,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -258,17 +258,17 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'depends': '',
+                 'failures':0, 'evictions':1, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -364,7 +364,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -397,17 +397,17 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'depends': '',
+                 'failures':0, 'evictions':1, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
             'search':[
@@ -566,7 +566,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
         }
@@ -619,17 +619,17 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':1, 'depends': '',
+                 'failures':0, 'evictions':1, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
         }
@@ -678,7 +678,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
         }
@@ -732,17 +732,17 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'gdf', 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn2',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
                 {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn3',
-                 'failures':0, 'evictions':1, 'depends': '',
+                 'failures':0, 'evictions':1, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
             ],
         }
@@ -850,22 +850,6 @@ class dbmethods_queue_test(dbmethods_base):
 
         gridspec = 'msdfiner'
         now = dbmethods.nowstr()
-        config_data = """
-{"version":3,
- "parent_id":0,
- "tasks":[
-    {"name":"task1",
-     "trays":[
-        {"name":"Corsika",
-         "modules":[
-            {"name":"generate_corsika",
-             "class":"generators.CorsikaIC"
-            }
-        ]}
-    ]}
-]}
-"""
-        logger.info('config data: %s',config_data)
         tables = {
             'dataset':[
                 {'dataset_id':'d1', 'name':'test dataset',
@@ -873,14 +857,15 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':1,
+                 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
-            'config':[
-                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
             ],
         }
 
@@ -894,13 +879,10 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('buffer 1d,1j,1t: callback not called')
         if isinstance(cb.ret,Exception):
             raise Exception('buffer 1d,1j,1t: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','task_rel','job','search'])
+        end_tables = self.mock.get(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 task')
-        if 'task_rel' not in end_tables or len(end_tables['task_rel']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 1 task_rel')
         if 'search' not in end_tables or len(end_tables['search']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 search')
@@ -915,13 +897,13 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('buffer resubmit: callback not called')
         if isinstance(cb.ret,Exception):
             raise Exception('buffer resubmit: exception returned %s'%cb.ret)
-        end_tables2 = self.mock.get(['task','task_rel','job','search'])
+        end_tables2 = self.mock.get(['task','job','search'])
         if not cmp_dict(end_tables,end_tables2):
             logger.info('%r',end_tables)
             logger.info('%r',end_tables2)
             raise Exception('buffer resubmit: tables modified')
 
-        # now try for multiple datasets
+        # now try for multiple jobs
         tables2 = {
             'dataset':[
                 {'dataset_id':'d1', 'name':'test dataset',
@@ -929,16 +911,17 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':2,
-                 'trays':1, 'tasks_submitted':2,
+                 'tasks_submitted':2,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
-            'config':[
-                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
             ],
-            'job':[],'task':[],'task_rel':[],'search':[],
+            'job':[],'task':[],'search':[],
         }
         cb.called = False
         self.mock.setup(tables2)
@@ -948,20 +931,16 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('buffer 1d,2j,1t: callback not called')
         if isinstance(cb.ret,Exception):
             raise Exception('buffer 1d,2j,1t: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','task_rel','job','search'])
+        end_tables = self.mock.get(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
-        if 'task_rel' not in end_tables or len(end_tables['task_rel']) != 2:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 task_rel')
         if 'search' not in end_tables or len(end_tables['search']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 search')
         if 'job' not in end_tables or len(end_tables['job']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 job')
-        return
 
         # now try for multiple gridspecs and datasets
         tables3 = {
@@ -971,7 +950,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':1,
+                 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -981,17 +960,19 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':1,
+                 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
-            'config':[
-                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
-                {'dataset_id':'d2','config_data':config_data,'difplus_data':''},
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+                {'task_rel_id':'tr2','dataset_id':'d2','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
             ],
-            'job':[],'task':[],'task_rel':[],'search':[],
+            'job':[],'task':[],'search':[],
         }
         cb.called = False
         self.mock.setup(tables3)
@@ -1002,13 +983,10 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('buffer 2d,1j,1t 2gs: callback not called')
         if isinstance(cb.ret,Exception):
             raise Exception('buffer 2d,1j,1t 2gs: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','task_rel','job','search'])
+        end_tables = self.mock.get(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
-        if 'task_rel' not in end_tables or len(end_tables['task_rel']) != 2:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 task_rel')
         if 'search' not in end_tables or len(end_tables['search']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 search')
@@ -1024,51 +1002,346 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':2,
+                 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
-            'config':[
-                {'dataset_id':'d1','config_data':config_data,'difplus_data':''},
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
             ],
-            'job':[],'task':[],'task_rel':[],'search':[],
+            'job':[],'task':[],'search':[],
         }
         cb.called = False
         self.mock.setup(tables4)
 
         self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
         if cb.called is False:
-            raise Exception('buffer 1d,1j,1t taskname: callback not called')
+            raise Exception('callback not called')
         if isinstance(cb.ret,Exception):
-            raise Exception('buffer 1d,1j,1t taskname: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','task_rel','job','search'])
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+
+        # now try with a different gridspec
+        tables4 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':'{"task1":"othergs"}',
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables4)
+
+        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' in end_tables and end_tables['task']:
+            logger.info('%r',end_tables)
+            raise Exception('created more than 0 tasks')
+        if 'search' in end_tables and end_tables['search']:
+            logger.info('%r',end_tables)
+            raise Exception('created more than 0 search')
+        if 'job' in end_tables and end_tables['job']:
+            logger.info('%r',end_tables)
+            raise Exception('created more than 0 job')
+
+        # now try emulating global queueing
+        tables4 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':'{"task1":"'+gridspec+'"}',
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1,
+                 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables4)
+
+        self._db.queue_buffer_jobs_tasks(None,num,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+            
+        tables5 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':2,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+                {'task_rel_id':'tr2','dataset_id':'d1','task_index':1,
+                 'name':'task2','depends':'tr1','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables5)
+
+        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
-        if 'task_rel' not in end_tables or len(end_tables['task_rel']) != 2:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 task_rel')
         if 'search' not in end_tables or len(end_tables['search']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 search')
         if 'job' not in end_tables or len(end_tables['job']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 job')
+        if end_tables['task'][0]['depends'] != '':
+            logger.info('%r',end_tables['task'])
+            raise Exception('task1 has a dependency')
+        if end_tables['task'][1]['depends'] != end_tables['task'][0]['task_id']:
+            logger.info('%r',end_tables['task'])
+            raise Exception('task2 does not depend on task1')
 
-        # now make some errors
-        for i in range(1,10):
+        tables5 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'tr1','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables5)
+
+        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if any(end_tables.values()):
+            logger.info('%r',end_tables)
+            raise Exception('tables have changed')
+
+        tables5 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+                {'dataset_id':'d2', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+                {'task_rel_id':'tr2','dataset_id':'d2','task_index':0,
+                 'name':'task1','depends':'tr1','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables5)
+
+        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+        if end_tables['task'][0]['depends'] != '':
+            logger.info('%r',end_tables['task'])
+            raise Exception('task1 has a dependency')
+
+        cb.called = False
+        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+        if end_tables['task'][1]['depends'] != end_tables['task'][0]['task_id']:
+            logger.info('%r',end_tables['task'])
+            raise Exception('task2 does not depend on task1')
+            
+
+        tables5 = {
+            'dataset':[
+                {'dataset_id':'d1', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':gridspec,
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+                {'dataset_id':'d2', 'name':'test dataset',
+                 'description':'a simple test', 'gridspec':'blah',
+                 'status':'processing', 'username':'user',
+                 'institution':'inst', 'submit_host':'localhost',
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
+                 'start_date':now, 'end_date':'',
+                 'temporary_storage':'', 'global_storage':'',
+                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'categoryvalue_ids':'', 'debug':True},
+            ],
+            'task_rel':[
+                {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
+                 'name':'task1','depends':'','requirements':''},
+                {'task_rel_id':'tr2','dataset_id':'d2','task_index':0,
+                 'name':'task1','depends':'tr1','requirements':''},
+            ],
+            'job':[],'task':[],'search':[],
+        }
+        cb.called = False
+        self.mock.setup(tables5)
+
+        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 1:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+        if end_tables['task'][0]['depends'] != '':
+            logger.info('%r',end_tables['task'])
+            raise Exception('task1 has a dependency')
+
+        cb.called = False
+        self._db.queue_buffer_jobs_tasks('blah',10,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            raise Exception('exception returned %s'%cb.ret)
+        end_tables = self.mock.get(['task','job','search'])
+        if 'task' not in end_tables or len(end_tables['task']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 task')
+        if 'search' not in end_tables or len(end_tables['search']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 2 search')
+        if 'job' not in end_tables or len(end_tables['job']) != 2:
+            logger.info('%r',end_tables)
+            raise Exception('did not create 1 job')
+        if end_tables['task'][1]['depends'] != end_tables['task'][0]['task_id']:
+            logger.info('%r',end_tables['task'])
+            raise Exception('task2 does not depend on task1')
+
+        logger.warn('now testing SQL error handling')
+        for i in range(1,5):
             cb.called = False
             self.mock.setup(tables4)
             self.mock.failures = i
             self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
             if cb.called is False:
-                raise Exception('buffer 1d,1j,1t taskname: callback not called')
+                raise Exception('callback not called')
             if not isinstance(cb.ret,Exception):
-                raise Exception('buffer 1d,1j,1t taskname: exception not returned %s'%cb.ret)
-            end_tables = self.mock.get(['task','task_rel','job','search'])
-            if end_tables:
+                raise Exception('exception not returned %s'%cb.ret)
+            end_tables = self.mock.get(['task','job','search'])
+            if any(end_tables.values()):
                 logger.info('%r',end_tables)
                 raise Exception('tables have changed')
 
@@ -1089,8 +1362,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'description':'a simple test', 'gridspec':gridspec,
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
-                 'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':1,
+                 'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1169,7 +1441,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':4,
+                 'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1189,22 +1461,22 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':'tr1'},
                 {'task_id':'t2', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':'tr2'},
                 {'task_id':'t3', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':'tr3'},
                 {'task_id':'t4', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':'tr4'},
             ],
             'task_rel':[
@@ -1318,7 +1590,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':4,
+                 'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1328,7 +1600,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':4,
+                 'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1388,7 +1660,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':4,
+                 'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1414,32 +1686,32 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t1', 'status':'complete', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': '',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':'tr1'},
                 {'task_id':'t2', 'status':'processing', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': 't1',
+                 'failures':0, 'evictions':0, 'depends': 't1', 'requirements': '',
                  'task_rel_id':'tr2'},
                 {'task_id':'t3', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': 't1,t2',
+                 'failures':0, 'evictions':0, 'depends': 't1,t2', 'requirements': '',
                  'task_rel_id':'tr3'},
                 {'task_id':'t4', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': 't25',
+                 'failures':0, 'evictions':0, 'depends': 't25', 'requirements': '',
                  'task_rel_id':'tr4'},
                 {'task_id':'t5', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': 't6',
+                 'failures':0, 'evictions':0, 'depends': 't6', 'requirements': '',
                  'task_rel_id':'tr5'},
                 {'task_id':'t7', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': 'unknown',
+                 'failures':0, 'evictions':0, 'depends': 'unknown', 'requirements': '',
                  'task_rel_id':'tr1'},
             ],
             'task_rel':[
@@ -1472,7 +1744,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
                  'priority':0, 'jobs_submitted':1,
-                 'trays':1, 'tasks_submitted':4,
+                 'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
                  'parent_id':'sdf', 'stat_keys':'[]',
@@ -1486,11 +1758,12 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':'', 'grid_queue_id':'',
-                 'failures':0, 'evictions':0, 'depends': None,
+                 'failures':0, 'evictions':0, 'depends': None, 'requirements': '',
                  'task_rel_id':'tr1'},
             ],
             'task_rel':[
-                {'task_rel_id':'tr1','depends':None,'requirements':'["cpu","gpu"]'},
+                {'task_rel_id':'tr1', 'dataset_id':'d1', 'task_index':0,
+                 'name':'nn', 'depends':None, 'requirements':'["cpu","gpu"]'},
             ],
         }
         cb.called = False

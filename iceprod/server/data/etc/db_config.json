@@ -38,7 +38,6 @@
             ["submit_host", "str"],
             ["priority", "int"],
             ["jobs_submitted", "int"],
-            ["trays", "int"],
             ["tasks_submitted", "int"],
             ["start_date", "str", "datetime"],
             ["end_date", "str", "datetime"],
@@ -64,6 +63,7 @@
         "job": [
             ["job_id", "str"],
             ["status", "str"],
+            ["job_index", "int", "index of the job within the dataset"],
             ["status_changed", "str", "datetime"]
         ],
         "job_stat": [
@@ -73,6 +73,9 @@
         ],
         "task_rel": [
             ["task_rel_id", "str"],
+            ["dataset_id", "str"],
+            ["task_index", "int", "index of the task within the config"],
+            ["name", "str", "name of the task"],
             ["depends", "Text", "csv list of task_rel_ids"],
             ["requirements", "Text", "json of {name:value}"]
         ],
@@ -87,6 +90,7 @@
             ["failures", "int"],
             ["evictions", "int"],
             ["depends", "Text", "csv list of task_ids"],
+            ["requirements", "Text", "json of {name:value}. overrides task_rel requirements"],
             ["task_rel_id", "str"]
         ],
         "task_stat": [
@@ -184,7 +188,7 @@
         "master_update_history": [
             ["master_update_history_id", "str"],
             ["table", "str"],
-            ["index", "str"],
+            ["update_index", "str"],
             ["timestamp", "str"]
         ],
         "setting": [

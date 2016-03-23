@@ -22,6 +22,7 @@ except ImportError:
 
 import tornado.escape
 from iceprod.core import functions
+from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 from .dbmethods_test import dbmethods_base,DB
@@ -34,25 +35,25 @@ def get_tables(test_dir):
     tables = {
         'task':[
                 {'task_id':task_id, 'status':'queued', 'prev_status':'waiting',
-                'error_message':None, 'status_changed':now,
-                'submit_dir':test_dir, 'grid_queue_id':'lkn',
-                'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'task_rel_id':None},
                 ],
-            'search':[
-                      {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
-                      'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
-                      ],
-                'config': [{'dataset_id':'d1', 'config_data': 'somedata', 'difplus_data':'' }],
-                    'task_stat': [{'task_stat_id': 0, 'task_id': task_id}],
-                    'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2, 'tasks_submitted': 2}],
-                }
+        'search':[
+                  {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
+                   'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+                 ],
+        'config': [{'dataset_id':'d1', 'config_data': 'somedata', 'difplus_data':'' }],
+        'task_stat': [{'task_stat_id': 0, 'task_id': task_id}],
+        'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2, 'tasks_submitted': 2}],
+    }
     return tables
 
 
 class dbmethods_rpc_test(dbmethods_base):
 
     @unittest_reporter
-    def test_200_rpc_new_task(self):
+    def test_000_rpc_new_task(self):
         """Test rpc_new_task"""
 
         def cb(ret):
@@ -104,7 +105,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
     @unittest_reporter
-    def test_201_rpc_finish_task(self):
+    def test_001_rpc_finish_task(self):
         """Test rpc_finish_task"""
 
 
@@ -180,7 +181,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
     @unittest_reporter
-    def test_202_rpc_task_error(self):
+    def test_002_rpc_task_error(self):
         """Test rpc_task_error"""
 
         if not 'queue' in self.mock.cfg: self.mock.cfg['queue'] = {}
@@ -235,7 +236,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
     @unittest_reporter
-    def test_203_rpc_upload_logfile(self):
+    def test_003_rpc_upload_logfile(self):
         """Test rpc_upload_logfile"""
 
         tables = get_tables(self.test_dir)
@@ -282,7 +283,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
     @unittest_reporter
-    def test_204_rpc_stillrunning(self):
+    def test_004_rpc_stillrunning(self):
         """Test rpc_stillrunning"""
 
         def cb(ret):
@@ -426,7 +427,295 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
     @unittest_reporter
-    def test_121_rpc_queue_master(self):
+    def test_100_rpc_submit_dataset(self):
+        """Test rpc_submit_dataset"""
+
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        # try giving dict
+        config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_dict, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json):
+            logger.info('%r', end_tables)
+            raise Exception('bad config table')
+        if len(end_tables['task_rel']) != 1:
+            logger.info('%r', end_tables)
+            raise Exception('bad task_rel table')
+
+        # try giving job
+        config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_job, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json):
+            logger.info('%r', end_tables)
+            raise Exception('bad config table')
+        if len(end_tables['task_rel']) != 1:
+            logger.info('%r', end_tables)
+            raise Exception('bad task_rel table')
+
+        # try giving json
+        config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_json, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json):
+            logger.info('%r', end_tables)
+            raise Exception('bad config table')
+        if len(end_tables['task_rel']) != 1:
+            logger.info('%r', end_tables)
+            raise Exception('bad task_rel table')
+
+        # try giving bad json
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset("<asf>", callback=cb)
+        if not isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback is not Exception')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if any(end_tables.values()):
+            logger.info('%r',end_tables)
+            raise Exception('tables have changed')
+
+        # number dependency
+        config_dict = {'tasks':[
+            {'trays':[{'modules':[]}]},
+            {'depends':['0'],'trays':[{'modules':[]}]}
+        ],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_dict, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json):
+            logger.info('table: %r', end_tables['config'][0]['config_data'])
+            logger.info('should be: %r', config_json)
+            raise Exception('bad config table')
+        if (len(end_tables['task_rel']) != 2 or
+            end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
+            logger.info('%r', end_tables['task_rel'])
+            raise Exception('bad task_rel table')
+
+        # named dependency
+        config_dict = {'tasks':[
+            {'name':'first','trays':[{'modules':[]}]},
+            {'name':'second','depends':['first'],'trays':[{'modules':[]}]}
+        ],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_dict, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json):
+            logger.info('table: %r', end_tables['config'][0]['config_data'])
+            logger.info('should be: %r', config_json)
+            raise Exception('bad config table')
+        if (len(end_tables['task_rel']) != 2 or
+            end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
+            logger.info('%r', end_tables['task_rel'])
+            raise Exception('bad task_rel table')
+
+        # missing named dependency
+        config_dict = {'tasks':[
+            {'name':'first','trays':[{'modules':[]}]},
+            {'name':'second','depends':['third'],'trays':[{'modules':[]}]}
+        ],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+        ret = self._db.rpc_submit_dataset(config_dict, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is not Exception')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if any(end_tables.values()):
+            logger.info('%r',end_tables)
+            raise Exception('tables have changed')
+
+        # dataset dependency
+        config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
+        config_dict2 = {'tasks':[
+            {'depends':['d1.0'],'trays':[{'modules':[]}]},
+        ],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+        config_job2 = serialization.dict_to_dataclasses(config_dict2)
+        config_json2 = serialization.serialize_json.dumps(config_job2)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[],
+            'task_rel': [
+                {'task_rel_id':'tr1', 'dataset_id':'d1', 'task_index': 0,
+                 'name':'0', 'depends':'', 'requirements':''},
+            ],
+        })
+        ret = self._db.rpc_submit_dataset(config_dict2, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json2):
+            logger.info('table: %r', end_tables['config'][0]['config_data'])
+            logger.info('should be: %r', config_json2)
+            raise Exception('bad config table')
+        if (len(end_tables['task_rel']) != 2 or
+            end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
+            logger.info('%r', end_tables['task_rel'])
+            raise Exception('bad task_rel table')
+
+        # dataset dependency missing
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[],'task_rel':[]})
+        ret = self._db.rpc_submit_dataset(config_dict2, callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is not Exception')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if any(end_tables.values()):
+            logger.info('%r',end_tables)
+            raise Exception('tables have changed')
+
+        # named dataset dependency
+        config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
+        config_dict2 = {'tasks':[
+            {'depends':['d1.first'],'trays':[{'modules':[]}]},
+        ],'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+        config_json = serialization.serialize_json.dumps(config_job)
+        config_job2 = serialization.dict_to_dataclasses(config_dict2)
+        config_json2 = serialization.serialize_json.dumps(config_job2)
+
+        cb.called = False
+        self.mock.setup({'dataset':[], 'config':[],
+            'task_rel': [
+                {'task_rel_id':'tr1', 'dataset_id':'d1', 'task_index': 0,
+                 'name':'first', 'depends':'', 'requirements':''},
+            ],
+        })
+        ret = self._db.rpc_submit_dataset(config_dict2, callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret is Exception')
+        if cb.ret is not True:
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('callback ret != True')
+        end_tables = self.mock.get(['dataset','config','task_rel'])
+        if (not end_tables['config'] or
+            end_tables['config'][0]['config_data'] != config_json2):
+            logger.info('table: %r', end_tables['config'][0]['config_data'])
+            logger.info('should be: %r', config_json2)
+            raise Exception('bad config table')
+        if (len(end_tables['task_rel']) != 2 or
+            end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
+            logger.info('%r', end_tables['task_rel'])
+            raise Exception('bad task_rel table')
+
+        # test sql errors
+        for i in range(1,2):
+            cb.called = False
+            self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
+            self.mock.failures = i
+            ret = self._db.rpc_submit_dataset(config_dict, callback=cb)
+            if cb.called is False:
+                raise Exception('callback not called')
+            if not isinstance(cb.ret,Exception):
+                logger.error('cb.ret = %r',cb.ret)
+                raise Exception('callback ret is not Exception')
+            end_tables = self.mock.get(['dataset','config','task_rel'])
+            if any(end_tables.values()):
+                logger.info('%r',end_tables)
+                raise Exception('tables have changed')
+
+    @unittest_reporter
+    def test_200_rpc_queue_master(self):
         """Test rpc_queue_master"""
 
         def cb(ret):

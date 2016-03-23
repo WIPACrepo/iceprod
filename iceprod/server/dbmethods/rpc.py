@@ -9,6 +9,7 @@ from collections import OrderedDict
 import math
 
 from iceprod.core.util import Node_Resources
+from iceprod.core import dataclasses
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import calc_datasets_prios
@@ -95,7 +96,7 @@ class rpc(_Methods_Base):
                 callback(ret)
             else:
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('search',newtask['task_id'],now)
                     bindings4 = ('task',newtask['task_id'],now)
                     try:
@@ -152,7 +153,7 @@ class rpc(_Methods_Base):
             return
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('search',newtask['task_id'],now)
                 bindings4 = ('task',newtask['task_id'],now)
                 try:
@@ -197,7 +198,7 @@ class rpc(_Methods_Base):
             return
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_stat',task_stat_id,now)
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -273,7 +274,7 @@ class rpc(_Methods_Base):
                 return
             else:
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('job',job_id,now)
                     try:
                         self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -354,7 +355,7 @@ class rpc(_Methods_Base):
                     callback(ret)
                 else:
                     if self._is_master():
-                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                        sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                         bindings3 = ('search',task,now)
                         bindings4 = ('task',task,now)
                         try:
@@ -407,7 +408,7 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_log',task_log_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -456,9 +457,16 @@ class rpc(_Methods_Base):
                                      njobs,stat_keys,debug,
                                      callback=None):
         conn,archive_conn = self.db._dbsetup()
-        dataset_id = self.db._increment_id_helper('dataset',conn)
-        now = nowstr()
-        if isinstance(config_data,dict):
+        # make sure we have a serialized and deserialized copy of config
+        if isinstance(config_data, dict):
+            try:
+                config_data = serialization.dict_to_dataclasses(config_data)
+            except Exception:
+                logger.info('error converting config: %r', config_data,
+                            exc_info=True)
+                callback(e)
+                return
+        if isinstance(config_data, dataclasses.Job):
             config = config_data
             try:
                 config_data = serialization.serialize_json.dumps(config)
@@ -475,68 +483,141 @@ class rpc(_Methods_Base):
                             exc_info=True)
                 callback(e)
                 return
+
+        # check the number of jobs, tasks, and trays
         try:
             njobs = int(njobs)
             ntasks = len(config['tasks'])*njobs
-            ntrays = sum(len(x['trays']) for x in config['tasks'])
         except Exception as e:
-            logger.info('error reading ntasks and ntrays from submitting config',
+            logger.info('error reading ntasks from submitting config',
                         exc_info=True)
             callback(e)
             return
-        sql = 'insert into config (dataset_id,config_data,difplus_data)'
-        sql += ' values (?,?,?)'
-        bindings = (dataset_id,config_data,difplus)
+
+        # look up dependencies
+        task_rels = []
+        depends = []
         try:
-            ret = self.db._db_write(conn,sql,bindings,None,None,None)
+            dataset_depends = {}
+            for task in config['tasks']:
+                for dep in task['depends']:
+                    if '.' in dep:
+                        dataset_depends[dep.split('.')[0]] = []
+            if dataset_depends:
+                sql = 'select task_rel_id,dataset_id,task_index,name from task_rel '
+                sql += 'where dataset_id in ('
+                sql += ','.join('?' for _ in dataset_depends)+')'
+                bindings = tuple(dataset_depends)
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                if isinstance(ret,Exception):
+                    raise ret
+                for tid,did,task_index,name in ret:
+                    dataset_depends[did].append({'task_rel_id':tid,
+                                                 'task_index':task_index,
+                                                 'name':name})
+            for task in config['tasks']:
+                task_dep = []
+                task_rel_id = self.db._increment_id_helper('task_rel',conn)
+                for dep in task['depends']:
+                    if '.' in dep:
+                        did, dep = dep.split('.')
+                        if dep.isdigit():
+                            dep = int(dep)
+                        for rel in dataset_depends[did]:
+                            if rel['task_index'] == dep or rel['name'] == dep:
+                                task_dep.append(rel['task_rel_id'])
+                                break
+                        else:
+                            raise Exception('missing a dataset dependency')
+                    else:
+                        if dep.isdigit():
+                            task_dep.append(task_rels[int(dep)])
+                        else:
+                            for i,task in enumerate(config['tasks']):
+                                if dep == task['name']:
+                                    task_dep.append(task_rels[i])
+                                    break
+                            else:
+                                raise Exception('missing a dependency')
+                depends.append(','.join(task_dep))
+                task_rels.append(task_rel_id)
         except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
+            logger.warn('task dependency error', exc_info=True)
+            callback(Exception('Task dependency error'))
             return
-        else:
-            if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                bindings3 = ('config',dataset_id,now)
-                try:
-                    self.db._db_write(conn,sql3,bindings3,None,None,None)
-                except Exception as e:
-                    logger.info('error updating master_update_history',
-                                exc_info=True)
-            else:
-                self._send_to_master(('config',dataset_id,now,sql,bindings))
-        if isinstance(gridspec,dict):
-            gridspec = json_encode(gridspec)
-        stat_keys = json_encode(stat_keys)
-        categories = '' # TODO: make configurable
-        bindings = (dataset_id,'name',description,gridspec,'processing',
-                    'user','institution','localhost',0,njobs,ntrays,ntasks,
-                    datetime2str(datetime.utcnow()),'','','','',stat_keys,
-                    categories,debug)
-        sql = 'insert into dataset (dataset_id,name,description,gridspec,'
-        sql += 'status,username,institution,submit_host,priority,'
-        sql += 'jobs_submitted,trays,tasks_submitted,start_date,end_date,'
-        sql += 'temporary_storage,global_storage,parent_id,stat_keys,'
-        sql += 'categoryvalue_ids,debug)'
-        sql += ' values ('+','.join(['?' for _ in bindings])+')'
+
+        # start constructing sql
+        db_updates_sql = []
+        db_updates_bindings = []
+        now = nowstr()
+
         try:
-            ret = self.db._db_write(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-        else:
-            if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                bindings3 = ('dataset',dataset_id,now)
+            # add dataset
+            if isinstance(gridspec,dict):
+                gridspec = json_encode(gridspec)
+            dataset_id = self.db._increment_id_helper('dataset',conn)
+            stat_keys = json_encode(stat_keys)
+            categories = '' # TODO: make configurable
+            bindings = (dataset_id,'name',description,gridspec,'processing',
+                        'user','institution','localhost',0,njobs,ntasks,
+                        now,'','','','',stat_keys,
+                        categories,debug)
+            sql = 'insert into dataset (dataset_id,name,description,gridspec,'
+            sql += 'status,username,institution,submit_host,priority,'
+            sql += 'jobs_submitted,tasks_submitted,start_date,end_date,'
+            sql += 'temporary_storage,global_storage,parent_id,stat_keys,'
+            sql += 'categoryvalue_ids,debug)'
+            sql += ' values ('+','.join(['?' for _ in bindings])+')'
+            db_updates_sql.append(sql)
+            db_updates_bindings.append(bindings)
+            
+            # add config
+            sql = 'insert into config (dataset_id,config_data,difplus_data)'
+            sql += ' values (?,?,?)'
+            bindings = (dataset_id,config_data,difplus)
+            db_updates_sql.append(sql)
+            db_updates_bindings.append(bindings)
+
+            # add task_rel
+            for i,task in enumerate(config['tasks']):
                 try:
-                    self.db._db_write(conn,sql3,bindings3,None,None,None)
+                    reqs = serialization.serialize_json.dumps(task['requirements'])
                 except Exception as e:
-                    logger.info('error updating master_update_history',
-                                exc_info=True)
-            else:
-                self._send_to_master(('dataset',dataset_id,now,sql,bindings))
-            callback(True)
+                    logger.info('cannot serialize requirements',exc_info=True)
+                    callback(e)
+                    return
+                task_name = task['name']
+                if not task_name:
+                    task_name = str(i)
+                sql = 'insert into task_rel (task_rel_id,dataset_id,task_index,'
+                sql += 'name,depends,requirements) values (?,?,?,?,?,?)'
+                bindings = (task_rels[i],dataset_id,i,task_name,depends[i],reqs)
+                db_updates_sql.append(sql)
+                db_updates_bindings.append(bindings)
+
+            # write to database
+            ret = self.db._db_write(conn,db_updates_sql,db_updates_bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            for i in range(len(db_updates_sql)):
+                sql = db_updates_sql[i]
+                bindings = db_updates_bindings[i]
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    bindings3 = (sql.split()[2],bindings[0],now)
+                    try:
+                        self.db._db_write(conn,sql3,bindings3,None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master((sql.split()[2],bindings[0],now,sql,bindings))
+        except Exception as e:
+            logger.warn('submit error', exc_info=True)
+            callback(e)
+            return
+
+        callback(True)
 
     @dbmethod
     def rpc_update_dataset_config(self,dataset_id,data,callback=None):
@@ -560,7 +641,7 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('dataset',dataset_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -629,7 +710,7 @@ class rpc(_Methods_Base):
 
     def rpc_stop_module(self, module_name, callback=None):
         self.db.messaging.daemon.stop(mod = module_name, callback=callback)
-    
+
     def rpc_start_module(self, module_name, callback=None):
         self.db.messaging.daemon.start(mod = module_name, callback=callback)
 

@@ -44,6 +44,8 @@ The queueing module can submit to multiple grids at once since multiple plugins 
 .. toctree::
     :maxdepth: 3
 
+    submit_to_queue
+    task_relationships
     lifecycles
     global_queueing
 

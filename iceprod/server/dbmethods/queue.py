@@ -102,7 +102,7 @@ class queue(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('site',site_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -185,7 +185,7 @@ class queue(_Methods_Base):
                 bindings = (status,t)
                 bindings2 = (status,now,t)
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('search',t,now)
                     bindings4 = ('task',t,now)
                     try:
@@ -290,7 +290,7 @@ class queue(_Methods_Base):
         def cb(ret):
             if not isinstance(ret,Exception):
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('task',task,nowstr())
                     try:
                         self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -303,327 +303,254 @@ class queue(_Methods_Base):
         self.db.sql_write_task(sql,bindings,callback=cb)
 
     @dbmethod
-    def queue_buffer_jobs_tasks(self,gridspec,num_tasks,callback=None):
-        """Create a buffer of jobs and tasks ahead of queueing"""
-        sql = 'select dataset_id,status,gridspec,jobs_submitted,'
-        sql += 'tasks_submitted from dataset where '
-        if isinstance(gridspec,String):
-            sql += 'gridspec like ?'
-            bindings = ('%'+gridspec+'%',)
-            gridspec = [gridspec]
-        elif isinstance(gridspec,Iterable):
-            if len(gridspec) < 1:
-                logger.info('in buffer_jobs_tasks, no gridspec %r',gridspec)
-                raise Exception('no gridspec defined')
-            sql += '('+(' or '.join(['gridspec like ?' for _ in gridspec]))+')'
-            bindings = tuple(['%'+g+'%' for g in gridspec])
-        else:
-            logger.info('in buffer_jobs_tasks, unknown gridspec %r',gridspec)
-            raise Exception('unknown gridspec type')
-        sql += ' and status = ?'
-        bindings += ('processing',)
-        logger.debug('in buffer_jobs_tasks, buffering on %r',gridspec)
-        cb = partial(self._queue_buffer_jobs_tasks_callback,gridspec,
+    def queue_buffer_jobs_tasks(self, gridspec=None, num_tasks=100, callback=None):
+        """
+        Create a buffer of jobs and tasks ahead of queueing.
+
+        Args:
+            gridspec (str or iterable): Single or multiple gridspecs to match.
+                                        `None` for global queueing.
+            num_tasks (int): Number of tasks to buffer (rounds up to buffer
+                             a full job at once).
+        """
+        cb = partial(self._queue_buffer_jobs_tasks_blocking,gridspec,
                      num_tasks,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _queue_buffer_jobs_tasks_callback(self,gridspec,num_tasks,ret,callback=None):
-        logger.debug('in _buffer_jobs_tasks_callback, ret = %r',ret)
-        possible_datasets = {}
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        elif ret:
-            for d,s,gs,js,ts in ret:
-                logger.debug('cb:gs=%r,gridspec=%r',gs,gridspec)
-                try:
-                    gs = json_decode(gs)
-                except:
-                    logger.debug('gs not a json object, must be str')
-                    if gs != gridspec and gs not in gridspec:
-                        continue # not a local dataset
-                else:
-                    logger.debug('gs is json object %r',gs)
-                    for g in gs.values():
-                        if g not in gridspec:
-                            continue # not a local dataset
-                possible_datasets[d] = {'gridspec':gs,'jobs':js,'tasks':ts}
-        if len(possible_datasets) < 1:
-            # nothing to buffer
-            logger.info('nothing to buffer (cb)')
-            callback(True)
-            return
-        sql = 'select dataset_id,job_id,task_id,gridspec,task_status from search '
-        sql += ' where dataset_id in ('
-        sql += ','.join(['?' for _ in possible_datasets])
-        sql += ')'
-        bindings = tuple(possible_datasets)
-        cb = partial(self._queue_buffer_jobs_tasks_callback2,gridspec,
-                     num_tasks,possible_datasets,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _queue_buffer_jobs_tasks_callback2(self,gridspec,num_tasks,possible_datasets,
-                                     ret,callback=None):
-        logger.debug('in _buffer_jobs_tasks_callback2, ret = %r',ret)
-        already_buffered = {}
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        elif ret:
-            job_ids = set()
-            for d,j,t,gs,st in ret:
-                logger.debug('cb2:gs=%r,gridspec=%r',gs,gridspec)
-                if gs not in gridspec:
-                    continue
-                if d not in already_buffered:
-                    already_buffered[d] = {'jobs_submitted':0,
-                                           'tasks_submitted':0,
-                                           'tasks_buffered':0,
-                                          }
-                already_buffered[d]['tasks_submitted'] += 1
-                if j not in job_ids:
-                    already_buffered[d]['jobs_submitted'] += 1
-                    job_ids.add(j)
-                if st == 'waiting':
-                    already_buffered[d]['tasks_buffered'] += 1
+        self.db.blocking_task('queue',cb)
+    def _queue_buffer_jobs_tasks_get_datasets(self, gridspec, conn):
+        """Helper to get datasets to buffer new jobs/tasks"""
+
+        # get possible datasets to buffer from
+        sql = 'select dataset_id, status, gridspec, jobs_submitted '
+        sql += 'from dataset where status = ? '
+        bindings = ('processing',)
+        if isinstance(gridspec, String):
+            sql += 'and gridspec like ?'
+            bindings += ('%'+gridspec+'%',)
+            gridspec = [gridspec]
+        elif isinstance(gridspec, Iterable):
+            if len(gridspec) < 1:
+                logger.info('in buffer_jobs_tasks, no gridspec %r', gridspec)
+                raise Exception('no gridspec defined')
+            sql += 'and ('+(' or '.join(['gridspec like ?' for _ in gridspec]))+')'
+            bindings += tuple(['%'+g+'%' for g in gridspec])
+        elif gridspec:
+            logger.info('in buffer_jobs_tasks, unknown gridspec %r', gridspec)
+            raise Exception('unknown gridspec type')
+        ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        if isinstance(ret, Exception):
+            raise ret
         need_to_buffer = {}
-        for d in possible_datasets:
-            total_jobs = possible_datasets[d]['jobs']
-            total_tasks = possible_datasets[d]['tasks']
-            tasks_per_job = float(total_tasks/total_jobs)
+        for d, s, gs, js in ret:
+            logger.debug('gs=%r, gridspec=%r', gs, gridspec)
+            need_to_buffer[d] = {'gridspec':gs,'jobs':js,'job_index':0}
+        if not need_to_buffer:
+            # nothing to buffer
+            logger.info('nothing to buffer')
+            return None
+
+        # remove already buffered jobs
+        sql = 'select dataset_id,job_id from search '
+        sql += ' where dataset_id in ('
+        sql += ','.join(['?' for _ in need_to_buffer])
+        sql += ')'
+        bindings = tuple(need_to_buffer)
+        ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        if isinstance(ret,Exception):
+            raise ret
+        already_buffered = {}
+        for d, job_id in ret:
+            if d not in already_buffered:
+                already_buffered[d] = set()
+            already_buffered[d].add(job_id)
+        for d in need_to_buffer:
             if d in already_buffered:
-                total_tasks -= already_buffered[d]['tasks_submitted']
-                total_jobs -= already_buffered[d]['jobs_submitted']
-            n = num_tasks
-            poss = total_tasks
-            if poss < n:
-                n = poss
-            if n > 0:
-                n = int(math.ceil(num_tasks/tasks_per_job))
-                poss = total_jobs
-                if poss < n:
-                    n = poss
-                if n > 0:
-                    need_to_buffer[d] = n
+                need_to_buffer[d]['job_index'] = len(already_buffered[d])
+        return need_to_buffer
+    def _queue_buffer_jobs_tasks_blocking(self,gridspec,num_tasks,callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        now = nowstr()
+
+        try:
+            need_to_buffer = self._queue_buffer_jobs_tasks_get_datasets(gridspec, conn)
+        except Exception as e:
+            logger.info('error getting datasets to buffer', exc_info=True)
+            callback(e)
+            return
         if not need_to_buffer:
             # nothing to buffer
             logger.info('nothing to buffer (cb2)')
             callback(True)
-        else:
-            # create jobs and tasks
-            cb = partial(self._queue_buffer_jobs_tasks_blocking,possible_datasets,
-                         need_to_buffer,callback=callback)
-            self.db.non_blocking_task(cb)
-    def _queue_buffer_jobs_tasks_blocking(self,possible_datasets,need_to_buffer,
-                                    callback=None):
-        logger.debug('in _buffer_jobs_tasks_blocking')
-        conn,archive_conn = self.db._dbsetup()
-        now = nowstr()
-
-        # get dataset config
-        sql = 'select dataset_id,config_data from config where dataset_id in '
-        sql += '('+(','.join(['?' for _ in need_to_buffer]))+')'
-        bindings = tuple(need_to_buffer)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
             return
-        for d,c in ret:
-            try:
-                possible_datasets[d]['config'] = serialization.serialize_json.loads(c)
-            except:
-                logger.info('config for dataset %s not loaded',d,exc_info=True)
 
+        # get task_rels for buffering datasets
+        task_rel_ids = {}
+        try:
+            sql = 'select task_rel_id,dataset_id,task_index,name,depends from task_rel '
+            sql += 'where dataset_id in ('
+            sql += ','.join('?' for _ in need_to_buffer)+')'
+            bindings = tuple(need_to_buffer)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            for tr_id, dataset_id, index, name, deps in ret:
+                if 'task_rels' not in need_to_buffer[dataset_id]:
+                    need_to_buffer[dataset_id]['task_rels'] = {}
+                need_to_buffer[dataset_id]['task_rels'][tr_id] = (index,name,deps)
+                task_rel_ids[tr_id] = (dataset_id,index,deps)
+        except Exception as e:
+            logger.info('error getting task_rels', exc_info=True)
+            callback(e)
+            return
+
+        def get_task_rels_by_id(task_rel_id):
+            """
+            Get task_rels for a specific id.
+            """
+            sql = 'select task_rel_id,dataset_id,task_index,depends from task_rel '
+            sql += 'where task_rel_id = ?'
+            bindings = (task_rel_id,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            for tr_id, dataset_id, index, deps in ret:
+                task_rel_ids[tr_id] = (dataset_id,index,deps)
+
+        def get_task_by_index(dataset, job_index, task_index):
+            """Get a task id referenced by a dataset, job_index, and task_index."""
+            logger.info('get_task_by_index: %s, %d, %d', dataset, job_index,
+                        task_index)
+            sql = 'select job_id, task_id from search where dataset_id = ?'
+            bindings = (dataset,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            jobs = {}
+            for j, t in ret:
+                if j not in jobs:
+                    jobs[j] = [t]
+                else:
+                    jobs[j].append(t)
+            sql = 'select job_id,job_index from job where '
+            sql += 'job_index = ? and job_id in ('
+            sql += ','.join('?' for _ in jobs) + ')'
+            bindings = (job_index,)+tuple(jobs)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            if not ret:
+                raise Exception('job_index not found')
+            job_id = ret[0][0]
+            return sorted(jobs[job_id])[task_index]
+
+        # buffer for each dataset
+        # for now, do the stupid thing and just buffer in order
+        # TODO: use priorities to do this better
         for dataset in need_to_buffer:
-            logger.debug('buffering dataset %s',dataset)
-            total_jobs = possible_datasets[dataset]['jobs']
-            total_tasks = possible_datasets[dataset]['tasks']
-            tasks_per_job = int(total_tasks/total_jobs)
-
-            # make jobs
-            jobs = []
-            sql_bindings = []
-            for _ in xrange(need_to_buffer[dataset]):
-                jobs.append((self.db._increment_id_helper('job',conn),
-                             'processing',now))
-                sql_bindings.append('(?,?,?)')
-            sql = 'insert into job (job_id,status,status_changed) values '
-            sql += ','.join(sql_bindings)
-            bindings = reduce(lambda a,b:a+b,jobs)
             try:
-                ret = self.db._db_write(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
-            else:
-                if self._is_master():
-                    for j in jobs:
-                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                        bindings3 = ('job',j[0],now)
-                        try:
-                            self.db._db_write(conn,sql3,bindings3,None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
-                else:
-                    sql = 'insert into job (job_id,status,status_changed) values (?,?,?)'
-                    for j in jobs:
-                        self._send_to_master(('job',j[0],now,sql,tuple(j)))
+                job_index = need_to_buffer[dataset]['job_index']
+                total_jobs = need_to_buffer[dataset]['jobs']
+                task_rels = need_to_buffer[dataset]['task_rels']
+                sorted_task_rels = sorted(task_rels)
+                gs = need_to_buffer[dataset]['gridspec']
+                
+                logger.debug('buffering dataset %s, job index %d',
+                             dataset, job_index)
 
-            # make tasks
-            task_names = []
-            task_depends = []
-            if 'config' in possible_datasets[dataset]:
-                tt = possible_datasets[dataset]['config']['tasks']
-                if len(tt) != tasks_per_job:
-                    logger.warn('config tasks len != tasks_per_job for '
-                                 'dataset %s. ignoring...',dataset)
-                    for t in xrange(tasks_per_job):
-                        task_names.append(str(t))
-                        task_depends.append([])
-                else:
-                    task_names = [t['name'] if t['name'] else i for i,t in enumerate(tt)]
+                db_updates_sql = []
+                db_updates_bindings = []
+
+                while num_tasks > 0 and job_index < total_jobs:
+                    # figure out the task dependencies for the tasks in
+                    # the current job
+                    depends = []
                     try:
-                        for t in tt:
-                            task_depends.append([task_names.index(d)
-                                                 for d in t['depends']])
-                    except ValueError:
-                        logger.error('task dependency not in tasks for '
-                                     'dataset %s. skipping dataset',dataset)
-                        continue
-            else:
-                logger.info('config for dataset %s does not exist or '
-                             'does not have proper task names. ignoring...',
-                             dataset)
-                for t in xrange(tasks_per_job):
-                    task_names.append(str(t))
-                    task_depends.append([])
-            tasks = []
-            task_rels = []
-            search = []
-            task_bindings = []
-            task_rel_bindings = []
-            search_bindings = []
-            q_10 = '('+(','.join(['?' for _ in range(10)]))+')'
-            q_6 = '('+(','.join(['?' for _ in range(6)]))+')'
-            q_3 = '('+(','.join(['?' for _ in range(3)]))+')'
-            for job_id,job_status,n in jobs:
-                task_ids = [self.db._increment_id_helper('task',conn)
-                            for t in range(tasks_per_job)]
-                task_rel_ids = [self.db._increment_id_helper('task_rel',conn)
-                            for t in range(tasks_per_job)]
-                for t in range(tasks_per_job):
-                    task_id = task_ids[t]
-                    task_rel_id = task_rel_ids[t]
-                    tasks.append((task_id, 'idle', 'idle', '', now,
-                                 '', '', 0, 0, task_rel_id))
-                    task_bindings.append(q_10)
-                    depends = ','.join([task_ids[n] for n in task_depends[t]])
-                    reqs = '' # TODO: set requirements
-                    task_rels.append((task_rel_id,depends,reqs))
-                    task_rel_bindings.append(q_3)
-                    name = task_names[t]
-                    if isinstance(possible_datasets[dataset]['gridspec'],String):
-                        gs = possible_datasets[dataset]['gridspec']
-                    else:
-                        try:
-                            gs = possible_datasets[dataset]['gridspec'][str(name)]
-                        except:
-                            logger.error('cannot find task name in dataset '
-                                        'gridspec def: %r %r',dataset,name)
-                            continue
-                    if isinstance(gs,(list,tuple)):
-                        gs = ','.join(gs)
-                    search.append((task_id, job_id, dataset, gs,
-                                   name, 'idle'))
-                    search_bindings.append(q_6)
-            # insert task
-            sql = 'insert into task (task_id,status,prev_status,'
-            sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
-            sql += 'failures,evictions,task_rel_id) values '
-            sql += ','.join(task_bindings)
-            bindings = reduce(lambda a,b:a+b,tasks)
-            try:
-                ret = self.db._db_write(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
-            else:
-                if self._is_master():
-                    for t in tasks:
-                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                        bindings3 = ('task',t[0],now)
-                        try:
-                            self.db._db_write(conn,sql3,bindings3,None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
-                else:
+                        for i, x in enumerate(sorted(task_rels.values(),key=lambda a:a[0])):
+                            index, name, deps = x
+                            logger.debug('checking depends: %r',x)
+                            task_deps = ([],[])
+                            for d in deps.split(','):
+                                if not d:
+                                    continue
+                                if d in task_rels:
+                                    # linking within job
+                                    if i == sorted_task_rels.index(d):
+                                        raise Exception('cannot depend on ourself')
+                                    task_deps[0].append(task_rels[d][0])
+                                    continue
+                                # linking to another dataset
+                                if d not in task_rel_ids:
+                                    get_task_rels_by_id(d)
+                                task_deps[1].append(get_task_by_index(
+                                        dataset=task_rel_ids[d][0],
+                                        job_index=job_index,
+                                        task_index=task_rel_ids[d][1]))
+                            depends.append(task_deps)
+                    except Exception:
+                        logger.warn('missing dependency when buffering dataset')
+                        raise
+
+                    # make job
+                    job_id = self.db._increment_id_helper('job',conn)
+                    sql = 'insert into job (job_id, status, job_index, '
+                    sql += 'status_changed) values (?,?,?,?)'
+                    bindings = (job_id, 'processing', job_index, now)
+                    db_updates_sql.append(sql)
+                    db_updates_bindings.append(bindings)
+
+                    # make tasks
+                    task_ids = [self.db._increment_id_helper('task',conn)
+                                for _ in task_rels]
                     sql = 'insert into task (task_id,status,prev_status,'
                     sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
-                    sql += 'failures,evictions,task_rel_id) values '
-                    sql += '(?,?,?,?,?,?,?,?,?,?)'
-                    for t in tasks:
-                        self._send_to_master(('task',t[0],now,sql,tuple(t)))
-            # insert task_rel
-            sql = 'insert into task_rel (task_rel_id, depends, '
-            sql += 'requirements) values '
-            sql += ','.join(task_rel_bindings)
-            bindings = reduce(lambda a,b:a+b,task_rels)
-            try:
-                ret = self.db._db_write(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
-            else:
-                if self._is_master():
-                    for t in task_rels:
-                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                        bindings3 = ('task_rel',t[0],now)
-                        try:
-                            self.db._db_write(conn,sql3,bindings3,None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
+                    sql += 'failures,evictions,depends,requirements) values '
+                    sql += '(?,?,?,?,?,?,?,?,?,?,?)'
+                    sql2 = 'insert into search (task_id,job_id,dataset_id,gridspec,'
+                    sql2 += 'name,task_status) values (?,?,?,?,?,?)'
+                    for index, task_rel_id in enumerate(sorted_task_rels):
+                        deps = [task_ids[i] for i in depends[index][0]]
+                        deps.extend(depends[index][1])
+
+                        # task table
+                        bindings = (task_ids[index], 'idle', 'idle', '', now,
+                                    '', '', 0, 0, ','.join(deps), '')
+                        db_updates_sql.append(sql)
+                        db_updates_bindings.append(bindings)
+
+                        # search table
+                        name = task_rels[task_rel_id][1]
+                        bindings2 = (task_ids[index], job_id, dataset, gs, name, 'idle')
+                        db_updates_sql.append(sql2)
+                        db_updates_bindings.append(bindings2)
+
+                    job_index += 1
+                    num_tasks -= len(task_rels)
+
+                # write to database
+                try:
+                    ret = self.db._db_write(conn,db_updates_sql,db_updates_bindings,None,None,None)
+                except Exception as e:
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
                 else:
-                    sql = 'insert into task_rel (task_rel_id, depends, '
-                    sql += 'requirements) values (?,?,?)'
-                    for t in task_rels:
-                        self._send_to_master(('task_rel',t[0],now,sql,tuple(t)))
-            # insert search
-            sql = 'insert into search (task_id,job_id,dataset_id,gridspec,'
-            sql += 'name,task_status) values '
-            sql += ','.join(search_bindings)
-            bindings = reduce(lambda a,b:a+b,search)
-            try:
-                ret = self.db._db_write(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
-            else:
-                if self._is_master():
-                    for s in search:
-                        sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
-                        bindings3 = ('search',s[0],now)
-                        try:
-                            self.db._db_write(conn,sql3,bindings3,None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
-                else:
-                    sql = 'insert into search (task_id,job_id,dataset_id,gridspec,'
-                    sql += 'name,task_status) values (?,?,?,?,?,?)'
-                    for s in search:
-                        self._send_to_master(('search',s[0],now,sql,tuple(s)))
+                    for i in range(len(db_updates_sql)):
+                        sql = db_updates_sql[i]
+                        bindings = db_updates_bindings[i]
+                        if self._is_master():
+                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                            bindings3 = (sql.split()[2],bindings[0],now)
+                            try:
+                                self.db._db_write(conn,sql3,bindings3,None,None,None)
+                            except Exception as e:
+                                logger.info('error updating master_update_history',
+                                            exc_info=True)
+                        else:
+                            self._send_to_master((sql.split()[2],bindings[0],now,sql,bindings))
+
+            except Exception:
+                logger.warn('error buffering dataset %s', dataset, exc_info=True)
+                continue
 
         # done buffering
         callback(True)
@@ -683,33 +610,57 @@ class queue(_Methods_Base):
                                            callback=None):
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
-        sql = 'select search.dataset_id, task.task_id, task.depends, '
-        sql += ' task_rel.requirements, task.status '
-        sql += ' from search join task on search.task_id = task.task_id '
-        sql += ' join task_rel on task.task_rel_id = task_rel.task_rel_id '
-        sql += ' where dataset_id in ('+','.join(['?' for _ in dataset_prios])
-        sql += ') '
-        bindings = list(dataset_prios)
-        if gridspec:
-            sql += 'and gridspec = ? '
-            bindings.append(gridspec)
-        bindings = tuple(bindings)
         try:
+            sql = 'select dataset_id, task_id, task_status '
+            sql += 'from search where dataset_id in ('
+            sql += ','.join(['?' for _ in dataset_prios]) + ')'
+            bindings = tuple(dataset_prios)
+            if gridspec:
+                sql += 'and gridspec = ? '
+                bindings += (gridspec,)
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            logger.debug('error queueing tasks',exc_info=True)
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        tasks = {}
-        datasets = {k:OrderedDict() for k in dataset_prios}
-        if ret:
-            for dataset,task_id,depends,reqs,status in ret:
+            if isinstance(ret,Exception):
+                raise ret
+            tasks = {}
+            for dataset, task_id, status in ret:
+                tasks[task_id] = {'dataset':dataset, 'status':status}
+            sql = 'select task_id, depends, requirements, task_rel_id '
+            sql += 'from task where task_id in ('
+            sql += ','.join('?' for _ in tasks) + ')'
+            bindings = tuple(tasks)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            datasets = {k:OrderedDict() for k in dataset_prios}
+            task_rel_ids = {}
+            for task_id, depends, reqs, task_rel_id in ret:
+                dataset = tasks[task_id]['dataset']
+                status = tasks[task_id]['status']
+                tasks[task_id]['task_rel_id'] = task_rel_id
                 if (status == 'idle' or
                     (not global_queueing and status == 'waiting')):
-                    datasets[dataset][task_id] = (depends,reqs)
-                tasks[task_id] = status
+                    datasets[dataset][task_id] = [depends,reqs]
+                if not reqs:
+                    task_rel_ids[task_rel_id] = None
+            sql = 'select task_rel_id, requirements from task_rel '
+            sql += 'where task_rel_id in ('
+            sql += ','.join('?' for _ in task_rel_ids) + ')'
+            bindings = tuple(task_rel_ids)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            for task_rel_id, reqs in ret:
+                task_rel_ids[task_rel_id] = reqs
+            for d in datasets:
+                for task_id in datasets[d]:
+                    task_rel_reqs = task_rel_ids[tasks[task_id]['task_rel_id']]
+                    if task_rel_reqs and (not datasets[d][task_id][1]):
+                        datasets[d][task_id][1] = task_rel_reqs
+        except Exception as e:
+            logger.debug('error getting processing tasks', exc_info=True)
+            callback(e)
+            return
+
         # get actual tasks
         task_prio = []
         for dataset in dataset_prios:
@@ -738,7 +689,7 @@ class queue(_Methods_Base):
                             elif ret[0][0] != 'complete':
                                 satisfied = False
                                 break
-                        elif tasks[dep] != 'complete':
+                        elif tasks[dep]['status'] != 'complete':
                             satisfied = False
                             break
                 if satisfied and reqs and resources is not None:
@@ -803,7 +754,7 @@ class queue(_Methods_Base):
                 else:
                     if self._is_master():
                         for t in tasks:
-                            sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                             bindings3 = ('search',t,now)
                             try:
                                 self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -839,7 +790,7 @@ class queue(_Methods_Base):
                 else:
                     if self._is_master():
                         for t in tasks:
-                            sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                             bindings3 = ('task',t,now)
                             try:
                                 self.db._db_write(conn,sql3,bindings3,None,None,None)

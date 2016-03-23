@@ -1,3 +1,6 @@
+.. index:: Lifecycles
+.. _Lifecycles:
+
 Lifecycles
 ==========
 

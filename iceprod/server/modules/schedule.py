@@ -22,16 +22,16 @@ class schedule(module.module):
     """
     Run the schedule module, which handles periodic tasks.
     """
-    
+
     def __init__(self,*args,**kwargs):
         # run default init
         super(schedule,self).__init__(*args,**kwargs)
-        
+
         self.scheduler = None
-        
+
         # start Scheduler
         self.start()
-    
+
     def start(self):
         """Start schedule"""
         super(schedule,self).start(callback=self._start)
@@ -40,10 +40,10 @@ class schedule(module.module):
             # make Scheduler
             self.scheduler = Scheduler()
             self._make_schedule()
-        
+
         # start things
         self.scheduler.start()
-    
+
     def stop(self):
         """Stop schedule"""
         if self.scheduler:
@@ -53,7 +53,7 @@ class schedule(module.module):
                 logger.warn('scheduler still running after 10 seconds')
             self.scheduler = None
         super(schedule,self).stop()
-    
+
     def kill(self):
         """Kill thread"""
         if self.scheduler:
@@ -61,20 +61,25 @@ class schedule(module.module):
             self.scheduler.join(0.01) # wait only a very short amount of time
             self.scheduler = None
         super(schedule,self).kill()
-    
+
     def _make_schedule(self):
         """Make the default schedule"""
-        
+
         # mark dataset complete
         self.scheduler.schedule('every 1 hours',
                 partial(self._db_call,'cron_dataset_completion'))
-        
+
         # collate node resources
         self.scheduler.schedule('every 1 hours',
                 partial(self._db_call,'node_collate_resources',
                         site_id=self.cfg['site_id']))
-        self.scheduler.schedule('every 6 hours', partial(self._db_call, 'cron_remove_old_passkeys'))
-    
+
+        self.scheduler.schedule('every 6 hours',
+                partial(self._db_call, 'cron_remove_old_passkeys'))
+
+        self.scheduler.schedule('every 1 hours',
+                partial(self._db_call, 'cron_task_dependency_generate'))
+
     def _db_call(self,func,**kwargs):
         """Call DB func, handling any errors"""
         logger.info('running %s',func)
@@ -87,4 +92,3 @@ class schedule(module.module):
             ret = getattr(self.messaging.db,func)(callback=cb,**kwargs)
         except Exception as e:
             logger.warn('error running %s',func,exc_info=True)
-    

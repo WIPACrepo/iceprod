@@ -121,7 +121,7 @@ class cron(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                 for sql,bindings in zip(master_sql,master_bindings):
                     bindings3 = ('dataset',bindings[-1],now)
                     try:
@@ -144,6 +144,4 @@ class cron(_Methods_Base):
         self.db.sql_write_task(sql,bindings,callback=cb)
     def _cron_remove_old_passkeys_cb(self,ret,callback=None):
         callback(ret)
-
-
 

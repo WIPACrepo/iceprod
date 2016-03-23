@@ -126,7 +126,7 @@ class DB(SQLite):
         self.queries.append((sql,bindings))
         if (self.failures is True or len(self.queries) == self.failures
             or (isinstance(self.failures,dict) and len(self.queries) in self.failures)):
-            logger.warn('injected SQLError')
+            logger.warn('injected SQLError on query %r',sql)
             raise Exception('SQLError')
         return super(DB,self)._db_read(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
 
@@ -134,7 +134,7 @@ class DB(SQLite):
         self.queries.append((sql,bindings))
         if (self.failures is True or len(self.queries) == self.failures
             or (isinstance(self.failures,dict) and len(self.queries) in self.failures)):
-            logger.warn('injected SQLError')
+            logger.warn('injected SQLError on query %r',sql)
             raise Exception('SQLError')
         return super(DB,self)._db_write(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
 
