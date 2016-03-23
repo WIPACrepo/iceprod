@@ -28,12 +28,23 @@ def handler1(signum, frame):
    logger.warn('Exiting...')
    os._exit(0)
 
-parser = argparse.ArgumentParser()
+class MyArgumentParser(argparse.ArgumentParser):
+    """Override exit to indicate a failure"""
+    def exit(self, status=0, message=None):
+        if status == 0:
+            status = 2
+        super(MyArgumentParser, self).exit(status=status, message=message)
+
+parser = MyArgumentParser()
 parser.add_argument('--core',action='store_true')
 parser.add_argument('--server',action='store_true')
 parser.add_argument('file_glob', type=str, nargs='?', default='*')
 parser.add_argument('test_glob', type=str, nargs='?', default='*')
-args = parser.parse_args()
+try:
+    args = parser.parse_args()
+except Exception, SystemExit:
+    print('exception')
+    raise
 if not args.core and not args.server:
     # if neither is selected, select all
     args.core = True
