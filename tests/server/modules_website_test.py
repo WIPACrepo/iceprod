@@ -212,6 +212,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
     @unittest_reporter(skip=not ssl_cert)
     def test_04_start_ssl(self):
@@ -243,7 +244,6 @@ class modules_website_test(unittest.TestCase):
             if not any(x[0] == 'config' and x[1] == 'set' for x in web.messaging.called):
                 logger.info('%r',web.messaging.called)
                 raise Exception('did not call config')
-            web._start()
 
         # actual start
         ioloop = tornado.ioloop.IOLoop.instance()
@@ -268,6 +268,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
     @unittest_reporter(skip=not ssl_cert)
     def test_05_start_ssl_ca(self):
@@ -324,6 +325,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
     @unittest_reporter
     def test_10_JSONRPCHandler(self):
@@ -384,6 +386,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
     @unittest_reporter
     def test_20_LibHandler(self):
@@ -456,6 +459,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
     @unittest_reporter
     def test_30_MainHandler(self):
@@ -633,6 +637,7 @@ class modules_website_test(unittest.TestCase):
 
         finally:
             ioloop.stop()
+            web.stop()
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
