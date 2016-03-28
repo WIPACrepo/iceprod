@@ -30,192 +30,78 @@ from iceprod.core.jsonUtil import json_encode,json_decode
 logger = logging.getLogger('functions')
 
 
-### Compression Functions - using p7zip ###
-mmt_off = ('xz','lzma','7z')
-compress_suffixes = ('.tgz','.gz','.tbz2','.tbz','.bz2','.bz','.rar',
-                     '.lzma2','.lzma','.lz','.xz','.7z','.z','.Z')
-tar_suffixes = ('.tgz','.tbz2','.tbz')
+### Compression Functions ###
+_compress_suffixes = ('.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
+                     '.lzma2','.lzma','.lz','.xz')
+_tar_suffixes = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tbz',
+                '.tar.lzma', '.tar.xz', '.tlz', '.txz')
 
-def _checksuffixes(file,prev,s):
-    if prev:
-        return prev
-    elif file.endswith(s):
-        return s[1:]
-
-# todo: handle the case of the missing 7za
-def uncompress(file):
+def uncompress(infile):
     """Uncompress a file, if possible"""
-    file = file.replace(';`','')
-    dir = os.path.dirname(file)
-    logger.info('uncompressing %s to dir %s',file,dir)
-    # get file listing
-    proc = subprocess.Popen('7za l -mmt=off %s'%(file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    output = proc.communicate()[0]
-    if proc.returncode:
-        raise util.NoncriticalError('Failed to open archive')
     files = []
-    type = ''
-    save = False
-    for line in output.split('\n'):
-        line = line.strip()
-        if line[:4] == 'Type':
-            type = line.split('=')[1].strip()
-        elif line[:4] == '----':
-            if save == True:
-                save = False
-            else:
-                save = True
-        if save:
-            # save 6th col
-            cols = line.split()
-            if len(cols) >= 6:
-                pos = line.find(cols[5])
-                if pos != -1:
-                    files.append(os.path.join(dir,line[pos:]))
-    logger.info('files: %s',str(files))
-
-    # check for existence in cache
-    exists = True
-    for f in files:
-        if not os.path.exists(f):
-            exists = False
-            break
-    if not exists or len(files) < 1:
-        # uncompressed files do not exist yet, so actually do uncompression
-        if type in mmt_off:
-            proc = subprocess.Popen('7za x -y -mmt=off -o%s %s'%(dir,file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    logger.info('uncompressing %s',infile)
+    if istarred(infile):
+        # handle tarfile
+        output = subprocess.check_output(['tar','-atf',infile])
+        files = [x for x in output.split('\n') if x.strip() and x[-1] != '/']
+        if not files:
+            raise Exception('no files inside tarfile')
+        for f in files:
+            if os.path.exists(f):
+                break
         else:
-            proc = subprocess.Popen('7za x -y -o%s %s'%(dir,file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        output = proc.communicate()[0]
-        if len(files) < 1:
-            # problems getting filenamess from listing, so try getting them from extraction
-            for line in output.split('\n'):
-                line = line.strip()
-                if line[:10] == 'Extracting':
-                    cols = line.split()
-                    if len(cols) >= 2:
-                        pos = line.find(cols[1])
-                        if pos != -1:
-                            files.append(os.path.join(dir,line[pos:]))
-        logger.debug(output)
-        logger.info('files: %s',str(files))
-
-    if not proc.returncode:
-        # if everything went ok, extract tarfile if possible
-        if len(files) == 1 and tarfile.is_tarfile(files[0]):
-            # get file listing
-            proc = subprocess.Popen('7za l -y -mmt=off %s'%(files[0]),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            output = proc.communicate()[0]
-            if not proc.returncode:
-                files2 = []
-                type2 = ''
-                save = False
-                for line in output.split('\n'):
-                    line = line.strip()
-                    if line[:4] == 'Type':
-                        type2 = line.split('=')[1].strip()
-                    elif line[:4] == '----':
-                        if save == True:
-                            save = False
-                        else:
-                            save = True
-                    if save:
-                        # save 6th col
-                        cols = line.split()
-                        if len(cols) >= 6:
-                            pos = line.find(cols[5])
-                            if pos != -1:
-                                files2.append(os.path.join(dir,line[pos:]))
-                logger.info('files: %s',str(files2))
-
-                # check for existence in cache
-                exists = True
-                if file.endswith(('.tgz','.tbz2','.tbz')):
-                    exists = False # these archives sometimes don't work with caching
-                    os.rename(files[0],files[0]+'.tar')
-                    files[0] += '.tar'
-                for f in files2:
-                    if not os.path.exists(f):
-                        exists = False
-                        break
-                if not exists or len(files2) < 1:
-                    # extracted files do not exist yet, so actually do extraction
-                    #if type2 in mmt_off:
-                    #    proc = subprocess.Popen('7za x -y -mmt=off -o%s %s'%(dir,files[0]),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                    #else:
-                    #    proc = subprocess.Popen('7za x -y -mmt=off -o%s %s'%(dir,files[0]),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                    ### use tar instead of 7za because 7za doesn't do symlinks correctly ###
-                    proc = subprocess.Popen('tar -x -C %s -f %s'%(dir,files[0]),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                    output = proc.communicate()[0]
-                    logger.info(output)
-
-                if not proc.returncode: # if everything went ok
-                    if len(files2) == 0:
-                        return ''
-                    elif len(files2) == 1:
-                        return files2[0]
-                    else:
-                        return files2
-        if len(files) == 0:
-            return ''
-        elif len(files) == 1:
-            return files[0]
+            subprocess.call(['tar','-axf',infile])
+    else:
+        if infile.endswith('.gz'):
+            cmd = 'gzip'
+        elif any(infile.endswith(s) for s in ('.bz','.bz2')):
+            cmd = 'bzip2'
+        elif any(infile.endswith(s) for s in ('.xz','.lzma')):
+            cmd = 'xz'
         else:
-            return files
-    raise util.NoncriticalError('Failed to uncompress')
+            logger.info('unknown format: %s',infile)
+            raise Exception('unknown format')
+        subprocess.call([cmd,'-kdf',infile])
+        files.append(infile.rsplit('.',1)[0])
 
-def compress(file,compression='lzma'):
+    logger.info('files: %r', files)
+    if len(files) == 1:
+        return files[0]
+    else:
+        return files
+
+def compress(infile,compression='lzma'):
     """Compress a file or directory.
        The compression argument is used as the new file extension"""
-    newfile = reduce(lambda a,b:a.replace(b,''),(';','`'),'%s.%s'%(file,compression))
-    file = file.replace(';`','')
-    if compression in mmt_off:
-        proc = subprocess.Popen('7za a -y -mmt=off %s %s'%(newfile,file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if not istarred('.'+compression) and os.path.isdir(infile):
+        outfile = infile+'.tar.'+compression
     else:
-        proc = subprocess.Popen('7za a -y %s %s'%(newfile,file),shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    output = proc.communicate()[0]
-    logger.info(output)
-    if not proc.returncode:
-        return newfile
-    raise util.NoncriticalError('Failed to compress')
-
-def iscompressed(file):
-    """Check if a file is a compressed file, based on file name"""
-    return reduce(partial(_checksuffixes,file), compress_suffixes, None)
-
-def istarred(file):
-    """Check if a file is a tarred file, based on file name"""
-    if '.tar' in file:
-        return 'tar'
-    return reduce(partial(_checksuffixes,file), tar_suffixes, None)
-
-def tar(tfile,files,workdir=None):
-    """tar a list of files"""
-    if not workdir:
-        workdir = os.getcwd()
-    if workdir.endswith('/'):
-        workdir = workdir.rstrip('/')
-    tar = tarfile.open(tfile, "w")
-    if isinstance(files,str):
-        if files.startswith(workdir):
-            file = files[len(workdir)+1:]
-            tar.add(files,arcname=file)
+        outfile = infile+'.'+compression
+    if istarred(outfile):
+        dirname, filename = os.path.split(infile)
+        subprocess.call(['tar','-acf',outfile,'-C',dirname,filename])
+    else:
+        if outfile.endswith('.gz'):
+            cmd = ['gzip']
+        elif any(outfile.endswith(s) for s in ('.bz','.bz2')):
+            cmd = ['bzip2']
+        elif outfile.endswith('.xz'):
+            cmd = ['xz']
+        elif outfile.endswith('.lzma'):
+            cmd = ['xz','-F','lzma']
         else:
-            tar.add(files)
-    else:
-        try:
-            for name in files:
-                if name.startswith(workdir):
-                    file = name[len(workdir)+1:]
-                    print(file)
-                    tar.add(name,arcname=file)
-                else:
-                    tar.add(name)
-        except Exception:
-            logger.warning('cannnot add %s to tar file'%(str(files)))
-            raise util.NoncriticalError('cannot add to tar file')
-    tar.close()
-    return tfile
+            logger.info('unknown format: %s',infile)
+            raise Exception('unknown format')
+        subprocess.call(cmd+['-kf',infile])
+    return outfile
+
+def iscompressed(infile):
+    """Check if a file is a compressed file, based on file name"""
+    return any(infile.endswith(s) for s in _compress_suffixes)
+
+def istarred(infile):
+    """Check if a file is a tarred file, based on file name"""
+    return any(infile.endswith(s) for s in _tar_suffixes)
 
 def cksm(filename,type,buffersize=16384,file=True):
     """Return checksum of file using algorithm specified"""

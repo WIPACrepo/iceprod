@@ -41,7 +41,16 @@ from iceprod.core.jsonUtil import json_encode,json_decode
 class functions_test(unittest.TestCase):
     def setUp(self):
         super(functions_test,self).setUp()
+
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        curdir = os.getcwd()
+        os.symlink(os.path.join(curdir, 'iceprod'),
+                   os.path.join(self.test_dir, 'iceprod'))
+        os.chdir(self.test_dir)
+        def cleanup():
+            os.chdir(curdir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
         # mock the PycURL interface
         self.put_error = None
@@ -60,10 +69,6 @@ class functions_test(unittest.TestCase):
         self.post_args = ([],{})
         self.post_response = None
         flexmock(iceprod.core.util.PycURL).should_receive('post').replace_with(self.post)
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(functions_test,self).tearDown()
 
     # the mocked functions of PycURL
     def put(self,*args,**kwargs):
@@ -96,524 +101,91 @@ class functions_test(unittest.TestCase):
             self.post_body = kwargs['postbody']
         writefunc(self.post_response())
 
-    @unittest_reporter(name='uncompress() with .gz')
-    def test_001_uncompress_gz(self):
-        """Test uncompressing a file with .gz extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
+    @unittest_reporter
+    def test_001_uncompress(self):
+        """Test uncompressing a file"""
+        for ext in ('gz','bz2','xz','lzma'):
+            for i in range(10):
+                # create test file
+                filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+                with open(filename,'w') as f:
+                    file_contents = ''
+                    for x in range(1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
 
-            # compress with unix utility
-            if subprocess.call('gzip %s'%filename,shell=True):
-                raise Exception, 'gzip of test file failed'
-            if not os.path.isfile(filename+'.gz'):
-                raise Exception, 'gzip did not write to the expected filename of %s.gz'%filename
+                # compress
+                outfile = iceprod.core.functions.compress(filename, ext)
+                logger.info('compressed file is %s'%outfile)
+                if outfile != filename+'.'+ext:
+                    raise Exception('did not create correct filename')
+                if not os.path.isfile(outfile):
+                    raise Exception('did not create compressed file')
 
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
+                # remove original file
+                if os.path.exists(filename):
+                    os.remove(filename)
 
-            # uncompress
-            logger.info('compressed file is %s.gz'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.gz')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a string of the new file name'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
+                # uncompress
+                files = iceprod.core.functions.uncompress(outfile)
+                logger.info('uncompress returned %r',files)
+                if not isinstance(files,str):
+                    raise Exception('uncompress did not return a string of the new file name')
+                if not os.path.isfile(files):
+                    raise Exception('uncompress returned an invalid file name')
 
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
+                # check file
+                if not os.path.samefile(filename,files):
+                    logger.warning('file names are different')
+                with open(files, 'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if file_contents != results:
+                        raise Exception('contents not the same')
 
-    @unittest_reporter(name='uncompress() with .tar.gz')
+    @unittest_reporter(name='uncompress() with tar files')
     def test_002_uncompress_tar(self):
-        """Test uncompressing a file with .tar.gz extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
+        """Test uncompressing a file with tar"""
+        for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
+            for i in range(10):
+                filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+                os.mkdir(filename)
+                infiles = {}
+                for _ in range(10):
+                    # create test file
+                    fname = os.path.join(filename,str(random.randint(0,100000)))
+                    with open(fname,'w') as f:
+                        file_contents = ''
+                        for x in range(1000):
+                            file_contents += str(random.choice(string.ascii_letters))
+                        f.write(file_contents)
+                    infiles[fname] = file_contents
 
-            # compress with unix utility
-            dir,file = os.path.split(filename)
-            if subprocess.call('tar -zcf %s.tar.gz --directory %s %s'%(filename,dir,file),shell=True):
-                raise Exception, 'tar.gz of test file failed'
-            if not os.path.isfile(filename+'.tar.gz'):
-                raise Exception, 'tar.gz  did not write to the expected filename of %s.tar.gz'%filename
+                # compress
+                outfile = iceprod.core.functions.compress(filename, ext)
+                logger.info('compressed file is %s'%outfile)
+                if outfile != filename+'.'+ext:
+                    raise Exception('did not create correct filename')
+                if not os.path.isfile(outfile):
+                    raise Exception('did not create compressed file')
 
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
+                # remove original file
+                if os.path.exists(filename):
+                    shutil.rmtree(filename)
 
-            # uncompress
-            logger.info('compressed file is %s.tar.gz'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.tar.gz')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a str of the new files'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-        for i in range(0,10):
-            # create test files
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-            filename2 = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename2,'w') as f:
-                file_contents2 = ''
-                for x in range(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-
-            # compress with unix utility
-            dir,file = os.path.split(filename)
-            if subprocess.call('tar -zcf %s.tar.gz --directory %s %s %s'%(filename,dir,file,os.path.basename(filename2)),shell=True):
-                raise Exception, 'tar.gz of test file failed'
-            if not os.path.isfile(filename+'.tar.gz'):
-                raise Exception, 'tar.gz  did not write to the expected filename of %s.tar.gz'%filename
-
-            # remove original files
-            if os.path.exists(filename):
-                os.remove(filename)
-            if os.path.exists(filename2):
-                os.remove(filename2)
-
-            # uncompress
-            logger.info('compressed file is %s.tar.gz'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.tar.gz')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,list):
-                raise Exception, 'uncompress did not return a list of the new files'
-            if len(files) != 2:
-                raise Exception, 'uncompress gave too many or too few files in the list'
-            if not os.path.isfile(files[0]):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files[0]):
-                logger.warning('file names1 are different')
-            if not os.path.samefile(filename2,files[1]):
-                logger.warning('file names2 are different')
-            with open(files[0],'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents1 not the same'
-            with open(files[1],'r') as f:
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same'
-
-    @unittest_reporter(name='uncompress() with .tgz')
-    def test_003_uncompress_tgz(self):
-        """Test uncompressing a file with .tgz extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # compress with unix utility
-            dir,file = os.path.split(filename)
-            if subprocess.call('tar -zcf %s.tgz --directory %s %s'%(filename,dir,file),shell=True):
-                raise Exception, 'tgz of test file failed'
-            if not os.path.isfile(filename+'.tgz'):
-                raise Exception, 'tgz  did not write to the expected filename of %s.tgz'%filename
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # uncompress
-            logger.info('compressed file is %s.tgz'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.tgz')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a str of the new files'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-    @unittest_reporter(name='uncompress() with .tar.gz special')
-    def test_004_uncompress_tgz_special(self):
-        """Test uncompressing a file with .tgz extension (special creation)"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # compress with in-house tar + compress
-            dir,file = os.path.split(filename)
-            iceprod.core.functions.tar(filename+'.tar',filename,workdir=dir)
-            os.rename(filename+'.tar',filename)
-            iceprod.core.functions.compress(filename,'tgz')
-            if not os.path.isfile(filename+'.tgz'):
-                raise Exception, 'tgz  did not write to the expected filename of %s.tgz'%filename
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # uncompress
-            logger.info('compressed file is %s.tgz'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.tgz')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a str of the new files'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-    @unittest_reporter(name='uncompress() with .bz2')
-    def test_005_uncompress_bz2(self):
-        """Test uncompressing a file with .bz2 extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # compress with unix utility
-            if subprocess.call('bzip2 %s'%filename,shell=True):
-                raise Exception, 'bzip of test file failed'
-            if not os.path.isfile(filename+'.bz2'):
-                raise Exception, 'bzip did not write to the expected filename of %s.bz2'%filename
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # uncompress
-            logger.info('compressed file is %s.bz2'%filename)
-            files = iceprod.core.functions.uncompress(filename+'.bz2')
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a string of the new file name'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            f = open(files,'r')
-            results = f.read(len(file_contents)*10)
-            if file_contents != results:
-                raise Exception, 'contents not the same'
-
-    @unittest_reporter(name='uncompress() with .tar.bz2')
-    def test_006_uncompress_tar_bz2(self):
-        """Test uncompressing a file with .tar.bz2 extension"""
-        for i in range(0,10):
-            # create 2 test files
-            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-            filename2 = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
-            with open(filename2,'w') as f:
-                file_contents2 = ''
-                for x in range(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-
-            # compress with unix utility
-            dir,file = os.path.split(filename)
-            dir,file2 = os.path.split(filename2)
-            if subprocess.call('tar cjf %s.tar.bz2 --directory %s %s %s'%(filename,dir,file,file2),shell=True):
-                raise Exception, 'bzip of test file failed'
-            if not os.path.isfile('%s.tar.bz2'%filename):
-                raise Exception, 'bzip did not write to the expected filename of %s.tar.bz2'%filename
-
-            # remove original files
-            if os.path.exists(filename):
-                os.remove(filename)
-            if os.path.exists(filename2):
-                os.remove(filename2)
-
-            # uncompress
-            logger.info('compressed file is %s.tar.bz2',filename)
-            files = iceprod.core.functions.uncompress('%s.tar.bz2'%filename)
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,list):
-                raise Exception, 'uncompress did not return a list of the new file names'
-            if not os.path.isfile(files[0]):
-                raise Exception, 'uncompress returned an invalid file name'
-            if not os.path.isfile(files[1]):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if os.path.basename(filename) == os.path.basename(files[0]):
-                filecmp = files[0]
-                filecmp2 = files[1]
-            else:
-                filecmp = files[1]
-                filecmp2 = files[0]
-            if not os.path.samefile(filename,filecmp):
-                logger.warning('file names are different')
-            with open(filecmp,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-            if not os.path.samefile(filename,filecmp2):
-                logger.warning('file names2 are different')
-            with open(filecmp2,'r') as f:
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same'
-
-    @unittest_reporter(name='compress() with .gz')
-    def test_010_compress_gz(self):
-        """Test compressing a file with .gz extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # compress
-            file = iceprod.core.functions.compress(filename,'gz')
-            if not os.path.isfile(file):
-                raise Exception, 'compress did not return a valid filename: %s'%file
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # uncompress
-            logger.info('compressed file is %s'%file)
-            if subprocess.call('gzip -d -f %s'%file,shell=True):
-                raise Exception, 'gzip failed'
-            if not os.path.isfile(filename):
-                raise Exception, 'gzip filename is invalid'
-
-            # check file
-            with open(filename,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-    @unittest_reporter(name='compress() with .lzma')
-    def test_011_compress_lzma(self):
-        """Test compressing a file with .lzma extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # compress
-            file = iceprod.core.functions.compress(filename,'lzma')
-            if not os.path.isfile(file):
-                raise Exception, 'compress did not return a valid filename: %s'%file
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # uncompress
-            logger.info('compressed file is %s'%file)
-            files = iceprod.core.functions.uncompress(file)
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a str of the new file'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-    @unittest_reporter(name='compress() with .tar.gz')
-    def test_012_compress_tar_gz(self):
-        """Test compressing a file with .tar.gz extension"""
-        for i in range(0,5):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # tar file
-            tfile = iceprod.core.functions.tar(filename+'.tar',filename,os.path.dirname(filename))
-            if not os.path.isfile(tfile):
-                raise Exception, 'tar did not return a valid filename: %s'%tfile
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # compress
-            file = iceprod.core.functions.compress(tfile,'gz')
-            if not os.path.isfile(file):
-                raise Exception, 'compress did not return a valid filename: %s'%file
-
-            # uncompress
-            logger.info('compressed file is %s'%file)
-
-            if subprocess.call('tar zxf %s --directory %s'%(file,os.path.dirname(file)),shell=True):
-                raise Exception, 'untar failed'
-            if not os.path.isfile(filename):
-                raise Exception, 'untar filename is invalid'
-
-            # check file
-            with open(filename,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-
-        for i in range(0,5):
-            # create 2 test files
-            filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-            filename2 = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename2,'w') as f:
-                file_contents2 = ''
-                for x in range(0,1000):
-                    file_contents2 += str(random.choice(string.ascii_letters))
-                f.write(file_contents2)
-
-            # tar files
-            with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
-                tfile = iceprod.core.functions.tar(filename+'.tar',[filename,filename2],os.path.dirname(filename))
-            if not os.path.isfile(tfile):
-                raise Exception, 'tar did not return a valid filename: %s'%tfile
-
-            # remove original files
-            if os.path.exists(filename):
-                os.remove(filename)
-            if os.path.exists(filename2):
-                os.remove(filename2)
-
-            # compress
-            file = iceprod.core.functions.compress(tfile,'gz')
-            if not os.path.isfile(file):
-                raise Exception, 'compress did not return a valid filename: %s'%file
-
-            # uncompress
-            logger.info('compressed file is %s'%file)
-            if subprocess.call('tar zxf %s --directory %s'%(file,os.path.dirname(file)),shell=True):
-                raise Exception, 'untar failed'
-            if not os.path.isfile(filename):
-                raise Exception, 'untar filename is invalid'
-
-            # check files
-            with open(filename,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
-            with open(filename2,'r') as f:
-                results = f.read(len(file_contents2)*10)
-                if file_contents2 != results:
-                    raise Exception, 'contents2 not the same'
-
-    @unittest_reporter(name='compress() with .tar.lzma')
-    def test_013_compress_tar_lzma(self):
-        """Test compressing a file with .tar.lzma extension"""
-        for i in range(0,10):
-            # create test file
-            filename = os.path.join(self.test_dir,'test_compress'+str(random.randint(0,100000)))
-            with open(filename,'w') as f:
-                file_contents = ''
-                for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
-                f.write(file_contents)
-
-            # tar file
-            tfile = iceprod.core.functions.tar(filename+'.tar',filename,os.path.dirname(filename))
-            if not os.path.isfile(tfile):
-                raise Exception, 'tar did not return a valid filename: %s'%tfile
-
-            # remove original file
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            # compress
-            file = iceprod.core.functions.compress(tfile,'lzma')
-            if not os.path.isfile(file):
-                raise Exception, 'compress did not return a valid filename: %s'%file
-
-            # uncompress
-            logger.info('compressed file is %s'%file)
-            files = iceprod.core.functions.uncompress(file)
-            logger.info('uncompress returned %s',str(files))
-            if not isinstance(files,str):
-                raise Exception, 'uncompress did not return a str of the new file'
-            if not os.path.isfile(files):
-                raise Exception, 'uncompress returned an invalid file name'
-
-            # check file
-            if not os.path.samefile(filename,files):
-                logger.warning('file names are different')
-            with open(files,'r') as f:
-                results = f.read(len(file_contents)*10)
-                if file_contents != results:
-                    raise Exception, 'contents not the same'
+                # uncompress
+                files = iceprod.core.functions.uncompress(outfile)
+                logger.info('uncompress returned %r',files)
+                if set(files) != set(x.replace(self.test_dir+'/','') for x in infiles):
+                    raise Exception('not the same files')
+                
+                # check files
+                for fname in infiles:
+                    if not os.path.exists(fname):
+                        logger.warning('file names are different')
+                    with open(fname, 'r') as f:
+                        results = f.read(len(file_contents)*10)
+                        if infiles[fname] != results:
+                            raise Exception('contents not the same')
 
     @unittest_reporter
     def test_020_iscompressed(self):
@@ -633,8 +205,6 @@ class functions_test(unittest.TestCase):
                 raise Exception, 'failed on .xz'
             if not iceprod.core.functions.iscompressed('test.tar.lzma'):
                 raise Exception, 'failed on .tar.lzma'
-            if not iceprod.core.functions.iscompressed('test.7z'):
-                raise Exception, 'failed on .7z'
             if iceprod.core.functions.iscompressed('test'):
                 raise Exception, 'failed on (no ext)'
             if iceprod.core.functions.iscompressed('test.doc'):

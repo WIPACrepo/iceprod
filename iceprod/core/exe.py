@@ -227,19 +227,15 @@ def downloadResource(env, resource, remote_base=None,
             raise util.NoncriticalError('Failed to download %s'%url)
 
     # check compression
-    if resource['compression']:
+    if (resource['compression'] and
+        (functions.iscompressed(url) or functions.istarred(url))):
         # uncompress file
-        try:
-            files = functions.uncompress(local)
-        except util.NoncriticalError:
-            pass
-        else:
-            # add uncompressed file(s) to env
-            env['files'][resource['local']] = files
-            return
-
-    # add file to env
-    env['files'][resource['local']] = local
+        files = functions.uncompress(local)
+        # add uncompressed file(s) to env
+        env['files'][resource['local']] = files
+    else:
+        # add file to env
+        env['files'][resource['local']] = local
     logger.warn('resource %s added to env',resource['local'])
 
 def downloadData(env, data):
@@ -263,32 +259,21 @@ def uploadData(env, data):
     if not os.path.exists(local):
         raise util.NoncriticalError('file %s does not exist'%local)
 
-    # remove tar or compress file extensions to get at the real file
-    suffixes = ('.tar',)+functions.compress_suffixes
-    local2 = reduce(lambda a,b:a.replace(b,''),suffixes,local)
-    if os.path.isdir(local) or functions.istarred(url):
-        # make a tar file
-        try:
-            local2 = functions.tar(local2+'.tar', local2,
-                                   workdir=local_base)
-        except util.NoncriticalError:
-            pass
-        if not '.tar' in url:
-            newlocal = tempfile.mkstemp(dir=local_base)[1]
-            shutil.move(local2,newlocal)
-            local2 = newlocal
-
     # check compression
     if data['compression']:
         # get compression type, if specified
-        c = functions.iscompressed(url)
-        if c:
+        if ((functions.iscompressed(url) or functions.istarred(url)) and
+            not (functions.iscompressed(local) or functions.istarred(local))):
             # url has compression on it, so use that
+            if '.tar.' in url:
+                c = '.'.join(url.rsplit('.',2)[-2:])
+            else:
+                c = url.rsplit('.',1)[-1]
             try:
-                local2 = functions.compress(local2,c)
-            except util.NoncriticalError as e:
-                logger.warning('cannot compress file %s'%local)
-                pass
+                local = functions.compress(local,c)
+            except Exception:
+                logger.warning('cannot compress file %s to %s', local, c)
+                raise
 
     # upload file
     proxy = False
@@ -365,6 +350,7 @@ def setupClass(env, class_obj):
                 os.makedirs(local_temp)
 
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
+            download_local = os.path.join(os.path.dirname(local),os.path.basename(url))
 
             download_options = {}
             if 'options' in env and 'username' in env['options']:
@@ -375,23 +361,21 @@ def setupClass(env, class_obj):
                 download_options.update(env['options']['ssl'])
 
             # download class
-            logger.warn('attempting to download class %s',url)
+            logger.warn('attempting to download class %s to %s',url,local)
             try:
-                if not os.path.exists(local) and not functions.download(url,local,options=download_options):
+                if not os.path.exists(download_local) and not functions.download(url,download_local,options=download_options):
                     if i < 10:
                         i += 1
                         continue # retry with different url
                     raise util.NoncriticalError('Failed to download %s'%url)
             except:
+                logger.info('failed to download', exc_info=True)
                 if i < 10:
                     i += 1
                     continue # retry with different url
                 raise
-            try:
-                files = functions.uncompress(local)
-            except util.NoncriticalError:
-                pass
-            else:
+            if functions.iscompressed(download_local) or functions.istarred(download_local):
+                files = functions.uncompress(download_local)
                 # check if we extracted a tarfile
                 if isinstance(files,dataclasses.String):
                     local = files
@@ -399,6 +383,8 @@ def setupClass(env, class_obj):
                     dirname = os.path.join(local_temp,os.path.commonprefix(files))
                     if os.path.isdir(dirname):
                         local = dirname
+            elif local != download_local:
+                os.rename(download_local, local)
             loaded = True
             break
 

@@ -44,9 +44,15 @@ class exe_test(unittest.TestCase):
     def setUp(self):
         super(exe_test,self).setUp()
 
-        self.test_dir = os.path.join(os.getcwd(),'test')
-        if not os.path.exists(self.test_dir):
-            os.mkdir(self.test_dir)
+        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        curdir = os.getcwd()
+        os.symlink(os.path.join(curdir, 'iceprod'),
+                   os.path.join(self.test_dir, 'iceprod'))
+        os.chdir(self.test_dir)
+        def cleanup():
+            os.chdir(curdir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
         # mock the iceprod.core.functions.download function
         self.download_called = False
@@ -66,12 +72,9 @@ class exe_test(unittest.TestCase):
         self.config = iceprod.core.exe.Config()
         self.config.config['options']['offline'] = True
 
-    def tearDown(self):
-        shutil.rmtree(self.test_dir,True)
-        super(exe_test,self).tearDown()
-
     def download(self,url,local,cache=False,proxy=False,options={}):
         """mocked iceprod.functions.download"""
+        logger.info('mock download: %r %r', url, local)
         self.download_called = True
         self.download_args = {'url':url,'local':local,'cache':cache,
                               'proxy':proxy,'options':options}
@@ -82,8 +85,8 @@ class exe_test(unittest.TestCase):
         else:
             return False
         # remove tar or compress file extensions
-        suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz','.rar',
-                    '.lzma2','.lzma','.lz','.xz','.7z','.z','.Z')
+        suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
+                    '.lzma2','.lzma','.lz','.xz')
         local2 = reduce(lambda a,b:a.replace(b,''),suffixes,local)
         if isinstance(data,dict):
             # make directory of things
@@ -94,17 +97,13 @@ class exe_test(unittest.TestCase):
         else:
             with open(local2,'w') as f:
                 f.write(data)
-        if iceprod.core.functions.istarred(local):
-            # tar the file
-            local3 = local2+'.tar'
-            iceprod.core.functions.tar(local3,local2,
-                                       workdir=os.path.dirname(local2))
-            if '.tar' in local:
-                local2 = local3
+        if (iceprod.core.functions.iscompressed(url) or
+            iceprod.core.functions.istarred(url)):
+            if '.tar.' in local:
+                c = '.'.join(local.rsplit('.',2)[-2:])
             else:
-                os.rename(local3,local2)
-        if iceprod.core.functions.iscompressed(local):
-            iceprod.core.functions.compress(local2,local.rsplit('.',1)[-1])
+                c = local.rsplit('.',1)[-1]
+            output = iceprod.core.functions.compress(local2, c)
         if os.path.exists(local):
             return True
         else:
@@ -112,11 +111,12 @@ class exe_test(unittest.TestCase):
 
     def upload(self,local,remote,proxy=False,options={}):
         """mocked iceprod.functions.upload"""
+        logger.info('mock upload: %r %r', local, remote)
         self.upload_called = True
         self.upload_args = {'local':local,'remote':remote,
                             'proxy':proxy,'options':options}
-        suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz','.rar',
-                    '.lzma2','.lzma','.lz','.xz','.7z','.z','.Z')
+        suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
+                    '.lzma2','.lzma','.lz','.xz')
         tmp_dir = tempfile.mkdtemp(dir=self.test_dir)
         try:
             if os.path.exists(local):
