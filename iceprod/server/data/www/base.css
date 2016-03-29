@@ -283,6 +283,15 @@ table.browse th, table.browse td {
     padding: .2em;
 }
 
+.status_graphs {
+    text-align: center;
+}
+#active_tasks, #completed_tasks {
+    width: 550px;
+    height: 150px;
+    margin-bottom: 1em;
+}
+
 .dataset .settings {
     margin-left: .3em;
     margin-bottom: .5em;

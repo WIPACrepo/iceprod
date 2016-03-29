@@ -418,24 +418,25 @@ class JSONRPCHandler(MyHandler):
         else:
             id = None
 
-        # check for auth
-        if 'passkey' not in params:
-            self.json_error({'code':403,'message':'Not Authorized',
-                             'data':'missing passkey'})
-            return
-        passkey = params.pop('passkey')
+        if not method.startswith("rpc_public"):
+            # check for auth
+            if 'passkey' not in params:
+                self.json_error({'code':403,'message':'Not Authorized',
+                                 'data':'missing passkey'})
+                return
+            passkey = params.pop('passkey')
 
-        if 'site_id' in params:
-            # authorize site
-            site_id = params.pop('site_id')
-            auth = yield self.db_call('auth_authorize_site',site=site_id,key=passkey)
-        else:
-            # authorize task
-            auth = yield self.db_call('auth_authorize_task',key=passkey)
-        if isinstance(auth,Exception) or auth is not True:
-            self.json_error({'code':403,'message':'Not Authorized',
-                             'data':'passkey invalid'})
-            return
+            if 'site_id' in params:
+                # authorize site
+                site_id = params.pop('site_id')
+                auth = yield self.db_call('auth_authorize_site',site=site_id,key=passkey)
+            else:
+                # authorize task
+                auth = yield self.db_call('auth_authorize_task',key=passkey)
+            if isinstance(auth,Exception) or auth is not True:
+                self.json_error({'code':403,'message':'Not Authorized',
+                                 'data':'passkey invalid'})
+                return
 
         # check for args and kwargs
         if 'args' in params:

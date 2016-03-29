@@ -764,6 +764,67 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('_db_read error: callback ret != Exception')
 
+    @unittest_reporter
+    def test_300_rpc_public_get_graphs(self):
+        """Test rpc_public_get_graphs"""
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        now = datetime.utcnow()
+        tables = {'graph':
+            [{'graph_id':'gid0', 'name':'name1', 'value':'{"t":0}',
+              'timestamp':dbmethods.datetime2str(now-timedelta(minutes=3))},
+             {'graph_id':'gid1','name':'name1', 'value':'{"t":1}',
+              'timestamp':dbmethods.datetime2str(now-timedelta(minutes=2))},
+             {'graph_id':'gid2', 'name':'name1', 'value':'{"t":0}',
+              'timestamp':dbmethods.datetime2str(now-timedelta(minutes=1))},
+            ],
+        }
+        
+        cb.called = False
+        self.mock.setup(tables)
+        self._db.rpc_public_get_graphs(5,callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        ret_should_be = []
+        for row in tables['graph']:
+            row = dict(row)
+            del row['graph_id']
+            row['value'] = json_decode(row['value'])
+            ret_should_be.append(row)
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('callback ret incorrect')
+
+        cb.called = False
+        self._db.rpc_public_get_graphs(2,callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        ret_should_be = []
+        for row in tables['graph'][-1:]:
+            row = dict(row)
+            del row['graph_id']
+            row['value'] = json_decode(row['value'])
+            ret_should_be.append(row)
+        if cb.ret != ret_should_be:
+            logger.error('cb.ret = %r',cb.ret)
+            logger.error('ret should be = %r',ret_should_be)
+            raise Exception('callback ret incorrect')
+        
+        cb.called = False
+        self.mock.setup(tables)
+        self.mock.failures = 1
+        self._db.rpc_public_get_graphs(5,callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret,Exception):
+            raise Exception('did not return exception')
+
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

@@ -35,7 +35,7 @@ from .dbmethods_test import dbmethods_base,DB
 
 class dbmethods_cron_test(dbmethods_base):
     @unittest_reporter
-    def test_600_cron_dataset_completion(self):
+    def test_001_cron_dataset_completion(self):
         """Test cron_dataset_completion"""
         def cb(ret):
             cb.called = True
@@ -183,8 +183,7 @@ class dbmethods_cron_test(dbmethods_base):
             raise Exception('multiple datasets of different status: bad end_tables')
 
     @unittest_reporter
-    def test_100_cron_remove_old_passkeys(self):
-        from datetime import datetime, timedelta
+    def test_002_cron_remove_old_passkeys(self):
         now = datetime.utcnow()
         def cb(ret):
             cb.called = True
@@ -206,16 +205,106 @@ class dbmethods_cron_test(dbmethods_base):
 
         passkeys = self.mock.get(['passkey'])['passkey']
         keys = [k['key'] for k in passkeys]
-        correct = ('k0' in keys) and ('k1' in keys) and (not 'k2' in keys) and (not 'k3' in keys)
-        if not correct: raise Exception('Function result not correct')
+        correct = ('k0' in keys) and ('k1' in keys) and ('k2' not in keys) and ('k3' not in keys)
+        if not correct:
+            raise Exception('Function result not correct')
 
 
         self.mock.setup()
         self.mock.failures = 1
         cb.called = False
         self._db.cron_remove_old_passkeys(callback = cb)
-        if not cb.called: raise Exception('Callback not called')
-        if not isinstance(cb.ret, Exception): raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
+        if not cb.called:
+            raise Exception('Callback not called')
+        if not isinstance(cb.ret, Exception):
+            raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
+
+    @unittest_reporter
+    def test_003_cron_generate_web_graphs(self):
+        now = datetime.utcnow()
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        tables = {
+            'search':[
+                {'task_id': 't0', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'idle'},
+                {'task_id': 't1', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'waiting'},
+                {'task_id': 't2', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'queued'},
+                {'task_id': 't3', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'processing'},
+                {'task_id': 't4', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'processing'},
+                {'task_id': 't5', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'processing'},
+                {'task_id': 't6', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'complete'},
+                {'task_id': 't7', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'suspended'},
+                {'task_id': 't8', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'failed'},
+                {'task_id': 't9', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'resume'},
+                {'task_id': 't10', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'reset'},
+                {'task_id': 't11', 'job_id': 'j0', 'dataset_id': 'd0',
+                 'gridspec': 'g', 'name': '0', 'task_status': 'reset'},
+            ],
+            'task':[
+                {'task_id': 't0', 'status': 'idle', 'prev_status': 'idle',
+                 'error_message': '', 'status_changed': dbmethods.datetime2str(now-timedelta(seconds=5)),
+                 'submit_dir': '', 'grid_queue_id': '', 'failures': 0,
+                 'evictions': 0, 'depends': '', 'requirements': '',
+                 'task_rel_id': 'tr0'},
+                {'task_id': 't1', 'status': 'complete', 'prev_status': 'processing',
+                 'error_message': '', 'status_changed': dbmethods.datetime2str(now-timedelta(seconds=5)),
+                 'submit_dir': '', 'grid_queue_id': '', 'failures': 0,
+                 'evictions': 0, 'depends': '', 'requirements': '',
+                 'task_rel_id': 'tr0'},
+                {'task_id': 't2', 'status': 'complete', 'prev_status': 'processing',
+                 'error_message': '', 'status_changed': dbmethods.datetime2str(now-timedelta(seconds=5)),
+                 'submit_dir': '', 'grid_queue_id': '', 'failures': 0,
+                 'evictions': 0, 'depends': '', 'requirements': '',
+                 'task_rel_id': 'tr0'},
+                {'task_id': 't3', 'status': 'complete', 'prev_status': 'processing',
+                 'error_message': '', 'status_changed': dbmethods.datetime2str(now-timedelta(seconds=65)),
+                 'submit_dir': '', 'grid_queue_id': '', 'failures': 0,
+                 'evictions': 0, 'depends': '', 'requirements': '',
+                 'task_rel_id': 'tr0'},
+            ],
+        }
+        self.mock.setup(tables)
+        cb.called = False
+        self._db.cron_generate_web_graphs(callback = cb)
+        if not cb.called:
+            raise Exception('Callback not called')
+        if isinstance(cb.ret, Exception):
+            raise Exception('Callback ret is Exception: "%r"' % cb.ret)
+
+        graphs = self.mock.get(['graph'])['graph']
+        answer = {"queued":1, "processing":3, "suspended":1, "failed":1,
+                  "resume":1, "reset":2}
+        if (not graphs or graphs[0]['name'] != 'active_tasks' or
+            json_decode(graphs[0]['value']) != answer):
+            logger.info('bad result: %s', graphs[0]['value'])
+            raise Exception('Bad active tasks')
+        if (graphs[1]['name'] != 'completed_tasks' or
+            json_decode(graphs[1]['value']) != {'completions':2}):
+            logger.info('bad result: %s', graphs[1]['value'])
+            raise Exception('Bad completed tasks')
+
+        for i in range(1,5):
+            self.mock.setup(tables)
+            self.mock.failures = i
+            cb.called = False
+            self._db.cron_generate_web_graphs(callback = cb)
+            if not cb.called:
+                raise Exception('Callback not called')
+            if not isinstance(cb.ret, Exception):
+                raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

@@ -3,7 +3,7 @@ RPC database methods
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from collections import OrderedDict
 import math
@@ -708,12 +708,39 @@ class rpc(_Methods_Base):
         self.parent.queue_get_queueing_datasets(callback=cb)
 
 
+    @dbmethod
     def rpc_stop_module(self, module_name, callback=None):
         self.db.messaging.daemon.stop(mod = module_name, callback=callback)
 
+    @dbmethod
     def rpc_start_module(self, module_name, callback=None):
         self.db.messaging.daemon.start(mod = module_name, callback=callback)
 
+    @dbmethod
     def rpc_update_config(self, config_text, callback=None):
         self.db.messaging.config.set_config_string(config_text = config_text, callback=callback)
 
+
+    ### Public Methods ###
+
+    @dbmethod
+    def rpc_public_get_graphs(self, start, callback=None):
+        """
+        Get the graph data for a length of time.
+
+        :param start: Amount of minutes in the past to start grabbing
+        """
+        t = datetime2str(datetime.utcnow()-timedelta(minutes=start))
+        sql = 'select * from graph where timestamp >= ?'
+        bindings = (t,)
+        cb = partial(self._rpc_public_get_graphs_cb,callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _rpc_public_get_graphs_cb(self, ret, callback=None):
+        if isinstance(ret, Exception):
+            callback(ret)
+            return
+        data = []
+        for gid, name, value, timestamp in ret:
+            value = json_decode(value)
+            data.append({'name':name, 'value':value, 'timestamp':timestamp})
+        callback(sorted(data, key=lambda r:r['timestamp']))

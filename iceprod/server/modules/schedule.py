@@ -77,8 +77,8 @@ class schedule(module.module):
         self.scheduler.schedule('every 6 hours',
                 partial(self._db_call, 'cron_remove_old_passkeys'))
 
-        self.scheduler.schedule('every 1 hours',
-                partial(self._db_call, 'cron_task_dependency_generate'))
+        self.scheduler.schedule('every 1 minutes',
+                partial(self._db_call, 'cron_generate_web_graphs'))
 
     def _db_call(self,func,**kwargs):
         """Call DB func, handling any errors"""

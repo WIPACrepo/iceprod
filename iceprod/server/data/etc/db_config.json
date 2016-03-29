@@ -104,6 +104,14 @@
             ["name", "str", "logfile name"],
             ["data", "MediumText", "logfile text"]
         ],
+        "search": [
+            ["task_id", "str"],
+            ["job_id", "str"],
+            ["dataset_id", "str"],
+            ["gridspec", "str"],
+            ["name", "str", "identifies the task in job by name or number"],
+            ["task_status", "str", "a replica of task:status"]
+        ],
         "config": [
             ["dataset_id", "str"],
             ["config_data", "MediumText", "serialized config"],
@@ -132,14 +140,6 @@
             ["categorydef_id", "str"],
             ["name", "str"],
             ["description", "Text"]
-        ],
-        "search": [
-            ["task_id", "str"],
-            ["job_id", "str"],
-            ["dataset_id", "str"],
-            ["gridspec", "str"],
-            ["name", "str", "identifies the task in job by name or number"],
-            ["task_status", "str", "a replica of task:status"]
         ],
         "history": [
             ["history_id", "str"],

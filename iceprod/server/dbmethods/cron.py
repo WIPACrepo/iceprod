@@ -3,10 +3,11 @@ Cron database methods
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from collections import OrderedDict
 
+from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime, nowstr
 
 logger = logging.getLogger('dbmethods.cron')
@@ -143,5 +144,51 @@ class cron(_Methods_Base):
         cb = partial(self._cron_remove_old_passkeys_cb,callback=callback)
         self.db.sql_write_task(sql,bindings,callback=cb)
     def _cron_remove_old_passkeys_cb(self,ret,callback=None):
+        callback(ret)
+
+    @dbmethod
+    def cron_generate_web_graphs(self,callback=None):
+        sql = 'select task_status, count(*) from search '
+        sql += 'where task_status not in (?,?,?) group by task_status'
+        bindings = ('idle','waiting','complete')
+        cb = partial(self._cron_generate_web_graphs_cb,callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _cron_generate_web_graphs_cb(self,ret,callback=None):
+        if isinstance(ret, Exception):
+            callback(ret)
+            return
+        now = nowstr()
+        results = {}
+        for status, count in ret:
+            results[status] = count
+        graph_id = self.db.increment_id('graph')
+        sql = 'insert into graph (graph_id, name, value, timestamp) '
+        sql += 'values (?,?,?,?)'
+        bindings = (graph_id, 'active_tasks', json_encode(results), now)
+        cb = partial(self._cron_generate_web_graphs_cb2,callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
+    def _cron_generate_web_graphs_cb2(self,ret,callback=None):
+        if isinstance(ret, Exception):
+            callback(ret)
+            return
+        time_interval = datetime2str(datetime.utcnow()-timedelta(minutes=1))
+        sql = 'select count(*) from task where status = ? and '
+        sql += 'status_changed > ?'
+        bindings = ('complete', time_interval)
+        cb = partial(self._cron_generate_web_graphs_cb3,callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _cron_generate_web_graphs_cb3(self,ret,callback=None):
+        if isinstance(ret, Exception):
+            callback(ret)
+            return
+        now = nowstr()
+        results = {'completions':ret[0][0] if ret and ret[0] else 0}
+        graph_id = self.db.increment_id('graph')
+        sql = 'insert into graph (graph_id, name, value, timestamp) '
+        sql += 'values (?,?,?,?)'
+        bindings = (graph_id, 'completed_tasks', json_encode(results), now)
+        cb = partial(self._cron_generate_web_graphs_cb4,callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
+    def _cron_generate_web_graphs_cb4(self,ret,callback=None):
         callback(ret)
 
