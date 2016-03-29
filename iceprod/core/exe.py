@@ -965,14 +965,29 @@ def stillrunning(cfg):
         cfg.config['options']['DBkill'] = True
         raise Exception('task should be stopped')
 
-def taskerror(cfg):
+def taskerror(cfg, start_time=None):
     """Tell the server about the error experienced"""
     if 'task_id' not in cfg.config['options']:
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot send error')
     if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
         return # don't change status on a DB kill
-    ret = JSONRPC.task_error(task=cfg.config['options']['task_id'])
+    try:
+        hostname = functions.gethostname()
+        if start_time:
+            t = time.time() - start_time
+        else:
+            t = None
+        if os.path.exists('stderr'):
+            log = json_compressor.compress(open('stderr').read()[-1000:])
+        else:
+            log = ''
+        error_info = {'hostname':hostname, 'time_used': t, 'error_summary':log}
+    except Exception:
+        logger.warn('failed to collect error info', exc_info=True)
+        error_info = None
+    ret = JSONRPC.task_error(task=cfg.config['options']['task_id'],
+                             error_info=error_info)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret

@@ -20,6 +20,7 @@ import os
 import sys
 import logging
 import logging.config
+import time
 import signal
 from functools import partial
 
@@ -195,6 +196,9 @@ def runner(config,url,debug=False,offline=False):
         except Exception as e:
             logging.error(e)
 
+    # keep track of the start time
+    start_time = time.time()
+
     # find tasks to run
     try:
         if 'task' in config['options']:
@@ -233,7 +237,7 @@ def runner(config,url,debug=False,offline=False):
         # set task status on server
         if not offline:
             try:
-                iceprod.core.exe.taskerror(cfg)
+                iceprod.core.exe.taskerror(cfg, start_time=start_time)
             except Exception as e:
                 logger.error(e)
         raise

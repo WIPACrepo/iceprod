@@ -192,14 +192,11 @@ class dbmethods_rpc_test(dbmethods_base):
             cb.ret = ret
         cb.called = False
 
-        #
         tables = get_tables(self.test_dir)
         self.mock.setup(tables)
 
-
         # everything working
         cb.called = False
-
 
         self._db.rpc_task_error(task_id,callback=cb)
 
@@ -208,6 +205,25 @@ class dbmethods_rpc_test(dbmethods_base):
         if isinstance(cb.ret,Exception):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('everything working: callback ret is Exception')
+
+        # error info
+        cb.called = False
+
+        self._db.rpc_task_error(task_id, error_info={'a':1}, callback=cb)
+
+        if cb.called is False:
+            raise Exception('everything working: callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('everything working: callback ret is Exception')
+        end_tables = self.mock.get(['task_stat'])['task_stat'][-1]
+        if not end_tables:
+            raise Exception('no stats')
+        stat = json_decode(end_tables['stat'])
+        if not stat.keys()[0].startswith('error_'):
+            raise Exception('bad stat name')
+        if stat.values()[0] != {'a':1}:
+            raise Exception('bad stat value')
 
         # failure
         cb.called = False
@@ -223,9 +239,9 @@ class dbmethods_rpc_test(dbmethods_base):
 
 
         self.mock.setup()
-        for i in range(3):
+        for i in range(1,4):
             cb.called = False
-            self.mock.failures = i + 1
+            self.mock.failures = i
             self._db.rpc_task_error(task_id,callback=cb)
 
             if cb.called is False:

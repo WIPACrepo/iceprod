@@ -291,13 +291,14 @@ class rpc(_Methods_Base):
         callback(True)
 
     @dbmethod
-    def rpc_task_error(self,task,callback=None):
+    def rpc_task_error(self,task,error_info=None,callback=None):
         """Mark task as ERROR"""
         if not task:
             raise Exception('no task specified')
-        cb = partial(self._rpc_task_error_blocking,task,callback=callback)
+        cb = partial(self._rpc_task_error_blocking,task,error_info,
+                     callback=callback)
         self.db.non_blocking_task(cb)
-    def _rpc_task_error_blocking(self,task,callback=None):
+    def _rpc_task_error_blocking(self,task,error_info,callback=None):
         conn,archive_conn = self.db._dbsetup()
         sql = 'select task_id,failures from task where task_id = ?'
         bindings = (task,)
@@ -347,25 +348,32 @@ class rpc(_Methods_Base):
                 sql2 = 'update task set prev_status = status, '
                 sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
                 bindings2 = (status,failures,now,task)
+                sql3 = 'insert into task_stat (task_stat_id, task_id, stat) '
+                sql3 += 'values (?,?,?)'
+                task_stat_id = self.db._increment_id_helper('task_stat',conn)
+                stat = {'error_'+now: error_info}
+                bindings3 = (task_stat_id, task, json_encode(stat))
                 try:
-                    ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
+                    ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
                 except Exception as e:
                     ret = e
                 if isinstance(ret,Exception):
                     callback(ret)
                 else:
                     if self._is_master():
-                        sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
-                        bindings3 = ('search',task,now)
-                        bindings4 = ('task',task,now)
+                        msql = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                        mbindings1 = ('search',task,now)
+                        mbindings2 = ('task',task,now)
+                        mbindings3 = ('task_stat',task_stat_id,now)
                         try:
-                            self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                            self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
                         except Exception as e:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
                     else:
                         self._send_to_master(('search',task,now,sql,bindings))
                         self._send_to_master(('task',task,now,sql2,bindings2))
+                        self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
                     callback(True)
 
     @dbmethod

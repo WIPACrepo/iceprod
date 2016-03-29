@@ -2204,9 +2204,10 @@ def Test():
         """Test taskerror"""
         # mock the JSONRPC class
         task_id = 'a task'
-        def task_error(task):
+        def task_error(task, error_info=None):
             task_error.called = True
             task_error.task_id = task
+            task_error.error_info = error_info
             return None
         task_error.called = False
         def f(*args,**kwargs):
@@ -2236,6 +2237,24 @@ def Test():
             raise Exception('JSONRPC.task_error() not called')
         if task_error.task_id != task_id:
             raise Exception('JSONRPC.task_error() task_id !=')
+
+        data = ''.join(random.choice(string.letters) for _ in range(10000))
+        with open('stderr','w') as fh:
+            fh.write(data)
+        try:
+            iceprod.core.exe.taskerror(self.config, start_time=time.time()-200)
+        except:
+            logger.error('running taskerror failed')
+            raise
+        if not task_error.called:
+            raise Exception('JSONRPC.task_error() not called')
+        if task_error.task_id != task_id:
+            raise Exception('JSONRPC.task_error() task_id !=')
+        if ((not task_error.error_info) or
+            task_error.error_info['time_used'] < 200 or
+            json_compressor.uncompress(task_error.error_info['error_summary'])[-100:] != data[-100:]):
+            logger.info('error_info: %r', task_error.error_info)
+            raise Exception('error_info incorrect')
 
     @unittest_reporter
     def test_95_uploadLogging(self):
