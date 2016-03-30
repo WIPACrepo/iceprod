@@ -3,6 +3,7 @@ The queue module is responsible for interacting with the local batch or
 queueing system, putting tasks on the queue and removing them as necessary.
 """
 
+import os
 import time
 from threading import Thread,Event,Condition
 import logging

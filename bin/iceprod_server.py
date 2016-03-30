@@ -197,16 +197,16 @@ def main(cfgfile,cfgdata=None):
                 def cb(*args):
                     logger.debug('joining stopped modules')
                     try:
-                        for mod in self.running_modules:
-                            if mod == 'messaging':
+                        for mod in self.running_modules.keys():
+                            if mod == 'messaging' or mod not in self.running_modules:
                                 continue
                             self.running_modules[mod].process.join(1)
                             if self.running_modules[mod].process.is_alive():
                                 getattr(messaging,mod).kill(async=True)
                             else:
                                 del self.running_modules[mod]
-                        for mod in self.running_modules:
-                            if mod == 'messaging':
+                        for mod in self.running_modules.keys():
+                            if mod == 'messaging' or mod not in self.running_modules:
                                 continue
                             self.running_modules[mod].process.join(.1)
                             del self.running_modules[mod]

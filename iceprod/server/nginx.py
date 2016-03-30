@@ -36,7 +36,10 @@ def rotate(filename):
     """Rotate a filename.  Useful for log files."""
     # move log
     date = datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.rename(filename,filename+'_'+date)
+    if os.path.exists(filename):
+        os.rename(filename,filename+'_'+date)
+    else:
+        logger.warn('cannot rotate, file does not exist: %r', filename)
 
 def deleteoldlogs(filename,days=30):
     """Delete old log files"""
@@ -49,7 +52,7 @@ def deleteoldlogs(filename,days=30):
 def find_nginx():
     """Locate nginx, if possible."""
     try:
-        return subprocess.check_output(['which','nginx'])
+        return subprocess.check_output(['which','nginx']).strip()
     except Exception:
         # not on PATH, so search some likely places
         for p in ('/usr/sbin','/usr/local/sbin','/sbin'):
@@ -104,6 +107,7 @@ class Nginx(object):
             'access_log': os.path.join(prefix,'var/log/nginx/access.log'),
             'error_log': os.path.join(prefix,'var/log/nginx/error.log'),
             'nginx_bin': nginx_path,
+            'cache_path': os.path.join(prefix,'var/cache/nginx'),
             'mimetypes_file':mime_path,
         }
         self._cfg_types = {
@@ -121,6 +125,7 @@ class Nginx(object):
             'access_log': 'file',
             'error_log': 'file',
             'nginx_bin': 'file',
+            'cache_path': 'dir',
             'mimetypes_file': 'file',
         }
 
@@ -138,7 +143,7 @@ class Nginx(object):
                     raise Exception('%s is not a string'%(str(s)))
                 if t in ('file','dir'):
                     v = os.path.expanduser(os.path.expandvars(v))
-                    if not ('_file' in s or '_log' in s):
+                    if not ('_file' in s or '_log' in s or 'cache' in s):
                         try:
                             os.path.exists(v)
                         except Exception:
@@ -177,6 +182,7 @@ class Nginx(object):
             os.path.dirname(self._cfg['error_log']),
             os.path.dirname(self._cfg['access_log']),
             os.path.dirname(self._cfg['pid_file']),
+            self._cfg['cache_path'],
         ]
         for d in create_dirs:
             try:
@@ -212,6 +218,7 @@ class Nginx(object):
             p('  gzip_vary on;')
             p('  gzip_min_length 1000;')
             p('  sendfile off;') # don't use sendfile because of proxies
+            p('  client_body_temp_path {}/client_body;'.format(self._cfg['cache_path']))
             p('  root {}/;'.format(self._cfg['static_dir'])) # direct random queries to static dir
             # ssl options
             if self.ssl is True:
@@ -234,6 +241,7 @@ class Nginx(object):
             p('    proxy_redirect off;')
             p('    proxy_http_version 1.1;')
             p('    proxy_next_upstream error;')
+            p('    proxy_temp_path {}/proxy_temp;'.format(self._cfg['cache_path']))
             if self.ssl is True: # redirect http to https
                 p('    error_page  497 =307 https://$http_host$request_uri;')
             # static files

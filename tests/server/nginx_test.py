@@ -32,8 +32,9 @@ from iceprod.server import nginx
 from iceprod.server import ssl_cert
 
 skip_tests = False
-if subprocess.call(['which','nginx']):
-    skip_tests = True
+with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+    if subprocess.call(['which','nginx']):
+        skip_tests = True
 
 # a simple server for testing the proxy
 def server(port,cb):
@@ -264,18 +265,21 @@ class nginx_test(unittest.TestCase):
             'password': 'pass',
             }
 
-        for desc in instances:
-            kwargs = common.copy()
-            kwargs.update(instances[desc])
-            n = nginx.Nginx(**kwargs)
-            try:
-                n.start()
-            except Exception:
-                raise Exception('start %s failed',desc,exc_info=True)
-            try:
-                n.stop()
-            except Exception:
-                raise Exception('stop %s failed',desc,exc_info=True)
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+            for desc in instances:
+                kwargs = common.copy()
+                kwargs.update(instances[desc])
+                n = nginx.Nginx(**kwargs)
+                try:
+                    n.start()
+                except Exception:
+                    logger.warn('start %s failed',desc,exc_info=True)
+                    raise
+                try:
+                    n.stop()
+                except Exception:
+                    logger.warn('stop %s failed',desc,exc_info=True)
+                    raise
 
     @unittest_reporter(skip=skip_tests)
     def test_03_start_kill(self):
@@ -294,18 +298,21 @@ class nginx_test(unittest.TestCase):
         instances['default'] = {
             }
 
-        for desc in instances:
-            kwargs = common.copy()
-            kwargs.update(instances[desc])
-            n = nginx.Nginx(**kwargs)
-            try:
-                n.start()
-            except Exception:
-                raise Exception('start %s failed',desc,exc_info=True)
-            try:
-                n.kill()
-            except Exception:
-                raise Exception('kill %s failed',desc,exc_info=True)
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+            for desc in instances:
+                kwargs = common.copy()
+                kwargs.update(instances[desc])
+                n = nginx.Nginx(**kwargs)
+                try:
+                    n.start()
+                except Exception:
+                    logger.warn('start %s failed',desc,exc_info=True)
+                    raise
+                try:
+                    n.kill()
+                except Exception:
+                    logger.warn('kill %s failed',desc,exc_info=True)
+                    raise
 
     @unittest_reporter(skip=skip_tests)
     def test_04_logrotate(self):
@@ -324,25 +331,28 @@ class nginx_test(unittest.TestCase):
         instances['default'] = {
             }
 
-        for desc in instances:
-            kwargs = common.copy()
-            kwargs.update(instances[desc])
-            n = nginx.Nginx(**kwargs)
-            try:
-                n.start()
-            except Exception:
-                raise Exception('start %s failed',desc,exc_info=True)
-            n.logrotate()
-            log_path = os.path.join(self.test_dir,'nginx_error.log_*')
-            files = glob.glob(log_path)
-            if not files:
-                raise Exception('no rotated file')
-            for f in files:
-                os.unlink(f)
-            try:
-                n.stop()
-            except Exception:
-                raise Exception('stop %s failed',desc,exc_info=True)
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+            for desc in instances:
+                kwargs = common.copy()
+                kwargs.update(instances[desc])
+                n = nginx.Nginx(**kwargs)
+                try:
+                    n.start()
+                except Exception:
+                    logger.warn('start %s failed',desc,exc_info=True)
+                    raise
+                n.logrotate()
+                log_path = os.path.join(self.test_dir,'nginx_error.log_*')
+                files = glob.glob(log_path)
+                if not files:
+                    raise Exception('no rotated file')
+                for f in files:
+                    os.unlink(f)
+                try:
+                    n.stop()
+                except Exception:
+                    logger.warn('stop %s failed',desc,exc_info=True)
+                    raise
 
     @unittest_reporter(skip=skip_tests)
     def test_09_static_download(self):
@@ -358,7 +368,7 @@ class nginx_test(unittest.TestCase):
             'access_log': os.path.join(self.test_dir,'access.log'),
             'error_log': os.path.join(self.test_dir,'nginx_error.log'),
             'static_dir': static_dir,
-            'port': 8080,
+            'port': 58080,
             }
 
         instances = {}
@@ -385,48 +395,53 @@ class nginx_test(unittest.TestCase):
 
         pycurl_handle = util.PycURL()
         dest_path = os.path.join(self.test_dir,'download')
-        url = 'http://'+self.hostname+':8080/static'
-        for desc in instances:
-            kwargs = common.copy()
-            kwargs.update(instances[desc])
-            n = nginx.Nginx(**kwargs)
-            try:
-                n.start()
-            except Exception:
-                raise Exception('start %s failed',desc,exc_info=True)
-
-            try:
-                for _ in xrange(10):
-                    # try to download from static dir
-                    filename = str(random.randint(0,10000))
-                    filecontents = str(random.randint(0,10000))
-                    dest_path = os.path.join(self.test_dir,filename)
-                    with open(os.path.join(static_dir,filename),'w') as f:
-                        f.write(filecontents)
-
-                    try:
-                        # static dir should not require username or password, so leave them blank
-                        pycurl_handle.fetch(os.path.join(url,filename),dest_path,
-                                            cacert=self.ssl_cert)
-                    except Exception:
-                        raise Exception('pycurl failed to download file',exc_info=True)
-
-                    if not os.path.exists(dest_path):
-                        raise Exception('downloaded file not found')
-                    newcontents = ''
-                    with open(dest_path) as f:
-                        newcontents = f.read(1000)
-                    if newcontents != filecontents:
-                        logger.info('correct contents: %r',filecontents)
-                        logger.info('downloaded contents: %r',newcontents)
-                        raise Exception('contents not equal')
-
-                    os.remove(dest_path)
-            finally:
+        url = 'http://'+self.hostname+':58080/static'
+        logger.info('url:%r',url)
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+            for desc in instances:
+                kwargs = common.copy()
+                kwargs.update(instances[desc])
+                n = nginx.Nginx(**kwargs)
                 try:
-                    n.stop()
+                    n.start()
                 except Exception:
-                    raise Exception('stop %s failed',desc,exc_info=True)
+                    logger.warn('start %s failed',desc,exc_info=True)
+                    raise
+
+                try:
+                    for _ in range(10):
+                        # try to download from static dir
+                        filename = str(random.randint(0,10000))
+                        filecontents = str(random.randint(0,10000))
+                        dest_path = os.path.join(self.test_dir,filename)
+                        with open(os.path.join(static_dir,filename),'w') as f:
+                            f.write(filecontents)
+
+                        try:
+                            # static dir should not require username or password, so leave them blank
+                            pycurl_handle.fetch(os.path.join(url,filename),dest_path,
+                                                cacert=self.ssl_cert)
+                        except Exception:
+                            logger.warn('pycurl failed to download file',exc_info=True)
+                            raise
+
+                        if not os.path.exists(dest_path):
+                            raise Exception('downloaded file not found')
+                        newcontents = ''
+                        with open(dest_path) as f:
+                            newcontents = f.read(1000)
+                        if newcontents != filecontents:
+                            logger.info('correct contents: %r',filecontents)
+                            logger.info('downloaded contents: %r',newcontents)
+                            raise Exception('contents not equal')
+
+                        os.remove(dest_path)
+                finally:
+                    try:
+                        n.stop()
+                    except Exception:
+                        logger.warn('stop %s failed',desc,exc_info=True)
+                        raise
 
     @unittest_reporter(skip=skip_tests)
     def test_10_proxy(self):
@@ -442,8 +457,8 @@ class nginx_test(unittest.TestCase):
             'access_log': os.path.join(self.test_dir,'access.log'),
             'error_log': os.path.join(self.test_dir,'nginx_error.log'),
             'static_dir': static_dir,
-            'port': 8080,
-            'proxy_port': 8081,
+            'port': 58080,
+            'proxy_port': 58081,
             }
 
         instances = {}
@@ -488,7 +503,7 @@ class nginx_test(unittest.TestCase):
             try:
                 pycurl_handle = util.PycURL()
                 dest_path = os.path.join(self.test_dir,'download')
-                url = 'http://'+self.hostname+':8080/'
+                url = 'http://'+self.hostname+':58080/'
                 for desc in instances:
                     kwargs = common.copy()
                     kwargs.update(instances[desc])
@@ -496,10 +511,11 @@ class nginx_test(unittest.TestCase):
                     try:
                         n.start()
                     except Exception:
-                        raise Exception('start %s failed',desc,exc_info=True)
+                        logger.warn('start %s failed',desc,exc_info=True)
+                        raise
 
                     try:
-                        for _ in xrange(10):
+                        for _ in range(10):
                             # try to open main page
                             proxy.success = True
                             try:
@@ -507,7 +523,8 @@ class nginx_test(unittest.TestCase):
                                 pycurl_handle.fetch(url,dest_path,
                                                     cacert=self.ssl_cert)
                             except Exception :
-                                raise Exception('pycurl failed to download file',exc_info=True)
+                                logger.warn('pycurl failed to download file',exc_info=True)
+                                raise
 
                             if not os.path.exists(dest_path):
                                 raise Exception('downloaded file not found')
@@ -535,7 +552,8 @@ class nginx_test(unittest.TestCase):
                         try:
                             n.stop()
                         except Exception:
-                            raise Exception('stop %s failed',desc,exc_info=True)
+                            logger.warn('stop %s failed',desc,exc_info=True)
+                            raise
             finally:
                 try:
                     http.shutdown()
