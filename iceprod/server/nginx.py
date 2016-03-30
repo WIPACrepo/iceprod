@@ -73,6 +73,11 @@ def find_mime(hints=None):
         pp = os.path.join(p,'mime.types')
         if os.path.isfile(pp):
             return pp
+        if os.path.isdir(p):
+            for s in os.listdir(p):
+                pp = os.path.join(p, s, 'mime.types')
+                if os.path.isfile(pp):
+                    return pp
     return None
 
 class Nginx(object):
