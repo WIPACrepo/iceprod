@@ -265,6 +265,8 @@ class queue(module.module):
                 # set timeout
                 if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
                     timeout = self.cfg['queue']['queue_interval']
+                else:
+                    timeout = 300
                 if timeout <= 0:
                     timeout = 300
         except StopException:
@@ -275,10 +277,13 @@ class queue(module.module):
 
     def check_proxy(self, duration=None):
         """Check the x509 proxy"""
-        if duration:
-            self.proxy.set_duration(duration)
-        self.proxy.update_proxy()
-        self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
+        try:
+            if duration:
+                self.proxy.set_duration(duration)
+            self.proxy.update_proxy()
+            self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
+        except Exception:
+            logger.warn('cannot setup x509 proxy', exc_info=True)
 
     def global_queueing(self, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0,
