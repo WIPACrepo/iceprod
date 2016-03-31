@@ -148,6 +148,9 @@ class website(module.module):
 
             # detect nginx
             try:
+                if ('nginx' in self.cfg['webserver'] and
+                    not self.cfg['webserver']['nginx']):
+                    raise Exception('nginx explicitly disabled')
                 find_nginx()
             except Exception:
                 if ('system' in self.cfg and 'ssl' in self.cfg['system']
