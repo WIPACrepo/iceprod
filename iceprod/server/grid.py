@@ -386,6 +386,8 @@ class grid(object):
         Resource = namedtuple('Resource', ['cpu','gpu','memory','disk'])
         default_resource = Resource(1,0,2000,10000)
         groups = Counter()
+        if isinstance(tasks,dict):
+            tasks = tasks.values()
         for t in tasks:
             if not t['reqs']:
                 t['reqs'] = {}
