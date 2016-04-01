@@ -79,9 +79,9 @@ class queue(_Methods_Base):
                         for kk in set(old_queues[k]['resources']) - set(queues[k]['resources']):
                             queues[k]['resources'][kk] = old_queues[k]['resources'][kk]
                     except:
-                        if k in old_queues:
+                        try:
                             queues[k]['resources'] = old_queues[k]['resources']
-                        else:
+                        except:
                             queues[k]['resources'] = {}
                 queues = json_encode(queues)
             except Exception as e:
@@ -595,7 +595,7 @@ class queue(_Methods_Base):
         :param dataset_prios: a dict of {dataset_id:priority} where sum(priorities)=1
         :param gridspec: (optional) the grid to queue on
         :param num: (optional) number of tasks to queue
-        :param resources: (optional) availble resources on grid
+        :param resources: (optional) available resources on grid
         :param gridspec_assignment: (optional) the grid to assign the tasks to
         :param global_queueing: Global queueing mode (default: False)
         :returns: {task_id:task}
@@ -643,8 +643,10 @@ class queue(_Methods_Base):
                 dataset = tasks[task_id]['dataset']
                 status = tasks[task_id]['status']
                 tasks[task_id]['task_rel_id'] = task_rel_id
+                if reqs:
+                    reqs = json_decode(reqs)
                 if (status == 'idle' or
-                    (not global_queueing and status == 'waiting')):
+                    ((not global_queueing) and status == 'waiting')):
                     datasets[dataset][task_id] = [depends,reqs]
                 if not reqs:
                     task_rel_ids[task_rel_id] = None
@@ -661,6 +663,8 @@ class queue(_Methods_Base):
                 for task_id in datasets[d]:
                     task_rel_reqs = task_rel_ids[tasks[task_id]['task_rel_id']]
                     if task_rel_reqs and (not datasets[d][task_id][1]):
+                        if task_rel_reqs:
+                            task_rel_reqs = json_decode(task_rel_reqs)
                         datasets[d][task_id][1] = task_rel_reqs
         except Exception as e:
             logger.debug('error getting processing tasks', exc_info=True)
@@ -701,7 +705,6 @@ class queue(_Methods_Base):
                 if satisfied and reqs and resources is not None:
                     # now match based on resources
                     try:
-                        reqs = json_decode(reqs)
                         for r in reqs:
                             if r not in resources:
                                 satisfied = False
@@ -711,7 +714,7 @@ class queue(_Methods_Base):
                                     exc_info=True)
                 if satisfied:
                     # task can be queued now
-                    task_prio.append((dataset_prios[dataset],task_id))
+                    task_prio.append((dataset_prios[dataset],dataset,task_id))
                     limit -= 1
                     if limit <= 0:
                         break
@@ -721,13 +724,28 @@ class queue(_Methods_Base):
         # sort by prio, low to high (so when we pop we get higher first)
         task_prio.sort(key=operator.itemgetter(0),reverse=True)
         # return first num tasks
-        task_prio = [t for p,t in task_prio[:num]]
-        tasks = {}
-        sql = 'select search.*,dataset.debug from search '
-        sql += ' join dataset on search.dataset_id = dataset.dataset_id '
-        sql += ' where search.task_id in ('
-        sql += ','.join('?' for _ in task_prio)+')'
-        bindings = tuple(task_prio)
+        dataset_ids = set()
+        tasks = set()
+        for p,d,t in task_prio:
+            dataset_ids.add(d)
+            tasks.add(t)
+            if len(tasks) >= num:
+                break
+        sql = 'select dataset_id, debug from dataset where dataset_id in ('
+        sql += ','.join('?' for _ in dataset_ids)+')'
+        bindings = tuple(dataset_ids)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            logger.debug('error getting dataset debug',exc_info=True)
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        dataset_debug = {d_id: debug for d_id,debug in ret}
+        sql = 'select * from search where task_id in ('
+        sql += ','.join('?' for _ in tasks)+')'
+        bindings = tuple(tasks)
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
@@ -737,20 +755,35 @@ class queue(_Methods_Base):
             callback(ret)
             return
         if ret:
+            tasks = {}
             for row in ret:
-                tmp = self._list_to_dict('search',row[:-1])
-                tmp['debug'] = row[-1]
+                tmp = self._list_to_dict('search',row)
+                tmp['debug'] = dataset_debug[tmp['dataset_id']]
+                tmp['reqs'] = datasets[tmp['dataset_id']][tmp['task_id']][1]
                 tasks[tmp['task_id']] = tmp
             if tasks:
-                # set status to waiting
+                # update status
+                new_status = 'waiting' if global_queueing else 'queued'
                 now = nowstr()
-                sql = 'update search set task_status="waiting" '
+                sql = 'update search set task_status = ? '
                 sql += 'where task_id in ('
                 sql += ','.join('?' for _ in tasks)
                 sql += ')'
-                bindings = tuple(tasks)
+                bindings = (new_status,) + tuple(tasks)
+                sql2 = 'update task set prev_status = status, '
+                sql2 += 'status = ?, '
+                sql2 += 'status_changed = ? '
+                bindings2 = [new_status, now]
+                if gridspec_assignment:
+                    sql2 += ', gridspec = ? '
+                    bindings2.append(gridspec_assignment)
+                sql2 += 'where task_id in ('
+                sql2 += ','.join('?' for _ in tasks)
+                sql2 += ')'
+                bindings2.extend(tasks)
+                bindings2 = tuple(bindings2)
                 try:
-                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                    ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
                 except Exception as e:
                     logger.debug('error setting status',exc_info=True)
                     ret = e
@@ -762,58 +795,81 @@ class queue(_Methods_Base):
                         for t in tasks:
                             sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
                             bindings3 = ('search',t,now)
+                            bindings4 = ('task',t,now)
                             try:
-                                self.db._db_write(conn,sql3,bindings3,None,None,None)
+                                self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
                             except Exception as e:
                                 logger.info('error updating master_update_history',
                                             exc_info=True)
                     else:
-                        sql = 'update search set task_status="waiting" '
+                        sql = 'update search set task_status=? '
                         sql += 'where task_id = ?'
+                        sql2 = 'update task set prev_status = status, '
+                        sql2 += 'status = ?, '
+                        sql2 += 'status_changed = ? '
+                        if gridspec_assignment:
+                            sql2 += ', gridspec = ? '
+                        sql2 += 'where task_id = ?'
                         for t in tasks:
-                            bindings = (t,)
+                            bindings = (new_status,t)
+                            if gridspec_assignment:
+                                bindings2 = bindings+(gridspec_assignment,t)
+                            else:
+                                bindings2 = bindings+(t,)
                             self._send_to_master(('search',t,now,sql,bindings))
-                sql = 'update task set prev_status = status, '
-                sql += 'status="waiting", '
-                sql += 'status_changed = ? '
-                bindings = [datetime2str(datetime.utcnow())]
-                if gridspec_assignment:
-                    sql += ', gridspec = ? '
-                    bindings.append(gridspec_assignment)
-                sql += 'where task_id in ('
-                sql += ','.join('?' for _ in tasks)
-                sql += ')'
-                bindings.extend(tasks)
-                bindings = tuple(bindings)
-                try:
-                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
-                except Exception as e:
-                    logger.debug('error setting gridspec',exc_info=True)
-                    ret = e
-                if isinstance(ret,Exception):
-                    callback(ret)
-                    return
-                else:
-                    if self._is_master():
-                        for t in tasks:
-                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
-                            bindings3 = ('task',t,now)
-                            try:
-                                self.db._db_write(conn,sql3,bindings3,None,None,None)
-                            except Exception as e:
-                                logger.info('error updating master_update_history',
-                                            exc_info=True)
-                    else:
-                        sql = 'update task set task_status="waiting" '
-                        sql += 'where task_id = ?'
-                        for t in tasks:
-                            bindings = (t,)
-                            self._send_to_master(('task',t,now,sql,bindings))
+                            self._send_to_master(('task',t,now,sql2,bindings2))
                 for t in tasks:
-                    tasks[t]['task_status'] = 'waiting'
+                    tasks[t]['task_status'] = new_status
                     if gridspec_assignment:
                         tasks[t]['gridspec'] = gridspec_assignment
         callback(tasks)
+
+    @dbmethod
+    def queue_add_pilot(self,pilot,callback=None):
+        """Add a pilot to the DB"""
+        cb = partial(self._queue_add_pilot_blocking, pilot, callback=callback)
+        self.db.non_blocking_task(cb)
+    def _queue_add_pilot_blocking(self,pilot,callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        now = nowstr()
+        n = 1
+        if 'num' in pilot:
+            n = pilot['num']
+        sql = []
+        bindings = []
+        for i in range(n):
+            pilot_id = self.db._increment_id_helper('pilot',conn)
+            grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
+            sql.append('insert into pilot (pilot_id, grid_queue_id, '
+                       'submit_time, submit_dir) values (?,?,?,?)')
+            bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir']))
+        
+        try:
+            ret = self.db._db_write(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            logger.debug('error setting status',exc_info=True)
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        else:
+            for i,b in enumerate(bindings):
+                if self._is_master():
+                    sql2 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    bindings2 = ('pilot',b[0],now)
+                    try:
+                        self.db._db_write(conn,sql2,bindings2,None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    self._send_to_master(('pilot',b[0],now,sql[i],b))
+        callback(True)
+
+    @dbmethod
+    def queue_get_active_pilots(self,callback=None):
+        # TODO: implement this
+        callback({})
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):

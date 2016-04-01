@@ -40,14 +40,18 @@ class grid_test(unittest.TestCase):
     def setUp(self):
         super(grid_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        curdir = os.getcwd()
+        os.symlink(os.path.join(curdir, 'iceprod'),
+                   os.path.join(self.test_dir, 'iceprod'))
+        os.chdir(self.test_dir)
+        def cleanup():
+            os.chdir(curdir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
         # override self.db_handle
         self.messaging = messaging_mock()
         self.check_run_stop = False
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(grid_test,self).tearDown()
 
     @contextmanager
     def _check_run(self):
@@ -1191,6 +1195,103 @@ class grid_test(unittest.TestCase):
         else:
             raise Exception('get_cfg_for_task error: did not raise Exception')
         shutil.rmtree(submit_dir)
+
+    @unittest_reporter
+    def test_024_setup_pilots(self):
+        """Test setup_pilots"""
+        def generate_submit_file(t,cfg=None,passkey=None,filelist=None):
+            generate_submit_file.called = True
+            generate_submit_file.args = (t,cfg,passkey,filelist)
+            if generate_submit_file.ret:
+                return generate_submit_file.ret
+            else:
+                raise Exception('bad submit file generation')
+        flexmock(grid).should_receive('generate_submit_file').replace_with(generate_submit_file)
+        def submit(t):
+            submit.called = True
+            submit.args = t
+            if submit.ret:
+                t['grid_queue_id'] = submit.ret
+            else:
+                raise Exception('bad submit')
+        flexmock(grid).should_receive('submit').replace_with(submit)
+
+        site = 'thesite'
+        self.check_run_stop = False
+        name = 'grid1'
+        gridspec = site+'.'+name
+        submit_dir = os.path.join(self.test_dir,'submit_dir')
+        cfg = {'site_id':site,
+               'queue':{'max_resets':5,
+                        'submit_dir':submit_dir,
+                        name:{'queueing_factor_priority':1,
+                              'queueing_factor_dataset':1,
+                              'queueing_factor_tasks':1,
+                              'max_task_queued_time':1000,
+                              'max_task_processing_time':1000,
+                              'max_task_reset_time':300,
+                              'ping_interval':60,
+                              'monitor_address':'localhost'
+                              }},
+               'db':{'address':None,'ssl':False}}
+
+        # init
+        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                getattr(self.messaging,'db'))
+        self.messaging.ret = {'db':{'queue_add_pilot':True}}
+        self.messaging.called = []
+        g = grid(args)
+        if not g:
+            raise Exception('init did not return grid object')
+
+        # call normally
+        g.tasks_queued = 0
+        generate_submit_file.ret = True
+        submit.ret = '12345'
+
+        tasks = [{'task_id':'thetaskid','debug':False,'reqs':{}}]
+        g.setup_pilots(tasks)
+        if not generate_submit_file.called:
+            raise Exception('did not call generate_submit_file')
+        if not submit.called:
+            raise Exception('did not call submit')
+        pilot_dict = self.messaging.called[1][2][0]
+        if (self.messaging.called[0][1] != 'auth_new_passkey' or
+            self.messaging.called[1][1] != 'queue_add_pilot' or
+            os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
+            'grid_queue_id' not in pilot_dict or
+            pilot_dict['num'] != 1):
+            logger.info('%r',self.messaging.called)
+            raise Exception('bad pilot dict')
+
+        # test error
+        generate_submit_file = None
+        try:
+            g.setup_pilots(tasks)
+        except:
+            pass
+        else:
+            raise Exception('did not raise an Exception')
+
+        generate_submit_file = True
+        submit.ret = None
+        try:
+            g.setup_pilots(tasks)
+        except:
+            pass
+        else:
+            raise Exception('did not raise an Exception')
+
+        generate_submit_file = True
+        submit.ret = '12345'
+        self.messaging.ret = {'db':{'queue_add_pilot':Exception()}}
+        try:
+            g.setup_pilots(tasks)
+        except:
+            pass
+        else:
+            raise Exception('did not raise an Exception')
+        
 
     @unittest_reporter
     def test_030_task_to_grid_name(self):

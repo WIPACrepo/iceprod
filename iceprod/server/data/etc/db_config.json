@@ -152,6 +152,12 @@
             ["key", "str"],
             ["expire", "str", "datetime"]
         ],
+        "pilot": [
+            ["pilot_id", "str"],
+            ["grid_queue_id", "str"],
+            ["submit_time", "str", "datetime"],
+            ["submit_dir", "Text"]
+        ],
         "user": [
             ["user_id", "str"],
             ["username", "str"],
@@ -210,11 +216,12 @@
             ["categoryvalue_offset", "str"],
             ["history_offset", "str"],
             ["passkey_last", "str"],
+            ["pilot_last", "str"],
             ["user_offset", "str"],
             ["session_last", "str"],
             ["webstat_last", "str"],
             ["webnote_last", "str"],
-            ["graph_offset", "str"],
+            ["graph_last", "str"],
             ["master_update_history_last", "str"]
         ]
     },

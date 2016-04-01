@@ -3,6 +3,7 @@
         "max_resets":10,
         "task_buffer":10,
         "submit_dir":"$PWD/submit",
+        "submit_pilots":true,
         "*":{
             "description":"generic grid plugin",
             "type":"type of grid",

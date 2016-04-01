@@ -1497,7 +1497,9 @@ class dbmethods_queue_test(dbmethods_base):
         if cb.called is False:
             raise Exception('single dataset: callback not called')
         ret_should_be = {'t1':dict(tables['search'][0])}
+        ret_should_be['t1']['task_status'] = 'queued'
         ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
+        ret_should_be['t1']['reqs'] = tables['task'][0]['requirements']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1576,7 +1578,9 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('several tasks in same dataset: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables['search'][:3]}
         for k in ret_should_be:
+            ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['reqs'] = ''
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1629,7 +1633,9 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('several tasks in diff dataset: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't4'}
         for k in ret_should_be:
+            ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['reqs'] = ''
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1646,7 +1652,9 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('priority weighting dataset: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't3'}
         for k in ret_should_be:
+            ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['reqs'] = ''
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1778,7 +1786,9 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('resources: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
         for k in ret_should_be:
+            ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['reqs'] = ["cpu","gpu"]
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1801,7 +1811,7 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('no resources: callback ret != {}')
 
         # bad resource json
-        tables4['task_rel'][0]['requirements'] = 'blah'
+        tables4['task_rel'][0]['requirements'] = '["cpu"]'
         cb.called = False
         self.mock.setup(tables4)
         resources = {'cpu':200}
@@ -1813,11 +1823,70 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('resources bad json: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
         for k in ret_should_be:
+            ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['reqs'] = ['cpu']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('resources: callback ret')
+
+    @unittest_reporter
+    def test_125_queue_add_pilot(self):
+        """Test queue_add_pilot"""
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        submit_dir = os.path.join(self.test_dir,'submit')
+        pilot = {'task_id':'pilot', 'name':'pilot', 'debug':False, 'reqs':{},
+                 'submit_dir': submit_dir, 'grid_queue_id':'12345'}
+
+        cb.called = False
+        self.mock.setup({'pilot':[]})
+        self._db.queue_add_pilot(pilot,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.info('%r',cb.ret)
+            raise Exception('callback returned Exception')
+        endtable = self.mock.get(['pilot'])['pilot']
+        if (len(endtable) != 1 or endtable[0]['submit_dir'] != submit_dir or
+            endtable[0]['grid_queue_id'] != '12345.0'):
+            logger.info('table: %r',endtable)
+            raise Exception('bad table state')
+
+        # try 3 at once
+        cb.called = False
+        pilot['num'] = 3
+        self.mock.setup({'pilot':[]})
+        self._db.queue_add_pilot(pilot,callback=cb)
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.info('%r',cb.ret)
+            raise Exception('callback returned Exception')
+        endtable = self.mock.get(['pilot'])['pilot']
+        if (len(endtable) != 3 or
+            endtable[0]['submit_dir'] != submit_dir or
+            endtable[0]['grid_queue_id'] != '12345.0' or
+            endtable[1]['submit_dir'] != submit_dir or
+            endtable[1]['grid_queue_id'] != '12345.1' or
+            endtable[2]['submit_dir'] != submit_dir or
+            endtable[2]['grid_queue_id'] != '12345.2'):
+            logger.info('table: %r',endtable)
+            raise Exception('bad table state')
+
+        for i in range(1,2):
+            self.mock.setup({'pilot':[]})
+            self.mock.failures = i
+            cb.called = False
+            self._db.queue_add_pilot(pilot,callback=cb)
+            if cb.called is False:
+                raise Exception('callback not called')
+            if not isinstance(cb.ret,Exception):
+                logger.info('%r',cb.ret)
+                raise Exception('cb.ret is not Exception')
 
     @unittest_reporter
     def test_130_queue_get_cfg_for_task(self):

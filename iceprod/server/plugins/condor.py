@@ -53,31 +53,32 @@ class condor(grid.grid):
                                 requirements.append(value)
                             else:
                                 batch_opts[bb] = value
-            if 'task' in cfg['options']:
-                t = cfg['options']['task']
-                if t in cfg['tasks']:
-                    alltasks = [cfg['tasks'][t]]
+            if task['task_id'] != 'pilot':
+                if 'task' in cfg['options']:
+                    t = cfg['options']['task']
+                    if t in cfg['tasks']:
+                        alltasks = [cfg['tasks'][t]]
+                    else:
+                        alltasks = []
+                        try:
+                            for tt in cfg['tasks']:
+                                if t == tt['name']:
+                                    alltasks.append(tt)
+                        except:
+                            logger.warn('error finding specified task to run for %r',
+                                        task,exc_info=True)
                 else:
-                    alltasks = []
-                    try:
-                        for tt in cfg['tasks']:
-                            if t == tt['name']:
-                                alltasks.append(tt)
-                    except:
-                        logger.warn('error finding specified task to run for %r',
-                                    task,exc_info=True)
-            else:
-                alltasks = cfg['tasks']
-            for t in alltasks:
-                for b in t['batchsys']:
-                    if b.lower().startswith(self.__class__.__name__):
-                        # these settings apply to this batchsys
-                        for bb in t['batchsys'][b]:
-                            value = t['batchsys'][b][bb]
-                            if bb.lower() == 'requirements':
-                                requirements.append(value)
-                            else:
-                                batch_opts[bb] = value
+                    alltasks = cfg['tasks']
+                for t in alltasks:
+                    for b in t['batchsys']:
+                        if b.lower().startswith(self.__class__.__name__):
+                            # these settings apply to this batchsys
+                            for bb in t['batchsys'][b]:
+                                value = t['batchsys'][b][bb]
+                                if bb.lower() == 'requirements':
+                                    requirements.append(value)
+                                else:
+                                    batch_opts[bb] = value
 
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'condor.submit')
@@ -94,19 +95,32 @@ class condor(grid.grid):
                 p('should_transfer_files = always')
             p('arguments = ',' '.join(args))
 
+            if 'reqs' in task:
+                if 'cpu' in task['reqs']:
+                    p('request_cpus = {}'.format(task['reqs']['cpu']))
+                if 'gpu' in task['reqs']:
+                    p('request_gpus = {}'.format(task['reqs']['gpu']))
+                if 'memory' in task['reqs']:
+                    p('request_memory = {}'.format(task['reqs']['memory']))
+                if 'disk' in task['reqs']:
+                    p('request_disk = {}'.format(task['reqs']['disk']*1000))
+
             for b in batch_opts:
                 p(b+'='+batch_opts[b])
             if requirements:
                 p('requirements = ('+')&&('.join(requirements)+')')
 
-            p('queue')
+            if 'num' in task:
+                p('queue {}'.format(task['num']))
+            else:
+                p('queue')
 
     def submit(self,task):
-        """Submit task(s) to queueing system."""
-        if isinstance(task,dict) and 'task_id' in task:
-            cmd = 'condor_submit condor.submit'
-            if subprocess.call(cmd,shell=True,cwd=task['submit_dir']):
-                raise Exception('submit failed for task %r'%task['task_id'])
-        else:
-            raise NotImplementedError('multiple submission not implemented')
+        """Submit task to queueing system."""
+        cmd = ['condor_submit','condor.submit']
+        out = subprocess.check_output(cmd,cwd=task['submit_dir'])
+        for line in out.split('\n'):
+            line = line.strip()
+            if 'cluster' in line:
+                task['grid_queue_id'] = line.split()[-1].strip('.')
 

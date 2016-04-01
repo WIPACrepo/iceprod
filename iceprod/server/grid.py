@@ -11,6 +11,7 @@ import math
 import logging
 from io import BytesIO
 from datetime import datetime,timedelta
+from collections import namedtuple, Counter
 
 from iceprod.core import dataclasses
 from iceprod.core import functions
@@ -67,8 +68,6 @@ class grid(object):
 
         self.tasks_queued = 0
         self.tasks_processing = 0
-
-        self.submit_multi = False
 
     ### Public Functions ###
 
@@ -142,14 +141,10 @@ class grid(object):
                 raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
 
         if tasks is not None:
-            if self.submit_multi:
+            if ('submit_pilots' in self.cfg['queue'] and
+                self.cfg['queue']['submit_pilots']):
                 with self.check_run():
-                    for t in tasks:
-                        # set up submit directory
-                        self.setup_submit_directory(tasks[t])
-                with self.check_run():
-                    # submit to queueing system
-                    self.submit(tasks)
+                    self.setup_pilots(tasks)
             else:
                 for t in tasks:
                     with self.check_run():
@@ -157,9 +152,6 @@ class grid(object):
                         self.setup_submit_directory(tasks[t])
                         # submit to queueing system
                         self.submit(tasks[t])
-            # mark as queued
-            self.db.queue_set_task_status(task=[tasks[t]['task_id'] for t in tasks],
-                                    status='queued',async=False)
             self.tasks_queued += len(tasks)
 
 
@@ -244,10 +236,6 @@ class grid(object):
         tasks = self.get_task_status()
         if tasks is None:
             raise Exception('get_task_status() on %s returned none'%self.gridspec)
-        elif not isinstance(tasks,dict):
-            raise Exception('get_task_status() on %s did not return a dict'%self.gridspec)
-        if tasks is None:
-            raise Exception('get_task_status() on %s returned none'%self.gridspec)
         elif isinstance(tasks,Exception):
             raise tasks
         elif not isinstance(tasks,dict):
@@ -309,7 +297,11 @@ class grid(object):
         reset_tasks = set()
 
         # get active tasks
-        active_tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
+        if ('submit_pilots' in self.cfg['queue'] and
+            self.cfg['queue']['submit_pilots']):
+            active_tasks = self.db.queue_get_active_pilots(async=False)
+        else:
+            active_tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
         if active_tasks is None:
             raise Exception('db.queue_get_active_tasks(%s) returned none'%self.gridspec)
         elif isinstance(active_tasks,Exception):
@@ -386,6 +378,34 @@ class grid(object):
             ret = self.db.queue_set_task_status(tasks=reset_tasks,status='waiting',
                                           async=False)
             if isinstance(ret,Exception):
+                raise ret
+
+    def setup_pilots(self, tasks):
+        """Setup pilots for each task"""
+        # do resource grouping
+        Resource = namedtuple('Resource', ['cpu','gpu','memory','disk'])
+        default_resource = Resource(1,0,2000,10000)
+        groups = Counter()
+        for t in tasks:
+            if not t['reqs']:
+                t['reqs'] = {}
+            key = (t['debug'], default_resource._replace(**t['reqs']))
+            groups[key] += 1
+        for key in groups:
+            debug, resources = key
+            logger.info('submitting %d pilots for resource %r',
+                        groups[key], resources)
+            pilot = {'task_id': 'pilot',
+                     'name': 'pilot',
+                     'debug': debug,
+                     'reqs': resources._asdict(),
+                     'num': groups[key],
+            }
+            self.setup_submit_directory(pilot)
+            self.submit(pilot)
+            ret = self.db.queue_add_pilot(pilot,async=False)
+            if isinstance(ret,Exception):
+                logger.error('error updating DB with pilots')
                 raise ret
 
     def setup_submit_directory(self,task):
@@ -521,7 +541,8 @@ class grid(object):
             args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
         if passkey:
             args.append('--passkey {}'.format(passkey))
-        args.append('--cfgfile task.cfg')
+        if cfg:
+            args.append('--cfgfile task.cfg')
         return args
 
     ### Plugin Overrides ###
@@ -539,7 +560,7 @@ class grid(object):
         raise NotImplementedError()
 
     def submit(self,task):
-        """Submit task(s) to queueing system."""
+        """Submit task to queueing system."""
         raise NotImplementedError()
 
     def remove(self,tasks=None):
