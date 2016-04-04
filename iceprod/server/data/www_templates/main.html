@@ -72,21 +72,33 @@ jQuery(document).ready(function() {
             labels: active_labels,
             datasets: [{
                 label: "queued",
+                fillColor: "#5da5da",
+                strokeColor: "#5da5da",
                 data: active_data["queued"]
             },{
                 label: "processing",
+                fillColor: "#60bd68",
+                strokeColor: "#60bd68",
                 data: active_data["processing"]
             },{
                 label: "suspended",
+                fillColor: "#decf3f",
+                strokeColor: "#decf3f",
                 data: active_data["suspended"]
             },{
                 label: "failed",
+                fillColor: "#f15854",
+                strokeColor: "#f15854",
                 data: active_data["failed"]
             },{
                 label: "resume",
+                fillColor: "#faa43a",
+                strokeColor: "#faa43a",
                 data: active_data["resume"]
             },{
                 label: "reset",
+                fillColor: "#faa43a",
+                strokeColor: "#faa43a",
                 data: active_data["reset"]
             }]
         };
@@ -94,6 +106,8 @@ jQuery(document).ready(function() {
             labels: completed_labels,
             datasets:[{
                 label: "completed",
+                fillColor: "#5da5da",
+                strokeColor: "#5da5da",
                 data: completed_data
             }]
         };
