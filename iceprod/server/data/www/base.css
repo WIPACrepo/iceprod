@@ -286,11 +286,11 @@ table.browse th, table.browse td {
 .status_graphs {
     text-align: center;
 }
-.status_graphs .line-legend li {
+.status_graphs .stackedarea-legend li {
     display: inline-block;
     margin: .2em;
 }
-.status_graphs .line-legend li>span {
+.status_graphs .stackedarea-legend li>span {
     height: .8em;
     width: .8em;
     display: inline-block;
