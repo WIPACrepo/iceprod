@@ -116,8 +116,16 @@ class rpc(_Methods_Base):
         elif not task:
             callback(None)
         else:
+            cb = partial(self._rpc_new_task_callback2,task,callback=callback)
             self.parent.queue_get_cfg_for_dataset(task['dataset_id'],
-                                                  callback=callback)
+                                                  callback=cb)
+    def _rpc_new_task_callback2(self,task,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            config = json_decode(ret)
+            config['options']['task_id'] = task['task_id']
+            callback(config)
 
     @dbmethod
     def rpc_set_processing(self,task,callback=None):

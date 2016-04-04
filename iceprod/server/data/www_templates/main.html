@@ -71,16 +71,6 @@ jQuery(document).ready(function() {
         var active = {
             labels: active_labels,
             datasets: [{
-                label: "queued",
-                fillColor: "#5da5da",
-                strokeColor: "#5da5da",
-                data: active_data["queued"]
-            },{
-                label: "processing",
-                fillColor: "#60bd68",
-                strokeColor: "#60bd68",
-                data: active_data["processing"]
-            },{
                 label: "suspended",
                 fillColor: "#decf3f",
                 strokeColor: "#decf3f",
@@ -100,6 +90,16 @@ jQuery(document).ready(function() {
                 fillColor: "#faa43a",
                 strokeColor: "#faa43a",
                 data: active_data["reset"]
+            },{
+                label: "queued",
+                fillColor: "#5da5da",
+                strokeColor: "#5da5da",
+                data: active_data["queued"]
+            },{
+                label: "processing",
+                fillColor: "#60bd68",
+                strokeColor: "#60bd68",
+                data: active_data["processing"]
             }]
         };
         var completed = {

@@ -96,6 +96,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             logger.critical('There is no cfgfile')
             raise Exception('missing cfgfile')
         config = load_config(cfgfile)
+        logger.info('config: %r',config)
 
         if offline is True:
             # run in offline mode
@@ -113,47 +114,49 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         iceprod.core.exe.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
         if 'tasks' in config and config['tasks']:
-            # default configuration - a single task
+            logger.info('default configuration - a single task')
             runner(config,url,debug)
         else:
-            # get many tasks from server
+            logger.info('pilot mode - get many tasks from server')
             if 'gridspec' not in config['options']:
                 logger.critical('gridspec missing')
                 raise Exception('gridspec missing')
             errors = 0
             while errors < 5:
                 try:
-                    config = iceprod.core.exe.downloadtask(config['options']['gridspec'])
-                except Exception as e:
+                    task_config = iceprod.core.exe.downloadtask(config['options']['gridspec'])
+                except Exception:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
-                                 errors,exc_info=True)
+                                 errors, exc_info=True)
                     continue
+                logger.info('task config: %r', task_config)
 
-                if config is None:
+                if task_config is None:
                     break # assuming server wants client to exit
                 else:
                     try:
-                        runner(config,url,debug)
-                    except Exception as e:
-                        logger.error('%r',e)
+                        runner(task_config,url,debug)
+                    except Exception:
                         errors += 1
-                        logger.error('task encountered an error. current error count is %d',errors)
+                        logger.error('task encountered an error. current error count is %d',
+                                     errors, exc_info=True)
             if errors >= 5:
-                logger.error('too many errors when running tasks')
+                logger.failure('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
 
 def runner(config,url,debug=False,offline=False):
     """Run a config"""
     # set logging verbosity
-    if 'debug' in config['options'] and 'loglevel' not in config['options']:
+    if ('debug' in config['options'] and config['options']['debug'] and
+        'loglevel' not in config['options']):
         config['options']['loglevel'] = 'INFO'
     if ('loglevel' in config['options'] and
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
             logging.getLogger().setLevel(iceprod.core.logger.setlevel[config['options']['loglevel'].upper()])
-        except Exception as e:
-            logger.warn('failed to set a new log level: %r',e)
+        except Exception:
+            logger.warn('failed to set a new log level', exc_info=True)
 
     # check that resource_url and debug are in options
     if 'resource_url' not in config['options']:
