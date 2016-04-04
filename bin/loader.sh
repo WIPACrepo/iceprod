@@ -91,7 +91,7 @@ echo "Platform: $PLATFORM"
 export PLATFORM
 
 if [ -z $SROOT ]; then
-    SROOT="/cvmfs/icecube.opensciencegrid.org/iceprod"
+    SROOT="/cvmfs/icecube.opensciencegrid.org/iceprod/latest"
 fi
 if [ -z $PROXY ]; then
     PROXY="cache01.hep.wisc.edu:80"
@@ -102,115 +102,19 @@ if [ -d $PWD/iceprod ]; then
     # local iceprod available, assume env is good
     # (this is mostly for testing)
     if [ -z $PYTHONPATH ]; then
-        export PYTHONPATH=$PWD:$PYTHONPATH
-    else
         export PYTHONPATH=$PWD
+    else
+        export PYTHONPATH=$PWD:$PYTHONPATH
     fi
 else
     if [ ! -d $SROOT ]; then
         # first, try parrot
         TEST_PARROT="parrot_run -p $PROXY ls $SROOT"
         if ( $HASH parrot_run ) && $TEST_PARROT >/dev/null 2>/dev/null; then
-            PYBIN="parrot_run -p $PROXY $SROOT/setup.sh python"
+            PYBIN="parrot_run -p $PROXY $SROOT/env-shell.sh python"
         else
-            # try tarball
-
-            # test DOWNLOAD_URL
-            if [ -z $DOWNLOAD_URL ]; then
-                echo "Download URL required" >&2
-                exit 1
-            fi
-            # Download env for this platform
-            if [ -z $ENV ]; then
-                ENV="env.$PLATFORM.tar.gz"
-            fi
-            ENV_URL="$DOWNLOAD_URL/lib/$ENV"
-            if [ ! -f $ENV ]; then
-                # test for curl, wget, and fetch
-                if ( $HASH curl >&- 2>&- ); then
-                    if [ ! -z $USERNAME ] && [ ! -z $PASSWORD ]; then
-                        if ! ( curl --retry 5 --max-time 30 -f -u $USERNAME:$PASSWORD -o $ENV $ENV_URL ); then
-                            echo "failed to download $ENV_URL"
-                            exit 1
-                        fi
-                    else
-                        if ! ( curl --retry 5 --max-time 30 -f -o $ENV $ENV_URL ); then
-                            echo "failed to download $ENV_URL"
-                            exit 1
-                        fi
-                    fi
-                elif ( $HASH wget >&- 2>&- ); then
-                    if [ ! -z $USERNAME ] && [ ! -z $PASSWORD ]; then
-                        if ! ( wget -r --tries=5 --timeout=30 --user=$USERNAME --password=$PASSWORD -O $ENV $ENV_URL ); then
-                            echo "failed to download $ENV_URL"
-                            exit 1
-                        fi
-                    else
-                        if ! ( wget -r --tries=5 --timeout=30 -O $ENV $ENV_URL ); then
-                            echo "failed to download $ENV_URL"
-                            exit 1
-                        fi
-                    fi
-                elif ( $HASH fetch >&- 2>&- ); then
-                    if [ ! -z $USERNAME ] && [ ! -z $PASSWORD ]; then
-                        echo "Fetch does not support USERNAME and PASSWORD.  Trying without..."
-                    fi
-                    if ! ( fetch -a -T 30 -o $ENV $ENV_URL ); then
-                        echo "failed to download $ENV_URL"
-                        exit 1
-                    fi
-                else
-                    echo "Can't find wget, curl, or fetch.  At least one is required"
-                    exit 1
-                fi
-            fi
-            # extract env
-            ENVEND=$(echo $ENV | awk  '{print substr($0, length($0) - 2, length($0))}')
-            if [ "$ENVEND" = ".gz" ]; then
-                if ! ( tar -zxf $ENV ); then
-                    echo "Failed to extract $ENV"
-                    exit 1
-                fi
-            elif [ "$ENVEND" = "bz2" ]; then
-                if ! ( tar -jxf $ENV ); then
-                    echo "Failed to extract $ENV"
-                    exit 1
-                fi
-            elif [ "$ENVEND" = ".xz" ]; then
-                if ! ( tar -Jxf $ENV ); then
-                    echo "Failed to extract $ENV"
-                    exit 1
-                fi
-            ENVEND=$(echo $ENV | awk  '{print substr($0, length($0) - 3, length($0))}')
-            elif [ "$ENVEND" = "lzma" ]; then
-                if ! ( tar --lzma -xf $ENV ); then
-                    echo "Failed to extract $ENV"
-                    exit 1
-                fi
-            elif [ "$ENVEND" = ".tar" ]; then
-                if ! ( tar -xf $ENV ); then
-                    echo "Failed to extract $ENV"
-                    exit 1
-                fi
-            else
-                echo "Unknown extension for $ENV"
-                exit 1
-            fi
-
-            # check env extraction
-            if [ ! -d $PWD/env ] || [ ! -d $PWD/env/bin ]; then
-                echo "Something is wrong with the env directory structure"
-                exit 1
-            fi
-
-            # set python location
-            PYBIN=$PWD/env/bin/python
-
-            # set rest of environment
-            export PATH=$PWD/env/bin:$PATH
-            export LD_LIBRARY_PATH=$PWD/env/lib:$PWD/env/lib64:$LD_LIBRARY_PATH
-            export DYLD_LIBRARY_PATH=$PWD/env/lib:$PWD/env/lib64:$DYLD_LIBRARY_PATH
-            export PYTHONPATH=$PWD/env/lib/python`python -c 'import sys;print(".".join([str(x) for x in sys.version_info[:2]]))'`/site-packages:$PWD/env/lib:$PYTHONPATH
+            echo "No contact with CVMFS"
+            exit 1
         fi
     else
         echo "Using software at $SROOT"
@@ -222,6 +126,15 @@ else
             export DYLD_LIBRARY_PATH=$SROOT/lib:$SROOT/lib64:$DYLD_LIBRARY_PATH
             export PYTHONPATH=$SROOT/lib/python`python -c 'import sys;print(".".join([str(x) for x in sys.version_info[:2]]))'`/site-packages:$SROOT/lib:$PYTHONPATH
         fi
+    fi
+fi
+
+if [ ! -z $ENV ]; then
+    # load iceprod into the environment
+    if [ -z $PYTHONPATH ]; then
+        export PYTHONPATH=$ENV
+    else
+        export PYTHONPATH=$ENV:$PYTHONPATH
     fi
 fi
 
