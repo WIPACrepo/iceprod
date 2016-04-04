@@ -170,6 +170,8 @@ class grid(object):
 
         now = datetime.utcnow()
         reset_tasks = []
+        waiting_tasks = []
+        idle_tasks = []
 
         # check the queued status
         tasks_queued = 0
@@ -203,20 +205,33 @@ class grid(object):
         max_task_reset_time = self.queue_cfg['max_task_reset_time']
         if 'reset' in tasks:
             for t in tasks['reset'].values():
-                try:
-                    if now - t['status_changed'] > timedelta(seconds=max_task_reset_time):
-                        reset_tasks.append(t)
-                except:
-                    pass
+                if t['failures'] >= 3:
+                    idle_tasks.append(t)
+                else:
+                    waiting_tasks.append(t)
         if 'resume' in tasks:
             for t in tasks['resume'].values():
-                try:
-                    if now - t['status_changed'] > timedelta(seconds=max_task_reset_time):
-                        reset_tasks.append(t)
-                except:
-                    pass
+                idle_tasks.append(t)
 
-        if len(reset_tasks) > 0:
+        if idle_tasks:
+            # change status to idle
+            # TODO: this should also flush any caches
+            #       but how to do that is in question
+            ret = self.db.queue_set_task_status(tasks=idle_tasks,
+                                                status='idle',
+                                                async=False)
+            if isinstance(ret,Exception):
+                raise ret
+
+        if waiting_tasks:
+            # change status to waiting
+            ret = self.db.queue_set_task_status(tasks=waiting_tasks,
+                                                status='waiting',
+                                                async=False)
+            if isinstance(ret,Exception):
+                raise ret
+
+        if reset_tasks:
             # reset some tasks
             max_resets = self.cfg['queue']['max_resets']
             failures = []

@@ -91,10 +91,12 @@ class web(_Methods_Base):
         cb = partial(self._web_get_datasets_callback,groups,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
 
-    def _web_get_datasets_grouper(self, data,groups,val):
+    def _web_get_datasets_grouper(self, data, groups, val):
         if len(groups) == 1:
             data[groups[0]] = val
         else:
+            if groups[0] not in data:
+                data[groups[0]] = {}
             self._web_get_datasets_grouper(data[groups[0]],groups[1:],val)
     def _web_get_datasets_callback(self,groups,ret,callback=None):
         if callback:
@@ -104,7 +106,7 @@ class web(_Methods_Base):
                 dataset_groups = {}
                 if ret and ret[0]:
                     for row in ret:
-                        self._web_get_datasets_grouper(dataset_groups,groups,row[-1])
+                        self._web_get_datasets_grouper(dataset_groups,row[:-1],row[-1])
                 callback(dataset_groups)
             else:
                 callback([self._list_to_dict('dataset',x) for x in ret])
