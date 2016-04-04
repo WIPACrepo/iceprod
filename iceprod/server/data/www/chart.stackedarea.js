@@ -1,3 +1,4 @@
+// from https://github.com/Regaddi/Chart.StackedBar.js
 (function() {
     "use strict";
 

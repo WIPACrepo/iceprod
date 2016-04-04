@@ -217,7 +217,7 @@ class grid(object):
             # change status to idle
             # TODO: this should also flush any caches
             #       but how to do that is in question
-            ret = self.db.queue_set_task_status(tasks=idle_tasks,
+            ret = self.db.queue_set_task_status(task={t['task_id'] for t in idle_tasks},
                                                 status='idle',
                                                 async=False)
             if isinstance(ret,Exception):
@@ -225,7 +225,7 @@ class grid(object):
 
         if waiting_tasks:
             # change status to waiting
-            ret = self.db.queue_set_task_status(tasks=waiting_tasks,
+            ret = self.db.queue_set_task_status(task={t['task_id'] for t in waiting_tasks},
                                                 status='waiting',
                                                 async=False)
             if isinstance(ret,Exception):
@@ -390,8 +390,8 @@ class grid(object):
 
         if reset_tasks:
             # reset some tasks
-            ret = self.db.queue_set_task_status(tasks=reset_tasks,status='waiting',
-                                          async=False)
+            ret = self.db.queue_set_task_status(task=reset_tasks,status='waiting',
+                                                async=False)
             if isinstance(ret,Exception):
                 raise ret
 
@@ -420,7 +420,7 @@ class grid(object):
             }
             self.setup_submit_directory(pilot)
             self.submit(pilot)
-            ret = self.db.queue_add_pilot(pilot,async=False)
+            ret = self.db.queue_add_pilot(pilot=pilot,async=False)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with pilots')
                 raise ret
