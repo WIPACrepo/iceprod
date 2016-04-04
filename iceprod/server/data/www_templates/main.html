@@ -8,6 +8,7 @@
 
 <div class="status_graphs">
   <h4>Active Tasks</h4>
+  <div id="active_tasks_legend"></div>
   <canvas id="active_tasks"></canvas>
   <h4>Completed Tasks</h4>
   <canvas id="completed_tasks"></canvas>
@@ -114,12 +115,14 @@ jQuery(document).ready(function() {
         var settings = {
             animate: false,
             showTooltips: false,
+            datasetFill: false,
             scaleShowGridLines: false,
             scaleShowVerticalLines: false,
             bezierCurve : false,
             pointDot: false
         };
-        new Chart($("#active_tasks").get(0).getContext("2d")).Line(active, settings);
+        var at_chart = new Chart($("#active_tasks").get(0).getContext("2d")).Line(active, settings);
+        $('#active_tasks_legend').html(at_chart.generateLegend());
         new Chart($("#completed_tasks").get(0).getContext("2d")).Line(completed, settings);
     });
 });

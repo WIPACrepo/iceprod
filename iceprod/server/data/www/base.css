@@ -286,6 +286,17 @@ table.browse th, table.browse td {
 .status_graphs {
     text-align: center;
 }
+.status_graphs .line-legend li {
+    display: inline-block;
+    margin: .2em;
+}
+.status_graphs .line-legend li>span {
+    height: .8em;
+    width: .8em;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: .2em;
+}
 #active_tasks, #completed_tasks {
     width: 550px;
     height: 150px;
