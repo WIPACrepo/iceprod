@@ -548,6 +548,8 @@ class grid(object):
             args.append('--passkey {}'.format(passkey))
         if cfg:
             args.append('--cfgfile task.cfg')
+        if task['debug']:
+            args.append('--debug')
         return args
 
     ### Plugin Overrides ###
