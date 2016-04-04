@@ -29,6 +29,7 @@
 {% block body_scripts %}
 <script type="text/javascript" src="/static/json-rpc.js"></script>
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+<script type="text/javascript" src="/static/chart.stackedarea.js"></script>
 <script type="text/javascript">
 function pad(num) {
   var numStr = num.toString();
@@ -115,13 +116,12 @@ jQuery(document).ready(function() {
         var settings = {
             animate: false,
             showTooltips: false,
-            datasetFill: false,
             scaleShowGridLines: false,
             scaleShowVerticalLines: false,
             bezierCurve : false,
             pointDot: false
         };
-        var at_chart = new Chart($("#active_tasks").get(0).getContext("2d")).Line(active, settings);
+        var at_chart = new Chart($("#active_tasks").get(0).getContext("2d")).StackedArea(active, settings);
         $('#active_tasks_legend').html(at_chart.generateLegend());
         new Chart($("#completed_tasks").get(0).getContext("2d")).Line(completed, settings);
     });
