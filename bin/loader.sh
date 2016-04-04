@@ -119,8 +119,10 @@ else
     else
         echo "Using software at $SROOT"
         if [ -f $SROOT/setup.sh ]; then
+            echo "Evaluating setup.sh"
             eval `$SROOT/setup.sh`
         else
+            echo "Manually setting environment"
             export PATH=$SROOT/bin:$PATH
             export LD_LIBRARY_PATH=$SROOT/lib:$SROOT/lib64:$LD_LIBRARY_PATH
             export DYLD_LIBRARY_PATH=$SROOT/lib:$SROOT/lib64:$DYLD_LIBRARY_PATH

@@ -16,7 +16,6 @@
             "queueing_factor_priority":1.0,
             "queueing_factor_dataset":1.0,
             "queueing_factor_tasks":1.0,
-            "software_dir":"/home/dschultz/.local",
             "batchopts":{ }
         }
     },
