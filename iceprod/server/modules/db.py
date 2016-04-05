@@ -715,6 +715,8 @@ else:
                     kwargs['port'] = mysql_port
                 conn = MySQLdb.Connection(**kwargs)
                 backup_name = self.cfg['db']['backup_name']
+                if not backup_name:
+                    return
                 backup_mysql_address = self.cfg['db']['backup_mysql_address']
                 if backup_mysql_address == '':
                     backup_mysql_port = mysql_port
@@ -910,6 +912,9 @@ else:
             if mysql_port is not None:
                 kwargs['port'] = mysql_port
             conn = MySQLdb.Connection(**kwargs)
+            backup_name = self.cfg['db']['backup_name']
+            if not backup_name:
+                return (conn,None)
             kwargs['db'] = name+'_archive'
             archive_conn = MySQLdb.Connection(**kwargs)
             return (conn,archive_conn)
@@ -969,7 +974,7 @@ else:
                         raise
                     else:
                         conn.commit()
-                elif archive_sql is not None:
+                elif archive_sql is not None and archive_conn:
                     try:
                         archive_cur = archive_conn.cursor()
                         self._db_query(archive_cur,archive_sql,archive_bindings)
@@ -990,7 +995,7 @@ else:
         def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
             """Do a write query from the database"""
             try:
-                if sql is not None and archive_sql is not None:
+                if sql is not None and archive_sql is not None and archive_conn:
                     try:
                         cur = conn.cursor()
                         archive_cur = archive_conn.cursor()
@@ -1031,7 +1036,7 @@ else:
                         raise
                     else:
                         conn.commit()
-                elif archive_sql is not None:
+                elif archive_sql is not None and archive_conn:
                     try:
                         archive_cur = archive_conn.cursor()
                         if isinstance(archive_sql,basestring):
