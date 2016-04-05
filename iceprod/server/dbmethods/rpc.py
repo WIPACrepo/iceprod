@@ -509,6 +509,13 @@ class rpc(_Methods_Base):
                         exc_info=True)
             callback(e)
             return
+        
+        # join categories as csv 
+        category_csv = ''
+        try:
+            category_csv = ','.join(config['categories'])
+        except:
+            pass
 
         # look up dependencies
         task_rels = []
@@ -573,11 +580,10 @@ class rpc(_Methods_Base):
                 gridspec = json_encode(gridspec)
             dataset_id = self.db._increment_id_helper('dataset',conn)
             stat_keys = json_encode(stat_keys)
-            categories = '' # TODO: make configurable
             bindings = (dataset_id,'name',description,gridspec,'processing',
                         'user','institution','localhost',0,njobs,ntasks,
                         now,'','','','',stat_keys,
-                        categories,debug)
+                        category_csv,debug)
             sql = 'insert into dataset (dataset_id,name,description,gridspec,'
             sql += 'status,username,institution,submit_host,priority,'
             sql += 'jobs_submitted,tasks_submitted,start_date,end_date,'
