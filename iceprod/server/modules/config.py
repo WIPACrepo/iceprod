@@ -36,8 +36,11 @@ class config(module.module):
 
     def start(self,blocking=True):
         """Start the messaging service"""
-        self.config = IceProdConfig()
-        self.config.load()
+        try:
+            self.config = IceProdConfig()
+        except Exception:
+            self.messaging.daemon.stop()
+            return
         kwargs = {'address':self.messaging_url,
                   'block':blocking,
                  }

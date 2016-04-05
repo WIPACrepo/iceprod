@@ -111,6 +111,8 @@ class IceProdConfig(dict):
                 self.do_validate(obj)
                 for key in obj:
                     self[key] = obj[key]
+        except ValidationError:
+            raise
         except Exception:
             logger.warn('failed to load from config file %s',self.filename,
                         exc_info=True)
