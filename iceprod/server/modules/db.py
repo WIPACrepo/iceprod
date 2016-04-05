@@ -633,7 +633,7 @@ if MySQLdb:
                 sql_create += ')'
                 scols = set(cols)
                 try:
-                    cur = con.cursor()
+                    cur = conn.cursor()
                     try:
                         curcols = set()
                         curdatatypes = {}
@@ -683,12 +683,12 @@ if MySQLdb:
                         raise
                 except:
                     try:
-                        con.rollback()
+                        conn.rollback()
                     except:
                         pass
                     raise
                 else:
-                    con.commit()
+                    conn.commit()
 
             for table_name in self.tables.keys():
                 _create(conn,table_name)
@@ -933,19 +933,8 @@ if MySQLdb:
             elif num != len(bindings):
                 raise Exception('wrong number of bindings - expected %d and got %d'%(num,len(bindings)))
 
-            newsql = ''
             pieces = sql.replace('%','%%').split('?')
-            for i,s in enumerate(pieces[:-1]):
-                b = bindings[i]
-                newsql += s
-                if isinstance(b,basestring):
-                    newsql += '\'%s\''
-                elif isinstance(b,(int,long,float)):
-                    newsql += '%s'
-                else:
-                    newsql += '\'%s\''
-                    bindings[i] = str(b)
-            newsql += pieces[-1]
+            newsql = '%s'.join(pieces)
 
             return newsql,bindings
 
