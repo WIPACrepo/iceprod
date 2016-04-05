@@ -23,28 +23,36 @@ from iceprod.core.functions import getInterfaces, get_local_ip_address
 def locateconfig():
     """Locate a config file"""
     hostname = os.uname()[1].split('.')[0]
-    if 'I3PROD' in os.environ:
-        cfgpath = os.path.expandvars('$I3PROD')
-    elif 'I3PREFIX' in os.environ:
-        cfgpath = os.path.expandvars('$I3PREFIX')
-    else:
-        cfgpath = get_pkgdata_filename('iceprod.server','data')
-        if not cfgpath:
-            cfgpath = os.getcwd()
-    # try for an etc directory
-    if os.path.isdir(os.path.join(cfgpath,'etc')):
-        cfgpath = os.path.join(cfgpath,'etc')
-        # try for an iceprod directory
-        if os.path.isdir(os.path.join(cfgpath,'iceprod')):
-            cfgpath = os.path.join(cfgpath,'iceprod')
-    # try common file names
-    if os.path.isfile(os.path.join(cfgpath,'iceprod.cfg')):
-        cfgpath = os.path.join(cfgpath,'iceprod.cfg')
-    elif os.path.isfile(os.path.join(cfgpath,hostname+'.cfg')):
-        cfgpath = os.path.join(cfgpath,hostname+'.cfg')
-    else:
-        raise Exception('cfgpath is not a valid path')
-    return cfgpath
+    cfgpaths = []
+    if ('I3PROD' in os.environ and
+        os.path.isdir(os.path.expandvars('$I3PROD'))):
+        cfgpaths.append(os.path.expandvars('$I3PROD'))
+    if ('I3PREFIX' in os.environ and
+        os.path.isdir(os.path.expandvars('$I3PREFIX'))):
+        cfgpaths.append(os.path.expandvars('$I3PREFIX'))
+    cfgpaths.append(os.getcwd())
+    cfgpath = get_pkgdata_filename('iceprod.server','data')
+    if cfgpath:
+        cfgpaths.append(cfgpath)
+    for cfgpath in list(cfgpaths):
+        # try for an etc directory
+        i = cfgpaths.index(cfgpath)
+        if os.path.isdir(os.path.join(cfgpath,'etc')):
+            cfgpaths.insert(i,os.path.join(cfgpath,'etc'))
+            # try for an iceprod directory
+            if os.path.isdir(os.path.join(cfgpath,'etc','iceprod')):
+                cfgpaths.insert(i,os.path.join(cfgpath,'etc','iceprod'))
+    while cfgpaths:
+        cfgpath = cfgpaths.pop(0)
+        # try common file names
+        if os.path.isfile(os.path.join(cfgpath,'iceprod.cfg')):
+            cfgpath = os.path.join(cfgpath,'iceprod.cfg')
+        elif os.path.isfile(os.path.join(cfgpath,hostname+'.cfg')):
+            cfgpath = os.path.join(cfgpath,hostname+'.cfg')
+        else:
+            continue
+        return cfgpath
+    raise Exception('cfgpath is not a valid path')
 
 class BasicConfig(object):
     """

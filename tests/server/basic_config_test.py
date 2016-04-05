@@ -42,8 +42,8 @@ class basic_config_test(unittest.TestCase):
                 f.write('test')
             try:
                 cfg = iceprod.server.basic_config.locateconfig()
-            except Exception as e:
-                logger.error('locateconfig returned exception: %r',e,exc_info=True)
+            except Exception:
+                logger.error('locateconfig returned exception',exc_info=True)
                 raise Exception('locateconfig returned exception')
             if cfg != filename:
                 raise Exception('locatecfg found wrong config file')
