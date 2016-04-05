@@ -46,11 +46,11 @@ class db(module.module):
                 logger.info('attempting to start SQLite db')
                 self.db = SQLite(self.cfg,self.messaging)
             else:
-                logger.critical('Unknown database type: %s',t)
                 raise Exception('Unknown database type: %s'%t)
             self.db.start()
         except Exception:
-            logger.critical('failed to start db',exc_info=True)
+            logger.critical('failed to start db', exc_info=True)
+            self.messaging.daemon.stop()
 
     def stop(self):
         if self.db:
@@ -365,7 +365,7 @@ class DBAPI(object):
 try:
     import apsw
 except ImportError:
-    logging.warn('Cannot import apsw. SQLite db not available')
+    logger.warn('Cannot import apsw. SQLite db not available')
 else:
     class SQLite(DBAPI):
         """SQLite 3 implementation of DBAPI"""
@@ -592,12 +592,13 @@ else:
 try:
     import MySQLdb
 except ImportError:
-    logging.warn('Cannot import MySQLdb. Trying pymyql')
+    logger.warn('Cannot import MySQLdb. Trying pymysql')
     try:
         import pymysql as MySQLdb
     except ImportError:
-        logging.warn('Cannot import pymysql. MySQL db not available')
-else:
+        logger.warn('Cannot import pymysql. MySQL db not available')
+   MySQLdb = None
+if MySQLdb:
     class MySQL(DBAPI):
         """MySQL 5 implementation of DBAPI"""
 
@@ -611,8 +612,8 @@ else:
                 sep = ''
                 cols = self.tables[table_name].keys()
                 for col in cols:
-                    sql_create += sep+col
-                    sql_select += sep+col
+                    sql_create += sep+'`'+col+'`'
+                    sql_select += sep+'`'+col+'`'
                     t = self.tables[table_name][col]
                     if t == 'str':
                         sql_create += ' VARCHAR(255) NOT NULL DEFAULT "" '
@@ -668,7 +669,10 @@ else:
                                         sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                                 addcols.append(x)
 
-                            full_sql = 'alter table '+table_name+' add column ('+','.join(addcols)+'), drop column '+', drop column '.join(rmcols)
+                            full_sql = 'alter table '+table_name+' add column ('
+                            full_sql += ','.join('`'+col+'`' for col in addcols)
+                            full_sql += '), drop column '
+                            full_sql += ', drop column '.join('`'+col+'`' for col in rmcols)
                             cur.execute(full_sql)
                         else:
                             # table is good
