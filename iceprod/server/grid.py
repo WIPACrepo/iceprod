@@ -61,7 +61,10 @@ class grid(object):
             host = functions.gethostname()
             if isinstance(host,set):
                 host = host.pop()
-            self.web_address = 'http://'+host
+            if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
+                self.web_address = 'https://'+host
+            else:
+                self.web_address = 'http://'+host
             if ('webserver' in self.cfg and 'port' in self.cfg['webserver'] and
                 self.cfg['webserver']['port']):
                 self.web_address += ':'+str(self.cfg['webserver']['port'])
@@ -509,7 +512,8 @@ class grid(object):
             and self.cfg['download']['http_password']):
             config['options']['password'] = self.cfg['download']['http_password']
         if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
-            config['options']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
+            config['options']['ssl'] = {}
+            config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
             src = self.cfg['system']['remote_cacert']
             dest = os.path.join(task_dir,config['options']['cacert'])
             try:
@@ -525,7 +529,7 @@ class grid(object):
         if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
             config['options']['x509'] = os.path.basename(self.cfg['queue']['x509proxy'])
             src = self.cfg['queue']['x509proxy']
-            dest = os.path.join(task_dir,config['options']['x509'])
+            dest = os.path.join(task['submit_dir'],config['options']['x509'])
             try:
                 os.symlink(src,dest)
             except Exception as e:
