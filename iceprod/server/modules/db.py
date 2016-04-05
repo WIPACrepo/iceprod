@@ -597,7 +597,7 @@ except ImportError:
         import pymysql as MySQLdb
     except ImportError:
         logger.warn('Cannot import pymysql. MySQL db not available')
-   MySQLdb = None
+        MySQLdb = None
 if MySQLdb:
     class MySQL(DBAPI):
         """MySQL 5 implementation of DBAPI"""
