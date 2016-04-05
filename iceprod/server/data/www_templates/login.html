@@ -9,7 +9,7 @@
 <form action="/login" method="post">
 {% module xsrf_form_html() %}
   <div style="margin: 1em 0">
-    <div>Password: <input type="text" name="pwd" /></div>
+    <div>Password: <input type="password" name="pwd" /></div>
     <div style="margin: .2em 0"><input type="submit" value="Sign in" /></div>
     {% if status == 'failed' %}
     <h4>Failed to login</h4>
