@@ -10,7 +10,6 @@ Iceprod core framework starter script.
 
 OPTIONS:
  -h        Show this message
- -d <arg>  Download URL
  -c <arg>  Cache/proxy for http
  -s <arg>  IceProd software location
  -m <arg>  Platform
@@ -29,9 +28,6 @@ while getopts ":hd:c:s:m:u:p:e:x:" opt; do
         h)
             usage
             exit
-            ;;
-        d)
-            DOWNLOAD_URL=$OPTARG
             ;;
         c)
             PROXY=$OPTARG
@@ -155,11 +151,7 @@ elif [ -z $X509_USER_PROXY ]; then
 fi
 
 # run i3exec
-if [ -z $DOWNLOAD_URL ]; then
-    cmd="$PYBIN -m iceprod.core.i3exec --offline $@"
-else
-    cmd="$PYBIN -m iceprod.core.i3exec --url=$DOWNLOAD_URL $@"
-fi
+cmd="$PYBIN -m iceprod.core.i3exec $@"
 echo $cmd
 exec $cmd
 

@@ -53,22 +53,6 @@ class grid(object):
                 logger.warn('error making submit dir %s',self.submit_dir,
                             exc_info=True)
 
-        # get website address
-        if ('monitor_address' in self.queue_cfg and
-            self.queue_cfg['monitor_address']):
-            self.web_address = self.queue_cfg['monitor_address']
-        else:
-            host = functions.gethostname()
-            if isinstance(host,set):
-                host = host.pop()
-            if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
-                self.web_address = 'https://'+host
-            else:
-                self.web_address = 'http://'+host
-            if ('webserver' in self.cfg and 'port' in self.cfg['webserver'] and
-                self.cfg['webserver']['port']):
-                self.web_address += ':'+str(self.cfg['webserver']['port'])
-
         self.tasks_queued = 0
         self.tasks_processing = 0
 
@@ -515,7 +499,7 @@ class grid(object):
             config['options']['ssl'] = {}
             config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
             src = self.cfg['system']['remote_cacert']
-            dest = os.path.join(task_dir,config['options']['cacert'])
+            dest = os.path.join(task_dir,config['options']['ssl']['cacert'])
             try:
                 os.symlink(src,dest)
             except Exception as e:
@@ -548,7 +532,23 @@ class grid(object):
 
     def get_submit_args(self,task,cfg=None,passkey=None):
         """Get the submit arguments to start the loader script."""
-        args = ['-d {}'.format(self.web_address)]
+        # get website address
+        if ('monitor_address' in self.queue_cfg and
+            self.queue_cfg['monitor_address']):
+            web_address = self.queue_cfg['monitor_address']
+        else:
+            host = functions.gethostname()
+            if isinstance(host,set):
+                host = host.pop()
+            if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
+                web_address = 'https://'+host
+            else:
+                web_address = 'http://'+host
+            if ('webserver' in self.cfg and 'port' in self.cfg['webserver'] and
+                self.cfg['webserver']['port']):
+                web_address += ':'+str(self.cfg['webserver']['port'])
+
+        args = []
         if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
             args.append('-m {}'.format(self.queue_cfg['platform']))
         if ('download' in self.cfg and 'http_username' in self.cfg['download']
@@ -563,6 +563,7 @@ class grid(object):
             args.append('-e {}'.format(self.queue_cfg['iceprod_dir']))
         if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
             args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
+        args.append('--url {}'.format(web_address))
         if passkey:
             args.append('--passkey {}'.format(passkey))
         if cfg:
