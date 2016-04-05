@@ -499,7 +499,7 @@ class grid(object):
             config['options']['ssl'] = {}
             config['options']['ssl']['cacert'] = os.path.basename(self.cfg['system']['remote_cacert'])
             src = self.cfg['system']['remote_cacert']
-            dest = os.path.join(task_dir,config['options']['ssl']['cacert'])
+            dest = os.path.join(task['submit_dir'],config['options']['ssl']['cacert'])
             try:
                 os.symlink(src,dest)
             except Exception as e:
