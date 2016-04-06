@@ -90,7 +90,7 @@ if [ -z $SROOT ]; then
     SROOT="/cvmfs/icecube.opensciencegrid.org/iceprod/latest"
 fi
 if [ -z $PROXY ]; then
-    PROXY="cache01.hep.wisc.edu:80"
+    PROXY="squid.icecube.wisc.edu:3128"
 fi
 
 PYBIN=python
