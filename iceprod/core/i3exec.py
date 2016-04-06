@@ -28,6 +28,7 @@ from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
 import iceprod.core.exe
+import iceprod.core.exe_json
 
 import iceprod.core.logger
 logging.basicConfig()
@@ -111,7 +112,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             kwargs['password'] = config['options']['password']
         if 'ssl' in config['options'] and config['options']['ssl']:
             kwargs.update(config['options']['ssl'])
-        iceprod.core.exe.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
+        iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
         if 'tasks' in config and config['tasks']:
             logger.info('default configuration - a single task')
@@ -124,7 +125,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             errors = 0
             while errors < 5:
                 try:
-                    task_config = iceprod.core.exe.downloadtask(config['options']['gridspec'])
+                    task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
                 except Exception:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
@@ -195,7 +196,7 @@ def runner(config,url,debug=False,offline=False):
     if not offline:
         # tell the server that we are processing this task
         try:
-            iceprod.core.exe.processing(cfg)
+            iceprod.core.exe_json.processing(cfg)
         except Exception as e:
             logging.error(e)
 
@@ -240,7 +241,7 @@ def runner(config,url,debug=False,offline=False):
         # set task status on server
         if not offline:
             try:
-                iceprod.core.exe.taskerror(cfg, start_time=start_time)
+                iceprod.core.exe_json.taskerror(cfg, start_time=start_time)
             except Exception as e:
                 logger.error(e)
         raise
@@ -262,17 +263,17 @@ def runner(config,url,debug=False,offline=False):
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        iceprod.core.exe.uploadLogging(cfg)
+                        iceprod.core.exe_json.uploadLogging(cfg)
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        iceprod.core.exe.uploadLog(cfg)
+                        iceprod.core.exe_json.uploadLog(cfg)
                     elif up.startswith('err'):
                         # upload err files
-                        iceprod.core.exe.uploadErr(cfg)
+                        iceprod.core.exe_json.uploadErr(cfg)
                     elif up.startswith('out'):
                         # upload out files
-                        iceprod.core.exe.uploadOut(cfg)
+                        iceprod.core.exe_json.uploadOut(cfg)
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
