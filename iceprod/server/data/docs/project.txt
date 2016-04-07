@@ -1,5 +1,0 @@
-Project		Python file to import
-
-name		Name to refer to project. Must be unique.
-
-class_name	Python file to import. ‘icepord.modules.’ is prepended if need.

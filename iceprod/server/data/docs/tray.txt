@@ -8,4 +8,3 @@ classes		Classes used by tray. See ##Class##
 resources	Resources used by tray. See ##Resource##
 iterations	Number of times to run tray. The current run index is stored in parameters.tray_iteration
 data		Data used by tray. See ##Data##
-projects	Projects used by tray. See ##Project##

@@ -589,10 +589,7 @@ inithello(void)
             raise Exception('setupClass did not add the src file' +
                             ' %s to the env'%r['local'])
         # check for ability to use class
-        try:
-            import datatransfer
-            gftp = datatransfer.GridFTP()
-        except:
+        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[0],r['src'])):
             raise Exception('setupClass did not make class available' +
                             ' for import')
 
@@ -622,10 +619,7 @@ inithello(void)
             raise Exception('setupClass did not add the src file' +
                             ' %s to the env'%r['local'])
         # check for ability to use class
-        try:
-            import datatransfer
-            gftp = datatransfer.GridFTP()
-        except:
+        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[0],r['src'])):
             raise Exception('setupClass did not make class available' +
                             ' for import')
         # test env
@@ -653,10 +647,7 @@ inithello(void)
             raise Exception('setupClass did not add the src file' +
                             ' %s to the env'%r['local'])
         # check for ability to use class
-        try:
-            import datatransfer
-            gftp = datatransfer.GridFTP()
-        except:
+        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[1],r['src'])):
             raise Exception('setupClass did not make class available' +
                             ' for import')
         # test env
@@ -665,127 +656,8 @@ inithello(void)
         if 'PATH' not in os.environ or '$PWD' not in os.environ['PATH']:
             raise Exception('PATH not in environment')
         if ('PATH' not in os.environ or
-            '$PWD/test' not in os.environ['PYTHONPATH'] or
-            '$PWD/test' not in sys.path):
+            '$PWD/test' not in os.environ['PYTHONPATH']):
             raise Exception('PYTHONPATH not in environment')
-
-    @unittest_reporter
-    def test_06_setupProject(self):
-        """Test setting up a project"""
-        # mock a test module
-        def tester(*args,**kwargs):
-            tester.here = True
-        import iceprod.modules.ipmodule
-        if 'Test' in [x for x in dir(iceprod.modules.ipmodule)
-                      if x[0] != '_']:
-            ipmodule = flexmock(iceprod.modules.ipmodule)
-            ipmodule.should_receive('Test').replace_with(tester)
-        else:
-            iceprod.modules.ipmodule.Test = tester
-
-        # create a project object based on full path
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule'
-        r['class_name'] = 'iceprod.modules.ipmodule'
-
-        # create an env
-        env = {}
-
-        # try setting up the project
-        try:
-            iceprod.core.exe.setupProject(env,r)
-        except:
-            logger.error('exe.setupProject() error')
-            raise
-        # check for record of file in env
-        if r['name'] not in env['projects']:
-            raise Exception('setupProject did not add the project %s' +
-                            ' to the env'%r['name'])
-        # check for ability to use project
-        tester.here = False
-        try:
-            x = env['projects'][r['name']].Test()
-        except Exception as e:
-            logger.error('%r',e,exc_info=True)
-            raise Exception('setupProject did not make project ' +
-                            'available for use')
-        if tester.here is False:
-            raise Exception('mocked test function failed to be called')
-
-        # create a project object from iceprod.modules
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule2'
-        r['class_name'] = 'ipmodule'
-
-        # try setting up the project
-        try:
-            iceprod.core.exe.setupProject(env,r)
-        except:
-            logger.error('exe.setupProject() error')
-            raise
-        # check for record of file in env
-        if r['name'] not in env['projects']:
-            raise Exception('setupProject did not add the project %s' +
-                            ' to the env'%r['name'])
-        # check for ability to use project
-        tester.here = False
-        try:
-            x = env['projects'][r['name']].Test()
-        except Exception as e:
-            logger.error('%r',e,exc_info=True)
-            raise Exception('setupProject did not make project ' +
-                            'available for use')
-        if tester.here is False:
-            raise Exception('mocked test function failed to be called')
-
-
-        # try setting up a duplicate project
-        try:
-            iceprod.core.exe.setupProject(env,r)
-        except:
-            logger.error('exe.setupProject() error')
-            raise
-        # check for record of file in env
-        if r['name'] not in env['projects']:
-            raise Exception('setupProject did not add the project %s' +
-                            ' to the env 2'%r['name'])
-        # check for ability to use project
-        tester.here = False
-        try:
-            x = env['projects'][r['name']].Test()
-        except Exception as e:
-            logger.error('%r',e,exc_info=True)
-            raise Exception('setupProject did not make project ' +
-                            'available for use 2')
-        if tester.here is False:
-            raise Exception('mocked test function failed to be called 2')
-
-
-        # create a bad project object
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule3'
-        r['class_name'] = 'badmodule'
-
-        # try setting up the project
-        try:
-            iceprod.core.exe.setupProject(env,r)
-        except:
-            logger.error('exe.setupProject() error')
-            raise
-        # check for record of file in env
-        if r['name'] in env['projects']:
-            raise Exception('setupProject added the project %s to the'+
-                            ' env when it wasn\'t supposed to'%r['name'])
-
-
-        # try setting up an empty project
-        try:
-            iceprod.core.exe.setupProject(env,None)
-        except:
-            pass
-        else:
-            raise Exception('setupProject added the project %s to the'+
-                            ' env when it wasn\'t supposed to'%r['name'])
 
     @unittest_reporter(name='setupenv(): basic')
     def test_10_setupenv_basic(self):
@@ -1037,22 +909,16 @@ inithello(void)
         if os.path.exists(filename):
             raise Exception('failed to delete file')
 
-    @unittest_reporter(name='runmodule(): iceprod module (project, long)')
+    @unittest_reporter(name='runmodule(): iceprod module (no src)')
     def test_20_runmodule_iceprod_nosrc(self):
         """Test runmodule with iceprod module and no src"""
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
-        module['running_class'] = 'iceprod.modules.ipmodule.Test_old'
+        module['running_class'] = 'iceprod.modules.ipmodule.Hello'
 
         # create parameters
         module['parameters'] = {'greeting': 'new greeting'}
-
-        # make project
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule'
-        r['class_name'] = 'iceprod.modules.ipmodule'
-        module['projects'].append(r)
 
         # check that validate, resource_url, debug are in options
         options = {}
@@ -1082,128 +948,14 @@ inithello(void)
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env,
+                iceprod.core.exe.runmodule(self.config, env,
                                                  module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 'Test_old IPBaseClass':
-            raise Exception('failed to call Test_old.Execute()')
 
-    @unittest_reporter(name='runmodule(): iceprod module (project, short)')
-    def test_21_runmodule_iceprod_nosrc(self):
-        """Test runmodule with iceprod module and no src"""
-        # create the module object
-        module = iceprod.core.dataclasses.Module()
-        module['name'] = 'module'
-        module['running_class'] = 'ipmodule.Test_old'
-
-        # create parameters
-        module['parameters'] = {'greeting': 'new greeting'}
-
-        # make project
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule'
-        r['class_name'] = 'iceprod.modules.ipmodule'
-        module['projects'].append(r)
-
-        # check that validate, resource_url, debug are in options
-        options = {}
-        if 'validate' not in options:
-            options['validate'] = True
-        if 'resource_url' not in options:
-            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
-        if 'debug' not in options:
-            options['debug'] = False
-
-        # make sure some basic options are set
-        if 'data_url' not in options:
-            options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
-        if 'svn_repository' not in options:
-            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
-        if 'job_temp' not in options:
-            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
-        if 'local_temp' not in options:
-            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
-
-        # set testing data directory
-        options['data_directory'] = os.path.join(self.test_dir,'data')
-
-        # set env
-        env = {'parameters': options}
-
-        # run the module
-        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
-            try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
-            except:
-                logger.error('running the module failed')
-                raise
-        if ret != 'Test_old IPBaseClass':
-            raise Exception('failed to call Test_old.Execute()')
-
-    @unittest_reporter(name='runmodule(): iceprod module (src, long)')
+    @unittest_reporter(name='runmodule(): iceprod module (from src)')
     def test_22_runmodule_iceprod_src(self):
-        """Test runmodule with iceprod module and src"""
-        # create the module object
-        module = iceprod.core.dataclasses.Module()
-        module['name'] = 'module'
-        module['src'] = 'test.py'
-        module['running_class'] = 'test.Test'
-
-        # set download() return value
-        def down():
-            if self.download_args['url'].endswith('test.py'):
-                return """
-from iceprod.modules.ipmodule import IPBaseClass
-class Test(IPBaseClass):
-    def __init__(self):
-        IPBaseClass.__init__(self)
-    def Execute(self,stats):
-        return 'Tester'
-"""
-        self.download_return = down
-
-        # create parameters
-        module['parameters'] = {'greeting': 'new greeting'}
-
-        # check that validate, resource_url, debug are in options
-        options = {}
-        if 'validate' not in options:
-            options['validate'] = True
-        if 'resource_url' not in options:
-            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
-        if 'debug' not in options:
-            options['debug'] = False
-
-        # make sure some basic options are set
-        if 'data_url' not in options:
-            options['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
-        if 'svn_repository' not in options:
-            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
-        if 'job_temp' not in options:
-            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
-        if 'local_temp' not in options:
-            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
-
-        # set testing data directory
-        options['data_directory'] = os.path.join(self.test_dir,'data')
-
-        # set env
-        env = {'options': options}
-
-        # run the module
-        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
-            try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
-            except:
-                logger.error('running the module failed')
-                raise
-        if ret != 'Tester':
-            raise Exception('failed to call Test.Execute()')
-
-    @unittest_reporter(name='runmodule(): iceprod module (src, short)')
-    def test_23_runmodule_iceprod_src(self):
         """Test runmodule with iceprod module and src"""
         # create the module object
         module = iceprod.core.dataclasses.Module()
@@ -1220,18 +972,12 @@ class Test(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
         # create parameters
         module['parameters'] = {'greeting': 'new greeting'}
-
-        # make project
-        r = iceprod.core.dataclasses.Project()
-        r['name'] = 'ipmodule'
-        r['class_name'] = 'iceprod.modules.ipmodule'
-        module['projects'].append(r)
 
         # check that validate, resource_url, debug are in options
         options = {}
@@ -1261,12 +1007,10 @@ class Test(IPBaseClass):
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 'Tester':
-            raise Exception('failed to call Test.Execute()')
 
     @unittest_reporter(name='runmodule(): simple module from src')
     def test_30_runmodule_simple(self):
@@ -1275,7 +1019,7 @@ class Test(IPBaseClass):
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['src'] = 'test.py'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
 
         # set download() return value
         def down():
@@ -1314,12 +1058,10 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 'Tester':
-            raise Exception('failed to call test.Test()')
 
         # try with short form of class
         module['running_class'] = 'Test'
@@ -1327,12 +1069,10 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed (short)')
                 raise
-        if ret != 'Tester':
-            raise Exception('failed to call Test()')
 
     @unittest_reporter(name='runmodule(): python script')
     def test_31_runmodule_script(self):
@@ -1381,12 +1121,10 @@ if __name__ == '__main__':
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 0:
-            raise Exception('failed to call script')
 
     @unittest_reporter(name='runmodule(): shell script')
     def test_32_runmodule_script(self):
@@ -1433,12 +1171,10 @@ echo "test"
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 0:
-            raise Exception('failed to call script')
 
     @unittest_reporter(name='runmodule(): with linked libraries')
     def test_40_runmodule_icetray(self):
@@ -1492,12 +1228,10 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runmodule(self.config, env, module)
+                iceprod.core.exe.runmodule(self.config, env, module)
             except:
                 logger.error('running the module failed')
                 raise
-        if ret != 'Tester':
-            raise Exception('failed to call iceprod_test.Test()')
 
     @unittest_reporter
     def test_50_runtray(self):
@@ -1520,7 +1254,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1571,13 +1305,10 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtray(self.config, env, tray)
+                iceprod.core.exe.runtray(self.config, env, tray)
             except:
                 logger.error('running the tray failed')
                 raise
-        if ret != ['Tester','Tester2']:
-            logger.info('ret=%r',ret)
-            raise Exception('failed to call modules')
 
     @unittest_reporter(name='runtray(): iterations')
     def test_51_runtray_iter(self):
@@ -1601,7 +1332,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1652,15 +1383,10 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtray(self.config, env, tray)
+                iceprod.core.exe.runtray(self.config, env, tray)
             except:
                 logger.error('running the tray failed')
                 raise
-        if ret != [['Tester','Tester2'],
-                   ['Tester','Tester2'],
-                   ['Tester','Tester2']]:
-            logger.info('ret=%r',ret)
-            raise Exception('failed to call modules')
 
     @unittest_reporter
     def test_60_runtask(self):
@@ -1687,7 +1413,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1741,13 +1467,10 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(self.config, env, task)
+                iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
-        if ret != ['Tester','Tester2']:
-            logger.info('ret=%r',ret)
-            raise Exception('failed to call modules')
 
     @unittest_reporter(name='runtask(): multiple trays')
     def test_61_runtask_multi(self):
@@ -1774,7 +1497,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1799,7 +1522,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1853,14 +1576,10 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(self.config, env, task)
+                iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
-        if ret != [['Tester','Tester2'],
-                   ['Tester','Tester2']]:
-            logger.info('ret=%r',ret)
-            raise Exception('failed to call modules')
 
     @unittest_reporter(name='runtask(): multiple trays with iterations')
     def test_62_runtask_multi_iter(self):
@@ -1887,7 +1606,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1913,7 +1632,7 @@ def Test():
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'test.Test'
+        module['running_class'] = 'Test'
         module['src'] = 'test.py'
         tray['modules'].append(module)
 
@@ -1967,16 +1686,10 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                ret = iceprod.core.exe.runtask(self.config, env, task)
+                iceprod.core.exe.runtask(self.config, env, task)
             except:
                 logger.error('running the tray failed')
                 raise
-        if ret != [['Tester','Tester2'],
-                   [['Tester','Tester2'],
-                    ['Tester','Tester2'],
-                    ['Tester','Tester2']]]:
-            logger.info('ret=%r',ret)
-            raise Exception('failed to call modules')
 
 
 def load_tests(loader, tests, pattern):

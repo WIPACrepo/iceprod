@@ -149,6 +149,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 def runner(config,url,debug=False,offline=False):
     """Run a config"""
     # set logging verbosity
+    if 'debug' not in config['options']:
+        config['options']['debug'] = debug
     if ('debug' in config['options'] and config['options']['debug'] and
         'loglevel' not in config['options']):
         config['options']['loglevel'] = 'INFO'
@@ -159,13 +161,9 @@ def runner(config,url,debug=False,offline=False):
         except Exception:
             logger.warn('failed to set a new log level', exc_info=True)
 
-    # check that resource_url and debug are in options
+    # make sure some basic options are set
     if 'resource_url' not in config['options']:
         config['options']['resource_url'] = str(url)+'/download'
-    if 'debug' not in config['options']:
-        config['options']['debug'] = bool(offline)
-
-    # make sure some basic options are set
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
     if 'data_url' not in config['options']:
@@ -276,7 +274,7 @@ def runner(config,url,debug=False,offline=False):
                         iceprod.core.exe_json.uploadOut(cfg)
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
-
+    logger.warn('finished without error')
 
 if __name__ == '__main__':
     # get arguments

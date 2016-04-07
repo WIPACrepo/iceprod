@@ -10,8 +10,6 @@ import sys
 import os
 import time
 import imp
-import subprocess
-import multiprocessing
 import glob
 import copy
 import filecmp
@@ -28,6 +26,12 @@ except:
 
 import logging
 logger = logging.getLogger('exe')
+
+# make sure we have subprocess with timeout support
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 from iceprod.core import to_log,constants
 from iceprod.core import util
@@ -134,13 +138,6 @@ def setupenv(cfg, obj, oldenv={}):
             for c in obj['classes']:
                 setupClass(env, cfg.parseObject(c,env))
 
-        if 'projects' not in env:
-            env['projects'] = {}
-        if 'projects' in obj:
-            # set up projects
-            for project in obj['projects']:
-                setupProject(env, cfg.parseObject(project,env))
-
     except util.NoncriticalError as e:
         logger.warning('Noncritical error when setting up environment',exc_info=True)
     except Exception as e:
@@ -166,13 +163,6 @@ def destroyenv(env):
             try:
                 os.remove(f)
                 base = os.path.basename(f)
-                if 'ld_local_path' in env and base in env['ld_local_path']:
-                    env['ld_local_path'][base].pop() # remove current deletion from list
-                    if len(env['ld_local_path'][base]) > 0:
-                        (src,dest) = env['ld_local_path'][base][-1] # ressurect last link
-                        os.symlink(src,dest)
-                    else:
-                        del env['ld_local_path'][base] # remove file from dict
             except OSError, e:
                 logger.error('failed to delete file %s - %s',(str(f),str(e)))
                 if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
@@ -185,8 +175,6 @@ def destroyenv(env):
                 del os.environ[e]
         for e in env['environment'].keys():
             os.environ[e] = env['environment'][e]
-    if 'pythonpath' in env:
-        sys.path = env['pythonpath']
 
 def downloadResource(env, resource, remote_base=None,
                      local_base=None):
@@ -401,76 +389,43 @@ def setupClass(env, class_obj):
             env['deletions'] = []
         if 'ld_local_path' not in env:
             env['ld_local_path'] = {}
-        def ldpath(root,f):
-            src = os.path.join(root,f)
-            if src[0] != '/':
-                src = os.path.join(os.getcwd(),src)
-            if f[-3:] == '.so' or '.so.' in f or f[-2:] == '.a' or '.a.' in f:
-                dest = os.path.join(local_lib,f)
-                if os.path.exists(dest):
-                    if filecmp.cmp(src,os.readlink(dest),False):
-                        logger.warning('library has same name but different contents: %s',str(src))
-                        os.remove(dest)
-                    else: # if files are exactly the same, skip
-                        return
-                os.symlink(src,dest)
-                env['deletions'].append(dest)
-                if f not in env['ld_local_path']:
-                    env['ld_local_path'][f] = [(src,dest)]
+        def ldpath(root,f=None):
+            root = os.path.abspath(root)
+            def islib(f):
+                return f[-3:] == '.so' or '.so.' in f or f[-2:] == '.a' or '.a.' in f
+            if (f and islib(f)) or any(islib(f) for f in os.listdir(root)):
+                logger.info('adding to LD_LIBRARY_PATH: %s',root)
+                if 'LD_LIBRARY_PATH' in os.environ:
+                    if root in os.environ['LD_LIBRARY_PATH'].split(':'):
+                        return # already present
+                    os.environ['LD_LIBRARY_PATH'] = root+':'+os.environ['LD_LIBRARY_PATH']
                 else:
-                    env['ld_local_path'][f].append((src,dest))
+                    os.environ['LD_LIBRARY_PATH'] = root
             else:
-                logger.debug('not a binary library file: %s',str(src))
+                logger.debug('no libs in %s',root)
         def addToPythonPath(root):
-            # only add to PYTHONPATH if not there
-            if 'lib' in root.split(os.sep) or 'lib64' in root.split(os.sep):
-                for p in sys.path:
-                    d = os.path.commonprefix([root,p])
-                    if not d or d in ('',os.sep):
-                        continue
-                    elif d in sys.path and ('lib' in d.split(os.sep)
-                        or 'lib64' in d.split(os.sep)):
-                        logger.debug('already in PYTHONPATH: %s as %s',root,d)
-                        return
-            # add to PYTHONPATH
-            logger.info('adding to PYTHONPATH: %s',root)
-            sys.path.append(root)
-            if 'PYTHONPATH' in os.environ:
-                os.environ['PYTHONPATH'] += ':'+root
+            if glob.glob(os.path.join(root,'*.py')):
+                logger.info('adding to PYTHONPATH: %s',root)
+                if 'PYTHONPATH' in os.environ:
+                    if root in os.environ['PYTHONPATH'].split(':'):
+                        return # already present
+                    os.environ['PYTHONPATH'] = root+':'+os.environ['PYTHONPATH']
+                else:
+                    os.environ['PYTHONPATH'] = root
             else:
-                os.environ['PYTHONPATH'] = root
+                logger.debug('no python files: %s',root)
         if os.path.isdir(local):
             # build search list
-            search_list = []
+            search_list = [local]
+            search_list.extend(glob.glob(os.path.join(local,'lib*')))
+            search_list.extend(glob.glob(os.path.join(local,'lib*/python*/*-packages')))
             if class_obj['libs'] is not None:
-                search_list.extend(class_obj['libs'].split(':'))
-                if 'lib64' not in search_list:
-                    search_list.append('lib64')
-                if 'lib' not in search_list:
-                    search_list.append('lib')
-            else:
-                search_list = ['lib64','lib']
-            # do general search
-            for root, dirs, files in os.walk(local):
-                dirs = filter(lambda a:a not in search_list,dirs)
-                for f in files:
-                    if f.endswith('.py'):
-                        addToPythonPath(root)
-                    else:
-                        # check for binary library
-                        ldpath(root,f)
-            # now search by list
-            if search_list is not None and len(search_list) > 0:
-                for s in reversed(search_list):
-                    s_dir = os.path.join(local,s)
-                    if not os.path.isdir(s_dir):
-                        continue
-                    # add to the python path so imports work
-                    addToPythonPath(s_dir)
-                    # add to LD_LIBRARY_PATH
-                    for root,dirs,files in os.walk(s_dir):
-                        for f in files:
-                            ldpath(root,f)
+                search_list.extend(os.path.join(local,x) for x in class_obj['libs'].split(':'))
+            for s in search_list:
+                if not os.path.isdir(s):
+                    continue
+                addToPythonPath(s)
+                ldpath(s)
         elif os.path.exists(local):
             root, f = os.path.split(local)
             if f.endswith('.py'):
@@ -481,7 +436,7 @@ def setupClass(env, class_obj):
                 ldpath(root,f)
         # modify environment variables
         logger.info('env_vars = %s',class_obj['env_vars'])
-        if class_obj['env_vars'] is not None:
+        if class_obj['env_vars']:
             for e in class_obj['env_vars'].split(';'):
                 try:
                     k,v = e.split('=')
@@ -490,41 +445,10 @@ def setupClass(env, class_obj):
                     continue
                 v = v.replace('$CLASS',local)
                 logger.info('setting envvar: %s = %s',k,v)
-                if k == 'PYTHONPATH':
-                    sys.path.append(v)
-                    os.environ['PYTHONPATH'] += ':'+v
-                elif k in os.environ:
+                if k in os.environ:
                     os.environ[k] = v+':'+os.environ[k]
                 else:
                     os.environ[k] = v
-
-def setupProject(env, project):
-    """Set up a project for use in modules, and put it in the env"""
-    if not 'projects' in env:
-        env['projects'] = {}
-    if not project:
-        raise Exception('Project is not defined')
-    if project['name'] in env['projects']:
-        # project already loaded, so leave it alone
-        logger.info('project %s already loaded'%project['name'] )
-    else:
-        logger.info('project %s being loaded from %s',project['name'] ,project['class_name'])
-        # import project
-        try:
-            x = __import__(project['class_name'],globals(),locals(),[project['class_name']])
-        except ImportError as e:
-            # try as iceprod.modules
-            try:
-                x = __import__('iceprod.modules.'+project['class_name'],globals(),locals(),[project['class_name']])
-            except ImportError as e:
-                logger.error('cannot import project %s: %s',str(project['class_name']),str(e))
-                pass
-            else:
-                # add to env
-                env['projects'][project['name'] ] = x
-        else:
-            # add to env
-            env['projects'][project['name'] ] = x
 
 ### Run Functions ###
 
@@ -532,7 +456,6 @@ def runtask(cfg, globalenv, task):
     """Run the specified task"""
     if not task:
         raise Exception('No task provided')
-    ret = []
 
     # set up task_temp
     if not os.path.exists('task_temp'):
@@ -550,7 +473,7 @@ def runtask(cfg, globalenv, task):
             # run trays
             for tray in task['trays']:
                 tmpstat = {}
-                ret.append(runtray(cfg, env, tray, stats=tmpstat))
+                runtray(cfg, env, tray, stats=tmpstat)
                 if len(tmpstat) > 1:
                     stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
@@ -577,16 +500,11 @@ def runtask(cfg, globalenv, task):
             logger.warning('error removing task_temp directory: %r',
                            e, exc_info=True)
 
-    if len(ret) == 1:
-        return ret[0]
-    else:
-        return ret
 
 def runtray(cfg, globalenv,tray,stats={}):
     """Run the specified tray"""
     if not tray:
         raise Exception('No tray provided')
-    ret = []
 
     # set up tray_temp
     if not os.path.exists('tray_temp'):
@@ -600,18 +518,15 @@ def runtray(cfg, globalenv,tray,stats={}):
             # set up local env
             tmpenv['options']['tray_iteration'] = i
             env = setupenv(cfg, tray, tmpenv)
-            tmpret = []
             tmpstat = {}
 
             try:
                 # run modules
                 for module in tray['modules']:
-                    tmpret.append(runmodule(cfg, env, module,
-                                            stats=tmpstat))
+                    runmodule(cfg, env, module, stats=tmpstat)
             finally:
                 stats[i] = tmpstat
                 # destroy env
-                ret.append(tmpret)
                 destroyenv(env)
                 del env
 
@@ -623,16 +538,10 @@ def runtray(cfg, globalenv,tray,stats={}):
             logger.warning('error removing tray_temp directory: %s',
                            str(e), exc_info=True)
 
-    if len(ret) == 1:
-        return ret[0]
-    else:
-        return ret
-
 def runmodule(cfg, globalenv, module, stats={}):
     """Run the specified module"""
     if not module:
         raise Exception('No module provided')
-    ret = None
 
     # set up local env
     env = setupenv(cfg, module, globalenv)
@@ -644,248 +553,114 @@ def runmodule(cfg, globalenv, module, stats={}):
         module['src'] = cfg.parseValue(module['src'],env)
 
     try:
-        # launch multiprocessing to handle actual module
-        queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=run_module,
-                                          args=[env,module,queue])
-        process.start()
+        # make subprocess to run the module
+        process = run_module(cfg, env, module)
         try:
             interval = float(cfg.config['options']['stillrunninginterval'])
         except:
             interval = 0
         if interval < 60:
             interval = 60
-        while process.is_alive():
+        while process.poll() is None:
             if ('offline' in cfg.config['options'] and
                 not cfg.config['options']['offline']):
                 # check for DB kill
                 try:
                     stillrunning(cfg)
                 except:
-                    if process.is_alive():
-                        process.terminate()
+                    if process.poll() is None:
+                        process.kill()
                         time.sleep(1)
                     logger.critical('DB kill')
                     raise
-            process.join(interval)
-        try:
-            data = queue.get(False)
-        except:
-            pass
-        else:
-            if data:
-                try:
-                    # return value of module
-                    ret = pickle.loads(data)
-                except:
-                    logger.error('error decoding data from process')
-                    raise
-                else:
-                    if isinstance(ret,Exception):
-                        # there was an exception during the module
-                        logger.warn('exception in module - %r',ret)
-                        raise ret
-            else:
-                logger.error('run_module did not return data')
-                raise NoncriticalError('run_module did not return data')
+            try:
+                process.wait(interval)
+            except subprocess.TimeoutExpired:
+                pass
+        if process.returncode:
+            raise Exception('module failed')
     finally:
         # destroy env
         destroyenv(env)
         del env
 
-    # split out stats, if any
-    if isinstance(ret,tuple):
+    # get stats, if available
+    if os.path.exists(constants['stats']):
+        new_stats = pickle.load(open(constants['stats']))
         if module['name']:
-            stats[module['name']] = ret[1]
+            stats[module['name']] = new_stats
         else:
-            stats.update(ret[1])
-        ret = ret[0]
-    return ret
+            stats.update(new_stats)
 
-def run_module(env,module,queue):
-    """Helper to runmodule.  Runs in a separate process to contain
-       any badness that happens here.
-    """
-    # make empty stats dict so the module can fill it
-    env['stats'] = {}
-    try:
+def run_module(cfg, env, module):
+    """Helper to runmodule. Returns a running subprocess."""
+    if module['src']:
+        # get script to run
+        c = dataclasses.Class()
+        c['src'] = module['src']
+        c['name'] = os.path.basename(c['src'])
+        setupClass(env,c)
+        if c['name'] not in env['classes']:
+            raise Exception('Failed to install class %s'%c['name'])
+        module['src'] = env['classes'][c['name']]
+
+    logger.warn('running module \'%s\' with class %s',module['name'],
+                module['running_class'])
+
+    # set up the args
+    args = module['args']
+    if args:
+        logger.warn('args=%s',args)
+        if (args and isinstance(args,dataclasses.String) and
+            args[0] in ('{','[')):
+            args = json_decode(args)
+        if isinstance(args,dataclasses.String):
+            args = {"args":[cfg.parseValue(args,env)],"kwargs":{}}
+        elif isinstance(args,list):
+            args = {"args":[cfg.parseValue(x,env) for x in args],"kwargs":{}}
+        elif isinstance(args,dict):
+            args = {"args":[],"kwargs":cfg.parseObject(args,env)}
+        else:
+            raise Exception('args is unknown type')
+
+    # run the module
+    if module['running_class']:
+        logger.info('run as a class using the helper script')
+        cmd = ['python', '-m', 'iceprod.core.exe_helper', '--classname',
+               module['running_class']]
+        if env['options']['debug']:
+            cmd.append('--debug')
         if module['src']:
-            # get script to run
-            c = dataclasses.Class()
-            c['src'] = module['src']
-            c['name'] = os.path.basename(c['src'])
-            setupClass(env,c)
-            if c['name'] not in env['classes']:
-                raise util.NoncriticalError('Failed to install class %s'%c['name'])
-            logger.info('class stored at %s',env['classes'][c['name']])
-
-        # run the module script
-        logger.warn('running module \'%s\' with class %s',module['name'],
-                    module['running_class'])
-        ret = None
-        if not module['running_class']:
-            script = True
+            cmd.extend(['--filename',module['src']])
+        if args:
+            with open(constants['args'],'w') as f:
+                f.write(json_encode(args))
+            cmd.extend(['--args'])
+    elif module['src']:
+        logger.info('run as a script directly')
+        if args:
+            def splitter(a,b):
+                ret = '-%s=%s' if len(str(a)) <= 1 else '--%s=%s'
+                return ret%(str(a),str(b))
+            args = args['args']+[splitter(a,args[a]) for a in args['kwargs']]
         else:
-            script = False
-            mods = module['running_class'].rsplit('.',1)
-            if len(mods) < 2:
-                cl = module['running_class']
-                if module['src']:
-                    mod = os.path.splitext(c['name'])[0]
-                else:
-                    # check if it is in a project
-                    for p in env['projects']:
-                        if cl in {x for x in dir(env['projects'][p]) if x[0] != '_'}:
-                            mod = env['projects'][p]
-                    else:
-                        raise util.NoncriticalError('Must specify full python path to class to run in module.running_class')
-            else:
-                mod,cl = mods
-                if mod.startswith('iceprod.modules'):
-                    mod = mod.split('.',2)[2]
-            try:
-                logger.warn('attempt to import module %s with class %s',mod,cl)
-                if not isinstance(mod,dataclasses.String):
-                    logger.info('mod already loaded')
-                    x = mod
-                elif (mod in env['projects'] and cl in
-                      {x for x in dir(env['projects'][mod]) if x[0] != '_'}):
-                    logger.info('from a project')
-                    x = env['projects'][mod]
-                elif module['src']:
-                    logger.info('from src')
-                    if module['src'][-3:] == '.py':
-                        filepath = env['classes'][c['name']]
-                        if '.' in mod:
-                            mod = mod.rsplit('.',1)[1]
-                        x = imp.load_source(mod,filepath)
-                    else:
-                        script = True
-                else:
-                    logger.info('raw import')
-                    x = __import__(mod,globals(),locals(),[cl])
-            except Exception as e:
-                if str(e) == 'No module named %s' % mod:
-                    # can't find module
-                    logger.warning('failed to find the module to import, try as a script')
-                    script = True
-                else:
-                    # it's something other than a missing module, probably a real error
-                    logger.error('failed to import module - error in the module: %s',str(e))
-                    raise
+            args = []
 
-        # run the module
-        if not script and hasattr(x,cl):
-            # the class actually exists
-            clas = getattr(x,cl)
-            if inspect.isclass(clas) and issubclass(clas,IPBaseClass):
-                # old style iceprod modules
-                logger.info('old style class')
-                mod_cl = clas()
-                if 'parameters' in env:
-                    for p in env['parameters']:
-                        p_value = env['parameters'][p]
-                        try:
-                            mod_cl.SetParameter(p,p_value)
-                        except:
-                            try:
-                                logger.warn('failed to add parameter %s with value %r',p,p_value)
-                            except:
-                                logger.warn('failed to add parameter %r',p)
-                            continue
-                        else:
-                            logger.warn('added parameter %s with value %r',p,p_value)
-                ret = mod_cl.Execute(env['stats'])
-            #elif inspect.isclass(clas) and issubclass(clas,IPModule):
-                # new style iceprod modules
-            #    logger.info('new style class')
-            #    mod_cl = clas(env)
-            else:
-                # unknown callable, just call it and hope that's all it needs
-                args = module['args']
-                logger.warn('unknown callable, args=%s',args)
-                if (args and isinstance(args,dataclasses.String) and
-                    args[0] in ('{','[')):
-                    # args is json
-                    args = json_decode(args)
-                if not args:
-                    ret = clas()
-                elif isinstance(args,dataclasses.String):
-                    args = parseValue(args,env)
-                    ret = clas(args)
-                elif isinstance(args,list):
-                    args = [parseValue(x,env) for x in args]
-                    ret = clas(*args)
-                elif isinstance(args,dict):
-                    args = parseObject(args,env)
-                    ret = clas(**args)
-                else:
-                    raise Exception('args is unknown type')
-                if (ret is not None and
-                    not isinstance(ret,(bool,int,float,complex,Container))):
-                    ret = None
-        elif module['src']:
-            # the class isn't actually present, so try running it
-            # as a script as a last resort
-            args = module['args']
-            logger.warn('call as script, args=%s',args)
-            if not args:
-                args = []
-            else:
-                if (args and isinstance(args,dataclasses.String) and
-                    args[0] in ('{','[')):
-                    # args is json
-                    args = json_decode(args)
-                if isinstance(args,dataclasses.String):
-                    args = parseValue(args,env).split(' ')
-                elif isinstance(args,list):
-                    args = [parseValue(x,env) for x in args]
-                elif isinstance(args,dict):
-                    args = parseObject(args,env)
-                    def splitter(a,b):
-                        ret = '-%s=%s' if len(str(a)) <= 1 else '--%s=%s'
-                        return ret%(str(a),str(b))
-                    args = [splitter(a,args[a]) for a in args]
-                else:
-                    raise Exception('args is unknown type')
-            try:
-                mod_name = env['classes'][c['name']].replace(';`','').strip()
-                if not mod_name or mod_name == '':
-                    raise Exception('mod_name is blank')
-                ret = None
-                # all: shell disabled for protection
-                if mod_name[-3:] == '.py':
-                    # call as python script
-                    proc = subprocess.Popen([sys.executable,mod_name]+args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                elif mod_name[-3:] == '.sh':
-                    # call as shell script
-                    proc = subprocess.Popen(['/bin/sh',mod_name]+args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                else:
-                    # call as regular executable
-                    proc = subprocess.Popen([mod_name]+args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                for l in proc.communicate():
-                    sys.stdout.write("%s\n"%l)
-                ret = proc.returncode
-            except:
-                logger.critical('cannot run module \'%s\' with script %s',module['name'],mod_name)
-                raise
-            else:
-                if ret:
-                    # something went wrong
-                    logger.error('error running module \'%s\' with script %s',module['name'],mod_name)
-                    raise util.NoncriticalError('error running module \'%s\' with script %s'%(module['name'],mod_name))
+        mod_name = env['classes'][c['name']].replace(';`','').strip()
+        if not mod_name:
+            raise Exception('mod_name is blank')
+        if mod_name[-3:] == '.py':
+            # call as python script
+            cmd = [sys.executable,mod_name]+args
+        elif mod_name[-3:] == '.sh':
+            # call as shell script
+            cmd = ['/bin/sh',mod_name]+args
         else:
-            logger.warn('module is a script or class is missing, and src is not defined')
-            raise util.NoncriticalError('error running module')
-    except Exception as e:
-        # log the traceback
-        import traceback
-        logger.error(traceback.format_exc(100))
-        # pickle the error and send it to the other threadq
-        queue.put(pickle.dumps(e,pickle.HIGHEST_PROTOCOL))
+            # call as regular executable
+            cmd = [mod_name]+args
     else:
-        if env['stats']:
-            ret = (ret,env['stats'])
-        # pickle the return value and send it to the other thread
-        queue.put(pickle.dumps(ret,pickle.HIGHEST_PROTOCOL))
+        logger.error('module is missing class and src')
+        raise Exception('error running module')
 
+    logger.info('cmd=%r',cmd)
+    return subprocess.Popen(cmd)

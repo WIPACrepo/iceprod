@@ -216,7 +216,7 @@ var Submission = (function( $ ) {
                 isDocumented: function(path, key) {
                   key = singular(key).toLowerCase();
                   console.log('11' + key);
-                  var types = ['class', 'data', 'dif', 'difplus', 'job', 'module', 'personnel', 'plus', 'project', 'resource', 'steering', 'task', 'tray', ];
+                  var types = ['class', 'data', 'dif', 'difplus', 'job', 'module', 'personnel', 'plus', 'resource', 'steering', 'task', 'tray', ];
                   return types.indexOf(key) != -1;
                 },
                 getEnums: function(path,key){

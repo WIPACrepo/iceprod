@@ -215,7 +215,6 @@ class _TaskCommon(dict):
     :ivar resources: []
     :ivar data: []
     :ivar classes: []
-    :ivar projects: []
     :ivar parameters: {}
     """
     def __init__(self,*args,**kwargs):
@@ -223,7 +222,6 @@ class _TaskCommon(dict):
         self['resources']  = []
         self['data']       = []
         self['classes']    = []
-        self['projects']   = []
         self['parameters'] = {}
         super(_TaskCommon,self).__init__(*args,**kwargs)
 
@@ -243,11 +241,6 @@ class _TaskCommon(dict):
                 tmp = Class(c)
                 tmp.convert()
                 self['classes'][i] = tmp
-        for i,p in enumerate(self['projects']):
-            if not isinstance(p,Project):
-                tmp = Project(p)
-                tmp.convert()
-                self['projects'][i] = tmp
 
     def valid(self):
         try:
@@ -258,8 +251,6 @@ class _TaskCommon(dict):
                     all(isinstance(d,Data) and d.valid() for d in self['data']) and
                     isinstance(self['classes'],list) and
                     all(isinstance(c,Class) and c.valid() for c in self['classes']) and
-                    isinstance(self['projects'],list) and
-                    all(isinstance(p,Project) and p.valid() for p in self['projects']) and
                     isinstance(self['parameters'],dict)
                    )
         except Exception:
@@ -293,8 +284,6 @@ class Task(_TaskCommon):
                 ret[n] = [self[n],'Data']
             elif n == 'classes':
                 ret[n] = [self[n],'Class']
-            elif n == 'projects':
-                ret[n] = [self[n],'Project']
             elif n == 'depends':
                 ret[n] = [self[n],'']
             elif n == 'batchsys':
@@ -357,8 +346,6 @@ class Tray(_TaskCommon):
                 ret[n] = [self[n],'Data']
             elif n == 'classes':
                 ret[n] = [self[n],'Class']
-            elif n == 'projects':
-                ret[n] = [self[n],'Project']
             elif n == 'modules':
                 ret[n] = [self[n],'Module']
             else:
@@ -409,8 +396,6 @@ class Module(_TaskCommon):
                 ret[n] = [self[n],'Data']
             elif n == 'classes':
                 ret[n] = [self[n],'Class']
-            elif n == 'projects':
-                ret[n] = [self[n],'Project']
             else:
                 ret[n] = self[n]
         return ret
@@ -468,38 +453,6 @@ class Class(dict):
                     (self['recursive'] is True or self['recursive'] is False) and
                     isinstance(self['libs'],String) and
                     isinstance(self['env_vars'],String)
-                   )
-        except Exception:
-            return False
-
-class Project(dict):
-    """
-    A project object, shipped with IceProd.
-
-    :ivar class_name: None -- required
-    :ivar name: None -- optional
-    """
-    plural = 'Projects'
-    def __init__(self,*args,**kwargs):
-        self['name']       = ''
-        self['class_name'] = '' # required
-        super(Project,self).__init__(*args,**kwargs)
-
-    def output(self):
-        """Output dict with values and (optionally) the object name for
-        new objects."""
-        ret = {}
-        for n in self:
-            ret[n] = self[n]
-        return ret
-
-    def convert(self):
-        pass
-
-    def valid(self):
-        try:
-            return (isinstance(self['name'],String) and
-                    isinstance(self['class_name'],String)
                    )
         except Exception:
             return False

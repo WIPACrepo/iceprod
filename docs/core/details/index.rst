@@ -32,7 +32,6 @@ The internal envoronment (env) is a dictionary composed of several objects:
 * resources
 * data
 * classes
-* projects
 * deletions
 * uploads
     
@@ -52,13 +51,6 @@ Classes
 ^^^^^^^
 
 This is where external software gets added.  The software can be an already downloaded resource or just a url to download.  All python files get added to the python path and binary libraries get symlinked into a directory on the LD_LIBRARY_PATH.  Note that if there is more than one copy of the same shared library file, only the most recent one is in scope.  Classes are defined in the environment as strings to their file location.
-
-Projects
-^^^^^^^^
-
-These are ties to :ref:`IceProdModules`.  Defining a project causes it to be imported and available directly from the env object::
-
-    env['projects']['test'].testing()
     
 Deletions
 ^^^^^^^^^
@@ -79,7 +71,6 @@ If a module defines a src, that is assumed to be a Class which should be added t
 
 * A fully defined python module.class import (also takes module.function)
 * A python class defined in the src provided
-* A class name defined in any of the loaded `Projects`_
 * A regular python script
 * An executable of some type (this is run in a subprocess with shell execution disabled)
 

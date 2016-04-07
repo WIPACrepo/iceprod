@@ -113,19 +113,6 @@ class dataclasses_test(unittest.TestCase):
             raise Exception('converted empty class not valid')
 
     @unittest_reporter
-    def test_07_Project(self):
-        """Test the Project class"""
-        p = iceprod.core.dataclasses.Project()
-
-        if not p.valid():
-            raise Exception('empty project not valid')
-
-        p.convert()
-
-        if not p.valid():
-            raise Exception('converted empty project not valid')
-
-    @unittest_reporter
     def test_08_Resource(self):
         """Test the Resource class"""
         r = iceprod.core.dataclasses.Resource()

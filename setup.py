@@ -52,7 +52,7 @@ if setuptools is not None:
         'tests': ['coverage', 'flexmock']
     }
     if sys.version_info < (3, 2):
-        install_requires.append('futures')
+        install_requires.extend(['futures','subprocess32'])
     #    install_requires.append('backports.ssl_match_hostname')
     kwargs['install_requires'] = install_requires
     kwargs['extras_require'] = extras_require

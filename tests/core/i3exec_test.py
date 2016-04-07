@@ -351,7 +351,7 @@ class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
@@ -417,7 +417,7 @@ class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
@@ -464,7 +464,7 @@ class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
@@ -515,7 +515,7 @@ class MyTest(IPBaseClass):
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'mytest.MyTest'
+        module['running_class'] = 'MyTest'
         module['src'] = 'mytest.py'
         tray['modules'].append(module)
 
@@ -541,7 +541,7 @@ class MyTest(IPBaseClass):
         # create another module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module2'
-        module['running_class'] = 'mytest.MyTest'
+        module['running_class'] = 'MyTest'
         module['src'] = 'mytest.py'
         tray['modules'].append(module)
 
@@ -621,7 +621,7 @@ class MyTest(IPBaseClass):
         # set some default values
         logfile = logging.getLogger().handlers[0].stream.name
         url = 'http://x2100.icecube.wisc.edu/downloads'
-        debug = False
+        debug = True
         passkey = 'pass'
         offline = True
 
@@ -661,7 +661,7 @@ class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
@@ -726,7 +726,7 @@ class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return 'Tester'
+        return 0
 """
         self.download_return = down
 
@@ -790,7 +790,7 @@ class Test(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
     def Execute(self,stats):
-        return True
+        return 0
 """
         port = random.randint(16000,32000)
         http = server(port,down)

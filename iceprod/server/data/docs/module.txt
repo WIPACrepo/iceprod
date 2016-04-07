@@ -15,5 +15,3 @@ classes			Python classes required by module. See ##Class##
 running_class		Python path to main class.  If this value is not supplied, the module is run as a script
 
 data			Input / output files used by scripts. See ##Data##
-
-projects		Python files required by module. See ##Project##

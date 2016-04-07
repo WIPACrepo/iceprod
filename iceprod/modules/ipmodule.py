@@ -106,14 +106,6 @@ class GoodBye(IPBaseClass):
         print self.GetParameter("greeting")
         return 0
 
-class Test_old(IPBaseClass):
-    def __init__(self):
-        IPBaseClass.__init__(self)
-    
-    def Execute(self,stats):
-        if not IPBaseClass.Execute(self,stats): return 0
-        return 'Test_old IPBaseClass'
-
 
 
 
