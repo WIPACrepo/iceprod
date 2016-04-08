@@ -330,7 +330,6 @@ class queue(module.module):
                 self.global_queueing_lock = False
                 return
             try:
-                http_client = tornado.httpclient.AsyncHTTPClient()
                 url = self.cfg['master']['url']
                 params = {'resources':resources,
                           'queueing_factor_priority':queueing_factor_priority,

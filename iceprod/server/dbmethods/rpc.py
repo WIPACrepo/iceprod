@@ -465,6 +465,8 @@ class rpc(_Methods_Base):
                            njobs=1,stat_keys=[],debug=False,
                            callback=None):
         """Submit a dataset"""
+        if gridspec is None:
+            gridspec = ''
         cb = partial(self._rpc_submit_dataset_blocking,data,difplus,description,
                      gridspec,njobs,stat_keys,debug,
                      callback=callback)

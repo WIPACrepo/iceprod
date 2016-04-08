@@ -654,7 +654,7 @@ if MySQLdb:
                             addcols = []
                             for x in cols:
                                 if x not in curcols:
-                                    t = self.tables[table_name][x]
+                                    t = '`'+self.tables[table_name][x]+'`'
                                     if t == 'str':
                                         x += ' VARCHAR(255) NOT NULL DEFAULT "" '
                                     elif t == 'int':
@@ -670,7 +670,7 @@ if MySQLdb:
                                 addcols.append(x)
 
                             full_sql = 'alter table '+table_name+' add column ('
-                            full_sql += ','.join('`'+col+'`' for col in addcols)
+                            full_sql += ','.join(col for col in addcols)
                             full_sql += '), drop column '
                             full_sql += ', drop column '.join('`'+col+'`' for col in rmcols)
                             cur.execute(full_sql)

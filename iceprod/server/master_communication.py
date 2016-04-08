@@ -52,7 +52,8 @@ def send_master(cfg,method,callback=None,**kwargs):
         'passkey' in cfg['master']):
         kwargs['passkey'] = cfg['master']['passkey']
 
-    args = {'connect_timeout': 30,
+    args = {'method': 'POST',
+            'connect_timeout': 30,
             'request_timeout': 120,
             'validate_cert': True,
             'ca_certs': certifi.where()}
@@ -63,5 +64,6 @@ def send_master(cfg,method,callback=None,**kwargs):
     body = json_encode({'jsonrpc':'2.0',
                         'method':method,
                         'params':kwargs,'id':1})
+    args['body'] = body
 
-    return http_client.fetch(url,body=body,**args)
+    return http_client.fetch(url,**args)
