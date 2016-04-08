@@ -21,11 +21,11 @@ class auth(_Methods_Base):
     as an argument.
     """
     @dbmethod
-    def auth_get_site_auth(self,callback=None):
-        """Get current site's id and key for authentication and authorization with other sites.
-        Returns (site_id,key) tuple"""
-        sql = 'select site.site_id,site.auth_key from site join setting on site.site_id = setting.site_id'
-        bindings = tuple()
+    def auth_get_site_auth(self,site_id,callback=None):
+        """Get the auth_key for the selected site (usually the current site).
+        Returns the auth_key"""
+        sql = 'select auth_key from site where site_id = ?'
+        bindings = (site_id,)
         cb = partial(self._auth_get_site_auth_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
     def _auth_get_site_auth_callback(self,ret,callback=None):
@@ -37,13 +37,11 @@ class auth(_Methods_Base):
                     callback(Exception('No site match for current site name'))
                 elif len(ret) > 1:
                     callback(Exception('More than one site match for current site name'))
-                elif len(ret[0]) < 2 or ret[0][1] is None:
+                elif ret[0][0] is None:
                     # DB will return None if column is empty
                     callback(Exception('Row does not have both site and key'))
                 else:
-                    r = {'site_id':ret[0][0],
-                         'auth_key':ret[0][1]}
-                    callback(r)
+                    callback(ret[0][0])
 
     @dbmethod
     def auth_authorize_site(self,site,key,callback=None):
@@ -72,7 +70,7 @@ class auth(_Methods_Base):
     def auth_authorize_task(self,key,callback=None):
         """Validate key for authorization.
         Returns True/Exception"""
-        sql = 'select key,expire from passkey where key = ?'
+        sql = 'select auth_key,expire from passkey where auth_key = ?'
         bindings = (key,)
         cb = partial(self._auth_authorize_task_callback,key,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
@@ -108,7 +106,7 @@ class auth(_Methods_Base):
 
         passkey_id = self.db.increment_id('passkey')
         passkey = uuid.uuid4().hex
-        sql = 'insert into passkey (passkey_id,key,expire) '
+        sql = 'insert into passkey (passkey_id,auth_key,expire) '
         sql += ' values (?,?,?)'
         bindings = (passkey_id,passkey,datetime2str(expiration))
         cb = partial(self._auth_new_passkey_callback,passkey,callback=callback)
@@ -125,7 +123,7 @@ class auth(_Methods_Base):
         if not passkey:
             raise Exception('bad expiration')
 
-        sql = 'select * from passkey where key = ?'
+        sql = 'select * from passkey where auth_key = ?'
         bindings = (passkey,)
         cb = partial(self._auth_get_passkey_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)

@@ -191,10 +191,10 @@ class dbmethods_cron_test(dbmethods_base):
 
         tables = {
             'passkey':[
-                {'passkey_id': 'p0', 'key': 'k0', 'expire': (now + timedelta(1)).isoformat()},
-                {'passkey_id': 'p1', 'key': 'k1', 'expire': (now + timedelta(2)).isoformat()},
-                {'passkey_id': 'p2', 'key': 'k2', 'expire': (now + timedelta(-2)).isoformat()},
-                {'passkey_id': 'p3', 'key': 'k3', 'expire': (now + timedelta(-1)).isoformat()},
+                {'passkey_id': 'p0', 'auth_key': 'k0', 'expire': (now + timedelta(1)).isoformat()},
+                {'passkey_id': 'p1', 'auth_key': 'k1', 'expire': (now + timedelta(2)).isoformat()},
+                {'passkey_id': 'p2', 'auth_key': 'k2', 'expire': (now + timedelta(-2)).isoformat()},
+                {'passkey_id': 'p3', 'auth_key': 'k3', 'expire': (now + timedelta(-1)).isoformat()},
             ]
         }
         self.mock.setup(tables)
@@ -204,7 +204,7 @@ class dbmethods_cron_test(dbmethods_base):
         if isinstance(cb.ret, Exception): raise Exception('Callback ret is Exception: "%r"' % cb.ret)
 
         passkeys = self.mock.get(['passkey'])['passkey']
-        keys = [k['key'] for k in passkeys]
+        keys = [k['auth_key'] for k in passkeys]
         correct = ('k0' in keys) and ('k1' in keys) and ('k2' not in keys) and ('k3' not in keys)
         if not correct:
             raise Exception('Function result not correct')

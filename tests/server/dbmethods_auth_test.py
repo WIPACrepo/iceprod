@@ -36,9 +36,6 @@ class dbmethods_auth_test(dbmethods_base):
     @unittest_reporter
     def test_010_auth_get_site_auth(self):
         """Test auth_get_site_auth"""
-        data = {'site_id':1,'auth_key':'key'}
-
-
         def cb(ret):
             cb.called = True
             cb.ret = ret
@@ -46,74 +43,42 @@ class dbmethods_auth_test(dbmethods_base):
 
         tables = {
             'site':[
-                {'site_id':1,'auth_key':'key'},
-                {'site_id':2,'auth_key':'key'},
-                {'site_id':3,'auth_key':'key'},
-            ],
-            'setting':[
-                {'site_id':1},
+                {'site_id':1,'auth_key':'key1'},
+                {'site_id':2,'auth_key':'key2'},
+                {'site_id':3,'auth_key':'key3'},
             ],
         }
 
         # normal site test
         cb.called = False
         self.mock.setup(tables)
-        self._db.auth_get_site_auth(callback=cb)
+        self._db.auth_get_site_auth(1,callback=cb)
 
         if cb.called is False:
             raise Exception('normal site: callback not called')
-        if cb.ret != data:
+        if cb.ret != 'key1':
             raise Exception('normal site: callback ret != data')
 
         # site not in db
-        tables = {
-            'site':[
-                {'site_id':1,'auth_key':'key'},
-                {'site_id':2,'auth_key':'key'},
-                {'site_id':3,'auth_key':'key'},
-            ],
-            'setting':[
-                {'site_id':4},
-            ],
-        }
-
         cb.called = False
         self.mock.setup(tables)
-        self._db.auth_get_site_auth(callback=cb)
+        self._db.auth_get_site_auth(4,callback=cb)
 
         if cb.called is False:
             raise Exception('not in db: callback not called')
         if not isinstance(cb.ret,Exception):
             raise Exception('not in db: callback did not receive exception')
 
-
-        # site in db twice
-        tables = {
+        # bad db info
+        tables2 = {
             'site':[
-                {'site_id':1,'auth_key':'key'},
-                {'site_id':2,'auth_key':'key'},
-                {'site_id':3,'auth_key':'key'},
-            ],
-            'setting':[
                 {'site_id':1},
-                {'site_id':2},
             ],
         }
-        self.mock.setup(tables)
-        cb.called = False
-        self._db.auth_get_site_auth(callback=cb)
-
-        if cb.called is False:
-            raise Exception('in db twice: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('in db twice: callback did not receive exception')
-
-        # bad db info
-        tables['site'] = [{'site_id':1}]
-        self.mock.setup(tables)
+        self.mock.setup(tables2)
 
         cb.called = False
-        self._db.auth_get_site_auth(callback=cb)
+        self._db.auth_get_site_auth(1,callback=cb)
 
         if cb.called is False:
             raise Exception('bad db info: callback not called')
@@ -122,8 +87,9 @@ class dbmethods_auth_test(dbmethods_base):
 
         # sql error
         cb.called = False
+        self.mock.setup(tables)
         self.mock.failures = True
-        self._db.auth_get_site_auth(callback=cb)
+        self._db.auth_get_site_auth(1,callback=cb)
 
         if cb.called is False:
             raise Exception('sql error: callback not called')
@@ -203,7 +169,7 @@ class dbmethods_auth_test(dbmethods_base):
                 {'site_id':1},
             ],
             'passkey':[
-                {'key':1,'expire':'2100-01-01T01:01:01'}
+                {'auth_key':1,'expire':'2100-01-01T01:01:01'}
             ],
         }
 
@@ -234,7 +200,7 @@ class dbmethods_auth_test(dbmethods_base):
 
 
         # bad db info
-        tables['passkey'] = [{'key':1}]
+        tables['passkey'] = [{'auth_key':1}]
         self.mock.setup(tables)
         cb.called = False
 
@@ -271,7 +237,7 @@ class dbmethods_auth_test(dbmethods_base):
                 {'site_id':1,'passkey_last':'0'},
             ],
             'passkey':[
-                {'key':key,'expire':dbmethods.datetime2str(exp)}
+                {'auth_key':key,'expire':dbmethods.datetime2str(exp)}
             ],
         }
 
@@ -361,7 +327,7 @@ class dbmethods_auth_test(dbmethods_base):
                 {'site_id':1},
             ],
             'passkey':[
-                {'key':key,'expire':dbmethods.datetime2str(exp)}
+                {'auth_key':key,'expire':dbmethods.datetime2str(exp)}
             ],
         }
 
@@ -409,7 +375,7 @@ class dbmethods_auth_test(dbmethods_base):
         # sql_read_task error2
         key = 'thekey'
         exp = 'expiration'
-        tables['passkey'] = [{'key':key,'expire':exp}]
+        tables['passkey'] = [{'auth_key':key,'expire':exp}]
         self.mock.failures = 0
         self.mock.setup(tables)
         cb.called = False

@@ -149,7 +149,7 @@
         ],
         "passkey": [
             ["passkey_id", "str"],
-            ["key", "str"],
+            ["auth_key", "str"],
             ["expire", "str", "datetime"]
         ],
         "pilot": [
