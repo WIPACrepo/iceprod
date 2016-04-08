@@ -43,7 +43,7 @@ def get_tables(test_dir):
                   {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
                    'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
                  ],
-        'config': [{'dataset_id':'d1', 'config_data': 'somedata', 'difplus_data':'' }],
+        'config': [{'dataset_id':'d1', 'config_data': '{"name":"value"}', 'difplus_data':'' }],
         'task_stat': [{'task_stat_id': 0, 'task_id': task_id}],
         'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2, 'tasks_submitted': 2}],
     }
@@ -71,7 +71,7 @@ class dbmethods_rpc_test(dbmethods_base):
         if cb.called is False:
             raise Exception('everything working: callback not called')
 
-        ret_should_be = 'somedata'
+        ret_should_be = {'name':'value','options':{'task_id':task_id}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)

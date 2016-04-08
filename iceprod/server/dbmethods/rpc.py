@@ -70,7 +70,7 @@ class rpc(_Methods_Base):
         elif ret is None:
             callback(Exception('sql error in _new_task_blocking'))
         elif not ret:
-            callback([])
+            callback(None)
         else:
             newtask = {}
             logger.debug('new task: %r',ret)
@@ -111,8 +111,6 @@ class rpc(_Methods_Base):
     def _rpc_new_task_callback(self,args,task,callback=None):
         if isinstance(task,Exception):
             callback(task)
-        elif task is None:
-            callback(Exception('_new_task_blocking did not return a task'))
         elif not task:
             callback(None)
         else:
@@ -124,6 +122,8 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             config = json_decode(ret)
+            if 'options' not in config:
+                config['options'] = {}
             config['options']['task_id'] = task['task_id']
             callback(config)
 

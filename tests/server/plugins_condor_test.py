@@ -67,18 +67,17 @@ class plugins_condor_test(grid_test.grid_test):
         # call normally
         g.tasks_queued = 0
 
-        task = {'task_id':'thetaskid','submit_dir':submit_dir}
+        task = {'task_id':'thetaskid', 'submit_dir':submit_dir}
         g.generate_submit_file(task)
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         for l in open(os.path.join(submit_dir,'condor.submit')):
             if l.startswith('arguments'):
+                logger.info('args: %s',l)
                 if '--passkey' in l:
                     raise Exception('passkey present when not supposed to be')
-                if '-d' not in l:
+                if '--url' not in l:
                     raise Exception('download address not in args')
-                if 'task.cfg' not in l:
-                    raise Exception('cfg not in args')
         os.unlink(os.path.join(submit_dir,'condor.submit'))
 
         # add passkey
@@ -91,25 +90,6 @@ class plugins_condor_test(grid_test.grid_test):
             if l.startswith('arguments'):
                 if '--passkey' not in l:
                     raise Exception('passkey missing')
-        os.unlink(os.path.join(submit_dir,'condor.submit'))
-
-        # add http username and password
-        g.cfg['download']['http_username'] = 'user'
-        g.cfg['download']['http_password'] = 'pass'
-
-        g.generate_submit_file(task)
-        if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
-            raise Exception('userpass: submit file not written')
-        for l in open(os.path.join(submit_dir,'condor.submit')):
-            if l.startswith('arguments'):
-                if '-d' not in l:
-                    raise Exception('userpass: download address not in args')
-                if '-u' not in l:
-                    raise Exception('userpass: username not in args')
-                if '-p' not in l:
-                    raise Exception('userpass: password not in args')
-                if 'task.cfg' not in l:
-                    raise Exception('userpass: cfg not in args')
         os.unlink(os.path.join(submit_dir,'condor.submit'))
 
         # add batch opt
@@ -167,8 +147,10 @@ class plugins_condor_test(grid_test.grid_test):
             caller.called = True
             caller.args = args
             caller.kwargs = kwargs
+            if isinstance(caller.ret,Exception):
+                raise caller.ret
             return caller.ret
-        flexmock(subprocess).should_receive('call').replace_with(caller)
+        flexmock(subprocess).should_receive('check_output').replace_with(caller)
 
         site = 'thesite'
         self.check_run_stop = False
@@ -195,21 +177,22 @@ class plugins_condor_test(grid_test.grid_test):
 
         # call normally
         caller.called = False
-        caller.ret = 0
+        caller.ret = ''
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
         g.submit(task)
         if not caller.called:
             raise Exception('subprocess.call not called')
-        if not caller.args[0].startswith('condor_submit'):
+        if caller.args[0][0] != 'condor_submit':
+            logger.info('args: %r',caller.args)
             raise Exception('does not start with condor_submit')
         if 'cwd' not in caller.kwargs or caller.kwargs['cwd'] != submit_dir:
             raise Exception('did not change to submit dir')
 
         # call failed
         caller.called = False
-        caller.ret = 1
+        caller.ret = Exception('bad call')
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}

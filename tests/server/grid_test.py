@@ -432,8 +432,8 @@ class grid_test(unittest.TestCase):
 
         if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
             raise Exception('reset task reset: did not call get_active_tasks')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('reset task reset: did not call reset')
+        if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
+            raise Exception('reset task reset: did not call set_task_status')
 
         # resume task reset
         active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
@@ -450,8 +450,8 @@ class grid_test(unittest.TestCase):
 
         if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
             raise Exception('resume task reset: did not call get_active_tasks')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('resume task reset: did not call reset')
+        if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
+            raise Exception('resume task reset: did not call set_task_status')
 
     @unittest_reporter
     def test_021_check_grid(self):
@@ -1255,7 +1255,7 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call generate_submit_file')
         if not submit.called:
             raise Exception('did not call submit')
-        pilot_dict = self.messaging.called[1][2][0]
+        pilot_dict = self.messaging.called[1][3]['pilot']
         if (self.messaging.called[0][1] != 'auth_new_passkey' or
             self.messaging.called[1][1] != 'queue_add_pilot' or
             os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
