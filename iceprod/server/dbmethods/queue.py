@@ -123,26 +123,37 @@ class queue(_Methods_Base):
     def queue_get_active_tasks(self,gridspec,callback=None):
         """Get a dict of active tasks (queued,processing,reset,resume) on this site and plugin,
            returning {status:{tasks}} where each task = join of search and task tables"""
-        sql = 'select task.* from search join task on search.task_id = task.task_id '
-        sql += 'where search.gridspec like ? '
-        sql += ' and search.task_status in ("queued","processing","reset","resume")'
+        if not callback:
+            return
+        sql = 'select task_id from search '
+        sql += 'where gridspec like ? '
+        sql += ' and task_status in ("queued","processing","reset","resume")'
         bindings = ('%'+gridspec+'%',)
         cb = partial(self._queue_get_active_tasks_callback,callback=callback)
         self.db.sql_read_task(sql,bindings,callback=cb)
     def _queue_get_active_tasks_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            else:
-                task_groups = {}
-                if ret is not None:
-                    tasks = self._queue_get_task_from_ret(ret)
-                    for task_id in tasks:
-                        status = tasks[task_id]['status']
-                        if status not in task_groups:
-                            task_groups[status] = {}
-                        task_groups[status][task_id] = tasks[task_id]
-                callback(task_groups)
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            tasks = set(row[0] for row in ret)
+            sql = 'select * from task where task_id in ('
+            sql += ','.join('?' for _ in tasks)+')'
+            bindings = tuple(tasks)
+            cb = partial(self._queue_get_active_tasks_callback2,callback=callback)
+            self.db.sql_read_task(sql,bindings,callback=cb)
+    def _queue_get_active_tasks_callback2(self,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            task_groups = {}
+            if ret:
+                tasks = self._queue_get_task_from_ret(ret)
+                for task_id in tasks:
+                    status = tasks[task_id]['status']
+                    if status not in task_groups:
+                        task_groups[status] = {}
+                    task_groups[status][task_id] = tasks[task_id]
+            callback(task_groups)
 
     @dbmethod
     def queue_set_task_status(self,task,status,callback=None):
@@ -576,13 +587,10 @@ class queue(_Methods_Base):
                         datasets[d['dataset_id']] = d
                 callback(datasets)
         bindings = []
-        sql = 'select dataset.* from dataset join search on '
-        sql += 'search.dataset_id = dataset.dataset_id where '
-        sql += 'dataset.status = "processing" and '
+        sql = 'select * from dataset where status = "processing" '
         if gridspec:
-            sql += 'search.gridspec = ? and '
-            bindings.append(gridspec)
-        sql += 'search.task_status in ("idle","waiting") '
+            sql += ' and gridspec like ?'
+            bindings.append('%'+gridspec+'%')
         bindings = tuple(bindings)
         self.db.sql_read_task(sql,bindings,callback=cb)
 
