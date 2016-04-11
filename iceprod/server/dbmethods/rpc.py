@@ -704,7 +704,7 @@ class rpc(_Methods_Base):
         qf_d = queueing_factor_dataset
         qf_t = queueing_factor_tasks
 
-        def cb2(tasks):
+        def cb3(tasks):
             if isinstance(tasks,Exception):
                 callback(tasks)
             elif not tasks:
@@ -714,7 +714,7 @@ class rpc(_Methods_Base):
             else:
                 logger.debug('rpc_queue_master(): tasks: %r',tasks)
                 self.parent.misc_get_tables_for_task(tasks,callback=callback)
-        def cb(datasets):
+        def cb2(datasets):
             if isinstance(datasets,Exception):
                 callback(datasets)
             elif not datasets:
@@ -727,10 +727,11 @@ class rpc(_Methods_Base):
                 self.parent.queue_get_queueing_tasks(dataset_prios,
                                                      resources=resources,
                                                      global_queueing=True,
-                                                     callback=cb2)
-
-        self.parent.queue_get_queueing_datasets(callback=cb)
-
+                                                     callback=cb3)
+        def cb():
+            self.parent.queue_get_queueing_datasets(callback=cb2)
+        # buffer tasks before queueing
+        self.parent.queue_buffer_jobs_tasks(callback=cb)
 
     @dbmethod
     def rpc_stop_module(self, module_name, callback=None):

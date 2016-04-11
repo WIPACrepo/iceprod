@@ -638,6 +638,9 @@ class queue(_Methods_Base):
             tasks = {}
             for dataset, task_id, status in ret:
                 tasks[task_id] = {'dataset':dataset, 'status':status}
+            if not tasks:
+                callback({})
+                return
             sql = 'select task_id, depends, requirements, task_rel_id '
             sql += 'from task where task_id in ('
             sql += ','.join('?' for _ in tasks) + ')'
