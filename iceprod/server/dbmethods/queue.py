@@ -622,6 +622,8 @@ class queue(_Methods_Base):
                                            gridspec_assignment,
                                            global_queueing,
                                            callback=None):
+        logger.debug('queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r',
+                     num, global_queueing, dataset_prios, gridspec, gridspec_assign, resources)
         conn,archive_conn = self.db._dbsetup()
         # get all tasks for processing datasets so we can do dependency check
         try:
@@ -686,6 +688,7 @@ class queue(_Methods_Base):
         task_prio = []
         for dataset in dataset_prios:
             limit = int(math.ceil(dataset_prios[dataset]*num))
+            logger.debug('queue() dataset %s, max is %d', dataset, limit)
             for task_id in datasets[dataset]:
                 depends, reqs = datasets[dataset][task_id]
                 satisfied = True
@@ -729,6 +732,7 @@ class queue(_Methods_Base):
                     limit -= 1
                     if limit <= 0:
                         break
+        logger.debug('queue() %d tasks can queue', len(task_prio))
         if not task_prio:
             callback({})
             return

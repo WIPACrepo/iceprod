@@ -703,10 +703,11 @@ class rpc(_Methods_Base):
         def cb3(tasks):
             if isinstance(tasks,Exception):
                 callback(tasks)
-            elif not tasks:
-                callback({})
             elif not isinstance(tasks,dict):
                 callback(Exception('queue_get_queueing_tasks() did not return a dict'))
+            elif not tasks:
+                logger.debug('rpc_queue_master(): tasks: %r',tasks)
+                callback({})
             else:
                 logger.debug('rpc_queue_master(): tasks: %r',tasks)
                 self.parent.misc_get_tables_for_task(tasks,callback=callback)
