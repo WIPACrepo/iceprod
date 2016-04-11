@@ -314,7 +314,7 @@ class PriorityThreadPool(ThreadPool):
                     if callback is not None:
                         callback(e)
                     else:
-                        self.output.put(ret)
+                        self.output.put(e)
                 finally:
                     self.input.task_done()
             if self.exit is not None:

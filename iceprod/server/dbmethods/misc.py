@@ -19,7 +19,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime
+from iceprod.server.dbmethods import dbmethod,_Methods_Base,filtered_input,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.misc')
 
@@ -230,7 +230,7 @@ class misc(_Methods_Base):
         callback(tables)
 
     @dbmethod
-    def misc_update_tables(self,tables,callback=None):
+    def misc_update_tables(self, tables, callback=None):
         """
         Update the DB tables with the incoming information.
 
@@ -246,24 +246,27 @@ class misc(_Methods_Base):
             cb = partial(self._misc_update_tables_blocking,tables,
                          callback=callback)
             self.db.non_blocking_task(cb)
-    def _misc_misc_update_tables_blocking(tables,callback=None):
+    def _misc_update_tables_blocking(self, tables, callback=None):
         conn,archive_conn = self.db._dbsetup()
-        for name in tables:
-            sql = 'replace into ? ('
-            sql += ','.join('?' for _ in tables[name]['keys'])
-            sql += ') values ('
-            sql += ','.join('?' for _ in tables[name]['keys'])
-            sql += ')'
-            bindings = [name]+tables[name]['keys']
-            for values in tables[name]['values']:
-                bindings2 = tuple(bindings+values)
-                try:
-                    ret = self.db._db_write(conn,sql,bindings2,None,None,None)
-                except Exception as e:
-                    ret = e
-                if isinstance(ret,Exception):
-                    callback(ret)
-                    return
+        try:
+            for name in tables:
+                sql = 'replace into %s ('%filtered_input(name)
+                sql += ','.join(str(filtered_input(k)) for k in tables[name]['keys'])
+                sql += ') values ('
+                sql += ','.join('?' for _ in tables[name]['keys'])
+                sql += ')'
+                for values in tables[name]['values']:
+                    bindings = tuple(values)
+                    try:
+                        ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                    except Exception as e:
+                        ret = e
+                    if isinstance(ret,Exception):
+                        callback(ret)
+                        return
+        except Exception as e:
+            logger.warn('error updating tables', exc_info=True)
+            callback(e)
         callback()
 
     @dbmethod
@@ -285,7 +288,7 @@ class misc(_Methods_Base):
             cb = partial(self._misc_update_db_blocking, table, index,
                          timestamp, sql, bindings, callback=callback)
             self.db.blocking_task(cb)
-    def _misc_misc_update_db_blocking(table, index, timestamp, sql,
+    def _misc_misc_update_db_blocking(self, table, index, timestamp, sql,
                                       bindings, callback=None):
         conn,archive_conn = self.db._dbsetup()
         try:

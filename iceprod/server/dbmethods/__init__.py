@@ -11,6 +11,8 @@ from functools import update_wrapper, partial
 import tornado.ioloop
 
 from iceprod.functools_future import partialmethod
+
+from iceprod.core.dataclasses import String, Number
 import iceprod.server
 
 logger = logging.getLogger('dbmethods')
@@ -141,9 +143,9 @@ def filtered_input(input_data):
        Just remove all " ' ; : ? characters, since
        those won't be needed in proper names"""
     def filter(s):
-        if isinstance(s, str):
+        if isinstance(s, String):
             return s.replace("'","").replace('"',"").replace(';','').replace(':','').replace('?','')
-        elif isinstance(s, (int,long,real,complex)):
+        elif isinstance(s, Number):
             return s
         else: # if it's not a basic type, discard it
             return ''
