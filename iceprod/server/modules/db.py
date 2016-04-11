@@ -615,10 +615,8 @@ if MySQLdb:
                     sql_create += sep+'`'+col+'`'
                     sql_select += sep+'`'+col+'`'
                     t = self.tables[table_name][col]
-                    if t == str and sep == '':
-                        sql_create += ' VARBINARY(255) NOT NULL '
                     if t == 'str':
-                        sql_create += ' VARCHAR(255) NOT NULL DEFAULT "" '
+                        sql_create += ' VARBINARY(255) NOT NULL '
                     elif t == 'int':
                         sql_create += ' INT NOT NULL DEFAULT 0 '
                     elif t == 'bool':
@@ -657,10 +655,8 @@ if MySQLdb:
                             for x in cols:
                                 if x not in curcols:
                                     t = '`'+self.tables[table_name][x]+'`'
-                                    if t == str and sep == '':
-                                        x += ' VARBINARY(255) NOT NULL '
                                     if t == 'str':
-                                        x += ' VARCHAR(255) NOT NULL DEFAULT "" '
+                                        x += ' VARBINARY(255) NOT NULL '
                                     elif t == 'int':
                                         x += ' INT NOT NULL DEFAULT 0 '
                                     elif t == 'bool':
@@ -811,10 +807,8 @@ if MySQLdb:
                     for x in cols:
                         if x not in curcols:
                             t = self.tables[table][x]
-                            if t == str and sep == '':
-                                x += ' VARBINARY(255) NOT NULL '
                             if t == str:
-                                x += ' VARCHAR(255) NOT NULL DEFAULT "" '
+                                x += ' VARBINARY(255) NOT NULL '
                             elif t == int:
                                 x += ' INT NOT NULL DEFAULT 0 '
                             elif t == bool:
@@ -871,10 +865,8 @@ if MySQLdb:
                 for col in cols:
                     sql_create += sep+col
                     t = self.tables[table][col]
-                    if t == str and sep == '':
+                    if t == str:
                         sql_create += ' VARBINARY(255) NOT NULL '
-                    elif t == str:
-                        sql_create += ' VARCHAR(255) NOT NULL DEFAULT "" '
                     elif t == int:
                         sql_create += ' INT NOT NULL DEFAULT 0 '
                     elif t == bool:
