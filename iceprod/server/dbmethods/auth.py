@@ -154,32 +154,3 @@ class auth(_Methods_Base):
             callback(ret)
         else:
             callback(passkey)
-
-    @dbmethod
-    def join_pool(self,passkey,callback=None):
-        """Join this site with a pool"""
-        cb = partial(self._join_pool_blocking,passkey,callback=callback)
-        self.db.blocking_task('join',cb)
-    def _join_pool_blocking(self,passkey,callback=None):
-        conn,archive_conn = self.db._dbsetup()
-        sql = 'select site_id from setting'
-        bindings = tuple()
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        if not ret or not ret[0]:
-            callback(Exception('could not find site_id'))
-            return
-        site_id = ret[0][0]
-        sql = 'update site set auth_key = ?'
-        bindings = (passkey,)
-        try:
-            self.db._db_write(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            callback(e)
-        else:
-            callback(None)

@@ -48,8 +48,9 @@ def send_master(cfg,method,callback=None,**kwargs):
                 logger.warn('error receiving: no result')
                 callback(Exception('bad response'))
 
-    if ('passkey' not in kwargs and 'master' in cfg and
-        'passkey' in cfg['master']):
+    if 'passkey' not in kwargs:
+        if 'master' not in cfg or 'passkey' not in cfg['master']:
+            raise Exception('no passkey')
         kwargs['passkey'] = cfg['master']['passkey']
 
     args = {'method': 'POST',
@@ -61,6 +62,10 @@ def send_master(cfg,method,callback=None,**kwargs):
         args['callback'] = cb
     http_client = AsyncHTTPClient()
     url = cfg['master']['url']
+    if url.endswith('/'):
+        url += 'jsonrpc'
+    else:
+        url += '/jsonrpc'
     body = json_encode({'jsonrpc':'2.0',
                         'method':method,
                         'params':kwargs,'id':1})

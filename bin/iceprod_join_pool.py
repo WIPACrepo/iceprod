@@ -28,15 +28,10 @@ def main(cfgfile):
     messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
     messaging.start()
 
-    passkey = raw_input('passkey:')
-
-    ret = messaging.db.join_pool(passkey=passkey)
-    if isinstance(passkey,Exception):
-        raise passkey
-
     master_url = raw_input('master_url:')
+    passkey = raw_input('passkey:')
     messaging.config.set(key='master',
-                         value={'status':'','url':master_url})
+                         value={'status':'','url':master_url,'passkey':passkey})
 
 
 if __name__ == '__main__':

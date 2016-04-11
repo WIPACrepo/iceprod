@@ -387,6 +387,48 @@ class dbmethods_auth_test(dbmethods_base):
         if not isinstance(cb.ret,Exception):
             raise Exception('sql_read_task error2: callback ret != Exception')
 
+    @unittest_reporter
+    def test_501_add_site_to_master(self):
+        """Test add_site_to_master"""
+
+        tables = {'site':[]}
+        site_id = 'thesite'
+
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+
+        # everything working
+        self.mock.setup(tables)
+        cb.called = False
+
+        self._db.add_site_to_master(site_id,callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if isinstance(cb.ret, Exception) or not cb.ret:
+            logger.error('cb.ret = %r',exp)
+            raise Exception('callback ret is not passkey')
+        endtables = self.mock.get(['site'])['site']
+        if not endtables or endtables[0]['site_id'] != site_id:
+            raise Exception('site not added')
+        if cb.ret != endtables[0]['auth_key']:
+            raise Exception('passkey invalid')
+
+        # sql error
+        self.mock.setup(tables)
+        self.mock.failures = True
+        cb.called = False
+
+        self._db.add_site_to_master(site_id,callback=cb)
+
+        if cb.called is False:
+            raise Exception('callback not called')
+        if not isinstance(cb.ret, Exception):
+            logger.error('cb.ret = %r',exp)
+            raise Exception('callback ret is not exception')
+        if self.mock.get(['site'])['site']:
+            raise Exception('tables modified')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

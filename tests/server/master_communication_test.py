@@ -49,7 +49,7 @@ class master_communication_test(unittest.TestCase):
         client.called = False
         flexmock(iceprod.server.master_communication.AsyncHTTPClient).should_receive('fetch').replace_with(client)
 
-        cfg = {'master':{'url':'localhost'}}
+        cfg = {'master':{'url':'localhost','passkey':'thekey'}}
         method = 'mymethod'
         def cb(ret=None):
             cb.called = True
@@ -61,6 +61,9 @@ class master_communication_test(unittest.TestCase):
         client_body = json_decode(client.kwargs['body'])
         if client_body['method'] != method:
             raise Exception('method not correct')
+        expected = {'passkey':cfg['master']['passkey']}
+        if client_body['params'] != expected:
+            raise Exception('params not correct')
 
         r = FakeResponse(200,json_encode({'result':'ok'}),None)
         client.kwargs['callback'](r)
@@ -121,18 +124,18 @@ class master_communication_test(unittest.TestCase):
         else:
             raise Exception('did not raise exception')
 
-        # try with passkey
-        cfg = {'master':{'url':'localhost','passkey':'tmpkey'}}
+        # try without passkey
+        cfg = {'master':{'url':'localhost'}}
         method = 'mymethod'
         cb.called = False
-        iceprod.server.master_communication.send_master(cfg,method,callback=cb)
-        if not client.called:
-            raise Exception('client not called')
-        client_body = json_decode(client.kwargs['body'])
-        expected = {'passkey':cfg['master']['passkey']}
-        if client_body['params'] != expected:
-            raise Exception('params not correct')
+        try:
+            iceprod.server.master_communication.send_master(cfg,method,callback=cb)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
 
+        # try giving passkey directly
         cfg = {'master':{'url':'localhost','passkey':'tmpkey'}}
         method = 'mymethod'
         cb.called = False
@@ -143,6 +146,19 @@ class master_communication_test(unittest.TestCase):
             raise Exception('client not called')
         client_body = json_decode(client.kwargs['body'])
         expected = {'passkey':'otherkey'}
+        if client_body['params'] != expected:
+            raise Exception('params not correct')
+
+        # try with / on end of url
+        cfg = {'master':{'url':'localhost/','passkey':'tmpkey'}}
+        cb.called = False
+        iceprod.server.master_communication.send_master(cfg,method,callback=cb)
+        if not client.called:
+            raise Exception('client not called')
+        client_body = json_decode(client.kwargs['body'])
+        if client_body['method'] != method:
+            raise Exception('method not correct')
+        expected = {'passkey':cfg['master']['passkey']}
         if client_body['params'] != expected:
             raise Exception('params not correct')
 
