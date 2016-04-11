@@ -728,7 +728,7 @@ class rpc(_Methods_Base):
                                                      resources=resources,
                                                      global_queueing=True,
                                                      callback=cb3)
-        def cb():
+        def cb(ret):
             self.parent.queue_get_queueing_datasets(callback=cb2)
         # buffer tasks before queueing
         self.parent.queue_buffer_jobs_tasks(callback=cb)

@@ -159,8 +159,9 @@ class misc(_Methods_Base):
             keys = []
             for row in ret:
                 row2 = self._list_to_dict('dataset',row)
-                if row2['categoryvalue_id']:
-                    categoryvalue_ids.add(row2['categoryvalue_id'])
+                if row2['categoryvalue_ids']:
+                    for cv_id in row2['categoryvalue_ids'].split(','):
+                        categoryvalue_ids.add(cv_id)
                 if not keys:
                     keys = row2.keys()
             tables['dataset'] = {'keys':keys,'values':ret}
