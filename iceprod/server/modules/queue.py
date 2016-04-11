@@ -317,7 +317,7 @@ class queue(module.module):
                     logger.warn('error getting response from master: %r',
                                 ret)
                 else:
-                    self.messaging.db.misc_update_tables(ret,
+                    self.messaging.db.misc_update_tables(tables=ret,
                                                          callback=cb3)
                     return
             except Exception:

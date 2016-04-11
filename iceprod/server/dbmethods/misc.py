@@ -236,7 +236,10 @@ class misc(_Methods_Base):
         :param tables: A dict of {table_name:{keys:[],values:[[]]}}
         :returns: (via callback) success or failure
         """
-        if not tables or not isinstance(tables,dict):
+        if not tables:
+            callback()
+            return
+        if not isinstance(tables,dict):
             callback(Exception('tables not a dict'))
         else:
             cb = partial(self._misc_update_tables_blocking,tables,

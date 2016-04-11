@@ -52,6 +52,8 @@ def send_master(cfg,method,callback=None,**kwargs):
         if 'master' not in cfg or 'passkey' not in cfg['master']:
             raise Exception('no passkey')
         kwargs['passkey'] = cfg['master']['passkey']
+        if 'site_id' not in kwargs and 'site_id' in cfg:
+            kwargs['site_id'] = cfg['site_id']
 
     args = {'method': 'POST',
             'connect_timeout': 30,

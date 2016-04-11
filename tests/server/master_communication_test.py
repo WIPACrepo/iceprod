@@ -49,7 +49,8 @@ class master_communication_test(unittest.TestCase):
         client.called = False
         flexmock(iceprod.server.master_communication.AsyncHTTPClient).should_receive('fetch').replace_with(client)
 
-        cfg = {'master':{'url':'localhost','passkey':'thekey'}}
+        site_id = 'thesite'
+        cfg = {'site_id':site_id,'master':{'url':'localhost','passkey':'thekey'}}
         method = 'mymethod'
         def cb(ret=None):
             cb.called = True
@@ -61,7 +62,7 @@ class master_communication_test(unittest.TestCase):
         client_body = json_decode(client.kwargs['body'])
         if client_body['method'] != method:
             raise Exception('method not correct')
-        expected = {'passkey':cfg['master']['passkey']}
+        expected = {'site_id':site_id,'passkey':cfg['master']['passkey']}
         if client_body['params'] != expected:
             raise Exception('params not correct')
 
@@ -150,7 +151,7 @@ class master_communication_test(unittest.TestCase):
             raise Exception('params not correct')
 
         # try with / on end of url
-        cfg = {'master':{'url':'localhost/','passkey':'tmpkey'}}
+        cfg = {'site_id':site_id,'master':{'url':'localhost/','passkey':'tmpkey'}}
         cb.called = False
         iceprod.server.master_communication.send_master(cfg,method,callback=cb)
         if not client.called:
@@ -158,7 +159,7 @@ class master_communication_test(unittest.TestCase):
         client_body = json_decode(client.kwargs['body'])
         if client_body['method'] != method:
             raise Exception('method not correct')
-        expected = {'passkey':cfg['master']['passkey']}
+        expected = {'site_id':site_id,'passkey':cfg['master']['passkey']}
         if client_body['params'] != expected:
             raise Exception('params not correct')
 
