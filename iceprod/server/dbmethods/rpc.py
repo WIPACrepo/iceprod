@@ -689,16 +689,12 @@ class rpc(_Methods_Base):
         gridspec list (or the list should be empty to match all), and
         the necessary resources should be available on the site.
 
-        :param resources: the available resources on the site
+        :param resources: (optional) the available resources on the site
         :param queueing_factor_priority: (optional) queueing factor for priority
         :param queueing_factor_dataset: (optional) queueing factor for dataset id
         :param queueing_factor_tasks: (optional) queueing factor for number of tasks
         :returns: (via callback) dict of table entries to be merged
         """
-        if resources is None:
-            callback(Exception('no resources provided'))
-            return
-
         # priority factors
         qf_p = queueing_factor_priority
         qf_d = queueing_factor_dataset

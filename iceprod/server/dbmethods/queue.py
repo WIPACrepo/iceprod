@@ -713,7 +713,7 @@ class queue(_Methods_Base):
                         elif tasks[dep]['status'] != 'complete':
                             satisfied = False
                             break
-                if satisfied and reqs and resources is not None:
+                if satisfied and reqs and resources:
                     # now match based on resources
                     try:
                         for r in reqs:
