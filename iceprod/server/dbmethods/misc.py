@@ -294,7 +294,10 @@ class misc(_Methods_Base):
             bindings2 = (table,index)
             ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
             if ret and ret[0][0] >= timestamp:
-                raise Exception('newer data already present')
+                log.info('newer data already present for %s %s %s',
+                         table, index, timestamp)
+                callback(None)
+                return
             ret = self.db._db_write(conn,sql,tuple(bindings),None,None,None)
         except Exception as e:
             ret = e
