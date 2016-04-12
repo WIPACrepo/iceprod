@@ -89,16 +89,12 @@ class master_updater(module.module):
             def cb(ret=None):
                 if isinstance(ret,Exception):
                     logger.warn('error sending: %r',ret)
-                elif ret == 'ok':
-                    self.buffer.popleft()
-                    return self._send()
+                    # If the problem is server side, give it a minute.
+                    # This should stop a DDOS from happening.
+                    tornado.ioloop.IOLoop.current().call_later(60, self._send)
                 else:
-                    self.send_in_progress = False
-                    logger.warn('error sending: unexpected result: %r',
-                                ret)
-                # If the problem is server side, give it a minute.
-                # This should stop a DDOS from happening.
-                tornado.ioloop.IOLoop.current().call_later(60, self._send)
+                    self.buffer.popleft()
+                    self._send()
             params = {'updates':[data]}
             send_master(self.cfg,'master_update',callback=cb,**params)
         else:

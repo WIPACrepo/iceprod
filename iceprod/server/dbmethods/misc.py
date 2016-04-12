@@ -299,8 +299,8 @@ class misc(_Methods_Base):
         except Exception as e:
             ret = e
         else:
-            sql2 = 'replace into master_update_history (table_name_name,update_index,timestamp) values (?,?,?)'
-            bindings2 = (table,update_index,timestamp)
+            sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+            bindings2 = (table,index,timestamp)
             try:
                ret = self.db._db_write(conn,sql2,bindings2,None,None,None)
             except Exception as e:
