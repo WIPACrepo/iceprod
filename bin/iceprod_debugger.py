@@ -12,22 +12,10 @@ import readline
 import parser as code_parser
 from functools import partial
 
-from IPython.Shell import IPShellEmbed
+from IPython.terminal.embed import InteractiveShellEmbed
 
 import iceprod.server.basic_config
 import iceprod.server.RPCinternal
-
-
-def handle_stop(obj, signum, frame):
-    obj.stop()
-    sys.exit(1)
-def handle_kill(obj, signum, frame):
-    obj.kill()
-    sys.exit(1)
-
-def set_signals(obj):
-    signal.signal(signal.SIGINT, partial(handle_stop,obj))
-    signal.signal(signal.SIGQUIT, partial(handle_kill,obj))
 
 def main(cfgfile):
     cfg = iceprod.server.basic_config.BasicConfig()
@@ -39,14 +27,13 @@ def main(cfgfile):
         'block':False,
         'service_name':'debug',
         'service_class':Response(),
-        'async':True,
+        'async':False,
     }
     messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
-    set_signals(messaging)
     messaging.start()
     
     try:
-        IPShellEmbed(argv=[])()
+        InteractiveShellEmbed(banner1='Launching ipython. The `messaging` object is available.')()
     finally:
         messaging.stop()
 
