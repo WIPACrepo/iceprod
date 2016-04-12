@@ -282,18 +282,15 @@ class misc(_Methods_Base):
         :param bindings: Bindings for the sql statement.
         :returns: (via callback) success or failure
         """
-        if not table or not isinstance(table,dict):
-            callback(Exception('table not a dict'))
-        else:
-            cb = partial(self._misc_update_db_blocking, table, index,
-                         timestamp, sql, bindings, callback=callback)
-            self.db.blocking_task(cb)
+        cb = partial(self._misc_update_db_blocking, table, index,
+                     timestamp, sql, bindings, callback=callback)
+        self.db.blocking_task('update',cb)
     def _misc_update_db_blocking(self, table, index, timestamp, sql,
                                       bindings, callback=None):
         conn,archive_conn = self.db._dbsetup()
         try:
             sql2 = 'select timestamp from master_update_history '
-            sql2 += 'where table = ? and index = ?'
+            sql2 += 'where table_name = ? and update_index = ?'
             bindings2 = (table,index)
             ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
             if ret and ret[0][0] >= timestamp:
@@ -302,7 +299,7 @@ class misc(_Methods_Base):
         except Exception as e:
             ret = e
         else:
-            sql2 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+            sql2 = 'replace into master_update_history (table_name_name,update_index,timestamp) values (?,?,?)'
             bindings2 = (table,update_index,timestamp)
             try:
                ret = self.db._db_write(conn,sql2,bindings2,None,None,None)

@@ -193,7 +193,7 @@
         ],
         "master_update_history": [
             ["master_update_history_id", "str"],
-            ["table", "str"],
+            ["table_name", "str"],
             ["update_index", "str"],
             ["timestamp", "str"]
         ],

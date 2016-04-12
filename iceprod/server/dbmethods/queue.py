@@ -108,7 +108,7 @@ class queue(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('site',site_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -202,7 +202,7 @@ class queue(_Methods_Base):
                 bindings = (status,t)
                 bindings2 = (status,now,t)
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('search',t,now)
                     bindings4 = ('task',t,now)
                     try:
@@ -307,7 +307,7 @@ class queue(_Methods_Base):
         def cb(ret):
             if not isinstance(ret,Exception):
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('task',task,nowstr())
                     try:
                         self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -555,7 +555,7 @@ class queue(_Methods_Base):
                         sql = db_updates_sql[i]
                         bindings = db_updates_bindings[i]
                         if self._is_master():
-                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                             bindings3 = (sql.split()[2],bindings[0],now)
                             try:
                                 self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -811,7 +811,7 @@ class queue(_Methods_Base):
                 else:
                     if self._is_master():
                         for t in tasks:
-                            sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                             bindings3 = ('search',t,now)
                             bindings4 = ('task',t,now)
                             try:
@@ -873,7 +873,7 @@ class queue(_Methods_Base):
         else:
             for i,b in enumerate(bindings):
                 if self._is_master():
-                    sql2 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings2 = ('pilot',b[0],now)
                     try:
                         self.db._db_write(conn,sql2,bindings2,None,None,None)

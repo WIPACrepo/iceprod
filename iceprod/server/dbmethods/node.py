@@ -94,7 +94,7 @@ class node(_Methods_Base):
             logger.info('exception2 from _node_update_blocking(): %r',ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('node',node_id,now)
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -198,7 +198,7 @@ class node(_Methods_Base):
                                 site_id,exc_info=True)
                 else:
                     if self._is_master():
-                        sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                        sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         bindings3 = ('site',site_id,now)
                         try:
                             self.db._db_write(conn,sql3,bindings3,None,None,None)

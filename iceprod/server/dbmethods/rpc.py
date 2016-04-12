@@ -96,7 +96,7 @@ class rpc(_Methods_Base):
                 callback(ret)
             else:
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('search',newtask['task_id'],now)
                     bindings4 = ('task',newtask['task_id'],now)
                     try:
@@ -161,7 +161,7 @@ class rpc(_Methods_Base):
             return
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('search',newtask['task_id'],now)
                 bindings4 = ('task',newtask['task_id'],now)
                 try:
@@ -206,7 +206,7 @@ class rpc(_Methods_Base):
             return
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_stat',task_stat_id,now)
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -282,7 +282,7 @@ class rpc(_Methods_Base):
                 return
             else:
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('job',job_id,now)
                     try:
                         self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -369,7 +369,7 @@ class rpc(_Methods_Base):
                     callback(ret)
                 else:
                     if self._is_master():
-                        msql = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                        msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         mbindings1 = ('search',task,now)
                         mbindings2 = ('task',task,now)
                         mbindings3 = ('task_stat',task_stat_id,now)
@@ -424,7 +424,7 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_log',task_log_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -627,7 +627,7 @@ class rpc(_Methods_Base):
                 sql = db_updates_sql[i]
                 bindings = db_updates_bindings[i]
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = (sql.split()[2],bindings[0],now)
                     try:
                         self.db._db_write(conn,sql3,bindings3,None,None,None)
@@ -665,7 +665,7 @@ class rpc(_Methods_Base):
             callback(ret)
         else:
             if self._is_master():
-                sql3 = 'replace into master_update_history (table,update_index,timestamp) values (?,?,?)'
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('dataset',dataset_id,nowstr())
                 try:
                     self.db._db_write(conn,sql3,bindings3,None,None,None)
