@@ -504,6 +504,7 @@ var Submission = (function( $ ) {
             html += '</textarea></div>';
             if (data.dataset == null) {
                 html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
+                html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
                     html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
                 }
