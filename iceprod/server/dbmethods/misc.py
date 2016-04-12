@@ -294,7 +294,7 @@ class misc(_Methods_Base):
             bindings2 = (table,index)
             ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
             if ret and ret[0][0] >= timestamp:
-                log.info('newer data already present for %s %s %s',
+                logger.info('newer data already present for %s %s %s',
                          table, index, timestamp)
                 callback(None)
                 return

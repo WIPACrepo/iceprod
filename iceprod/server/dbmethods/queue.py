@@ -821,19 +821,19 @@ class queue(_Methods_Base):
                                             exc_info=True)
                     else:
                         sql = 'update search set task_status=? '
+                        if gridspec_assignment:
+                            sql += ', gridspec = ? '
                         sql += 'where task_id = ?'
                         sql2 = 'update task set prev_status = status, '
                         sql2 += 'status = ?, '
                         sql2 += 'status_changed = ? '
-                        if gridspec_assignment:
-                            sql2 += ', gridspec = ? '
                         sql2 += 'where task_id = ?'
                         for t in tasks:
-                            bindings = (new_status,t)
                             if gridspec_assignment:
-                                bindings2 = bindings+(gridspec_assignment,t)
+                                bindings = (new_status,gridspec_assignment,t)
                             else:
-                                bindings2 = bindings+(t,)
+                                bindings = (new_status,t)
+                            bindings2 = (new_status,now,t)
                             self._send_to_master(('search',t,now,sql,bindings))
                             self._send_to_master(('task',t,now,sql2,bindings2))
                 for t in tasks:
