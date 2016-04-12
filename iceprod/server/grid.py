@@ -171,7 +171,8 @@ class grid(object):
                     else:
                         tasks_queued += 1
                 except:
-                    pass
+                    logging.warn('error queued->reset for %r', t,
+                                 exc_info=True)
         self.tasks_queued = tasks_queued
 
         # check the processing status
@@ -185,7 +186,8 @@ class grid(object):
                     else:
                         tasks_processing += 1
                 except:
-                    pass
+                    logging.warn('error processing->reset for %r', t,
+                                 exc_info=True)
         self.tasks_processing = tasks_processing
 
         # check the resume,reset status
@@ -199,6 +201,12 @@ class grid(object):
         if 'resume' in tasks:
             for t in tasks['resume'].values():
                 idle_tasks.append(t)
+
+        logger.info('%d processing tasks',tasks_processing)
+        logger.info('%d queued tasks',tasks_queued)
+        logger.info('%d ->idle',len(idle_tasks))
+        logger.info('%d ->waiting',len(waiting_tasks))
+        logger.info('%d ->reset',len(reset_tasks))
 
         if idle_tasks:
             # change status to idle
