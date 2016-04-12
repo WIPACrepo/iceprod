@@ -731,8 +731,15 @@ class rpc(_Methods_Base):
         self.parent.queue_buffer_jobs_tasks(callback=cb)
 
     @dbmethod
-    def rpc_master_update(self, *args, **kwargs):
-        self.parent.misc_update_master_db(*args, **kwargs)
+    def rpc_master_update(self, updates, callback=None):
+        def cb(ret):
+            if isinstance(ret, Exception):
+                callbac(ret)
+            elif updates:
+                self.parent.misc_update_master_db(*updates.pop(0),callback=cb)
+            else:
+                callback()
+        cb(None)
 
     @dbmethod
     def rpc_stop_module(self, module_name, callback=None):
