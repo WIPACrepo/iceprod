@@ -782,17 +782,19 @@ class queue(_Methods_Base):
                 new_status = 'waiting' if global_queueing else 'queued'
                 now = nowstr()
                 sql = 'update search set task_status = ? '
+                bindings = [new_status]
+                if gridspec_assignment:
+                    sql += ', gridspec = ? '
+                    bindings.append(gridspec_assignment)
                 sql += 'where task_id in ('
                 sql += ','.join('?' for _ in tasks)
                 sql += ')'
-                bindings = (new_status,) + tuple(tasks)
+                bindings.extend(tasks)
+                bindings = tuple(bindings)
                 sql2 = 'update task set prev_status = status, '
                 sql2 += 'status = ?, '
                 sql2 += 'status_changed = ? '
                 bindings2 = [new_status, now]
-                if gridspec_assignment:
-                    sql2 += ', gridspec = ? '
-                    bindings2.append(gridspec_assignment)
                 sql2 += 'where task_id in ('
                 sql2 += ','.join('?' for _ in tasks)
                 sql2 += ')'

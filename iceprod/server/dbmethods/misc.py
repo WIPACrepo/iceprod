@@ -288,7 +288,7 @@ class misc(_Methods_Base):
             cb = partial(self._misc_update_db_blocking, table, index,
                          timestamp, sql, bindings, callback=callback)
             self.db.blocking_task(cb)
-    def _misc_misc_update_db_blocking(self, table, index, timestamp, sql,
+    def _misc_update_db_blocking(self, table, index, timestamp, sql,
                                       bindings, callback=None):
         conn,archive_conn = self.db._dbsetup()
         try:

@@ -90,7 +90,7 @@ class grid(object):
                 change = min(change,num_to_queue)
 
             # get queueing datasets from database
-            datasets = self.db.queue_get_queueing_datasets(gridspec=self.gridspec, async=False)
+            datasets = self.db.queue_get_queueing_datasets(async=False)
 
             if isinstance(datasets,Exception):
                 raise datasets
@@ -117,8 +117,8 @@ class grid(object):
         with self.check_run():
             # get tasks to queue
             tasks = self.db.queue_get_queueing_tasks(dataset_prios=dataset_prios,
-                                               gridspec=self.gridspec,
-                                               num=change,async=False)
+                                                     gridspec_assignment=self.gridspec,
+                                                     num=change,async=False)
             if isinstance(tasks,Exception):
                 raise tasks
             if not tasks:
