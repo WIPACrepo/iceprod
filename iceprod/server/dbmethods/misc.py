@@ -103,25 +103,6 @@ class misc(_Methods_Base):
                     keys = row2.keys()
             tables['task'] = {'keys':keys,'values':ret}
 
-        sql = 'select * from task_rel where task_rel_id in ('
-        sql += ','.join('?' for _ in task_rel_ids)
-        sql += ')'
-        bindings = tuple(task_rel_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        if ret:
-            keys = []
-            for row in ret:
-                if not keys:
-                    keys = self._list_to_dict('task',row).keys()
-                    break
-            tables['task'] = {'keys':keys,'values':ret}
-
         job_ids = set(search_table[id]['job_id'] for id in task_ids)
         sql = 'select * from job where job_id in ('
         sql += ','.join('?' for _ in job_ids)
@@ -165,6 +146,25 @@ class misc(_Methods_Base):
                 if not keys:
                     keys = row2.keys()
             tables['dataset'] = {'keys':keys,'values':ret}
+
+        sql = 'select * from task_rel where dataset_id in ('
+        sql += ','.join('?' for _ in dataset_ids)
+        sql += ')'
+        bindings = tuple(dataset_ids)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        if ret:
+            keys = []
+            for row in ret:
+                if not keys:
+                    keys = self._list_to_dict('task_rel',row).keys()
+                    break
+            tables['task_rel'] = {'keys':keys,'values':ret}
 
         sql = 'select * from config where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)
