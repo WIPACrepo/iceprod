@@ -12,6 +12,8 @@ import readline
 import parser as code_parser
 from functools import partial
 
+from IPython.Shell import IPShellEmbed
+
 import iceprod.server.basic_config
 import iceprod.server.RPCinternal
 
@@ -27,16 +29,6 @@ def set_signals(obj):
     signal.signal(signal.SIGINT, partial(handle_stop,obj))
     signal.signal(signal.SIGQUIT, partial(handle_kill,obj))
 
-
-modules = {'db','daemon','proxy','queue','schedule','website','config'}
-def completer(text, state):
-    options = [x for x in modules if x.startswith(text)]
-    try:
-        return options[state]
-    except IndexError:
-        return None
-
-
 def main(cfgfile):
     cfg = iceprod.server.basic_config.BasicConfig()
     cfg.read_file(cfgfile)
@@ -47,40 +39,22 @@ def main(cfgfile):
         'block':False,
         'service_name':'debug',
         'service_class':Response(),
-        'async':False,
+        'async':True,
     }
     messaging = iceprod.server.RPCinternal.RPCService(**kwargs)
     set_signals(messaging)
     messaging.start()
     
-    readline.set_completer(completer)
-    readline.parse_and_bind("tab: complete")
-    
-    history_file = os.path.expandvars(os.path.join('$HOME','.iceprod_debug_history'))
-    if os.path.exists(history_file):
-        readline.read_history_file(history_file)
-    
     try:
-        while True:
-            a = raw_input("> ").strip()
-            if a in ('q','quit','exit'):
-                raise EOFError()
-            try:
-                code = compile('messaging.'+a,'<string>','single')
-                eval(code)
-            except:
-                raise
-                print('bad input')
-    except EOFError:
-        pass
+        IPShellEmbed(argv=[])()
     finally:
-        readline.write_history_file(history_file)
+        messaging.stop()
 
 if __name__ == '__main__':
     import argparse
 
     # Override values with cmdline options
-    parser = argparse.ArgumentParser(description='IceProd Server')
+    parser = argparse.ArgumentParser(description='IceProd Debugger')
     parser.add_argument('-f','--file',dest='file',type=str,default=None,
                         help='Path to config file')
     args = parser.parse_args()
