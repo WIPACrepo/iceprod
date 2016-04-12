@@ -30,7 +30,9 @@ class queue(_Methods_Base):
         tasks = OrderedDict()
         try:
             for row in ret:
-                tasks[row[0]] = self._list_to_dict('task',row)
+                dict_row = self._list_to_dict('task',row)
+                dict_row['status_changed'] = str2datetime(dict_row['status_changed'])
+                tasks[row[0]] = dict_row
         except:
             return {}
         else:
