@@ -734,7 +734,7 @@ class rpc(_Methods_Base):
     def rpc_master_update(self, updates, callback=None):
         def cb(ret):
             if isinstance(ret, Exception):
-                callbac(ret)
+                callback(ret)
             elif updates:
                 self.parent.misc_update_master_db(*updates.pop(0),callback=cb)
             else:

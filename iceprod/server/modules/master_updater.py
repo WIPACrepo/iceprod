@@ -12,6 +12,8 @@ except ImportError:
     import pickle
 from collections import deque
 
+import tornado.ioloop
+
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.RPCinternal import RPCService
@@ -85,17 +87,22 @@ class master_updater(module.module):
             self.send_in_progress = True
             data = self.buffer[0]
             def cb(ret=None):
-                self.send_in_progress = False
                 if isinstance(ret,Exception):
                     logger.warn('error sending: %r',ret)
                 elif ret == 'ok':
                     self.buffer.popleft()
-                    self._send()
+                    return self._send()
                 else:
+                    self.send_in_progress = False
                     logger.warn('error sending: unexpected result: %r',
                                 ret)
+                # If the problem is server side, give it a minute.
+                # This should stop a DDOS from happening.
+                tornado.ioloop.IOLoop.current().call_later(60, self._send)
             params = {'updates':[data]}
             send_master(self.cfg,'master_update',callback=cb,**params)
+        else:
+            self.send_in_progress = False
 
 class UpdateService(module.Service):
     """

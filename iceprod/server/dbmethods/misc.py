@@ -282,8 +282,8 @@ class misc(_Methods_Base):
         :param bindings: Bindings for the sql statement.
         :returns: (via callback) success or failure
         """
-        if not tables or not isinstance(tables,dict):
-            callback(Exception('tables not a dict'))
+        if not table or not isinstance(table,dict):
+            callback(Exception('table not a dict'))
         else:
             cb = partial(self._misc_update_db_blocking, table, index,
                          timestamp, sql, bindings, callback=callback)
