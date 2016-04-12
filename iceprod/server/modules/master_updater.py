@@ -94,6 +94,8 @@ class master_updater(module.module):
                     tornado.ioloop.IOLoop.current().call_later(60, self._send)
                 else:
                     self.buffer.popleft()
+                    pickle.dump(self.buffer,open(self.filename+'_new','w'),-1)
+                    os.rename(self.filename+'_new',self.filename)
                     self._send()
             params = {'updates':[data]}
             send_master(self.cfg,'master_update',callback=cb,**params)
