@@ -771,7 +771,7 @@ class dbmethods_rpc_test(dbmethods_base):
         # no tasks sql error
         cb.called = False
         self.mock.setup(tables)
-        self.mock.failures = 1
+        self.mock.failures = True
         self._db.rpc_queue_master('',callback=cb)
 
         if cb.called is False:

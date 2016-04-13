@@ -13,6 +13,7 @@ import os
 import sys
 import time
 import random
+import getpass
 from datetime import datetime,timedelta
 from contextlib import contextmanager
 import shutil
@@ -201,7 +202,208 @@ class plugins_condor_test(grid_test.grid_test):
         except:
             pass
         else:
-            raise Exception('did not return Exception')
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_102_get_grid_status(self):
+        """Test get_grid_status"""
+        def caller(*args,**kwargs):
+            caller.called = True
+            caller.args = args
+            caller.kwargs = kwargs
+            if isinstance(caller.ret,Exception):
+                raise caller.ret
+            return caller.ret
+        flexmock(subprocess).should_receive('check_output').replace_with(caller)
+
+        site = 'thesite'
+        self.check_run_stop = False
+        name = 'grid1'
+        gridspec = site+'.'+name
+        submit_dir = os.path.join(self.test_dir,'submit_dir')
+        os.mkdir(submit_dir)
+        cfg = {'site_id':site,
+               'queue':{'max_resets':5,
+                        'submit_dir':submit_dir,
+                        name:{'platform':None,
+                              'batchopts':{},
+                              'monitor_address':None,
+                              }},
+               'download':{'http_username':None,'http_password':None},
+               'db':{'address':None,'ssl':False}}
+
+        # init
+        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                getattr(self.messaging,'db'))
+        g = condor(args)
+        if not g:
+            raise Exception('init did not return grid object')
+
+        # call empty queue
+        caller.called = False
+        caller.ret = ''
+
+        ret = g.get_grid_status()
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_q':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_q')
+        if ret != {}:
+            raise Exception('did not return empty dict')
+
+        # call with queued job
+        caller.called = False
+        caller.ret = '1234.0 1 '+os.path.join(submit_dir,'cmd.sh')
+
+        ret = g.get_grid_status()
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_q':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_q')
+        if ret != {'1234.0':{'status':'queued','submit_dir':submit_dir}}:
+            logger.info('ret: %r',ret)
+            raise Exception('did not return queued job')
+
+        # call with processing job
+        caller.called = False
+        caller.ret = '1234.0 2 '+os.path.join(submit_dir,'cmd.sh')
+
+        ret = g.get_grid_status()
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_q':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_q')
+        if ret != {'1234.0':{'status':'processing','submit_dir':submit_dir}}:
+            logger.info('ret: %r',ret)
+            raise Exception('did not return processing job')
+
+        # call with completed job
+        caller.called = False
+        caller.ret = '1234.0 4 '+os.path.join(submit_dir,'cmd.sh')
+
+        ret = g.get_grid_status()
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_q':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_q')
+        if ret != {'1234.0':{'status':'completed','submit_dir':submit_dir}}:
+            logger.info('ret: %r',ret)
+            raise Exception('did not return completed job')
+
+        # call with error job
+        for s in ('3','5','6'):
+            caller.called = False
+            caller.ret = '1234.0 '+s+' '+os.path.join(submit_dir,'cmd.sh')
+
+            ret = g.get_grid_status()
+            if not caller.called:
+                raise Exception('subprocess.call not called')
+            if caller.args[0][0] != 'condor_q':
+                logger.info('args: %r',caller.args)
+                raise Exception('does not start with condor_q')
+            if ret != {'1234.0':{'status':'error','submit_dir':submit_dir}}:
+                logger.info('ret: %r',ret)
+                raise Exception('did not return error job')
+
+        # call with unknown job
+        caller.called = False
+        caller.ret = '1234.0 blah '+os.path.join(submit_dir,'cmd.sh')
+
+        ret = g.get_grid_status()
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_q':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_q')
+        if ret != {'1234.0':{'status':'unknown','submit_dir':submit_dir}}:
+            logger.info('ret: %r',ret)
+            raise Exception('did not return unknown job')
+
+        # call failed
+        caller.called = False
+        caller.ret = Exception('bad call')
+
+        try:
+            g.get_grid_status()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+        # call with junk output
+        caller.called = False
+        caller.ret = 'blah\nfoo bar'
+
+        try:
+            ret = g.get_grid_status()
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_103_remove(self):
+        """Test remove"""
+        def caller(*args,**kwargs):
+            caller.called = True
+            caller.args = args
+            caller.kwargs = kwargs
+            if isinstance(caller.ret,Exception):
+                raise caller.ret
+            return caller.ret
+        flexmock(subprocess).should_receive('check_call').replace_with(caller)
+
+        site = 'thesite'
+        self.check_run_stop = False
+        name = 'grid1'
+        gridspec = site+'.'+name
+        submit_dir = os.path.join(self.test_dir,'submit_dir')
+        os.mkdir(submit_dir)
+        cfg = {'site_id':site,
+               'queue':{'max_resets':5,
+                        'submit_dir':submit_dir,
+                        name:{'platform':None,
+                              'batchopts':{},
+                              'monitor_address':None,
+                              }},
+               'download':{'http_username':None,'http_password':None},
+               'db':{'address':None,'ssl':False}}
+
+        # init
+        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                getattr(self.messaging,'db'))
+        g = condor(args)
+        if not g:
+            raise Exception('init did not return grid object')
+
+        # remove task
+        caller.called = False
+        caller.ret = ''
+
+        g.remove(['1','2'])
+        if not caller.called:
+            raise Exception('subprocess.call not called')
+        if caller.args[0][0] != 'condor_rm':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not start with condor_rm')
+        if caller.args[0][1] != '1':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not remove 1')
+        if caller.args[0][2] != '2':
+            logger.info('args: %r',caller.args)
+            raise Exception('does not remove 2')
+
+        # no tasks
+        caller.called = False
+        caller.ret = ''
+
+        g.remove([])
+        if caller.called:
+            raise Exception('subprocess.call when no tasks')
 
 
 def load_tests(loader, tests, pattern):

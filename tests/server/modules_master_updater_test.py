@@ -158,24 +158,14 @@ class modules_master_updater_test(unittest.TestCase):
         if q.send_in_progress is not True:
             raise Exception('send_in_progress not True')
         send.kwargs['callback'](Exception())
-        if q.send_in_progress is True:
-            raise Exception('did not disable send_in_progress')
         if not q.buffer or q.buffer[0] != msg:
             raise Exception('message not in buffer')
 
-        q.send_in_progress = True
         send.kwargs['callback']()
-        if q.send_in_progress is True:
-            raise Exception('did not disable send_in_progress')
-        if not q.buffer or q.buffer[0] != msg:
-            raise Exception('message not in buffer')
-
-        q.send_in_progress = True
-        send.kwargs['callback']('ok')
-        if q.send_in_progress is True:
-            raise Exception('did not disable send_in_progress')
         if q.buffer:
             raise Exception('message still in buffer')
+        if q.send_in_progress is True:
+            raise Exception('did not disable send_in_progress')
 
 
 def load_tests(loader, tests, pattern):

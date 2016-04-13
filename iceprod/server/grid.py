@@ -29,7 +29,7 @@ class grid(object):
     Do not use this class directly.  Use one of the plugins.
     """
 
-    # use only these grid states when defining job status
+    # use only these grid states when defining grid status
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
     def __init__(self,args):
@@ -64,8 +64,6 @@ class grid(object):
             self.check_iceprod()
         with self.check_run():
             self.check_grid()
-        with self.check_run():
-            self.clean()
 
     def queue(self):
         """Queue tasks to the grid"""
@@ -202,8 +200,8 @@ class grid(object):
             for t in tasks['resume'].values():
                 idle_tasks.append(t)
 
-        logger.info('%d processing tasks',tasks_processing)
-        logger.info('%d queued tasks',tasks_queued)
+        logger.info('%d processing tasks',self.tasks_processing)
+        logger.info('%d queued tasks',self.tasks_queued)
         logger.info('%d ->idle',len(idle_tasks))
         logger.info('%d ->waiting',len(waiting_tasks))
         logger.info('%d ->reset',len(reset_tasks))
@@ -242,153 +240,112 @@ class grid(object):
 
     def check_grid(self):
         """check the queueing system for problems"""
-        # check if any task is in a state for too long
-        tasks = self.get_task_status()
-        if tasks is None:
-            raise Exception('get_task_status() on %s returned none'%self.gridspec)
-        elif isinstance(tasks,Exception):
+        # get time limits
+        try:
+            queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
+        except:
+            queued_time = timedelta(seconds=86400*2)
+        try:
+            processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
+        except:
+            processing_time = timedelta(seconds=86400*2)
+        try:
+            suspend_time = timedelta(seconds=self.queue_cfg['suspend_submit_dir_time'])
+        except:
+            suspend_time = timedelta(seconds=86400)
+        all_time = queued_time + processing_time + suspend_time
+        time_dict = {'queued': queued_time, 'processing': processing_time,
+                     'completed': all_time, 'error': all_time,
+                     'unknown': all_time}
+        now = datetime.utcnow()
+
+        # get tasks from iceprod
+        if ('submit_pilots' in self.cfg['queue'] and
+            self.cfg['queue']['submit_pilots']):
+            tasks = self.db.queue_get_pilots(async=False)
+        else:
+            tasks = self.db.queue_get_grid_tasks(gridspec=self.gridspec,async=False)
+        if isinstance(tasks,Exception):
             raise tasks
-        elif not isinstance(tasks,dict):
+
+        # convert to dict for fast lookup
+        tasks = {t['grid_queue_id']:t for t in tasks}
+
+        # get grid status
+        grid_tasks = self.get_grid_status()
+        if not isinstance(grid_tasks,dict):
             raise Exception('get_task_status() on %s did not return a dict'%self.gridspec)
 
-        now = datetime.utcnow()
-        reset_tasks = []
+        reset_tasks = set()
+        remove_grid_tasks = set()
+        delete_dirs = set()
 
-        # check the queued status
-        if 'queued' in tasks:
-            max_task_queued_time = self.queue_cfg['max_task_queued_time']
-            for t in tasks['queued'].values():
-                try:
-                    if now - t['status_changed'] > timedelta(seconds=max_task_queued_time):
-                        reset_tasks.append(t)
-                except:
-                    pass
+        prechecked_dirs = set()
 
-        # check the processing status
-        if 'processing' in tasks:
-            max_task_processing_time = self.queue_cfg['max_task_processing_time']
-            for t in tasks['processing'].values():
-                try:
-                    if now - t['status_changed'] > timedelta(seconds=max_task_processing_time):
-                        reset_tasks.append(t)
-                except:
-                    pass
+        # check the grid tasks
+        for grid_queue_id in grid_tasks:
+            status = grid_tasks[grid_queue_id]['status']
+            submit_dir = grid_tasks[grid_queue_id]['submit_dir']
+            if grid_queue_id in tasks:
+                # iceprod knows about this one
+                if submit_dir != tasks[grid_queue_id]['submit_dir']:
+                    # mixup - delete the grid side
+                    remove_grid_tasks.add(grid_queue_id)
+                if now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
+                    if ('submit_pilots' in self.cfg['queue'] and
+                        self.cfg['queue']['submit_pilots']):
+                        reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
+                    else:
+                        reset_tasks.add(tasks[grid_queue_id]['task_id'])
+            else:
+                # what iceprod doesn't know must be killed
+                if status in ('queued','processing','unknown'):
+                    remove_grid_tasks.add(grid_queue_id)
+            # queueing systems don't like deleteing directories they know
+            # about, so put them on a list of "don't touch"
+            prechecked_dirs.add(submit_dir)
 
-        # check the error status
-        if 'error' in tasks:
-            for t in tasks['error'].values():
-                reset_tasks.append(t)
-        if 'unknown' in tasks:
-            for t in tasks['unknown'].values():
-                reset_tasks.append(t)
+        # check submit directories
+        for x in os.listdir(self.submit_dir):
+            d = os.path.join(self.submit_dir,x)
+            if d in prechecked_dirs:
+                continue
+            if os.path.isdir(d) and '_' in x:
+                logger.debug('found submit_dir %s',d)
+                mtime = datetime.utcfromtimestamp(os.path.getmtime(d))
+                if now-mtime < suspend_time:
+                    logger.debug('skip submit_dir for recent suspended task')
+                    continue # skip for suspended or failed tasks
+                delete_dirs.add(d)
 
-        if len(reset_tasks) > 0:
-            # reset some tasks
-            max_resets = self.cfg['queue']['max_resets']
-            failures = []
-            resets = []
-            for t in reset_tasks:
-                if t['failures'] >= max_resets:
-                    failures.append(t['task_id'])
-                else:
-                    resets.append(t['task_id'])
-            ret = self.db.queue_reset_tasks(reset=resets,fail=failures,async=False)
+        # reset tasks
+        if reset_tasks:
+            logger.info('reset %r',reset_tasks)
+            if ('submit_pilots' in self.cfg['queue'] and
+                self.cfg['queue']['submit_pilots']):
+                ret = self.db.queue_del_pilots(pilots=reset_tasks, async=False)
+            else:
+                ret = self.db.queue_set_task_status(task=reset_tasks,
+                                                    status='reset', async=False)
             if isinstance(ret,Exception):
                 raise ret
 
-    def clean(self):
-        """Clean submit dirs and the grid system. Reset tasks."""
-        submit_dir = self.submit_dir
-        suspend_time = self.queue_cfg['suspend_submit_dir_time']
-        now = datetime.utcnow()
-
-        delete_list = set()
-        tasks = {}
-        reset_tasks = set()
-
-        # get active tasks
-        if ('submit_pilots' in self.cfg['queue'] and
-            self.cfg['queue']['submit_pilots']):
-            active_tasks = self.db.queue_get_active_pilots(async=False)
-        else:
-            active_tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
-        if active_tasks is None:
-            raise Exception('db.queue_get_active_tasks(%s) returned none'%self.gridspec)
-        elif isinstance(active_tasks,Exception):
-            raise active_tasks
-        elif not isinstance(active_tasks,dict):
-            raise Exception('db.queue_get_active_tasks(%s) did not return a dict'%self.gridspec)
-
-        if 'queued' in active_tasks:
-            tasks.update(active_tasks['queued'])
-        if 'processing' in active_tasks:
-            tasks.update(active_tasks['processing'])
-        if 'reset' in active_tasks:
-            tasks.update(active_tasks['reset'])
-            reset_tasks.update(active_tasks['reset'])
-            for t in active_tasks['reset'].values():
-                delete_list.add(t['submit_dir'])
-        if 'resume' in active_tasks:
-            tasks.update(active_tasks['resume'])
-            reset_tasks.update(active_tasks['resume'])
-            for t in active_tasks['resume'].values():
-                delete_list.add(t['submit_dir'])
-
-        # check for directories that don't have an active task run in the last day
-        for x in os.listdir(submit_dir):
-            d = os.path.join(submit_dir,x)
-            if os.path.isdir(d) and '_' in x:
-                logger.debug('found submit_dir %s',d)
-                key = x.split('_')[0]
-                if key in tasks and tasks[key]['submit_dir'] == d:
-                    logger.debug('skip submit_dir for active task')
-                    continue # skip for active task
-                mtime = datetime.utcfromtimestamp(os.path.getmtime(d))
-                if mtime >= now-timedelta(seconds=suspend_time):
-                    logger.debug('skip submit_dir for recent suspended task')
-                    continue # skip for suspended or failed tasks
-                delete_list.add(d)
+        # remove grid tasks
+        if remove_grid_tasks:
+            logger.info('remove %r',remove_grid_tasks)
+            self.remove(remove_grid_tasks)
 
         # delete dirs that need deleting
-        for t in delete_list:
-            if not t.startswith(submit_dir):
+        for t in delete_dirs:
+            if not t.startswith(self.submit_dir):
                 # some security against nefarious things
-                raise Exception('directory %s not in submit_dir %s'%(t,submit_dir))
+                raise Exception('directory %s not in submit_dir %s'%(t,self.submit_dir))
             try:
                 logger.info('deleting submit_dir %s',t)
                 functions.removedirs(t)
             except:
                 logger.warn('could not delete submit dir %s',t,exc_info=True)
                 continue
-
-        # check grid system
-        grid_tasks = self.get_task_status()
-        if grid_tasks is None:
-            raise Exception('get_task_status() on %s returned none'%self.gridspec)
-        elif not isinstance(grid_tasks,dict):
-            raise Exception('get_task_status() on %s did not return a dict'%self.gridspec)
-
-        # resolve mixups between grid system and iceprod
-        grid_reset_list = {}
-        for s in grid_tasks:
-            if s in ('error','unknown'):
-                grid_reset_list.update(grid_tasks[s])
-        for t in tasks:
-            for s in grid_tasks:
-                if s in ('error','unknown') and t in grid_tasks[s]:
-                    if tasks[t]['status'] in ('queued','processing'):
-                        logger.warn('resetting task %s',t)
-                        reset_tasks.add(t)
-                    grid_reset_list[t] = grid_tasks[s][t]
-        if grid_reset_list:
-            self.remove(grid_reset_list)
-
-        if reset_tasks:
-            # reset some tasks
-            ret = self.db.queue_set_task_status(task=reset_tasks,status='waiting',
-                                                async=False)
-            if isinstance(ret,Exception):
-                raise ret
 
     def setup_pilots(self, tasks):
         """Setup pilots for each task"""
@@ -582,12 +539,10 @@ class grid(object):
 
     ### Plugin Overrides ###
 
-    def get_task_status(self,task_id=None):
-        """Get task status from queueing system.
-           Get all task statuses if id is not specified.
-           Returns {status:{task_id:task}}
+    def get_grid_status(self):
+        """Get all tasks running on the queue system.
+           Returns {grid_queue_id:{status,submit_dir}}
         """
-        # the DB method get_task_by_grid_queue_id() may be useful
         return {}
 
     def generate_submit_file(self,task,cfg=None,passkey=None,filelist=None):
@@ -598,21 +553,6 @@ class grid(object):
         """Submit task to queueing system."""
         raise NotImplementedError()
 
-    def remove(self,tasks=None):
-        """Remove task(s) from queueing system.  Remove all tasks if tasks is None."""
+    def remove(self,tasks):
+        """Remove tasks from queueing system."""
         pass
-
-    def task_to_grid_name(self,task):
-        """Convert from task to grid_name"""
-        # default queued task name: i(task_id)
-        # starts with i to be first-char alphabetic (required by pbs)
-        return 'i%s'%(task['task_id'])
-
-    def grid_name_to_task_id(self,grid_name):
-        """Convert from grid name to task_id"""
-        if grid_name[0] == 'i':
-            task_id = grid_name[1:]
-            return task_id
-        else:
-            raise Exception('bad grid name')
-

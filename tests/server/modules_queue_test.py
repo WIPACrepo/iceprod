@@ -624,7 +624,7 @@ class queue_test(unittest.TestCase):
                         'task_buffer':10,
                         'plugin1':{'type':'Test1dag','description':'d'},
                        },
-               'master':{'url':'a://url'}
+               'master':{'url':'a://url','passkey':'pass'}
               }
         bcfg = basic_config.BasicConfig()
         bcfg.messaging_url = 'localhost'

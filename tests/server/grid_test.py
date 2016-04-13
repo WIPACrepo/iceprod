@@ -120,11 +120,8 @@ class grid_test(unittest.TestCase):
             check_iceprod.called = True
         def check_grid():
             check_grid.called = True
-        def clean():
-            clean.called = True
         flexmock(grid).should_receive('check_iceprod').replace_with(check_iceprod)
         flexmock(grid).should_receive('check_grid').replace_with(check_grid)
-        flexmock(grid).should_receive('clean').replace_with(clean)
 
         site = 'thesite'
         self.check_run_stop = False
@@ -146,15 +143,12 @@ class grid_test(unittest.TestCase):
         # call normally
         check_iceprod.called = False
         check_grid.called = False
-        clean.called = False
         g.check_and_clean()
 
         if not check_iceprod.called:
             raise Exception('did not call check_iceprod()')
         if not check_grid.called:
             raise Exception('did not call check_grid()')
-        if not clean.called:
-            raise Exception('did not call clean()')
 
         # kill early
         self.check_run_stop = True
@@ -456,182 +450,21 @@ class grid_test(unittest.TestCase):
     @unittest_reporter
     def test_021_check_grid(self):
         """Test check_grid"""
-        def get_task_status(t=None):
-            get_task_status.called = True
-            get_task_status.args = t
-            if get_task_status.ret:
-                return get_task_status.ret
+        def get_grid_status(t=None):
+            get_grid_status.called = True
+            get_grid_status.args = t
+            if get_grid_status.ret:
+                return get_grid_status.ret
             else:
-                raise Exception('bad task status')
-        flexmock(grid).should_receive('get_task_status').replace_with(get_task_status)
-
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        name:{'tasks_on_queue':[1,5,2],
-                              'max_task_queued_time':1000,
-                              'max_task_processing_time':1000,
-                              'max_task_reset_time':300,
-                              'monitor_address':'localhost'
-                              }},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = grid(args)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        now = datetime.utcnow()
-
-        # call normally
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                       }
-        self.messaging.ret = {'db':{'reset_tasks':True}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('normal: did not call get_task_status')
-        if any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('normal: called reset_tasks when nothing to reset')
-
-        # add error task
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'error':{3:{'task_id':3,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                       }
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('error task: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('error task: did not call reset_tasks')
-
-        # add unknown task
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'unknown':{4:{'task_id':4,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                       }
-        g.tasks_queued = 0
-        self.messaging.called = []
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('unknown task: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('unknown task: did not call reset_tasks')
-
-        # queued error
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=1500)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                       }
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('queued error: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('queued error: did not call reset_tasks')
-
-        # processing error
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=1500)}},
-                       }
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('processing error: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('processing error: did not call reset_tasks')
-
-        # processing failure
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':20,'status_changed':now-timedelta(seconds=1500)}},
-                       }
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        g.check_grid()
-
-        if not get_task_status.called:
-            raise Exception('processing failure: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('processing failure: did not call reset_tasks')
-        if ('fail' not in self.messaging.called[-1][3] or
-            ('fail' in self.messaging.called[-1][3] and
-             not self.messaging.called[-1][3]['fail'])):
-            raise Exception('processing failure: did not set fail arg')
-
-        # error resetting
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,'status_changed':now-timedelta(seconds=1500)}},
-                       }
-        self.messaging.ret = {'db':{'queue_reset_tasks':Exception()}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
-
-        try:
-            g.check_grid()
-        except:
-            pass
-        else:
-            raise Exception('error resetting: did not raise Exception')
-        if not get_task_status.called:
-            raise Exception('error resetting: did not call get_task_status')
-        if not any('queue_reset_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('error resetting: did not call reset_tasks')
-
-    @unittest_reporter
-    def test_022_clean(self):
-        """Test clean"""
-        def get_task_status(t=None):
-            get_task_status.called = True
-            get_task_status.args = t
-            if get_task_status.ret:
-                return get_task_status.ret
-            else:
-                raise Exception('bad task status')
-        def remove(dirs):
+                raise Exception('bad grid status')
+        flexmock(grid).should_receive('get_grid_status').replace_with(get_grid_status)
+        def remove(t=None):
             remove.called = True
-            remove.args = dirs
+            remove.args = t
             if remove.ret:
                 return remove.ret
             else:
-                raise Exception('bad remove')
-        flexmock(grid).should_receive('get_task_status').replace_with(get_task_status)
+                raise Exception()
         flexmock(grid).should_receive('remove').replace_with(remove)
 
         site = 'thesite'
@@ -646,7 +479,6 @@ class grid_test(unittest.TestCase):
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,
                               'max_task_reset_time':300,
-                              'suspend_submit_dir_time':10000,
                               'monitor_address':'localhost'
                               }},
                'db':{'address':None,'ssl':False}}
@@ -661,377 +493,413 @@ class grid_test(unittest.TestCase):
         now = datetime.utcnow()
 
         # call normally
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                       }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        grid_tasks = {0:{'status':'queued','submit_dir':''},
+                      1:{'status':'processing','submit_dir':''}}
+        self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = active_tasks
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
         remove.called = False
-        remove.ret = True
+        remove.ret = None
 
-        g.clean()
+        g.check_grid()
 
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('normal: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('normal: did not call get_task_status')
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
         if remove.called:
-            raise Exception('normal: called remove when nothing to remove')
+            raise Exception('called remove')
+        if not any('queue_get_grid_tasks' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_grid_tasks')
         if any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('normal: called set_task_status when nothing to change')
+            raise Exception('called queue_set_task_status when nothing to reset')
 
-        # reset by DB
-        reset_submit_dir = os.path.join(submit_dir,'reset')
-        os.mkdir(reset_submit_dir)
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                        'reset':{3:{'task_id':3,'failures':0,
-                                    'status':'reset',
-                                    'submit_dir':reset_submit_dir,
-                                    'status_changed':now-timedelta(seconds=30)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
+        # queued error
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=1500)},
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
 
-        g.clean()
+        g.check_grid()
 
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('reset by DB: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('reset by DB: did not call get_task_status')
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
         if remove.called:
-            raise Exception('reset by DB: called remove when nothing to remove')
+            raise Exception('called remove')
+        if not any('queue_get_grid_tasks' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_grid_tasks')
         if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('reset by DB: did not call set_task_status')
-        if os.path.isdir(reset_submit_dir):
-            raise Exception('reset by DB: did not delete submit dir')
+            raise Exception('did not call queue_set_task_status')
 
-        # resume by DB
-        resume_submit_dir = os.path.join(submit_dir,'resume')
-        os.mkdir(resume_submit_dir)
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                        'resume':{3:{'task_id':3,'failures':0,
-                                    'status':'resume',
-                                    'submit_dir':resume_submit_dir,
-                                    'status_changed':now-timedelta(seconds=30)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
+        # processing error
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=1500)},
+                       ]
+        self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
 
-        g.clean()
+        g.check_grid()
 
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('resume by DB: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('resume by DB: did not call get_task_status')
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
         if remove.called:
-            raise Exception('resume by DB: called remove when nothing to remove')
+            raise Exception('called remove')
+        if not any('queue_get_grid_tasks' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_grid_tasks')
         if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('resume by DB: did not call set_task_status')
-        if os.path.isdir(resume_submit_dir):
-            raise Exception('resume by DB: did not delete submit dir')
+            raise Exception('did not call queue_set_task_status')
 
-        # old submit dir
-        old_submit_dir = os.path.join(submit_dir,'12_old')
-        old_submit_dir2 = os.path.join(submit_dir,'1_old')
-        old_submit_dir3 = os.path.join(submit_dir,'24_old')
-        os.mkdir(old_submit_dir)
-        os.utime(old_submit_dir,(time.time()-20000,time.time()-20000))
-        os.mkdir(old_submit_dir2)
-        os.utime(old_submit_dir2,(time.time()-20000,time.time()-20000))
-        os.mkdir(old_submit_dir3)
-        os.utime(old_submit_dir3,(time.time()-200,time.time()-200))
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'submit_dir':'something_else',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
+        # error getting tasks
+        self.messaging.ret = {'db':{'queue_get_grid_tasks':Exception(),
                                     'queue_set_task_status':True}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
-
-        g.clean()
-
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('old_submit_dir: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('old_submit_dir: did not call get_task_status')
-        if remove.called:
-            raise Exception('old_submit_dir: called remove when nothing to remove')
-        if any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('old_submit_dir: called set_task_status when nothing to change')
-        if os.path.isdir(old_submit_dir):
-            raise Exception('old_submit_dir: did not delete submit dir')
-        if os.path.isdir(old_submit_dir2):
-            raise Exception('old_submit_dir: did not delete submit dir2')
-        if not os.path.isdir(old_submit_dir3):
-            raise Exception('old_submit_dir: deleted submit dir3 when not supposed to')
-        os.rmdir(old_submit_dir3)
-
-        # error by grid
-        error_submit_dir = os.path.join(submit_dir,'3_error')
-        os.mkdir(error_submit_dir)
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)},
-                                      3:{'task_id':3,'failures':0,
-                                         'status':'processing',
-                                         'submit_dir':error_submit_dir,
-                                         'status_changed':now-timedelta(seconds=150)}
-                                     },
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                      'error':{3:{'task_id':3,'failures':0,
-                                  'status':'processing',
-                                  'submit_dir':error_submit_dir,
-                                  'status_changed':now-timedelta(seconds=430)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
-                                    'queue_set_task_status':True}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
-
-        g.clean()
-
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('error by grid: did not call get_task_status')
-        if not remove.called:
-            raise Exception('error by grid: did not call remove')
-        if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid: did not call set_task_status')
-        if not os.path.isdir(error_submit_dir):
-            raise Exception('error by grid: deleted submit dir when not supposed to')
-        os.rmdir(error_submit_dir)
-
-        # error by grid2
-        error_submit_dir = os.path.join(submit_dir,'3_error')
-        os.mkdir(error_submit_dir)
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                        'reset':{3:{'task_id':3,'failures':0,
-                                   'status':'reset',
-                                   'submit_dir':error_submit_dir,
-                                   'status_changed':now-timedelta(seconds=50)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                      'error':{3:{'task_id':3,'failures':0,
-                                  'status':'reset',
-                                  'submit_dir':error_submit_dir,
-                                  'status_changed':now-timedelta(seconds=430)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
-                                    'queue_set_task_status':True}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
-
-        g.clean()
-
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid2: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('error by grid2: did not call get_task_status')
-        if not remove.called:
-            raise Exception('error by grid2: did not call remove')
-        if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid2: did not call set_task_status')
-        if os.path.isdir(error_submit_dir):
-            raise Exception('error by grid: did not delete submit dir')
-
-        # error by grid3
-        error_submit_dir = os.path.join(submit_dir,'3_error')
-        os.mkdir(error_submit_dir)
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                      'error':{3:{'task_id':3,'failures':0,
-                                  'status':'processing',
-                                  'submit_dir':error_submit_dir,
-                                  'status_changed':now-timedelta(seconds=430)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
-                                    'queue_set_task_status':True}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
-
-        g.clean()
-
-        if not any('queue_get_active_tasks' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid3: did not call get_active_tasks')
-        if not get_task_status.called:
-            raise Exception('error by grid3: did not call get_task_status')
-        if not remove.called:
-            raise Exception('error by grid3: did not call remove')
-        if any('queue_set_task_status' == x[1] for x in self.messaging.called):
-            raise Exception('error by grid3: called set_task_status when not supposed to')
-        if not os.path.isdir(error_submit_dir):
-            raise Exception('error by grid3: deleted submit dir when not supposed to')
-        os.rmdir(error_submit_dir)
-
-        # get_active_tasks error
-        self.messaging.ret = {'db':{'queue_get_active_tasks':Exception()}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
 
         try:
-            g.clean()
+            g.check_grid()
         except:
             pass
         else:
-            raise Exception('get_active_tasks error: did not raise Exception')
+            raise Exception('did not raise Exception')
+        if get_grid_status.called:
+            raise Exception('called get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_grid_tasks' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_grid_tasks')
+        if any('queue_set_task_status' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_set_task_status')
 
-        # get_active_tasks error2
-        self.messaging.ret = {'db':{'queue_get_active_tasks':None}}
-        self.messaging.called = []
-        g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
-
-        try:
-            g.clean()
-        except:
-            pass
-        else:
-            raise Exception('get_active_tasks error2: did not raise Exception')
-
-        # set_task_status error
-        active_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                     'status':'queued',
-                                     'status_changed':now-timedelta(seconds=150)}},
-                        'processing':{2:{'task_id':2,'failures':0,
-                                         'status':'processing',
-                                         'status_changed':now-timedelta(seconds=150)}},
-                        'reset':{3:{'task_id':3,'failures':0,
-                                  'status':'reset',
-                                  'submit_dir':error_submit_dir,
-                                  'status_changed':now-timedelta(seconds=430)}},
-                       }
-        grid_tasks = {'queued':{1:{'task_id':1,'failures':0,
-                                   'status':'queued',
-                                   'status_changed':now-timedelta(seconds=150)}},
-                      'processing':{2:{'task_id':2,'failures':0,
-                                       'status':'processing',
-                                       'status_changed':now-timedelta(seconds=150)}},
-                     }
-        self.messaging.ret = {'db':{'queue_get_active_tasks':active_tasks,
+        # error resetting
+        self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':Exception()}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_task_status.called = False
-        get_task_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
 
         try:
-            g.clean()
+            g.check_grid()
         except:
             pass
         else:
-            raise Exception('set_task_status error: did not raise Exception')
+            raise Exception('did not raise Exception')
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_grid_tasks' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_grid_tasks')
+        if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_set_task_status')
+
+    @unittest_reporter
+    def test_022_check_grid_pilots(self):
+        """Test check_grid with pilots"""
+        def get_grid_status(t=None):
+            get_grid_status.called = True
+            get_grid_status.args = t
+            if get_grid_status.ret:
+                return get_grid_status.ret
+            else:
+                raise Exception('bad grid status')
+        flexmock(grid).should_receive('get_grid_status').replace_with(get_grid_status)
+        def remove(t=None):
+            remove.called = True
+            remove.args = t
+            if remove.ret:
+                return remove.ret
+            else:
+                raise Exception()
+        flexmock(grid).should_receive('remove').replace_with(remove)
+
+        site = 'thesite'
+        self.check_run_stop = False
+        name = 'grid1'
+        gridspec = site+'.'+name
+        submit_dir = os.path.join(self.test_dir,'submit_dir')
+        cfg = {'site_id':site,
+               'queue':{'max_resets':5,
+                        'submit_dir':submit_dir,
+                        'submit_pilots':True,
+                        name:{'tasks_on_queue':[1,5,2],
+                              'max_task_queued_time':1000,
+                              'max_task_processing_time':1000,
+                              'max_task_reset_time':300,
+                              'suspend_submit_dir_time':1000,
+                              'monitor_address':'localhost'
+                              }},
+               'db':{'address':None,'ssl':False}}
+
+        # init
+        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
+                getattr(self.messaging,'db'))
+        g = grid(args)
+        if not g:
+            raise Exception('init did not return grid object')
+
+        now = datetime.utcnow()
+
+        # call normally
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        grid_tasks = {0:{'status':'queued','submit_dir':''},
+                      1:{'status':'processing','submit_dir':''}}
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+        remove.called = False
+        remove.ret = None
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots when nothing to reset')
+
+        # queued error
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=1500)},
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_del_pilots')
+
+        # processing error
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=1500)},
+                       ]
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_del_pilots')
+
+        # error getting tasks
+        self.messaging.ret = {'db':{'queue_get_pilots':Exception(),
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        g.tasks_queued = 0
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+
+        try:
+            g.check_grid()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        if get_grid_status.called:
+            raise Exception('called get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots')
+
+        # error resetting
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':Exception()}}
+        self.messaging.called = []
+        g.tasks_queued = 0
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+
+        try:
+            g.check_grid()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_del_pilots')
+
+        # mixup between grid and iceprod
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'foo',
+                         'submit_time':now-timedelta(seconds=150)},
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        grid_tasks = {0:{'status':'queued','submit_dir':'bar'},
+                      1:{'status':'processing','submit_dir':''}}
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+        remove.called = False
+        remove.ret = True
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if not remove.called:
+            raise Exception('did not call remove')
+        if remove.args != set([0]):
+            logger.debug('expected: set([0])')
+            logger.debug('actual: %r',remove.args)
+            raise Exception('did not remove grid_queue_id 0')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots when nothing to reset')
+
+        # old pilots on queue
+        active_tasks = [{'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        grid_tasks = {0:{'status':'queued','submit_dir':''},
+                      1:{'status':'processing','submit_dir':''}}
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+        remove.called = False
+        remove.ret = True
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if not remove.called:
+            raise Exception('did not call remove')
+        if remove.args != set([0]):
+            logger.debug('expected: set([0])')
+            logger.debug('actual: %r',remove.args)
+            raise Exception('did not remove grid_queue_id 0')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots when nothing to reset')
+
+        # ok submit dirs
+        if not os.path.exists(submit_dir):
+            os.makedirs(submit_dir)
+        os.makedirs(os.path.join(submit_dir,'s_1'))
+        os.makedirs(os.path.join(submit_dir,'s_2'))
+        active_tasks = [{'pilot_id':2,'grid_queue_id':1,'submit_dir':os.path.join(submit_dir,'s_2'),
+                         'submit_time':now-timedelta(seconds=150)},
+                       ]
+        grid_tasks = {0:{'status':'queued','submit_dir':os.path.join(submit_dir,'s_1')},
+                      1:{'status':'processing','submit_dir':os.path.join(submit_dir,'s_2')}}
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+        remove.called = False
+        remove.ret = True
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if not remove.called:
+            raise Exception('did not call remove')
+        if remove.args != set([0]):
+            logger.debug('expected: set([0])')
+            logger.debug('actual: %r',remove.args)
+            raise Exception('did not remove grid_queue_id 0')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots when nothing to reset')
+
+        # bad submit dirs
+        os.makedirs(os.path.join(submit_dir,'s_0'))
+        os.makedirs(os.path.join(submit_dir,'secure'))
+        old_time = time.time()-1500
+        os.utime(os.path.join(submit_dir,'s_0'), (old_time,old_time))
+        os.utime(os.path.join(submit_dir,'secure'), (old_time,old_time))
+        grid_tasks = {1:{'status':'processing','submit_dir':os.path.join(submit_dir,'s_2')}}
+        self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
+                                    'queue_del_pilots':True}}
+        self.messaging.called = []
+        get_grid_status.called = False
+        get_grid_status.ret = grid_tasks
+        remove.called = False
+
+        g.check_grid()
+
+        if not get_grid_status.called:
+            raise Exception('did not call get_grid_status')
+        if remove.called:
+            raise Exception('called remove')
+        if os.path.exists(os.path.join(submit_dir,'s_0')):
+            raise Exception('did not clean old submit dir')
+        if not os.path.exists(os.path.join(submit_dir,'s_1')):
+            raise Exception('cleaned suspended submit dir')
+        if not os.path.exists(os.path.join(submit_dir,'secure')):
+            raise Exception('cleaned non-submit dir')
+        if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_get_pilots')
+        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('called queue_del_pilots when nothing to reset')
 
     @unittest_reporter
     def test_023_setup_submit_directory(self):
@@ -1246,6 +1114,7 @@ class grid_test(unittest.TestCase):
 
         # call normally
         g.tasks_queued = 0
+        generate_submit_file.called = False
         generate_submit_file.ret = True
         submit.ret = '12345'
 
@@ -1291,80 +1160,6 @@ class grid_test(unittest.TestCase):
             pass
         else:
             raise Exception('did not raise an Exception')
-        
-
-    @unittest_reporter
-    def test_030_task_to_grid_name(self):
-        """Test task_to_grid_name"""
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        name:{'queueing_factor_priority':1,
-                              'queueing_factor_dataset':1,
-                              'queueing_factor_tasks':1,
-                              'monitor_address':'localhost'
-                              }},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = grid(args)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        # call normally
-        g.tasks_queued = 0
-
-        task = {'task_id':'thetaskid'}
-        ret = g.task_to_grid_name(task)
-        if ret != 'i'+task['task_id']:
-            raise Exception('task_to_grid_name default is incorrect')
-
-    @unittest_reporter
-    def test_031_grid_name_to_task_id(self):
-        """Test grid_name_to_task_id"""
-        site = 'thesite'
-        self.check_run_stop = False
-        name = 'grid1'
-        gridspec = site+'.'+name
-        submit_dir = os.path.join(self.test_dir,'submit_dir')
-        cfg = {'site_id':site,
-               'queue':{'max_resets':5,
-                        'submit_dir':submit_dir,
-                        name:{'queueing_factor_priority':1,
-                              'queueing_factor_dataset':1,
-                              'queueing_factor_tasks':1,
-                              'monitor_address':'localhost'
-                              }},
-               'db':{'address':None,'ssl':False}}
-
-        # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = grid(args)
-        if not g:
-            raise Exception('init did not return grid object')
-
-        # call normallycfg
-        g.tasks_queued = 0
-
-        task = {'task_id':'thetaskid'}
-        ret = g.grid_name_to_task_id('i'+task['task_id'])
-        if ret != task['task_id']:
-            raise Exception('grid_name_to_task_id default is incorrect')
-
-        try:
-            g.grid_name_to_task_id('garbage')
-        except:
-            pass
-        else:
-            raise Exception('grid_name_to_task_id did not raise Exception')
 
 
 def load_tests(loader, tests, pattern):

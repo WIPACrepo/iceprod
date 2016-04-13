@@ -10,6 +10,7 @@ import sys
 import random
 import math
 import logging
+import getpass
 from datetime import datetime,timedelta
 import subprocess
 from functools import partial
@@ -21,7 +22,7 @@ from iceprod.server import grid
 
 logger = logging.getLogger('condor')
 
-
+    
 class condor(grid.grid):
 
     ### Plugin Overrides ###
@@ -124,3 +125,31 @@ class condor(grid.grid):
             if 'cluster' in line:
                 task['grid_queue_id'] = line.split()[-1].strip('.')
 
+    def get_grid_status(self):
+        """Get all tasks running on the queue system.
+           Returns {grid_queue_id:{status,submit_dir}}
+        """
+        ret = {}
+        cmd = ['condor_q',getpass.getuser(),'-af:j','jobstatus','cmd']
+        out = subprocess.check_output(cmd)
+        for line in out.split('\n'):
+            if not line.strip():
+                continue
+            gid,status,cmd = line.split()
+            if status == '1':
+                status = 'queued'
+            elif status == '2':
+                status = 'processing'
+            elif status == '4':
+                status = 'completed'
+            elif status in ('3','5','6'):
+                status = 'error'
+            else:
+                status = 'unknown'
+            ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd)}
+        return ret
+
+    def remove(self,tasks):
+        """Remove tasks from queueing system."""
+        if tasks:
+            subprocess.check_call(['condor_rm']+list(tasks))

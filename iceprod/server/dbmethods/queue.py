@@ -158,6 +158,45 @@ class queue(_Methods_Base):
             callback(task_groups)
 
     @dbmethod
+    def queue_get_grid_tasks(self,gridspec,callback=None):
+        """Get a list of tasks (queued, processing) on this
+           site and plugin, returning [tasks] where each task has
+           task_id, grid_queue_id, submit_time, and submit_dir"""
+        if not callback:
+            return
+        sql = 'select task_id from search '
+        sql += 'where gridspec like ? '
+        sql += ' and task_status in ("queued","processing")'
+        bindings = ('%'+gridspec+'%',)
+        cb = partial(self._queue_get_grid_tasks_callback,callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _queue_get_grid_tasks_callback(self,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            tasks = set(row[0] for row in ret)
+            sql = 'select * from task where task_id in ('
+            sql += ','.join('?' for _ in tasks)+')'
+            bindings = tuple(tasks)
+            cb = partial(self._queue_get_grid_tasks_callback2,callback=callback)
+            self.db.sql_read_task(sql,bindings,callback=cb)
+    def _queue_get_grid_tasks_callback2(self,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            task_ret = []
+            if ret:
+                tasks = self._queue_get_task_from_ret(ret)
+                for task_id in tasks:
+                    task_ret.append({
+                        'task_id': task_id,
+                        'grid_queue_id': tasks[task_id]['grid_queue_id'],
+                        'submit_time': str2datetime(tasks[task_id]['status_changed']),
+                        'submit_dir': tasks[task_id]['submit_dir'],
+                    })
+            callback(task_ret)
+
+    @dbmethod
     def queue_set_task_status(self,task,status,callback=None):
         """Set the status of a task"""
         if not isinstance(task,Iterable):
@@ -855,13 +894,14 @@ class queue(_Methods_Base):
         n = 1
         if 'num' in pilot:
             n = pilot['num']
+        s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
+        s += 'submit_dir) values (?,?,?,?)'
         sql = []
         bindings = []
         for i in range(n):
             pilot_id = self.db._increment_id_helper('pilot',conn)
             grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
-            sql.append('insert into pilot (pilot_id, grid_queue_id, '
-                       'submit_time, submit_dir) values (?,?,?,?)')
+            sql.append(s)
             bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir']))
         
         try:
@@ -869,27 +909,31 @@ class queue(_Methods_Base):
         except Exception as e:
             logger.debug('error setting status',exc_info=True)
             ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
-        else:
-            for i,b in enumerate(bindings):
-                if self._is_master():
-                    sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings2 = ('pilot',b[0],now)
-                    try:
-                        self.db._db_write(conn,sql2,bindings2,None,None,None)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    self._send_to_master(('pilot',b[0],now,sql[i],b))
-        callback(True)
+        callback(ret)
 
     @dbmethod
-    def queue_get_active_pilots(self,callback=None):
-        # TODO: implement this
-        callback({})
+    def queue_get_pilots(self,callback=None):
+        sql = 'select * from pilot'
+        bindings = tuple()
+        cb = partial(self._queue_get_pilots_callback,callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _queue_get_pilots_callback(self,ret,callback=None):
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            pilots = []
+            for row in ret:
+                tmp = dbmethod._list_to_dict('pilot',row)
+                tmp['submit_time'] = str2datetime(tmp['submit_time'])
+                pilots.append(tmp)
+            callback(pilots)
+
+    @dbmethod
+    def queue_del_pilots(self,pilots,callback=None):
+        sql = 'delete from pilot where pilot_id in ('
+        sql += ','.join('?' for _ in pilots)+')'
+        bindings = tuple(pilots)
+        self.db.sql_write_task(sql,bindings,callback=callback)
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):

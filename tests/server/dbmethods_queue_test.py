@@ -119,7 +119,8 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('normal task: callback not called')
-        ret_should_be = {'queued':{'asdf':tables['task'][0]}}
+        ret_should_be = {'queued':{'asdf':tables['task'][0].copy()}}
+        ret_should_be['queued']['asdf']['status_changed'] = dbmethods.str2datetime(now)
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -172,11 +173,15 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('several tasks: callback not called')
-        ret_should_be = {'queued':{'asdf':tables2['task'][0],
-                                   'gdf':tables2['task'][1]},
-                         'processing':{'ertert':tables2['task'][2]}
+        ret_should_be = {'queued':{'asdf':tables2['task'][0].copy(),
+                                   'gdf':tables2['task'][1].copy()},
+                         'processing':{'ertert':tables2['task'][2].copy()}
                         }
-        if cb.ret != ret_should_be:
+        for d in ret_should_be['queued'].values():
+            d['status_changed'] = dbmethods.str2datetime(now)
+        for d in ret_should_be['processing'].values():
+            d['status_changed'] = dbmethods.str2datetime(now)
+        if not cmp_dict(cb.ret,ret_should_be):
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('several tasks: callback ret != task task2 task3')
@@ -578,7 +583,8 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('normal task: callback not called')
-        ret_should_be = tables['task'][0]
+        ret_should_be = tables['task'][0].copy()
+        ret_should_be['status_changed'] = dbmethods.str2datetime(now)
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -642,7 +648,9 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('several tasks: callback not called')
-        ret_should_be = {t['task_id']:t for t in tables2['task']}
+        ret_should_be = {t['task_id']:t.copy() for t in tables2['task']}
+        for d in ret_should_be.values():
+            d['status_changed'] = dbmethods.str2datetime(now)
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -690,7 +698,8 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('normal task: callback not called')
-        ret_should_be = tables['task'][0]
+        ret_should_be = tables['task'][0].copy()
+        ret_should_be['status_changed'] = dbmethods.str2datetime(now)
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -754,7 +763,9 @@ class dbmethods_queue_test(dbmethods_base):
 
         if cb.called is False:
             raise Exception('several tasks: callback not called')
-        ret_should_be = {t['task_id']:t for t in tables2['task']}
+        ret_should_be = {t['task_id']:t.copy() for t in tables2['task']}
+        for d in ret_should_be.values():
+            d['status_changed'] = dbmethods.str2datetime(now)
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1797,7 +1808,7 @@ class dbmethods_queue_test(dbmethods_base):
         # resources no match
         cb.called = False
         self.mock.setup(tables4)
-        resources = {}
+        resources = {'none':None}
 
         self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
                                           resources=resources,callback=cb)
@@ -1809,27 +1820,6 @@ class dbmethods_queue_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('no resources: callback ret != {}')
-
-        # bad resource json
-        tables4['task_rel'][0]['requirements'] = '["cpu"]'
-        cb.called = False
-        self.mock.setup(tables4)
-        resources = {'cpu':200}
-
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
-                                          resources=resources,callback=cb)
-
-        if cb.called is False:
-            raise Exception('resources bad json: callback not called')
-        ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
-        for k in ret_should_be:
-            ret_should_be[k]['task_status'] = 'queued'
-            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
-            ret_should_be[k]['reqs'] = ['cpu']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('resources: callback ret')
 
     @unittest_reporter
     def test_125_queue_add_pilot(self):
