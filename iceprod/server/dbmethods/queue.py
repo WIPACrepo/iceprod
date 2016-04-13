@@ -923,7 +923,7 @@ class queue(_Methods_Base):
         else:
             pilots = []
             for row in ret:
-                tmp = dbmethod._list_to_dict('pilot',row)
+                tmp = self._list_to_dict('pilot',row)
                 tmp['submit_time'] = str2datetime(tmp['submit_time'])
                 pilots.append(tmp)
             callback(pilots)

@@ -257,6 +257,8 @@ class grid(object):
         time_dict = {'queued': queued_time, 'processing': processing_time,
                      'completed': all_time, 'error': all_time,
                      'unknown': all_time}
+        for t in time_dict:
+            logger.debug("time limit: %s - %r",t,time_dict[t])
         now = datetime.utcnow()
 
         # get tasks from iceprod
@@ -283,21 +285,25 @@ class grid(object):
         prechecked_dirs = set()
 
         # check the grid tasks
-        for grid_queue_id in grid_tasks:
-            status = grid_tasks[grid_queue_id]['status']
-            submit_dir = grid_tasks[grid_queue_id]['submit_dir']
+        for grid_queue_id in set(grid_tasks).union(tasks):
+            if grid_queue_id in grid_tasks:
+                status = grid_tasks[grid_queue_id]['status']
+                submit_dir = grid_tasks[grid_queue_id]['submit_dir']
+            else:
+                status = 'unknown'
+                submit_dir = None
             if grid_queue_id in tasks:
                 # iceprod knows about this one
-                if submit_dir != tasks[grid_queue_id]['submit_dir']:
+                if submit_dir and submit_dir != tasks[grid_queue_id]['submit_dir']:
                     # mixup - delete the grid side
                     remove_grid_tasks.add(grid_queue_id)
-                if now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
+                elif now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
                     if ('submit_pilots' in self.cfg['queue'] and
                         self.cfg['queue']['submit_pilots']):
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
-            else:
+            else: # must be in grid_tasks
                 # what iceprod doesn't know must be killed
                 if status in ('queued','processing','unknown'):
                     remove_grid_tasks.add(grid_queue_id)
