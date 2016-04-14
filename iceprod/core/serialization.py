@@ -42,14 +42,14 @@ class SerializationError(Exception):
     def __reduce__(self):
         return (SerializationError,(self.value,))
 
-def dict_to_dataclasses(input):
+def dict_to_dataclasses(input_dict):
     """
     Convert a dictionary to dataclasses objects.
     
-    :param input: input dictionary
+    :param input_dict: input dictionary
     :returns: :class:`iceprod.core.dataclasses.Job`
     """
-    ret = dataclasses.Job(input)
+    ret = dataclasses.Job(input_dict)
     ret.convert()
     return ret
 

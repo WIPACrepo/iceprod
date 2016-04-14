@@ -151,6 +151,7 @@ class rpc(_Methods_Base):
             config['options']['task'] = task['name']
             config['options']['job'] = task['job']
             config['options']['debug'] = task['debug']
+            config['options']['upload'] = 'logging'
             callback(config)
 
     @dbmethod

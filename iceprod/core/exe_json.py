@@ -11,6 +11,8 @@ logger = logging.getLogger('exe_json')
 
 from iceprod.core import constants
 from iceprod.core import functions
+from iceprod.core import dataclasses
+from iceprod.core.serialization import dict_to_dataclasses
 from iceprod.core.jsonRPCclient import JSONRPC
 from iceprod.core.jsonUtil import json_compressor,json_decode
 
@@ -46,6 +48,8 @@ def downloadtask(gridspec):
     if isinstance(task,Exception):
         # an error occurred
         raise task
+    if not isinstance(task, dataclasses.Job):
+        task = dict_to_dataclasses(task)
     return task
 
 def processing(cfg):
