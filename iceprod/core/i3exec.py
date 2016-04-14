@@ -136,6 +136,11 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 if task_config is None:
                     break # assuming server wants client to exit
                 else:
+                    # add grid-specific config
+                    for k in config['options']:
+                        if k not in task_config['options']:
+                            task_config['options'][k] = config['options'][k]
+                    # run task
                     try:
                         runner(task_config,url,debug)
                     except Exception:
@@ -170,10 +175,20 @@ def runner(config,url,debug=False,offline=False):
         config['options']['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
     if 'svn_repository' not in config['options']:
         config['options']['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
+    if 'site_temp' not in config['options']:
+        config['options']['site_temp'] = os.path.join(data_url,'data/sim/sim-new/tmp/dagtemp')
+    if 'dataset_temp' not in config['options']:
+        config['options']['dataset_temp'] = os.path.join(config['options']['dataset_temp'],'$(dataset)')
     if 'job_temp' not in config['options']:
-        config['options']['job_temp'] = os.path.join(os.getcwd(),'job_temp')
+        config['options']['job_temp'] = os.path.join(config['options']['site_temp'],'$(job)')
+    if 'task_temp' not in config['options']:
+        config['options']['task_temp'] = 'file:'+os.path.join(os.getcwd(),'task_temp')
+    if 'tray_temp' not in config['options']:
+        config['options']['tray_temp'] = 'file:'+os.path.join(os.getcwd(),'tray_temp')
     if 'local_temp' not in config['options']:
         config['options']['local_temp'] = os.path.join(os.getcwd(),'local_temp')
+    if 'dataset' not in config['options']:
+        config['options']['dataset'] = '0'
     if 'job' not in config['options']:
         config['options']['job'] = '0'
     if 'stillrunninginterval' not in config['options']:

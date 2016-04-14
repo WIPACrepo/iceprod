@@ -440,7 +440,9 @@ class grid(object):
         """Write the config file for a task"""
         filename = os.path.join(task['submit_dir'],'task.cfg')
 
-        if task['task_id'] != 'pilot':
+        if task['task_id'] == 'pilot':
+            config = dataclasses.Job()
+        else:
             # get config from database
             ret = self.db.queue_get_cfg_for_task(task_id=task['task_id'],async=False)
             if isinstance(ret,Exception):
@@ -448,8 +450,8 @@ class grid(object):
                              task['task_id'])
                 raise ret
             config = serialization.serialize_json.loads(ret)
-        else:
-            config = dataclasses.Job()
+            config['options']['dataset'] = task['dataset_id']
+            config['options']['job'] = task['job']
 
         filelist = [filename]
 

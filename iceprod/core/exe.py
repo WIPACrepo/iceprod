@@ -248,8 +248,10 @@ def uploadData(env, data):
         local_base = env['options']['data_directory']
     else:
         local_base = os.getcwd()
-    if not functions.isurl(data['remote']):
-        url = os.path.join(remote_base,data['remote'])
+    if not data['remote']:
+        url = os.path.join(remote_base, data['local'])
+    elif not functions.isurl(data['remote']):
+        url = os.path.join(remote_base, data['remote'])
     else:
         url = data['remote']
     local = os.path.join(local_base,data['local'])
