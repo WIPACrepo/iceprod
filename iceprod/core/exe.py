@@ -186,7 +186,10 @@ def downloadResource(env, resource, remote_base=None,
     else:
         url = os.path.join(remote_base,resource['remote'])
     if not local_base:
-        local_base = env['options']['resource_directory']
+        if 'resource_directory' in env['options']:
+            local_base = env['options']['resource_directory']
+        else:
+            local_base = os.getcwd()
     if not resource['local']:
         resource['local'] = os.path.basename(resource['remote'])
     local = os.path.join(local_base,resource['local'])
@@ -235,7 +238,7 @@ def downloadData(env, data):
     if 'options' in env and 'data_directory' in env['options']:
         local_base = env['options']['data_directory']
     else:
-        local_base = 'data'
+        local_base = os.getcwd()
     downloadResource(env,data,remote_base,local_base)
 
 def uploadData(env, data):
@@ -244,7 +247,7 @@ def uploadData(env, data):
     if 'options' in env and 'data_directory' in env['options']:
         local_base = env['options']['data_directory']
     else:
-        local_base = 'data'
+        local_base = os.getcwd()
     if not functions.isurl(data['remote']):
         url = os.path.join(remote_base,data['remote'])
     else:
@@ -354,12 +357,9 @@ def setupClass(env, class_obj):
             # download class
             logger.warn('attempting to download class %s to %s',url,local)
             try:
-                if not os.path.exists(download_local) and not functions.download(url,download_local,options=download_options):
-                    if i < 10:
-                        i += 1
-                        continue # retry with different url
-                    raise util.NoncriticalError('Failed to download %s'%url)
-            except:
+                if not os.path.exists(download_local):
+                    functions.download(url,download_local,options=download_options)
+            except Exception:
                 logger.info('failed to download', exc_info=True)
                 if i < 10:
                     i += 1
@@ -618,7 +618,7 @@ def run_module(cfg, env, module):
             args[0] in ('{','[')):
             args = json_decode(args)
         if isinstance(args,dataclasses.String):
-            args = {"args":[cfg.parseValue(args,env)],"kwargs":{}}
+            args = {"args":[cfg.parseValue(x,env) for x in args.split()],"kwargs":{}}
         elif isinstance(args,list):
             args = {"args":[cfg.parseValue(x,env) for x in args],"kwargs":{}}
         elif isinstance(args,dict):

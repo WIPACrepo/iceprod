@@ -754,7 +754,7 @@ class Task(PublicHandler):
                     task_details = ret.values()[0]
                 else:
                     task_details = None
-                logs = yield self.db_call('web_get_logs',task_id=task_id,lines=20) #TODO: make lines adjustable
+                logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
                 if isinstance(logs,Exception):
                     raise logs
                 self.render_handle('task_detail.html',task=task_details,logs=logs)

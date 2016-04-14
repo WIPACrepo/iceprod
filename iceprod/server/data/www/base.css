@@ -359,8 +359,11 @@ div.logs p.log_name {
 }
 div.logs div.log_body {
     background: pink;
-    padding: 10px;
-    margin: 5px 5px 5px 20px;
+    padding: .3em;
+    margin: .5em 0;
+    font-size: .6em;
+    line-height: 1.1em;
+    word-wrap: break-word;
 }
 
 body {
