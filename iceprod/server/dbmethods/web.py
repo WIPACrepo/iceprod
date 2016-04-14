@@ -214,7 +214,13 @@ class web(_Methods_Base):
                     if lines and isinstance(lines,int):
                         data = '\n'.join(data.rsplit('\n',lines+1)[-1*lines:])
                     logs[tmp['name']] = data
-            callback(logs)
+            def sort_key(k):
+                log_order = ['stdout','stderr','stdlog']
+                if k in log_order:
+                    return '_'+str(log_order.index(k))
+                else:
+                    return k
+            callback(OrderedDict((k,logs[k]) for k in sorted(logs,key=sort_key)))
 
     @dbmethod
     def web_get_gridspec(self,callback=None):
