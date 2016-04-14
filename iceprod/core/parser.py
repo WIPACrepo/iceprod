@@ -50,6 +50,8 @@ class ParseObj(object):
     A object container for temporary parsed objects.
     """
     def __init__(self,obj=None):
+        if obj is not None:
+            obj = str(obj)
         self.obj = obj
     def __repr__(self):
         return repr(self.obj)
