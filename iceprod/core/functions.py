@@ -669,6 +669,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
     ret = None
     if url[:5] in ('http:','https','ftp:/','ftps:'):
         # use pycurl
+        logger.debug('curl from %s to %s', url, dest_path)
         global pycurl_handle
         post = 1
         for i in xrange(0,2):
@@ -723,10 +724,12 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                 break
     elif url[:5] == 'file:':
         # use copy command
+        logger.debug('copy from %s to %s', url[5:], dest_path)
         if os.path.exists(url[5:]):
             copy(url[5:],dest_path)
             ret = dest_path
     elif url[:7] == 'gsiftp:':
+        logger.debug('gsiftp from %s to %s', url, dest_path)
         try:
             ret = GridFTP.get(url,filename=dest_path)
         except Exception as e:
@@ -752,7 +755,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         if not subprocess.call(cmd,shell=True):
             ret = dest_path
 
-    if ret == None:
+    if ret is None:
         if os.path.exists(dest_path):
             os.remove(dest_path)
     elif cache:

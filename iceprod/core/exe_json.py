@@ -48,7 +48,7 @@ def downloadtask(gridspec):
     if isinstance(task,Exception):
         # an error occurred
         raise task
-    if not isinstance(task, dataclasses.Job):
+    if task and not isinstance(task, dataclasses.Job):
         task = dict_to_dataclasses(task)
     return task
 
