@@ -583,7 +583,8 @@ def download(url,local,cache=False,proxy=False,options={}):
             success = not check_cksm(success_file,checksum_type,success_checksum)
         else:
             success = True
-    return success
+    if not success:
+        raise Exception('download failed')
 
 def upload(local,remote,proxy=False,options={}):
     """Upload a file, checksumming if possible"""
@@ -606,7 +607,8 @@ def upload(local,remote,proxy=False,options={}):
             success = False
         else:
             success = True
-    return success
+    if not success:
+        raise Exception('upload failed')
 
 pycurl_handle = util.PycURL()
 def wget(url,dest='./',cache=False,proxy=False,options={}):

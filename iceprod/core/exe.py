@@ -211,8 +211,11 @@ def downloadResource(env, resource, remote_base=None,
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
 
-        if not functions.download(url,local,options=download_options):
-            raise util.NoncriticalError('Failed to download %s'%url)
+        try:
+            functions.download(url,local,options=download_options)
+        except Exception:
+            logger.error('cannot download file', exc_info=True)
+            raise
 
     # check compression
     if (resource['compression'] and
@@ -278,12 +281,9 @@ def uploadData(env, data):
     if 'options' in env and 'proxy' in env['options']:
         proxy = env['options']['proxy']
     try:
-        ret = functions.upload(local, url, proxy=proxy,
-                               options=upload_options)
-        if not ret:
-            raise util.NoncriticalError('upload returned false')
-    except util.NoncriticalError as e:
-        logger.critical('cannot upload file %s'%(str(e)))
+        functions.upload(local, url, proxy=proxy, options=upload_options)
+    except Exception:
+        logger.error('cannot upload file', exc_info=True)
         raise
 
 def setupClass(env, class_obj):
