@@ -947,8 +947,10 @@ def wput(source,url,proxy=False,options={}):
     source_path = source
     if source_path[:5] == 'file:':
         source_path = source_path[5:]
+    if os.path.exists(source_path):
+        source_path = os.path.abspath(source_path)
     if os.path.isdir(source_path):
-        tar(source_path+'.tar',source_path)
+        compress(source_path,'tar')
         source_path += '.tar'
         source = "file:"+source_path
     if not source[:5] == "file:":

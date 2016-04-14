@@ -242,7 +242,10 @@ def uploadData(env, data):
         local_base = env['options']['data_directory']
     else:
         local_base = 'data'
-    url = os.path.join(remote_base,data['remote'])
+    if not functions.isurl(data['remote']):
+        url = os.path.join(remote_base,data['remote'])
+    else:
+        url = data['remote']
     local = os.path.join(local_base,data['local'])
     if not os.path.exists(local):
         raise util.NoncriticalError('file %s does not exist'%local)
