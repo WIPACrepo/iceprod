@@ -181,7 +181,11 @@ def downloadResource(env, resource, remote_base=None,
     """Download a resource and put location in the env"""
     if not remote_base:
         remote_base = env['options']['resource_url']
-    if functions.isurl(resource['remote']):
+    if not resource['remote'] and not resource['local']:
+        raise Exception('need to specify either local or remote')
+    if not resource['remote']:
+        url = os.path.join(remote_base, resource['local'])
+    elif functions.isurl(resource['remote']):
         url = resource['remote']
     else:
         url = os.path.join(remote_base,resource['remote'])
