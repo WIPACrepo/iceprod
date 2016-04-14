@@ -176,11 +176,11 @@ def runner(config,url,debug=False,offline=False):
     if 'svn_repository' not in config['options']:
         config['options']['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
     if 'site_temp' not in config['options']:
-        config['options']['site_temp'] = os.path.join(data_url,'data/sim/sim-new/tmp/dagtemp')
+        config['options']['site_temp'] = 'gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/dagtemp'
     if 'dataset_temp' not in config['options']:
-        config['options']['dataset_temp'] = os.path.join(config['options']['dataset_temp'],'$(dataset)')
+        config['options']['dataset_temp'] = os.path.join(config['options']['site_temp'],'$(dataset)')
     if 'job_temp' not in config['options']:
-        config['options']['job_temp'] = os.path.join(config['options']['site_temp'],'$(job)')
+        config['options']['job_temp'] = os.path.join(config['options']['dataset_temp'],'$(job)')
     if 'task_temp' not in config['options']:
         config['options']['task_temp'] = 'file:'+os.path.join(os.getcwd(),'task_temp')
     if 'tray_temp' not in config['options']:
@@ -202,7 +202,8 @@ def runner(config,url,debug=False,offline=False):
     cfg = iceprod.core.exe.Config(config=config)
 
     # set up global env, based on config['options'] and config.steering
-    env = iceprod.core.exe.setupenv(cfg, config['steering'],{'options':config['options']})
+    env_opts = cfg.parseObject(config['options'], {})
+    env = iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts})
 
     logger.warn("config options: %r",config['options'])
 

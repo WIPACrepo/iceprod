@@ -102,4 +102,4 @@ class SiteGlobusProxy(object):
         """Get the proxy location"""
         FNULL = open(os.devnull, 'w')
         return subprocess.check_output(['grid-proxy-info','-path'],
-                                       stderr=FNULL)
+                                       stderr=FNULL).strip()
