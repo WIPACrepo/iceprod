@@ -206,28 +206,30 @@ def runner(config,url,debug=False,offline=False):
         if 'task' in config['options']:
             logger.warn('task specified: %r',config['options']['task'])
             # run only this task name or number
-            if isinstance(config['options']['task'],iceprod.core.dataclasses.String):
+            name = config['options']['task']
+            if isinstance(name, iceprod.core.dataclasses.String) and name.isdigit():
+                name = int(name)
+            if isinstance(name, iceprod.core.dataclasses.String):
                 # find task by name
                 for task in config['tasks']:
-                    if task['name'] == config['options']['task']:
+                    if task['name'] == name:
                         iceprod.core.exe.runtask(cfg, env, task)
                         break
                 else:
-                    logger.critical('cannot find task named \'%s\'',
-                                    config['options']['task'])
+                    logger.critical('cannot find task named %r', name)
                     raise Exception('cannot find specified task')
-            elif isinstance(config['options']['task'],int):
+            elif isinstance(name, int):
                 # find task by index
-                if (config['options']['task'] >= 0 and
-                    config['options']['task'] < len(config['tasks'])):
-                    iceprod.core.exe.runtask(cfg, env, config['tasks'][config['options']['task']])
+                if (name >= 0 and
+                    name < len(config['tasks'])):
+                    iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
                 else:
-                    logger.critical('cannot find task index %d',
-                                    config['options']['task'])
+                    logger.critical('cannot find task index %d', name)
                     raise Exception('cannot find specified task')
 
             else:
-                logger.critical('task specified in options is \'%r\', but no task found',config['options']['task'])
+                logger.critical('task specified in options is %r, but no task found',
+                                name)
                 raise Exception('cannot find specified task')
         else:
             # run all tasks in order
