@@ -67,8 +67,6 @@ class rpc(_Methods_Base):
             ret = e
         if isinstance(ret,Exception):
             callback(ret)
-        elif ret is None:
-            callback(Exception('sql error in _new_task_blocking'))
         elif not ret:
             callback(None)
         else:
@@ -81,6 +79,31 @@ class rpc(_Methods_Base):
                 pass
             if not newtask:
                 callback(newtask)
+            sql = 'select job_index from job where job_id = ?'
+            bindings = (newtask['job_id'],)
+            try:
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            except Exception as e:
+                ret = e
+            if isinstance(ret,Exception):
+                callback(ret)
+            elif not ret or not ret[0]:
+                logger.warn('failed to find job with known job_id')
+                callback(None)
+            newtask['job'] = ret[0][0]
+            sql = 'select debug from dataset where dataset_id = ?'
+            bindings = (newtask['dataset_id'],)
+            try:
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            except Exception as e:
+                ret = e
+            if isinstance(ret,Exception):
+                callback(ret)
+            elif not ret or not ret[0]:
+                logger.warn('failed to find dataset with known dataset_id')
+                callback(None)
+            newtask['debug'] = ret[0][0]
+
             now = nowstr()
             sql = 'update search set task_status = ? '
             sql += ' where task_id = ?'
@@ -125,6 +148,9 @@ class rpc(_Methods_Base):
             if 'options' not in config:
                 config['options'] = {}
             config['options']['task_id'] = task['task_id']
+            config['options']['task'] = task['name']
+            config['options']['job'] = task['job']
+            config['options']['debug'] = task['debug']
             callback(config)
 
     @dbmethod

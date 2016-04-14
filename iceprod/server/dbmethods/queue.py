@@ -813,11 +813,34 @@ class queue(_Methods_Base):
             return
         if ret:
             tasks = {}
+            job_ids = {}
             for row in ret:
                 tmp = self._list_to_dict('search',row)
                 tmp['debug'] = dataset_debug[tmp['dataset_id']]
                 tmp['reqs'] = datasets[tmp['dataset_id']][tmp['task_id']][1]
                 tasks[tmp['task_id']] = tmp
+                if tmp['job_id'] not in job_ids:
+                    job_ids[tmp['job_id']] = [tmp['task_id']]
+                else:
+                    job_ids[tmp['job_id']].append(tmp['task_id'])
+            if job_ids:
+                # get the job index for each task
+                sql = 'select job_id,job_index from job where job_id in ('
+                sql += ','.join('?' for _ in job_ids)+')'
+                bindings = tuple(job_ids)
+                try:
+                    ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                except Exception as e:
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
+                elif not ret or not ret[0]:
+                    logger.warn('failed to find job with known job_id')
+                    callback(Exception('no job_index'))
+                for job_id,job_index in ret:
+                    for task_id in job_ids[job_id]:
+                        tasks[task_id]['job'] = job_index
             if tasks:
                 # update status
                 new_status = 'waiting' if global_queueing else 'queued'

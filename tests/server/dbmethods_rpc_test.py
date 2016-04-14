@@ -43,9 +43,14 @@ def get_tables(test_dir):
                   {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
                    'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
                  ],
+        'job':[
+               {'job_id':'bfsd', 'status':'processing', 'job_index':0,
+                'status_changed':now},
+              ],
         'config': [{'dataset_id':'d1', 'config_data': '{"name":"value"}', 'difplus_data':'' }],
         'task_stat': [{'task_stat_id': 0, 'task_id': task_id}],
-        'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2, 'tasks_submitted': 2}],
+        'dataset': [{'dataset_id':'d1', 'jobs_submitted': 2,
+                     'tasks_submitted': 2, 'debug': True}],
     }
     return tables
 
@@ -71,7 +76,9 @@ class dbmethods_rpc_test(dbmethods_base):
         if cb.called is False:
             raise Exception('everything working: callback not called')
 
-        ret_should_be = {'name':'value','options':{'task_id':task_id}}
+        ret_should_be = {'name':'value','options':{'task_id':task_id,
+                                                   'task':'0', 'job':0,
+                                                   'debug':True}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -90,11 +97,10 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('ret should be = %r',ret_should_be)
             raise Exception('no queued jobs: callback ret != task')
 
-
         # db errors
-        self.mock.setup()
-        for i in range(5):
-            self.mock.failures = i + 1
+        for i in range(1,6):
+            self.mock.setup(tables)
+            self.mock.failures = i
             cb.called = False
             self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
             if cb.called is False:

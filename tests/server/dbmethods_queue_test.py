@@ -1468,6 +1468,10 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t4', 'job_id': 'j1', 'dataset_id': 'd1',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
             ],
+            'job':[
+                {'job_id':'j1', 'status':'processing', 'job_index':0,
+                 'status_changed':now},
+            ],
             'task':[
                 {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
@@ -1511,6 +1515,7 @@ class dbmethods_queue_test(dbmethods_base):
         ret_should_be['t1']['task_status'] = 'queued'
         ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
         ret_should_be['t1']['reqs'] = tables['task'][0]['requirements']
+        ret_should_be['t1']['job'] = tables['job'][0]['job_index']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1592,6 +1597,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
+            ret_should_be[k]['job'] = tables['job'][0]['job_index']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1624,12 +1630,22 @@ class dbmethods_queue_test(dbmethods_base):
             'search':[
                 {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
-                {'task_id':'t2', 'job_id': 'j1', 'dataset_id': 'd2',
+                {'task_id':'t2', 'job_id': 'j2', 'dataset_id': 'd2',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
-                {'task_id':'t3', 'job_id': 'j1', 'dataset_id': 'd1',
+                {'task_id':'t3', 'job_id': 'j3', 'dataset_id': 'd1',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
-                {'task_id':'t4', 'job_id': 'j1', 'dataset_id': 'd2',
+                {'task_id':'t4', 'job_id': 'j4', 'dataset_id': 'd2',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'job':[
+                {'job_id':'j1', 'status':'processing', 'job_index':0,
+                 'status_changed':now},
+                {'job_id':'j2', 'status':'processing', 'job_index':0,
+                 'status_changed':now},
+                {'job_id':'j3', 'status':'processing', 'job_index':1,
+                 'status_changed':now},
+                {'job_id':'j4', 'status':'processing', 'job_index':1,
+                 'status_changed':now},
             ],
             'task':tables['task'],
             'task_rel':tables['task_rel'],
@@ -1647,6 +1663,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
+            ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1666,6 +1683,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
+            ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1700,6 +1718,14 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
                 {'task_id':'t7', 'job_id': 'j3', 'dataset_id': 'd1',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
+            ],
+            'job':[
+                {'job_id':'j1', 'status':'processing', 'job_index':0,
+                 'status_changed':now},
+                {'job_id':'j2', 'status':'processing', 'job_index':0,
+                 'status_changed':now},
+                {'job_id':'j3', 'status':'processing', 'job_index':1,
+                 'status_changed':now},
             ],
             'task':[
                 {'task_id':'t1', 'status':'complete', 'prev_status':'idle',
@@ -1773,6 +1799,7 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
                  'gridspec': gridspec, 'name': '1', 'task_status': 'waiting'},
             ],
+            'job':tables['job'],
             'task':[
                 {'task_id':'t1', 'status':'waiting', 'prev_status':'idle',
                  'error_message':None, 'status_changed':now,
@@ -1800,6 +1827,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ["cpu","gpu"]
+            ret_should_be[k]['job'] = tables['job'][0]['job_index']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
