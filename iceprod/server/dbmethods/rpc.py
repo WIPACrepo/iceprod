@@ -539,7 +539,7 @@ class rpc(_Methods_Base):
             callback(e)
             return
         
-        # join categories as csv 
+        # join categories as csv
         category_csv = ''
         try:
             category_csv = ','.join(config['categories'])

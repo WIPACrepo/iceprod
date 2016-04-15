@@ -12,7 +12,7 @@ var Submission = (function( $ ) {
         dataset : null,
         submit_data : {}
     };
-    
+
     function pluralize(value) {
         var ret = "" + value;
         if (ret in dataclasses['names'])
@@ -56,7 +56,7 @@ var Submission = (function( $ ) {
             return null;
         return c;
     }
-    
+
     var private_methods = {
         clean_json : function(j) {
             var json = j;
@@ -122,7 +122,7 @@ var Submission = (function( $ ) {
                 $('#error').html('success');
             });
         },
-        build_basic : function( ) {
+        build_advanced : function( ) {
             private_methods.json_type_markup();
             var editing = (function(){
                 var keys = {};
@@ -278,7 +278,7 @@ var Submission = (function( $ ) {
             $.templates({
                 AdvTmpl:"#AdvTmpl"
             });
-            var id = '#basic_submit';
+            var id = '#advanced_submit';
             $(id).off().empty();
             $.link.AdvTmpl(id,data.submit_data)
             .on('click','.editable span',function(){
@@ -307,7 +307,7 @@ var Submission = (function( $ ) {
                 },100);
             })
             .on('blur','.editing',function(){
-                var parent = $(this).parent().parent(), 
+                var parent = $(this).parent().parent(),
                     key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text();
                 if ((key === null || key == '') && path != null && path != '')  {
@@ -352,7 +352,7 @@ var Submission = (function( $ ) {
                 $.view(id, true, 'data').refresh();
             })
             .on('blur','.editing_key',function(){
-                var parent = $(this).parent().parent(), 
+                var parent = $(this).parent().parent(),
                     key = $(this).find('span.key').text().replace(' ','_'),
                     path = $(parent).children('span.path').text(),
                     depths = path.split('.'), d = data.submit_data,
@@ -468,7 +468,7 @@ var Submission = (function( $ ) {
             return undefined;
         }
     };
-    
+
     var public_methods = {
         init : function(args) {
             if (args == undefined) {
@@ -476,8 +476,8 @@ var Submission = (function( $ ) {
                 return;
             }
             // think about storing state in a cookie
-            data.state = 'expert';
-            
+            data.state = 'basic';
+
             data.edit = args.edit;
             if ('dataset' in args)
                 data.dataset = args.dataset;
@@ -497,10 +497,18 @@ var Submission = (function( $ ) {
             else
                 data.submit_data = private_methods.new_dataclass('Job')
             private_methods.clean_json();
-            
-            var html = '<div><button id="basic_button">Basic View</button> <button id="expert_button">Expert View</button></div></div>';
-            html += '<div id="basic_submit" style="display:none">basic</div>';
-            html += '<div id="expert_submit"><textarea id="submit_box" style="width:90%;min-height:400px">'
+
+            var html = '<div><button id="basic_button">Basic View</button><button id="advanced_button">Advanced View</button> <button id="expert_button">Expert View</button></div></div>';
+            html += '<div id="basic_submit">';
+            html += '<form class="table_form">';
+		    html += '<p><label for="script_url">Script Url</label><input id="script_url" type="text"></p>';
+            html += '<p><label for="arguments">Arguments</label><input id="arguments" type="text"></p>';
+            html += '<p><label for="data_input">Data Input</label><input id="data_input" type="text"></p>';
+            html += '<p><label for="data_output">Data Output</label><input id="data_output" type="text"></p>';
+	        html += '</form>';
+            html += '</div>';
+            html += '<div id="advanced_submit" style="display:none">advanced</div>';
+            html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="width:90%;min-height:400px">'
             html += '</textarea></div>';
             if (data.dataset == null) {
                 html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
@@ -521,9 +529,33 @@ var Submission = (function( $ ) {
             }
             $(data.element).html(html);
             $('#submit_box').val(pprint_json(data.submit_data));
-            
+
             $('#submit_action').on('click',function(){
-                if (data.state == 'expert')
+                if (data.state == 'basic')
+                {
+                    var class0 = '{"src":"'+ $('#script_url').val() +'"}';
+
+                    var data1 = [];
+                    var add_data = function(t, type){
+                        var input = t.split(',');
+                        for (var i = 0; i < input.length; i++)
+                        {
+                            var d = input[i].trim();
+                            if (d.length > 0)
+                                data1.push('{"movement":"'+type+'", "remote":"'+d+'", "compression": false, "type": "permanent"}');
+                        }
+                    };
+                    add_data($('#data_input').val(), 'input');
+                    add_data($('#data_output').val(), 'output');
+
+                    var tray = '{"classes":['+class0+'],"data":['+data1.join()+'] }';
+                    var j = '{ "tasks":[ {"trays":[' + tray + '] } ] }';
+
+                    alert( j );
+                    data.submit_data = JSON.parse(j);
+                    return;
+                }
+                else if (data.state == 'expert')
                     data.submit_data = JSON.parse($('#expert_submit').find('textarea').off().val());
                 if (data.dataset == null) {
                     var njobs = parseInt($('#number_jobs').val());
@@ -535,12 +567,24 @@ var Submission = (function( $ ) {
                 } else if (data.edit)
                     private_methods.update();
             });
+            var show_unique = function(tab_name){
+                var tabs = ['#basic_submit', '#expert_submit', '#advanced_submit'];
+                for(var i = 0; i < tabs.length; i++)
+                    if (tabs[i] == tab_name) $(tabs[i]).show();
+                    else $(tabs[i]).hide();
+            };
             var goto_basic = function(){
                 if (data.state != 'basic') {
                     data.state = 'basic';
-                    private_methods.build_basic();
-                    $('#expert_submit').hide();
-                    $('#basic_submit').show();
+
+                    show_unique('#basic_submit');
+                }
+            };
+            var goto_advanced = function(){
+                if (data.state != 'advanced') {
+                    data.state = 'advanced';
+                    private_methods.build_advanced();
+                    show_unique('#advanced_submit');
                 }
             };
             var goto_expert = function(){
@@ -550,21 +594,23 @@ var Submission = (function( $ ) {
                     $('#expert_submit').find('textarea')
                     .on('blur',function(){data.submit_data = JSON.parse($(this).off().val());})
                     .val(pprint_json(data.submit_data));
-                    $('#basic_submit').hide();
-                    $('#expert_submit').show();
+                    show_unique('#expert_submit');
                 }
             };
             $('#basic_button').on('click',goto_basic);
+            $('#advanced_button').on('click',goto_advanced);
             $('#expert_button').on('click',goto_expert);
-            
+
+/*
             // default to a view
-            if (data.state == 'basic')
-                goto_basic();
+            if (data.state == 'advanced')
+                goto_advanced();
             else
                 goto_expert();
+                */
         }
     };
-    
+
     return function(m,args) {
         if (m == null || m == undefined) {
             throw new Error('must supply (method,arguments)');

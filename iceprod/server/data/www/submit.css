@@ -1,37 +1,48 @@
+.table_form  { display: table;      }
+.table_form	p     { display: table-row;  }
+.table_form	label {
+    display: table-cell;
+    padding-right: 1em;
+}
+.table_form	input {
+    display: table-cell;
+    width:400px;
+}
+
 span.hide {
     display:none;
 }
 
-#basic_submit {
+#advanced_submit {
     padding: 4px;
 }
-#basic_submit div.indent {
+#advanced_submit div.indent {
     margin: 2px 1em 0;
     border-top: 1px solid blue;
 }
-#basic_submit div.indent.trays {
+#advanced_submit div.indent.trays {
     border-top: 1px solid cyan;
 }
-#basic_submit div.indent.modules {
+#advanced_submit div.indent.modules {
     border-top: 1px solid green;
 }
-#basic_submit .key {
+#advanced_submit .key {
     text-transform: capitalize;
 }
-#basic_submit input.key {
+#advanced_submit input.key {
     text-transform: none;
 }
-#basic_submit .header {
+#advanced_submit .header {
     font-weight: bold;
 }
-#basic_submit .path {
+#advanced_submit .path {
     display:none;
 }
-#basic_submit .add {
+#advanced_submit .add {
     color: blue;
     cursor: pointer;
 }
-#basic_submit .delete {
+#advanced_submit .delete {
     background-color: #C72E10;
     color: white;
     font: 0.8em/0.8em Arial,serif;
@@ -45,77 +56,77 @@ span.hide {
     user-select: none;
     display: none;
 }
-#basic_submit :hover > .delete {
+#advanced_submit :hover > .delete {
     display: inline-block;
 }
-#basic_submit .indent > .delete {
+#advanced_submit .indent > .delete {
     float: right;
     font: 1em Arial,serif;
     line-height: 0.8em;
 }
-#basic_submit .null {
+#advanced_submit .null {
     display: inline-block;
 }
-#basic_submit .editable {
+#advanced_submit .editable {
     cursor: pointer;
 }
-#basic_submit span.val {
+#advanced_submit span.val {
     display: inline-block;
     min-height: 1em;
     min-width: 20px;
 }
-#basic_submit div.empty {
+#advanced_submit div.empty {
     height: .2em;
     width: 0;
     border: 1px solid black;
 }
 
-#advanced_submit div {
+#expert_submit div {
     vertical-align: top;
 }
-#advanced_submit div.xml {
+#expert_submit div.xml {
     border: 1px black solid;
     margin: 8px 0;
     padding: 8px;
 }
-#advanced_submit div.xml+div.xml {
+#expert_submit div.xml+div.xml {
     margin-top: 12px;
 }
-#advanced_submit h4.tag_title {
+#expert_submit h4.tag_title {
     text-transform: capitalize;
     margin: 0 0 .2em;
 }
-#advanced_submit div.xml_attr {
+#expert_submit div.xml_attr {
     display: inline-block;
 }
-#advanced_submit div.xml_attr_text {
+#expert_submit div.xml_attr_text {
     display: block;
 }
-#advanced_submit div.xml_subtags, #advanced_submit div.xml_attribs {
+#expert_submit div.xml_subtags, #expert_submit div.xml_attribs {
     margin: 3px 0;
 }
 
-#advanced_submit div.xml {
+#expert_submit div.xml {
     background:#EFF8FF;
     border-color:#FFF8EF;
 }
-#advanced_submit div.xml div.xml {
+#expert_submit div.xml div.xml {
     background:#C5E7FF;
     border-color:#FFE6C7;
 }
-#advanced_submit div.xml div.xml div.xml {
+#expert_submit div.xml div.xml div.xml {
     background:#97D4FF;
     border-color:#FFD297;
 }
-#advanced_submit div.xml div.xml div.xml div.xml {
+#expert_submit div.xml div.xml div.xml div.xml {
     background:#62BEFF;
     border-color:#FFBC66;
 }
-#advanced_submit div.xml div.xml div.xml div.xml div.xml {
+#expert_submit div.xml div.xml div.xml div.xml div.xml {
     background:#2CA7FF;
     border-color:#FFA735;
 }
-#advanced_submit div.xml div.xml div.xml div.xml div.xml div.xml {
+#expert_submit div.xml div.xml div.xml div.xml div.xml div.xml {
     background:#fff;
     border-color:#000;
 }
