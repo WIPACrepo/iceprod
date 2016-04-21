@@ -217,6 +217,7 @@ except ImportError:
         elif isinstance(cb.ret,Exception):
             raise cb.ret
         return cb.ret
+
     class GridFTP(_gridftp_common):
         """Asyncronous GridFTP interface to command line client.
            Designed to hide the complex stuff and mimic tornado http downloads.
@@ -619,8 +620,50 @@ except ImportError:
 
         @classmethod
         def _chksum(cls,type,address,callback=None,request_timeout=None):
-            """The real work of checksums happens here"""
-            raise NotImplementedError()
+            """Chksum is faked by redownloading the file and checksumming that"""
+            from iceprod.core.functions import cksm
+            if not cls.supported_address(address):
+                raise Exception('address type not supported for address %s'%str(address))
+            if type.endswith('sum'):
+                type = type[:-3]
+
+            tmpdir = tempfile.mkdtemp(prefix=os.getcwd())
+            dest = 'file:'+os.path.join(tmpdir,'dest')
+            if callback:
+                def cb(ret):
+                    try:
+                        if not ret or not os.path.exists(dest[5:]):
+                            callback(Exception('failed to redownload'))
+                        else:
+                            callback(cksm(dest[5:],type))
+                    except Exception as e:
+                        logger.warn('cksm error', exc_info=True)
+                        callback(e)
+                    finally:
+                        shutil.rmtree(tmpdir,ignore_errors=True)
+                async_callback = cb
+            else:
+                async_callback = None
+
+            cmd = ['globus-url-copy',address,dest]
+
+            if request_timeout is None:
+                timeout = cls._timeout
+            else:
+                timeout = request_timeout
+
+            if async_callback:
+                _cmd_async(cmd, callback=async_callback, timeout=timeout)
+            else:
+                ret = _cmd(cmd, timeout=timeout)
+                try:
+                    if not ret or not os.path.exists(dest[5:]):
+                        raise Exception('failed to redownload')
+                    else:
+                        return cksm(dest[5:],type)
+                finally:
+                    shutil.rmtree(tmpdir,ignore_errors=True)
+
 
 else:
     # TODO: make gridftpClient use CFFI. move this class there?

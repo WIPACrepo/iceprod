@@ -37,7 +37,7 @@ if (subprocess.call(['which','uberftp']) or
 
 class gridftp_test(unittest.TestCase):
     def setUp(self):
-        self._timeout = 1
+        self._timeout = 30
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.server_test_dir = os.path.join('gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/test',
                                             str(random.randint(0,2**32)))
@@ -1618,6 +1618,7 @@ class gridftp_test(unittest.TestCase):
             if ret != correct:
                 raise Exception('md5sum failed: ret=%r and correct=%r'%(ret,correct))
 
+            cb.event.clear()
             iceprod.core.gridftp.GridFTP.sha1sum(address,callback=cb,
                                                  request_timeout=self._timeout)
             if cb.event.wait(self._timeout) is False:
@@ -1628,6 +1629,7 @@ class gridftp_test(unittest.TestCase):
             if ret != correct:
                 raise Exception('sha1sum failed: ret=%r and correct=%r'%(ret,correct))
 
+            cb.event.clear()
             iceprod.core.gridftp.GridFTP.sha256sum(address,callback=cb,
                                                    request_timeout=self._timeout)
             if cb.event.wait(self._timeout) is False:
@@ -1638,6 +1640,7 @@ class gridftp_test(unittest.TestCase):
             if ret != correct:
                 raise Exception('sha256sum failed: ret=%r and correct=%r'%(ret,correct))
 
+            cb.event.clear()
             iceprod.core.gridftp.GridFTP.sha512sum(address,callback=cb,
                                                    request_timeout=self._timeout)
             if cb.event.wait(self._timeout) is False:
