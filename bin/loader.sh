@@ -10,12 +10,10 @@ Iceprod core framework starter script.
 
 OPTIONS:
  -h        Show this message
- -c <arg>  Cache/proxy for http
- -s <arg>  IceProd software location
- -m <arg>  Platform
- -u <arg>  Download Username
- -p <arg>  Download Password
- -e <arg>  env filename
+ -s <arg>  Software repository
+ -c <arg>  Cache/proxy for Parrot/CVMFS
+ -m <arg>  Platform for Parrot
+ -e <arg>  IceProd env path
  -x <arg>  x509 proxy filename
 
 EOF
@@ -23,7 +21,7 @@ EOF
 
 # get args
 INC=0
-while getopts ":hd:c:s:m:u:p:e:x:" opt; do
+while getopts ":hd:c:s:m:e:x:" opt; do
     case $opt in
         h)
             usage
@@ -37,12 +35,6 @@ while getopts ":hd:c:s:m:u:p:e:x:" opt; do
             ;;
         m)
             PLATFORM=$OPTARG
-            ;;
-        u)
-            USERNAME=$OPTARG
-            ;;
-        p)
-            PASSWORD=$OPTARG
             ;;
         e)
             ENV=$OPTARG
@@ -77,11 +69,7 @@ else
 fi
 if [ -z $PLATFORM ]; then
     ARCH=`uname -m | sed -e 's/Power Macintosh/ppc/ ; s/i686/i386/'`
-    UNICODEVERSION=`python -c "import sys;sys.stdout.write('ucs4') if sys.maxunicode == 1114111 else sys.stdout.write('ucs2')"`
-    if [ ! "$?" = "0" ]; then
-        unicodeversion='ucs4'
-    fi
-    PLATFORM="$ARCH.$OSTYPE.$VER.$UNICODEVERSION"
+    PLATFORM="$ARCH.$OSTYPE.$VER"
 fi
 echo "Platform: $PLATFORM"
 export PLATFORM
