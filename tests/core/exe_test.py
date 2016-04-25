@@ -1012,6 +1012,65 @@ class Test(IPBaseClass):
                 logger.error('running the module failed')
                 raise
 
+    @unittest_reporter(name='runmodule(): iceprod module (clear env)')
+    def test_23_runmodule_iceprod_env(self):
+        """Test runmodule with iceprod module and src, clearing env"""
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'test.py'
+        module['running_class'] = 'Test'
+        module['env_clear'] = True
+
+        # set download() return value
+        def down():
+            if self.download_args['url'].endswith('test.py'):
+                return """
+from iceprod.modules.ipmodule import IPBaseClass
+class Test(IPBaseClass):
+    def __init__(self):
+        IPBaseClass.__init__(self)
+    def Execute(self,stats):
+        return 0
+"""
+        self.download_return = down
+
+        # create parameters
+        module['parameters'] = {'greeting': 'new greeting'}
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp-rr.icecube.wisc.edu/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        # set testing data directory
+        options['data_directory'] = os.path.join(self.test_dir,'data')
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                iceprod.core.exe.runmodule(self.config, env, module)
+            except:
+                logger.error('running the module failed')
+                raise
+
     @unittest_reporter(name='runmodule(): simple module from src')
     def test_30_runmodule_simple(self):
         """Test runmodule with simple script"""
@@ -1140,6 +1199,120 @@ if __name__ == '__main__':
                 return """
 uname -a
 echo "test"
+"""
+        self.download_return = down
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        # set testing data directory
+        options['data_directory'] = os.path.join(self.test_dir,'data')
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                iceprod.core.exe.runmodule(self.config, env, module)
+            except:
+                logger.error('running the module failed')
+                raise
+
+    @unittest_reporter(name='runmodule(): python script (clear env)')
+    def test_33_runmodule_script(self):
+        """Test runmodule with raw python script, clearing env"""
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'test.py'
+        module['env_clear'] = True
+
+        # set download() return value
+        def down():
+            if self.download_args['url'].endswith('test.py'):
+                return """
+def Test():
+    return 'Tester'
+if __name__ == '__main__':
+    Test()
+"""
+        self.download_return = down
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+
+        # set testing data directory
+        options['data_directory'] = os.path.join(self.test_dir,'data')
+
+        # set env
+        env = {'options': options}
+
+        # run the module
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                iceprod.core.exe.runmodule(self.config, env, module)
+            except:
+                logger.error('running the module failed')
+                raise
+
+    @unittest_reporter(name='runmodule(): python script (env_shell)')
+    def test_34_runmodule_script(self):
+        """Test runmodule with raw python script, with env_shell"""
+        # create env_shell
+        env_shell = os.path.join(self.test_dir,'env_shell.sh')
+        with open(env_shell,'w') as f:
+            f.write('#!/bin/sh\nfoo=bar $@\n')
+        os.chmod(env_shell, 0o777)
+        
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['src'] = 'test.py'
+        module['env_shell'] = env_shell
+
+        # set download() return value
+        def down():
+            if self.download_args['url'].endswith('test.py'):
+                return """
+import os
+def Test():
+    if os.environ['foo'] != 'bar':
+        raise Exception('bad env_shell')
+if __name__ == '__main__':
+    Test()
 """
         self.download_return = down
 

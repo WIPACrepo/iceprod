@@ -20,7 +20,6 @@ import logging
 
 from iceprod.core import constants
 from iceprod.core.jsonUtil import json_decode
-from iceprod.modules.ipmodule import IPBaseClass
 
 def get_args():
     """Read json of [args, kwargs] from the std args file"""
@@ -49,7 +48,8 @@ def run(classname, filename=None, args=False, debug=False):
         mod = __import__(p,globals(),locals(),[cl])
         class_obj = getattr(mod,cl)
 
-    if inspect.isclass(class_obj) and issubclass(class_obj, IPBaseClass):
+    if (inspect.isclass(class_obj) and
+        any(True for c in inspect.getmro(class_obj) if c.__name__ == 'IPBaseClass')):
         logging.info('IceProd v1 class')
         instance = class_obj()
         for k in class_args['kwargs']:

@@ -49,7 +49,11 @@ def downloadtask(gridspec):
         # an error occurred
         raise task
     if task and not isinstance(task, dataclasses.Job):
-        task = dict_to_dataclasses(task)
+        try:
+            task = dict_to_dataclasses(task)
+        except Exception:
+            logger.warn('not a Job: %r',task)
+            raise
     return task
 
 def processing(cfg):

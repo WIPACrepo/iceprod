@@ -118,7 +118,7 @@ class exe_json_test(unittest.TestCase):
     def test_91_downloadtask(self):
         """Test downloadtask"""
         # mock the JSONRPC class
-        task = 'a task'
+        task = {'dataset':10}
         def new_task(platform=None, hostname=None, ifaces=None,
                      gridspec=None,python_unicode=None):
             new_task.called = True
@@ -153,7 +153,6 @@ class exe_json_test(unittest.TestCase):
         ifaces = iceprod.core.functions.getInterfaces()
         gridspec = 'thegrid'
         python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
-        f.returns = {'echo':'e'}
         try:
             iceprod.core.exe_json.downloadtask(gridspec)
         except:

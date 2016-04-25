@@ -391,13 +391,6 @@ def setupClass(env, class_obj):
         logger.warn('class %s loaded at %r',class_obj['name'],local)
 
         # add binary libraries to the LD_LIBRARY_PATH
-        local_lib = os.path.join(os.getcwd(),'resource_libs')  # must be the same as specified in loader.sh
-        if not os.path.exists(local_lib):
-            os.makedirs(local_lib)
-        if 'deletions' not in env:
-            env['deletions'] = []
-        if 'ld_local_path' not in env:
-            env['ld_local_path'] = {}
         def ldpath(root,f=None):
             root = os.path.abspath(root)
             def islib(f):
@@ -612,6 +605,15 @@ def run_module(cfg, env, module):
         if c['name'] not in env['classes']:
             raise Exception('Failed to install class %s'%c['name'])
         module['src'] = env['classes'][c['name']]
+    if module['env_shell'] and not os.path.exists(module['env_shell']):
+        # get script to run
+        c = dataclasses.Class()
+        c['src'] = module['env_shell']
+        c['name'] = os.path.basename(c['src'])
+        setupClass(env,c)
+        if c['name'] not in env['classes']:
+            raise Exception('Failed to install class %s'%c['name'])
+        module['env_shell'] = env['classes'][c['name']]
 
     logger.warn('running module \'%s\' with class %s',module['name'],
                 module['running_class'])
@@ -632,11 +634,16 @@ def run_module(cfg, env, module):
         else:
             raise Exception('args is unknown type')
 
+    # set up the environment
+    cmd = []
+    if module['env_shell']:
+        cmd.append(module['env_shell'])
+
     # run the module
     if module['running_class']:
         logger.info('run as a class using the helper script')
-        cmd = ['python', '-m', 'iceprod.core.exe_helper', '--classname',
-               module['running_class']]
+        cmd.extend(['python', '-m', 'iceprod.core.exe_helper', '--classname',
+                    module['running_class']])
         if env['options']['debug']:
             cmd.append('--debug')
         if module['src']:
@@ -644,7 +651,7 @@ def run_module(cfg, env, module):
         if args:
             with open(constants['args'],'w') as f:
                 f.write(json_encode(args))
-            cmd.extend(['--args'])
+            cmd.append('--args')
     elif module['src']:
         logger.info('run as a script directly')
         if args:
@@ -655,21 +662,23 @@ def run_module(cfg, env, module):
         else:
             args = []
 
-        mod_name = env['classes'][c['name']].replace(';`','').strip()
-        if not mod_name:
-            raise Exception('mod_name is blank')
-        if mod_name[-3:] == '.py':
+        src = module['src']
+        if src[-3:] == '.py':
             # call as python script
-            cmd = [sys.executable,mod_name]+args
-        elif mod_name[-3:] == '.sh':
+            cmd.extend(['python',src]+args)
+        elif src[-3:] == '.sh':
             # call as shell script
-            cmd = ['/bin/sh',mod_name]+args
+            cmd.extend(['/bin/sh',src]+args)
         else:
             # call as regular executable
-            cmd = [mod_name]+args
+            cmd.extend([src]+args)
     else:
         logger.error('module is missing class and src')
         raise Exception('error running module')
 
     logger.info('cmd=%r',cmd)
-    return subprocess.Popen(cmd)
+    if module['env_clear']:
+        env = {'PYTHONPATH':os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}
+        return subprocess.Popen(cmd, env=env)
+    else:
+        return subprocess.Popen(cmd)

@@ -377,12 +377,20 @@ class Module(_TaskCommon):
     :ivar running_class: None -- the python class or function to call
     :ivar src: None -- src of class or script
     :ivar args: None -- args to give to class or src if not an iceprod module
+    :ivar env_shell: None -- src of script which sets env and calls arg
+    :ivar env_clear: False -- clear the env before calling the module
+                              (calls env_shell after clearing, if defined)
+
+    Note that `env_clear` should be used carefully, as it wipes out
+    any loaded classes.
     """
     plural = 'Modules'
     def __init__(self,*args,**kwargs):
         self['running_class'] = ''
         self['src']           = ''
         self['args']          = ''
+        self['env_shell']     = ''
+        self['env_clear']     = False
         super(Module,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -408,7 +416,9 @@ class Module(_TaskCommon):
             return (super(Module,self).valid() and
                     isinstance(self['running_class'],String) and
                     isinstance(self['src'],String) and
-                    isinstance(self['args'],String)
+                    isinstance(self['args'],String) and
+                    isinstance(self['env_shell'],String) and
+                    isinstance(self['env_clear'],bool)
                    )
         except Exception:
             return False
@@ -450,7 +460,7 @@ class Class(dict):
             return (isinstance(self['name'],String) and
                     isinstance(self['src'],String) and
                     isinstance(self['resource_name'],String) and
-                    (self['recursive'] is True or self['recursive'] is False) and
+                    isinstance(self['recursive'],bool) and
                     isinstance(self['libs'],String) and
                     isinstance(self['env_vars'],String)
                    )
