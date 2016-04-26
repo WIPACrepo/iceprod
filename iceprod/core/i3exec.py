@@ -190,7 +190,9 @@ def runner(config,url,debug=False,offline=False):
     if 'dataset' not in config['options']:
         config['options']['dataset'] = '0'
     if 'job' not in config['options']:
-        config['options']['job'] = '0'
+        config['options']['job'] = 0
+    if 'jobs_submitted' not in config['options']:
+        config['options']['jobs_submitted'] = 1
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
 

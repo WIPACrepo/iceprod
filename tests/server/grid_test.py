@@ -960,7 +960,8 @@ class grid_test(unittest.TestCase):
         generate_submit_file.called = False
         generate_submit_file.ret = True
 
-        task = {'task_id':'1','name':'0','debug':0}
+        task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
+                'job':0,'jobs_submitted':1}
         g.setup_submit_directory(task)
 
         if not any('queue_set_submit_dir' == x[1] for x in self.messaging.called):

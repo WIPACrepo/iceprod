@@ -788,7 +788,8 @@ class queue(_Methods_Base):
             tasks.add(t)
             if len(tasks) >= num:
                 break
-        sql = 'select dataset_id, debug from dataset where dataset_id in ('
+        sql = 'select dataset_id, jobs_submitted, debug from dataset '
+        sql += ' where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)+')'
         bindings = tuple(dataset_ids)
         try:
@@ -799,7 +800,7 @@ class queue(_Methods_Base):
         if isinstance(ret,Exception):
             callback(ret)
             return
-        dataset_debug = {d_id: debug for d_id,debug in ret}
+        dataset_debug = {d_id: (js,bool(debug)) for d_id,js,debug in ret}
         sql = 'select * from search where task_id in ('
         sql += ','.join('?' for _ in tasks)+')'
         bindings = tuple(tasks)
@@ -816,7 +817,8 @@ class queue(_Methods_Base):
             job_ids = {}
             for row in ret:
                 tmp = self._list_to_dict('search',row)
-                tmp['debug'] = dataset_debug[tmp['dataset_id']]
+                tmp['jobs_submitted'] = dataset_debug[tmp['dataset_id']][0]
+                tmp['debug'] = dataset_debug[tmp['dataset_id']][1]
                 tmp['reqs'] = datasets[tmp['dataset_id']][tmp['task_id']][1]
                 tasks[tmp['task_id']] = tmp
                 if tmp['job_id'] not in job_ids:

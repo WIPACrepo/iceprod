@@ -1516,6 +1516,7 @@ class dbmethods_queue_test(dbmethods_base):
         ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
         ret_should_be['t1']['reqs'] = tables['task'][0]['requirements']
         ret_should_be['t1']['job'] = tables['job'][0]['job_index']
+        ret_should_be['t1']['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1598,6 +1599,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = tables['job'][0]['job_index']
+            ret_should_be[k]['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1610,7 +1612,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'description':'a simple test', 'gridspec':gridspec,
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
-                 'priority':0, 'jobs_submitted':1,
+                 'priority':0, 'jobs_submitted':2,
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
@@ -1620,7 +1622,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'description':'a simple test', 'gridspec':gridspec,
                  'status':'processing', 'username':'user',
                  'institution':'inst', 'submit_host':'localhost',
-                 'priority':0, 'jobs_submitted':1,
+                 'priority':0, 'jobs_submitted':2,
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
@@ -1661,9 +1663,10 @@ class dbmethods_queue_test(dbmethods_base):
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't4'}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
-            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['debug'] = tables2['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
+            ret_should_be[k]['jobs_submitted'] = tables2['dataset'][0]['jobs_submitted']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1681,9 +1684,10 @@ class dbmethods_queue_test(dbmethods_base):
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't3'}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
-            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
+            ret_should_be[k]['debug'] = tables2['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
+            ret_should_be[k]['jobs_submitted'] = tables2['dataset'][0]['jobs_submitted']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -1828,6 +1832,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ["cpu","gpu"]
             ret_should_be[k]['job'] = tables['job'][0]['job_index']
+            ret_should_be[k]['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)

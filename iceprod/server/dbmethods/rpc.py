@@ -91,7 +91,7 @@ class rpc(_Methods_Base):
                 logger.warn('failed to find job with known job_id')
                 callback(None)
             newtask['job'] = ret[0][0]
-            sql = 'select debug from dataset where dataset_id = ?'
+            sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
             bindings = (newtask['dataset_id'],)
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
@@ -102,7 +102,10 @@ class rpc(_Methods_Base):
             elif not ret or not ret[0]:
                 logger.warn('failed to find dataset with known dataset_id')
                 callback(None)
-            newtask['debug'] = ret[0][0]
+            for js, debug in ret:
+                newtask['jobs_submitted'] = js
+                newtask['debug'] = bool(debug)
+                break
 
             now = nowstr()
             sql = 'update search set task_status = ? '
@@ -151,6 +154,7 @@ class rpc(_Methods_Base):
             config['options']['task'] = task['name']
             config['options']['dataset'] = task['dataset_id']
             config['options']['job'] = task['job']
+            config['options']['jobs_submitted'] = task['jobs_submitted']
             config['options']['debug'] = task['debug']
             callback(config)
 

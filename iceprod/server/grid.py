@@ -452,6 +452,7 @@ class grid(object):
             config = serialization.serialize_json.loads(ret)
             config['options']['dataset'] = task['dataset_id']
             config['options']['job'] = task['job']
+            config['options']['jobs_submitted'] = task['jobs_submitted']
 
         filelist = [filename]
 

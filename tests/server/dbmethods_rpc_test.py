@@ -77,7 +77,9 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('everything working: callback not called')
 
         ret_should_be = {'name':'value','options':{'task_id':task_id,
-                                                   'task':'0', 'job':0,
+                                                   'task':'0', 'job': 0,
+                                                   'jobs_submitted': 2,
+                                                   'dataset': 'd1',
                                                    'debug':True}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
