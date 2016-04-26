@@ -476,9 +476,9 @@ var Submission = (function( $ ) {
                 return;
             }
             // think about storing state in a cookie
-            data.state = 'basic';
-
             data.edit = args.edit;
+            if (!data.edit)
+                data.state = 'basic';
             if ('dataset' in args)
                 data.dataset = args.dataset;
             else
@@ -533,7 +533,8 @@ var Submission = (function( $ ) {
             $('#submit_action').on('click',function(){
                 if (data.state == 'basic')
                 {
-                    var class0 = '{"src":"'+ $('#script_url').val() +'"}';
+                    var module = {"src": $('#script_url').val(),
+                                  "args": $('#arguments').val()};
 
                     var data1 = [];
                     var add_data = function(t, type){
@@ -542,18 +543,18 @@ var Submission = (function( $ ) {
                         {
                             var d = input[i].trim();
                             if (d.length > 0)
-                                data1.push('{"movement":"'+type+'", "remote":"'+d+'", "compression": false, "type": "permanent"}');
+                                data1.push({"movement": type, "remote": d,
+                                            "compression": false, "type": "permanent"});
                         }
                     };
                     add_data($('#data_input').val(), 'input');
                     add_data($('#data_output').val(), 'output');
 
-                    var tray = '{"classes":['+class0+'],"data":['+data1.join()+'] }';
-                    var j = '{ "tasks":[ {"trays":[' + tray + '] } ] }';
+                    var tray = {"modules": [module], "data": data1};
+                    var job = {"tasks": [ {"trays": [tray] } ] };
 
-                    alert( j );
-                    data.submit_data = JSON.parse(j);
-                    return;
+                    console.log(JSON.stringify(job));
+                    data.submit_data = job;
                 }
                 else if (data.state == 'expert')
                     data.submit_data = JSON.parse($('#expert_submit').find('textarea').off().val());
