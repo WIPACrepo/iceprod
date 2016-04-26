@@ -505,6 +505,7 @@ var Submission = (function( $ ) {
             html += '<p><label for="arguments">Arguments</label><input id="arguments" type="text"></p>';
             html += '<p><label for="data_input">Data Input</label><input id="data_input" type="text"></p>';
             html += '<p><label for="data_output">Data Output</label><input id="data_output" type="text"></p>';
+            html += '<p><label for="env_shell">Env Shell</label><input id="env_shell" type="text"></p>';
 	        html += '</form>';
             html += '</div>';
             html += '<div id="advanced_submit" style="display:none">advanced</div>';
@@ -533,8 +534,10 @@ var Submission = (function( $ ) {
             $('#submit_action').on('click',function(){
                 if (data.state == 'basic')
                 {
-                    var module = {"src": $('#script_url').val(),
-                                  "args": $('#arguments').val()};
+                    var module = {"src": $('#script_url').val().trim(),
+                                  "args": $('#arguments').val().trim(),
+                                  "env_shell": $('#env_shell').val().trim(),
+                                  "env_clear": true};
 
                     var data1 = [];
                     var add_data = function(t, type){
@@ -601,14 +604,6 @@ var Submission = (function( $ ) {
             $('#basic_button').on('click',goto_basic);
             $('#advanced_button').on('click',goto_advanced);
             $('#expert_button').on('click',goto_expert);
-
-/*
-            // default to a view
-            if (data.state == 'advanced')
-                goto_advanced();
-            else
-                goto_expert();
-                */
         }
     };
 
