@@ -167,6 +167,12 @@ def runner(config,url,debug=False,offline=False):
             logger.warn('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
+    if 'dataset' not in config['options']:
+        config['options']['dataset'] = '0'
+    if 'job' not in config['options']:
+        config['options']['job'] = 0
+    if 'jobs_submitted' not in config['options']:
+        config['options']['jobs_submitted'] = 1
     if 'resource_url' not in config['options']:
         config['options']['resource_url'] = str(url)+'/download'
     if 'offline' not in config['options']:
@@ -187,12 +193,6 @@ def runner(config,url,debug=False,offline=False):
         config['options']['tray_temp'] = 'file:'+os.path.join(os.getcwd(),'tray_temp')
     if 'local_temp' not in config['options']:
         config['options']['local_temp'] = os.path.join(os.getcwd(),'local_temp')
-    if 'dataset' not in config['options']:
-        config['options']['dataset'] = '0'
-    if 'job' not in config['options']:
-        config['options']['job'] = 0
-    if 'jobs_submitted' not in config['options']:
-        config['options']['jobs_submitted'] = 1
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
 
