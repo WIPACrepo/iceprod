@@ -627,7 +627,7 @@ except ImportError:
             if type.endswith('sum'):
                 type = type[:-3]
 
-            tmpdir = tempfile.mkdtemp(prefix=os.getcwd())
+            tmpdir = tempfile.mkdtemp(dir=os.getcwd())
             dest = 'file:'+os.path.join(tmpdir,'dest')
             if callback:
                 def cb(ret):
