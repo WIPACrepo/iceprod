@@ -733,7 +733,7 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         try:
             ret = GridFTP.get(url,filename=dest_path)
         except Exception as e:
-            logger.error('error fetching url %s : %r',url,e)
+            logger.error('error fetching url %s', url, exc_info=True)
             ret = None
         else:
             if ret is not True or not os.path.exists(dest_path):
@@ -994,7 +994,7 @@ def wput(source,url,proxy=False,options={}):
             def reply(data):
                 reply.data += data
             reply.data = ''
-            for i in xrange(0,2):
+            for i in range(0,2):
                 try:
                     body = json_encode({'type':'upload',
                                         'url':url,
@@ -1086,7 +1086,7 @@ def wput(source,url,proxy=False,options={}):
     urlprefix = url[:5]
     if urlprefix in ('http:','https','ftp:/','ftps:'):
         # use pycurl
-        for i in xrange(0,2):
+        for i in range(0,2):
             try:
                 kwargs = {}
                 if 'http_username' in options:
@@ -1106,7 +1106,7 @@ def wput(source,url,proxy=False,options={}):
                     logger.warn('regenerating pycurl handle because of error')
                     pycurl_handle = util.PycURL()
                 else:
-                    logger.error('error uploading to url %s : %s',url,e)
+                    logger.error('error uploading to url %s', url, exc_info=True)
                     raise
             else:
                 break
@@ -1131,7 +1131,7 @@ def wput(source,url,proxy=False,options={}):
                 try:
                     ret = GridFTP.sha512sum(url)
                 except Exception as e:
-                    logger.error('error checksumming url %s : %r',url,e)
+                    logger.error('error checksumming url %s', url, exc_info=True)
                     ret = 1
                 else:
                     if ret and ret == chksum:
