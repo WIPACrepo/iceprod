@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "iceprod loader starting at $PWD"
+
 # usage info
 usage()
 {
@@ -80,6 +82,7 @@ fi
 if [ -z $PROXY ]; then
     PROXY="squid.icecube.wisc.edu:3128"
 fi
+export http_proxy=$PROXY
 
 PYBIN=python
 if [ -d $PWD/iceprod ]; then
