@@ -525,18 +525,15 @@ class grid(object):
         args = []
         if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
             args.append('-m {}'.format(self.queue_cfg['platform']))
-        if ('download' in self.cfg and 'http_username' in self.cfg['download']
-            and self.cfg['download']['http_username']):
-            args.append('-u {}'.format(self.cfg['download']['http_username']))
-        if ('download' in self.cfg and 'http_password' in self.cfg['download']
-            and self.cfg['download']['http_password']):
-            args.append('-p {}'.format(self.cfg['download']['http_password']))
         if 'software_dir' in self.queue_cfg and self.queue_cfg['software_dir']:
             args.append('-s {}'.format(self.queue_cfg['software_dir']))
         if 'iceprod_dir' in self.queue_cfg and self.queue_cfg['iceprod_dir']:
             args.append('-e {}'.format(self.queue_cfg['iceprod_dir']))
         if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
             args.append('-x {}'.format(os.path.basename(self.cfg['queue']['x509proxy'])))
+        if ('download' in self.cfg and 'http_proxy' in self.cfg['download']
+            and self.cfg['download']['http_proxy']):
+            args.apend('-c {}'.format(self.cfg['download']['http_proxy']))
         args.append('--url {}'.format(web_address))
         if passkey:
             args.append('--passkey {}'.format(passkey))
