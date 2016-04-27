@@ -1064,7 +1064,8 @@ if MySQLdb:
                     ret = cur.fetchall()
                     site_id = ret[0][0]
                     old_id = ret[0][1]
-                    new_id = GlobalID.globalID_gen(GlobalID.char2int(old_id)+1,site_id)
+                    old_id = GlobalID.localID_ret(old_id,type='int')
+                    new_id = GlobalID.globalID_gen(old_id+1,site_id)
                     self._db_query(cur,'update setting set '+table+'_offset = ?',(new_id,))
                 except:
                     try:
