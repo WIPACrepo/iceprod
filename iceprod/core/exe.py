@@ -658,7 +658,7 @@ def run_module(cfg, env, module):
             def splitter(a,b):
                 ret = '-%s=%s' if len(str(a)) <= 1 else '--%s=%s'
                 return ret%(str(a),str(b))
-            args = args['args']+[splitter(a,args[a]) for a in args['kwargs']]
+            args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
         else:
             args = []
 
