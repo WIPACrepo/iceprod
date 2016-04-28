@@ -679,6 +679,9 @@ def run_module(cfg, env, module):
     logger.info('cmd=%r',cmd)
     if module['env_clear']:
         env = {'PYTHONPATH':os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}
+        for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','http_proxy'):
+            if k in os.environ:
+                env[k] = os.environ[k]
         return subprocess.Popen(cmd, env=env)
     else:
         return subprocess.Popen(cmd)
