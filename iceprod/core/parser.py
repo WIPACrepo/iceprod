@@ -53,6 +53,20 @@ class ParseObj(object):
         if obj is not None:
             obj = str(obj)
         self.obj = obj
+    def output(self):
+        """Attempt conversion to int, float, bool"""
+        try:
+            if isinstance(self.obj,dataclasses.String):
+                if self.obj.lower() == 'true':
+                    return True
+                elif self.obj.lower() == 'false':
+                    return False
+                elif self.obj.isdigit():
+                    return int(self.obj)
+                else:
+                    return float(self.obj)
+        except Exception:
+            return self.obj           
     def __repr__(self):
         return repr(self.obj)
     def __str__(self):
@@ -185,7 +199,7 @@ class ExpParser:
         self.job = None
         self.env = None
         # return parsed output
-        return (left + right).obj
+        return (left + right).output()
 
     def sentence(self,input):
         if self.depth > 100:
