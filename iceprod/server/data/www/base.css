@@ -103,7 +103,13 @@ a:hover {
 
 /* page layout */
 body {
-    min-width: 22em;
+    background-color: #ccc;
+}
+div.page {
+    background-color: #eee;
+    margin: 1em;
+    min-width: 34em;
+    box-shadow: 0 0 1em rgba(0, 0, 0, 0.1);
 }
 header {
     width: 100%;
@@ -158,34 +164,6 @@ footer {
 }
 
 /* menu */
-#menu-icon {
-    display: none;
-    width: 1em;
-    height: 1em;
-    background-color: #17d354;
-    font: bold 2em/1em serif icon;
-    text-align: center;
-    text-decoration: none;
-    vertical-align: middle;
-    color: #fff;
-}
-#menu-icon span {
-    display: block;
-    width: 0.7em;
-    height: 0.1em;
-    background-color: #444;
-    margin: 0.15em auto;
-    border-radius: 0.2em;
-}
-#menu-icon span:first-child {
-    margin-top: .2em;
-}
-#menu-icon:hover span, #menu-icon:active {
-    background-color: #17d354;
-}
-a:hover#menu-icon {
-    background-color: #444;
-}
 nav.menu  {
     float: right;
     margin: 1em;
@@ -226,39 +204,6 @@ nav.menu li.master a {
 }
 nav.menu li.master a:hover, nav.menu li.master a:active {
     background-color: #3bcc07;
-}
-@media only screen and (max-width : 640px) {
-    #menu-icon {
-        display: inline-block;
-    }
-    nav.menu:hover, nav.menu:active {
-        margin: 0;
-        padding: 1em;
-    }
-    nav.menu ul, nav.menu:active ul {
-        display: none;
-        position: absolute;
-        background: #fff;
-        border: .2em solid #444;
-        right: 1em;
-        top: 3em;
-    }
-    nav.menu:hover ul {
-        display: block;
-    }
-    nav.menu li {
-        display: block;
-    }
-    nav.menu li a {
-        width: 100%;
-        padding: .3em .9em;
-        -webkit-box-sizing: border-box;
-        -moz-box-sizing: border-box;
-        box-sizing: border-box;
-    }
-    nav.menu li.master {
-        margin-left: 0;
-    }
 }
 
 /* misc */
@@ -366,15 +311,6 @@ div.logs div.log_body {
     word-wrap: break-word;
 }
 
-body {
-    background-color: #ccc;
-}
-.page {
-    background-color: #eee;
-    max-width: 800px;
-    margin: 20px auto;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-}
 .content_box
 {
     margin: 20px 20px 20px 0;
