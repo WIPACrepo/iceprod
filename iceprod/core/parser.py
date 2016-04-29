@@ -19,6 +19,7 @@ class safe_eval:
                  ast.Sub: op.sub,
                  ast.Mult: op.mul,
                  ast.Div: op.truediv,
+                 ast.FloorDiv: op.floordiv,
                  ast.Mod: op.mod,
                  ast.Pow: op.pow,
                  ast.BitXor: op.xor}
