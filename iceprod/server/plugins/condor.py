@@ -97,9 +97,9 @@ class condor(grid.grid):
                 p('should_transfer_files = always')
             p('transfer_output_files = iceprod_log, iceprod_out, iceprod_err')
             if 'num' in task:
-                p('transfer_output_remaps = iceprod_log iceprod_log_$(Process)'
-                  ' ; iceprod_out iceprod_out_$(Process)'
-                  ' ; iceprod_err iceprod_err_$(Process)')
+                p('transfer_output_remaps = "iceprod_log=iceprod_log_$(Process)'
+                  ';iceprod_out=iceprod_out_$(Process)'
+                  ';iceprod_err=iceprod_err_$(Process)"')
             p('arguments = ',' '.join(args))
 
             if 'reqs' in task:
