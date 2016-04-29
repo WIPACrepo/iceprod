@@ -93,7 +93,9 @@ class condor(grid.grid):
             p('notification = never')
             if filelist:
                 p('transfer_input_files = {}'.format(','.join(filelist)))
+                p('skip_filechecks = True')
                 p('should_transfer_files = always')
+            p('transfer_output_files = iceprod_log, iceprod_out, iceprod_err')
             p('arguments = ',' '.join(args))
 
             if 'reqs' in task:
