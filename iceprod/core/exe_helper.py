@@ -17,8 +17,10 @@ except:
     import pickle
 
 import logging
+from collections import Iterable
 
 from iceprod.core import constants
+from iceprod.core import dataclasses
 from iceprod.core.jsonUtil import json_decode
 
 def get_args():
@@ -27,6 +29,21 @@ def get_args():
         data = f.read()
         logging.debug('get_args raw: %r',data)
         return json_decode(data)
+
+def unicode_to_ascii(obj):
+    if isinstance(obj,dataclasses.String):
+        return str(obj)
+    elif isinstance(obj,dict):
+        ret = {}
+        for k in obj:
+            ret[unicode_to_ascii(k)] = unicode_to_ascii(obj[k])
+        return ret
+    elif isinstance(obj,set):
+        return set(unicode_to_ascii(k) for k in obj)
+    elif isinstance(obj,Iterable):
+        return [unicode_to_ascii(k) for k in obj]
+    else:
+        return obj
 
 def run(classname, filename=None, args=False, debug=False):
     logging.basicConfig(level=logging.DEBUG if debug else logging.WARNING)
@@ -38,6 +55,7 @@ def run(classname, filename=None, args=False, debug=False):
     if args:
         class_args = get_args()
         logging.info('args: %r', class_args)
+    class_args = unicode_to_ascii(class_args)
     if filename:
         logging.info('try loading from source')
         mod = imp.load_source(classname, filename)
