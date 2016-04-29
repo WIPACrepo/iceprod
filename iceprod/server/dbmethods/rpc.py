@@ -152,7 +152,7 @@ class rpc(_Methods_Base):
                 config['options'] = {}
             config['options']['task_id'] = task['task_id']
             config['options']['task'] = task['name']
-            config['options']['dataset'] = task['dataset_id']
+            config['dataset'] = task['dataset_id']
             config['options']['job'] = task['job']
             config['options']['jobs_submitted'] = task['jobs_submitted']
             config['options']['debug'] = task['debug']

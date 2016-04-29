@@ -167,8 +167,6 @@ def runner(config,url,debug=False,offline=False):
             logger.warn('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
-    if 'dataset' not in config['options']:
-        config['options']['dataset'] = '0'
     if 'job' not in config['options']:
         config['options']['job'] = 0
     if 'jobs_submitted' not in config['options']:
