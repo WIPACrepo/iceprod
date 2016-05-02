@@ -296,7 +296,7 @@ class Base(AsyncSendReceive):
             pass
         if callback:
             try:
-                callback(Exception('response timeout'))
+                callback(Exception('response timeout - seq history full'))
             except Exception:
                 pass
 
@@ -580,7 +580,8 @@ class Server(Base):
                                 str(e))
                     self._handle_stream_error()
                 else:
-                    logger.debug('RESPONSE: got msg for seq: %d'%header['sequence_number'])
+                    logger.info('RESPONSE from %s for seq %d',
+                                client_name, header['sequence_number'])
 
                     try:
                         logger.debug('RESPONSE: removing timeout for seq %d',
@@ -707,39 +708,41 @@ class RPCService():
     __str__ = __repr__
 
     def __service_handler(self,data,callback=None):
-        logger.debug('got message:%s',str(data))
         """Unpack data from RPC format"""
+        logger.debug('got message:%s',str(data))
         try:
             methodname = data['method']
             # TODO: think about providing positional args, like JSONRPC
             kwargs = data['params']
         except Exception as e:
             # error unpacking data
+            logger.warning('error unpacking data from message',exc_info=True)
             if callback:
                 callback({'error':'invalid message format'})
-            logger.warning('error unpacking data from message',exc_info=True)
         else:
             # check method name for bad characters
             if methodname[0] == '_':
+                logger.warning('cannot use RPC for private methods')
                 if callback:
                     callback({'error':'Cannot use RPC for private methods'})
-                logger.warning('cannot use RPC for private methods')
                 return
 
             # check for function
             try:
                 func = getattr(self.service_class,methodname)
             except AttributeError:
+                logger.warning('method %s not available',str(methodname))
                 if callback:
                     callback({'error':'Method not available'})
-                logger.warning('method %s not available',str(methodname))
                 return
             if not callable(func):
+                logger.warning('"%s" is not callable %s' % (methodname, str(func.__class__)))
                 if callback:
                     callback({'error':'"%s" is not callable %s' % (methodname, str(func.__class__))})
-                logger.warning('"%s" is not callable %s' % (methodname, str(func.__class__)))
                 return
-            kwargs['callback'] = partial(self.__response,callback=callback)
+
+            logger.info('calling function %s', methodname)
+            kwargs['callback'] = partial(self.__response,methodname,callback=callback)
             try:
                 if self.context:
                     with self.context():
@@ -753,10 +756,12 @@ class RPCService():
                 logger.warning('error calling function "%s"' % methodname, exc_info=True)
             else:
                 if ret is not None:
+                    logger.info('direct ret for %s: %r', methodname, ret)
                     callback({'result':ret})
 
-    def __response(self,data=None,callback=None):
+    def __response(self,methodname,data=None,callback=None):
         """Pack data into RPC format"""
+        logger.info('callback response for %s: %r', methodname, data)
         if isinstance(data,Exception):
             logger.warning('error calling function specified: %r',data)
             if callback:
@@ -818,7 +823,7 @@ class RPCService():
                     async = True
             if async is False:
                 # return like normal function
-                logger.debug('async request for %s',methodname)
+                logger.info('async request for %s',methodname)
                 def cb(ret=None):
                     cb.ret = ret
                     cb.event.set()
