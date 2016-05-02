@@ -79,6 +79,7 @@ class rpc(_Methods_Base):
                 pass
             if not newtask:
                 callback(newtask)
+                return
             sql = 'select job_index from job where job_id = ?'
             bindings = (newtask['job_id'],)
             try:
@@ -90,6 +91,7 @@ class rpc(_Methods_Base):
             elif not ret or not ret[0]:
                 logger.warn('failed to find job with known job_id')
                 callback(None)
+                return
             newtask['job'] = ret[0][0]
             sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
             bindings = (newtask['dataset_id'],)
@@ -99,9 +101,11 @@ class rpc(_Methods_Base):
                 ret = e
             if isinstance(ret,Exception):
                 callback(ret)
+                return
             elif not ret or not ret[0]:
                 logger.warn('failed to find dataset with known dataset_id')
                 callback(None)
+                return
             for js, debug in ret:
                 newtask['jobs_submitted'] = js
                 newtask['debug'] = bool(debug)

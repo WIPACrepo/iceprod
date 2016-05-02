@@ -504,14 +504,14 @@ else:
                         archive_cur = archive_conn.cursor()
                         self._db_query(archive_cur,archive_sql,archive_bindings)
                         ret = archive_cur.fetchall()
-            except apsw.Error, e:
+            except Exception as e:
                 if sql is not None:
-                    logger.debug('sql: %r',sql)
-                    logger.debug('bindings: %r',bindings)
+                    logger.info('sql: %r',sql)
+                    logger.info('bindings: %r',bindings)
                 if archive_sql is not None:
-                    logger.debug('archive_sql: %r',archive_sql)
-                    logger.debug('archive_bindings: %r',archive_bindings)
-                logger.warning(e)
+                    logger.info('archive_sql: %r',archive_sql)
+                    logger.info('archive_bindings: %r',archive_bindings)
+                logger.warning('error in _db_read',exc_info=True)
                 return e
             logger.debug('_db_read returns %r',ret)
             return ret
@@ -552,14 +552,15 @@ else:
                                 self._db_query(archive_cur,s,b)
                         else:
                             raise Exception('archive_sql is an unknown type')
-            except apsw.Error, e:
-                logger.debug('sql: %r',sql)
-                logger.debug('bindings: %r',bindings)
+            except Exception as e:
+                if sql is not None:
+                    logger.info('sql: %r',sql)
+                    logger.info('bindings: %r',bindings)
                 if archive_sql is not None:
-                    logger.debug('archive_sql: %r',archive_sql)
-                    logger.debug('archive_bindings: %r',archive_bindings)
-                logger.warning(e)
-                raise
+                    logger.info('archive_sql: %r',archive_sql)
+                    logger.info('archive_bindings: %r',archive_bindings)
+                logger.warning('error in _db_write',exc_info=True)
+                return e
 
         def _increment_id_helper(self,table,conn=None):
             """Increment the id of the table, returning the id"""
