@@ -465,23 +465,24 @@ else:
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
             conn = apsw.Connection(name,**kwargs)
             archive_conn = apsw.Connection(name+'_archive',**kwargs)
-            conn.setbusytimeout(1000)
-            archive_conn.setbusytimeout(1000)
+            conn.setbusytimeout(100)
+            archive_conn.setbusytimeout(100)
             return (conn,archive_conn)
 
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
             logger.debug('running query %s',sql)
-            for i in xrange(27):
+            for i in range(10):
                 try:
                     if bindings is not None:
                         con.execute(sql,bindings)
                     else:
                         con.execute(sql)
                 except (apsw.BusyError,apsw.LockedError):
-                    # try again for transient errors, but with random exponential backoff up to 134 sec
-                    backoff = random.random()*0.000001*(2**i-1)
-                    logger.warn('transient error, backoff %d', backoff)
+                    # try again for transient errors, but with random
+                    # exponential backoff up to a minute
+                    backoff = 0.1*random.uniform(2**(i-1),2**i)
+                    logger.warn('database busy/locked, backoff %f', backoff)
                     time.sleep(backoff)
                     continue
                 except apsw.Error:
