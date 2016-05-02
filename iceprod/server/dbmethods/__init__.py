@@ -46,7 +46,14 @@ def dbmethod(*args,**kwargs):
                         partial(cb2,defaults))
             logger.info('args: %r',args)
             logger.info('kwargs: %r',kwargs)
-            return obj(*args,**kwargs)
+            try:
+                ret = obj(*args,**kwargs)
+            except Exception as e:
+                logger.info('got exception from dbmethod', exc_info=True)
+                ret = e
+            if ret is not None:
+                defaults['ignore_callback'] = True
+            return ret
         if (obj.func_code.co_argcount > 0 and
             obj.func_code.co_varnames[0] == 'self'):
             obj2 = partialmethod(wrapper,_defaults=kwargs)
