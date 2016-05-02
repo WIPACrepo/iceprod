@@ -130,3 +130,14 @@ span.hide {
     background:#fff;
     border-color:#000;
 }
+.sidebox
+{
+    float: right;
+    background:#fff;
+    padding: 15px;
+    margin: 10px;
+}
+.sidebox li
+{
+    line-height: 150%;
+}
