@@ -22,7 +22,7 @@ def dbmethod(*args,**kwargs):
         if 'timeout' not in kwargs:
             kwargs['timeout'] = 60
         def wrapper(*args, **kwargs):
-            defaults = kwargs.pop('_defaults')
+            defaults = dict(kwargs.pop('_defaults'))
             if 'callback' in kwargs:
                 defaults['ignore_callback'] = False
                 defaults['callback'] = kwargs['callback']

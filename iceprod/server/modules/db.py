@@ -480,8 +480,8 @@ else:
                         con.execute(sql)
                 except (apsw.BusyError,apsw.LockedError):
                     # try again for transient errors, but with random exponential backoff up to 134 sec
-                    backoff = random.uniform(0.0,0.000001*(math.pow(2,i)-1))
-                    logger.debug('transient error, backoff %d')
+                    backoff = random.random()*0.000001*(2**i-1)
+                    logger.warn('transient error, backoff %d', backoff)
                     time.sleep(backoff)
                     continue
                 except apsw.Error:
