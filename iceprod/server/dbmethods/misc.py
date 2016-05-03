@@ -13,6 +13,17 @@ import uuid
 import shutil
 from io import BytesIO
 
+# load IntegrityError
+try:
+    import MySQLdb
+except ImportError:
+    try:
+        import pymysql as MySQLdb
+    except:
+        class MySQLdb:
+            class IntegrityError(Exception):
+                pass
+
 import iceprod.core.functions
 from iceprod.core.util import Node_Resources
 from iceprod.core.dataclasses import Number,String
@@ -299,6 +310,8 @@ class misc(_Methods_Base):
                 callback(None)
                 return
             ret = self.db._db_write(conn,sql,tuple(bindings),None,None,None)
+        except MySQLdb.IntegrityError:
+            logger.warn('dropping history for %r', sql, exc_info=True)
         except Exception as e:
             ret = e
         else:

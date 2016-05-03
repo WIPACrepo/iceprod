@@ -230,7 +230,7 @@ class rpc(_Methods_Base):
         else:
             logger.debug('insert new task_stat')
             task_stat_id = self.db._increment_id_helper('task_stat',conn)
-            sql = 'insert into task_stat (task_stat_id,task_id,stat) values '
+            sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
             sql += ' (?, ?, ?)'
             bindings = (task_stat_id,task,stats)
         try:
@@ -392,7 +392,7 @@ class rpc(_Methods_Base):
                 sql2 = 'update task set prev_status = status, '
                 sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
                 bindings2 = (status,failures,now,task)
-                sql3 = 'insert into task_stat (task_stat_id, task_id, stat) '
+                sql3 = 'replace into task_stat (task_stat_id, task_id, stat) '
                 sql3 += 'values (?,?,?)'
                 task_stat_id = self.db._increment_id_helper('task_stat',conn)
                 stat = {'error_'+now: error_info}
