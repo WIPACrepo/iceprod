@@ -140,6 +140,7 @@ class DBAPI(object):
         self.cfg = cfg
         self.messaging = messaging
         self.dbmethods = None
+        self._connections = []
 
         # indexes
         self.indexes = {}
@@ -378,7 +379,7 @@ else:
 
         def _setup_tables(self):
             """Setup tables, or modify existing tables to match new config"""
-            (conn,archive_conn) = self._dbsetup()
+            conn,archive_conn = self._dbsetup()
             def _create(table_name):
                 sql_create = ' ('
                 sql_select = ' '
@@ -392,8 +393,8 @@ else:
                         sep = ', '
                 sql_create += ')'
                 scols = set(cols)
-                with conn:
-                    cur = conn.cursor()
+                with conn() as c:
+                    cur = c.cursor()
                     try:
                         curcols = set()
                         for cid,name,type,notnull,dflt,pk in cur.execute("pragma table_info("+table_name+")"):
@@ -469,11 +470,22 @@ else:
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
-            conn = apsw.Connection(name,**kwargs)
-            archive_conn = apsw.Connection(name+'_archive',**kwargs)
-            conn.setbusytimeout(100)
-            archive_conn.setbusytimeout(100)
-            return (conn,archive_conn)
+            @contextmanager
+            def conn_wrapper():
+                logger.info('conn_wrapper - %d other connections', self._connections)
+                conn = apsw.Connection(name,**kwargs)
+                conn.setbusytimeout(100)
+                self._connections += 1
+                with conn:
+                    yield conn
+                self._connections -= 1
+            @contextmanager
+            def archive_conn_wrapper():
+                archive_conn = apsw.Connection(name+'_archive',**kwargs)
+                archive_conn.setbusytimeout(100)
+                with archive_conn:
+                    yield archive_conn
+            return (conn_wrapper, archive_conn_wrapper)
 
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
@@ -501,13 +513,13 @@ else:
             ret = None
             try:
                 if sql is not None:
-                    with conn:
-                        cur = conn.cursor()
+                    with conn() as c:
+                        cur = c.cursor()
                         self._db_query(cur,sql,bindings)
                         ret = cur.fetchall()
                 elif archive_sql is not None:
-                    with archive_conn:
-                        archive_cur = archive_conn.cursor()
+                    with archive_conn() as ac:
+                        archive_cur = ac.cursor()
                         self._db_query(archive_cur,archive_sql,archive_bindings)
                         ret = archive_cur.fetchall()
             except Exception as e:
@@ -526,9 +538,9 @@ else:
             """Do a write query from the database"""
             try:
                 if sql is not None and archive_sql is not None:
-                    with conn,archive_conn:
-                        cur = conn.cursor()
-                        archive_cur = archive_conn.cursor()
+                    with conn() as c,archive_conn() as ac:
+                        cur = c.cursor()
+                        archive_cur = ac.cursor()
                         if isinstance(sql,basestring):
                             self._db_query(cur,sql,bindings)
                             self._db_query(archive_cur,archive_sql,archive_bindings)
@@ -539,8 +551,8 @@ else:
                         else:
                             raise Exception('sql is an unknown type')
                 elif sql is not None:
-                    with conn:
-                        cur = conn.cursor()
+                    with conn() as c:
+                        cur = c.cursor()
                         if isinstance(sql,basestring):
                             self._db_query(cur,sql,bindings)
                         elif isinstance(sql,Iterable):
@@ -549,8 +561,8 @@ else:
                         else:
                             raise Exception('sql is an unknown type')
                 elif archive_sql is not None:
-                    with archive_conn:
-                        archive_cur = archive_conn.cursor()
+                    with archive_conn() as ac:
+                        archive_cur = ac.cursor()
                         if isinstance(archive_sql,basestring):
                             self._db_query(archive_cur,archive_sql,archive_bindings)
                         elif isinstance(archive_sql,Iterable):
@@ -575,8 +587,8 @@ else:
             new_id = None
             if table+'_offset' in self.tables['setting']:
                 # global id
-                with conn:
-                    cur = conn.cursor()
+                with conn() as c:
+                    cur = c.cursor()
                     if self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple()) is False:
                         raise Exception('failed to run query')
                     ret = cur.fetchall()
@@ -590,8 +602,8 @@ else:
                         raise Exception('failed to run query')
             elif table+'_last' in self.tables['setting']:
                 # local id
-                with conn:
-                    cur = conn.cursor()
+                with conn() as c:
+                    cur = c.cursor()
                     if self._db_query(cur,'select '+table+'_last from setting',tuple()) is False:
                         raise Exception('failed to run query')
                     ret = cur.fetchall()
