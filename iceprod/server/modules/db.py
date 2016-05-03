@@ -271,7 +271,10 @@ class DBAPI(object):
         init = (db_conn,archive_db_conn)
         either read from sql or sql_archive, not both, returning result
         """
-        conn, archive_conn = init
+        if init is None:
+            conn, archive_conn = self._dbsetup()
+        else:
+            conn, archive_conn = init
         return self._db_read(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
 
     def sql_write_task(self,sql=None,bindings=None,archive_sql=None,archive_bindings=None,callback=None):
@@ -285,7 +288,10 @@ class DBAPI(object):
         if singular, sql and/or sql_archive has executable instructions
         if multiple, tasks has multiple executable instructions
         """
-        conn, archive_conn = init
+        if init is None:
+            conn, archive_conn = self._dbsetup()
+        else:
+            conn, archive_conn = init
         def w(sql=None,bindings=None,archive_sql=None,archive_bindings=None):
             self._db_write(conn,sql,bindings,archive_conn,archive_sql,archive_bindings)
 
@@ -311,11 +317,11 @@ class DBAPI(object):
             isinstance(self.cfg['db']['numthreads'],int)):
             numthreads = self.cfg['db']['numthreads']
         logger.info('start %d threadpools',int(numthreads))
-        self.write_pool = SingleGrouping(init=self._dbsetup)
+        self.write_pool = SingleGrouping()#init=self._dbsetup)
         self.write_pool.finish()
         self.write_pool.disable_output_queue()
         self.write_pool.start()
-        self.read_pool = PriorityThreadPool(numthreads,init=self._dbsetup)
+        self.read_pool = PriorityThreadPool(numthreads)#,init=self._dbsetup)
         self.read_pool.finish()
         self.read_pool.disable_output_queue()
         self.read_pool.start()
@@ -571,22 +577,30 @@ else:
                 # global id
                 with conn:
                     cur = conn.cursor()
-                    self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple())
+                    if self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple()) is False:
+                        raise Exception('failed to run query')
                     ret = cur.fetchall()
+                    if not ret or not ret[0]:
+                        raise Exception('bad return value')
                     site_id = ret[0][0]
                     old_id = ret[0][1]
                     old_id = GlobalID.localID_ret(old_id,type='int')
                     new_id = GlobalID.globalID_gen(old_id+1,site_id)
-                    self._db_query(cur,'update setting set '+table+'_offset = ?',(new_id,))
+                    if self._db_query(cur,'update setting set '+table+'_offset = ?',(new_id,)) is False:
+                        raise Exception('failed to run query')
             elif table+'_last' in self.tables['setting']:
                 # local id
                 with conn:
                     cur = conn.cursor()
-                    self._db_query(cur,'select '+table+'_last from setting',tuple())
+                    if self._db_query(cur,'select '+table+'_last from setting',tuple()) is False:
+                        raise Exception('failed to run query')
                     ret = cur.fetchall()
+                    if not ret or not ret[0]:
+                        raise Exception('bad return value')
                     old_id = ret[0][0]
                     new_id = GlobalID.int2char(GlobalID.char2int(old_id)+1)
-                    self._db_query(cur,'update setting set '+table+'_last = ?',(new_id,))
+                    if self._db_query(cur,'update setting set '+table+'_last = ?',(new_id,)) is False:
+                        raise Exception('failed to run query')
             else:
                 raise Exception('not in setting table')
             return new_id
