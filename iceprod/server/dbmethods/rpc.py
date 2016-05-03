@@ -88,8 +88,9 @@ class rpc(_Methods_Base):
                 ret = e
             if isinstance(ret,Exception):
                 callback(ret)
-            elif not ret or not ret[0]:
-                logger.warn('failed to find job with known job_id')
+            elif not ret or ret[0] is None:
+                logger.warn('failed to find job with known job_id %r',
+                            newtask['job_id'])
                 callback(None)
                 return
             newtask['job'] = ret[0][0]
