@@ -476,9 +476,11 @@ else:
                 conn = apsw.Connection(name,**kwargs)
                 conn.setbusytimeout(100)
                 self._connections += 1
-                with conn:
-                    yield conn
-                self._connections -= 1
+                try:
+                    with conn:
+                        yield conn
+                finally:
+                    self._connections -= 1
             @contextmanager
             def archive_conn_wrapper():
                 archive_conn = apsw.Connection(name+'_archive',**kwargs)
@@ -549,6 +551,7 @@ else:
                                 self._db_query(cur,s,b)
                                 self._db_query(archive_cur,a_s,a_b)
                         else:
+                            logger.info('sql: %r',sql)
                             raise Exception('sql is an unknown type')
                 elif sql is not None:
                     with conn() as c:
@@ -559,6 +562,7 @@ else:
                             for s,b in izip(sql,bindings):
                                 self._db_query(cur,s,b)
                         else:
+                            logger.info('sql: %r',sql)
                             raise Exception('sql is an unknown type')
                 elif archive_sql is not None:
                     with archive_conn() as ac:
