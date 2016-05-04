@@ -450,7 +450,7 @@ class grid(object):
                              task['task_id'])
                 raise ret
             config = serialization.serialize_json.loads(ret)
-            config['dataset'] = task['dataset_id']
+            config['options']['dataset_id'] = task['dataset_id']
             config['options']['job'] = task['job']
             config['options']['jobs_submitted'] = task['jobs_submitted']
 

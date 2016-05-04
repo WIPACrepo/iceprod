@@ -12,7 +12,7 @@ from iceprod.core.util import Node_Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.server import calc_datasets_prios
+from iceprod.server import GlobalID, calc_datasets_prios
 
 from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
@@ -157,7 +157,7 @@ class rpc(_Methods_Base):
                 config['options'] = {}
             config['options']['task_id'] = task['task_id']
             config['options']['task'] = task['name']
-            config['dataset'] = task['dataset_id']
+            config['options']['dataset_id'] = task['dataset_id']
             config['options']['job'] = task['job']
             config['options']['jobs_submitted'] = task['jobs_submitted']
             config['options']['debug'] = task['debug']
@@ -507,33 +507,24 @@ class rpc(_Methods_Base):
                      gridspec,njobs,stat_keys,debug,
                      callback=callback)
         self.db.blocking_task('submit_dataset',cb)
-    def _rpc_submit_dataset_blocking(self,config_data,difplus,description,gridspec,
+    def _rpc_submit_dataset_blocking(self,config,difplus,description,gridspec,
                                      njobs,stat_keys,debug,
                                      callback=None):
         conn,archive_conn = self.db._dbsetup()
         # make sure we have a serialized and deserialized copy of config
-        if isinstance(config_data, dict):
+        if isinstance(config, dict):
             try:
-                config_data = serialization.dict_to_dataclasses(config_data)
+                config = serialization.dict_to_dataclasses(config)
             except Exception:
-                logger.info('error converting config: %r', config_data,
+                logger.info('error converting config: %r', config,
                             exc_info=True)
                 callback(e)
                 return
-        if isinstance(config_data, dataclasses.Job):
-            config = config_data
+        elif not isinstance(config, dataclasses.Job):
             try:
-                config_data = serialization.serialize_json.dumps(config)
-            except:
-                logger.info('error serializing config: %r', config,
-                            exc_info=True)
-                callback(e)
-                return
-        else:
-            try:
-                config = serialization.serialize_json.loads(config_data)
+                config = serialization.serialize_json.loads(config)
             except Exception as e:
-                logger.info('error deserializing config: %r', config_data,
+                logger.info('error deserializing config: %r', config,
                             exc_info=True)
                 callback(e)
                 return
@@ -617,6 +608,7 @@ class rpc(_Methods_Base):
             if isinstance(gridspec,dict):
                 gridspec = json_encode(gridspec)
             dataset_id = self.db._increment_id_helper('dataset',conn)
+            config['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
             stat_keys = json_encode(stat_keys)
             bindings = (dataset_id,'name',description,gridspec,'processing',
                         'user','institution','localhost',0,njobs,ntasks,
@@ -632,6 +624,13 @@ class rpc(_Methods_Base):
             db_updates_bindings.append(bindings)
             
             # add config
+            try:
+                config_data = serialization.serialize_json.dumps(config)
+            except:
+                logger.info('error serializing config: %r', config,
+                            exc_info=True)
+                callback(e)
+                return
             sql = 'insert into config (dataset_id,config_data,difplus_data)'
             sql += ' values (?,?,?)'
             bindings = (dataset_id,config_data,difplus)
