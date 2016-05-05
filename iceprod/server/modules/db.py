@@ -140,7 +140,7 @@ class DBAPI(object):
         self.cfg = cfg
         self.messaging = messaging
         self.dbmethods = None
-        self._connections = []
+        self._connections = 0
 
         # indexes
         self.indexes = {}
@@ -223,36 +223,35 @@ class DBAPI(object):
     def init(self):
         """Initialize the settings table if there is nothing there"""
         conn,archive_conn = self._dbsetup()
-        with conn:
-            sql = 'select * from setting where setting_id = 0'
-            bindings = tuple()
-            ret = self._db_read(conn,sql,bindings,None,None,None)
-            if isinstance(ret,Exception):
-                raise ret
-            elif ret and len(ret) >= 1:
-                return
-            # table is not initialized, so do so
-            sql = 'insert into setting ('
-            sql += ','.join(self.tables['setting'].keys())
-            sql += ') values ('
-            sql += ','.join(['?' for _ in self.tables['setting'].keys()])
-            sql += ')'
-            bindings = tuple()
-            site_id = GlobalID.siteID_gen()
-            for key in self.tables['setting']:
-                if key == 'setting_id':
-                    bindings += (0,)
-                elif key == 'site_id':
-                    bindings += (site_id,)
-                elif key.endswith('_last'):
-                    bindings += (GlobalID.int2char(0),)
-                elif key.endswith('_offset'):
-                    bindings += (GlobalID.globalID_gen(0,site_id),)
-                else:
-                    raise Exception('unexpected settings key: %s'%key)
-            ret = self._db_write(conn,sql,bindings,None,None,None)
-            if isinstance(ret,Exception):
-                raise ret
+        sql = 'select * from setting where setting_id = 0'
+        bindings = tuple()
+        ret = self._db_read(conn,sql,bindings,None,None,None)
+        if isinstance(ret,Exception):
+            raise ret
+        elif ret and len(ret) >= 1:
+            return
+        # table is not initialized, so do so
+        sql = 'insert into setting ('
+        sql += ','.join(self.tables['setting'].keys())
+        sql += ') values ('
+        sql += ','.join(['?' for _ in self.tables['setting'].keys()])
+        sql += ')'
+        bindings = tuple()
+        site_id = GlobalID.siteID_gen()
+        for key in self.tables['setting']:
+            if key == 'setting_id':
+                bindings += (0,)
+            elif key == 'site_id':
+                bindings += (site_id,)
+            elif key.endswith('_last'):
+                bindings += (GlobalID.int2char(0),)
+            elif key.endswith('_offset'):
+                bindings += (GlobalID.globalID_gen(0,site_id),)
+            else:
+                raise Exception('unexpected settings key: %s'%key)
+        ret = self._db_write(conn,sql,bindings,None,None,None)
+        if isinstance(ret,Exception):
+            raise ret
 
     def increment_id(self,table):
         """Increment the id of the table, returning the id"""
@@ -472,9 +471,10 @@ else:
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
             @contextmanager
             def conn_wrapper():
-                logger.info('conn_wrapper - %d other connections', self._connections)
+                logger.info('conn_wrapper - %r other connections', self._connections)
                 conn = apsw.Connection(name,**kwargs)
                 conn.setbusytimeout(100)
+                conn.cursor().execute('PRAGMA synchronous = OFF')
                 self._connections += 1
                 try:
                     with conn:
@@ -491,7 +491,7 @@ else:
 
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
-            logger.debug('running query %s',sql)
+            logger.info('running query %s',sql)
             for i in range(10):
                 try:
                     if bindings is not None:
