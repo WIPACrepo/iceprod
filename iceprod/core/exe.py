@@ -41,7 +41,6 @@ from iceprod.core import functions
 from iceprod.core.exe_json import stillrunning, finishtask
 import iceprod.core.parser
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.modules.ipmodule import IPBaseClass
 
 
 class Config:
@@ -656,8 +655,11 @@ def run_module(cfg, env, module):
         logger.info('run as a script directly')
         if args:
             def splitter(a,b):
-                ret = '-%s=%s' if len(str(a)) <= 1 else '--%s=%s'
-                return ret%(str(a),str(b))
+                ret = ('-%s' if len(str(a)) <= 1 else '--%s')%str(a)
+                if b is None:
+                    return ret
+                else:
+                    return ret+'='+str(b)
             args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
         else:
             args = []
