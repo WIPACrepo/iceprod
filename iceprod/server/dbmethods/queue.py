@@ -14,6 +14,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
+from iceprod.server import GlobalID
 from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
 logger = logging.getLogger('dbmethods.queue')
@@ -498,7 +499,7 @@ class queue(_Methods_Base):
             if not ret:
                 raise Exception('job_index not found')
             job_id = ret[0][0]
-            return sorted(jobs[job_id])[task_index]
+            return sorted(jobs[job_id], key=lambda k: GlobalID.char2int(k))[task_index]
 
         # buffer for each dataset
         # for now, do the stupid thing and just buffer in order
@@ -508,7 +509,10 @@ class queue(_Methods_Base):
                 job_index = need_to_buffer[dataset]['job_index']
                 total_jobs = need_to_buffer[dataset]['jobs']
                 task_rels = need_to_buffer[dataset]['task_rels']
-                sorted_task_rels = sorted(task_rels)
+                sorted_task_rels = sorted(task_rels,
+                        key=lambda k: GlobalID.char2int(k))
+                sorted_task_rel_values = sorted(task_rels.values(),
+                        key=lambda v: GlobalID.char2int(v[0]))
                 gs = need_to_buffer[dataset]['gridspec']
                 
                 logger.debug('buffering dataset %s, job index %d',
@@ -522,7 +526,7 @@ class queue(_Methods_Base):
                     # the current job
                     depends = []
                     try:
-                        for i, x in enumerate(sorted(task_rels.values(),key=lambda a:a[0])):
+                        for i, x in enumerate(sorted_task_rel_values):
                             index, name, deps = x
                             logger.debug('checking depends: %r',x)
                             task_deps = ([],[])
