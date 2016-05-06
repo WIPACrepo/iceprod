@@ -367,7 +367,7 @@ class grid(object):
             if not t['reqs']:
                 t['reqs'] = {}
             resources = default_resource._replace(**t['reqs'])
-            task_reqs[t] = resources
+            task_reqs[t['task_id']] = resources._asdict()
             key = (t['debug'], resources)
             groups[key] += 1
         self.db.queue_add_task_lookup(tasks=task_reqs,async=False)

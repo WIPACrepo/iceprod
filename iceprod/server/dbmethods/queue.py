@@ -510,9 +510,9 @@ class queue(_Methods_Base):
                 total_jobs = need_to_buffer[dataset]['jobs']
                 task_rels = need_to_buffer[dataset]['task_rels']
                 sorted_task_rels = sorted(task_rels,
-                        key=lambda k: GlobalID.char2int(k))
+                        key=lambda k: task_rels[k][0])
                 sorted_task_rel_values = sorted(task_rels.values(),
-                        key=lambda v: GlobalID.char2int(v[0]))
+                        key=lambda v: v[0])
                 gs = need_to_buffer[dataset]['gridspec']
                 
                 logger.debug('buffering dataset %s, job index %d',
