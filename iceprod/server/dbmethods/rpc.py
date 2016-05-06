@@ -56,46 +56,18 @@ class rpc(_Methods_Base):
         """This executes in a single thread regardless of the number of
            parallel requests for a new task.
         """
+        # check resource requirements
+        reqs = {}
+        for k in Node_Resources:
+            if k in args and args[k] != Node_Resources[k]:
+                reqs[k] = args[k]
         conn,archive_conn = self.db._dbsetup()
-        sql = 'select * from search '
-        sql += ' where search.gridspec = ? and search.task_status = "queued"'
-        sql += ' limit 1'
-        bindings = (args['gridspec'],)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-        elif not ret:
-            callback(None)
-        else:
-            newtask = {}
-            logger.debug('new task: %r',ret)
-            try:
-                newtask = self._list_to_dict('search',ret[0])
-            except:
-                logger.warn('error converting search results',exc_info=True)
-                pass
-            if not newtask:
-                callback(newtask)
-                return
-            sql = 'select job_index from job where job_id = ?'
-            bindings = (newtask['job_id'],)
-            try:
-                ret = self.db._db_read(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-            elif not ret or ret[0] is None:
-                logger.warn('failed to find job with known job_id %r',
-                            newtask['job_id'])
-                callback(None)
-                return
-            newtask['job'] = ret[0][0]
-            sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
-            bindings = (newtask['dataset_id'],)
+        
+        while True:
+            sql = 'select task_id from task_lookup where '
+            sql += ' and '.join('req_'+k+' <= ?' for k in reqs)
+            sql += ' limit 1'
+            bindings = tuple(reqs.values())
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
@@ -104,41 +76,104 @@ class rpc(_Methods_Base):
                 callback(ret)
                 return
             elif not ret or not ret[0]:
-                logger.warn('failed to find dataset with known dataset_id')
                 callback(None)
                 return
-            for js, debug in ret:
-                newtask['jobs_submitted'] = js
-                newtask['debug'] = bool(debug)
-                break
-
-            now = nowstr()
-            sql = 'update search set task_status = ? '
-            sql += ' where task_id = ?'
-            sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, status_changed = ? where task_id = ?'
-            bindings = ('processing',newtask['task_id'])
-            bindings2 = ('processing',now,newtask['task_id'])
+            task_id = ret[0][0]
+            sql = 'select * from search where task_id = ? and task_status = ?'
+            bindings = (task_id,'queued')
             try:
-                ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
                 ret = e
             if isinstance(ret,Exception):
                 callback(ret)
+                return
+            elif not ret:
+                logger.info('task %s not valid, remove from task_lookup',
+                            task_id)
+                sql3 = 'delete from task_lookup where task_id = ?'
+                bindings3 = (task_id,)
+                try:
+                    ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                except Exception as e:
+                    ret = e
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
             else:
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('search',newtask['task_id'],now)
-                    bindings4 = ('task',newtask['task_id'],now)
-                    try:
-                        self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
-                    self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
-                callback(newtask)
+                break # we found a valid task
+        
+        newtask = {}
+        logger.debug('new task: %r',ret)
+        try:
+            newtask = self._list_to_dict('search',ret[0])
+        except:
+            logger.warn('error converting search results',exc_info=True)
+            pass
+        if not newtask:
+            callback(newtask)
+            return
+        sql = 'select job_index from job where job_id = ?'
+        bindings = (newtask['job_id'],)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+        elif not ret or ret[0] is None:
+            logger.warn('failed to find job with known job_id %r',
+                        newtask['job_id'])
+            callback(None)
+            return
+        newtask['job'] = ret[0][0]
+        sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
+        bindings = (newtask['dataset_id'],)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        elif not ret or not ret[0]:
+            logger.warn('failed to find dataset with known dataset_id')
+            callback(None)
+            return
+        for js, debug in ret:
+            newtask['jobs_submitted'] = js
+            newtask['debug'] = bool(debug)
+            break
+
+        now = nowstr()
+        sql = 'update search set task_status = ? '
+        sql += ' where task_id = ?'
+        bindings = ('processing',newtask['task_id'])
+        sql2 = 'update task set prev_status = status, '
+        sql2 += ' status = ?, status_changed = ? where task_id = ?'
+        bindings2 = ('processing',now,newtask['task_id'])
+        sql3 = 'delete from task_lookup where task_id = ?'
+        bindings3 = (newtask['task_id'],)
+        try:
+            ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+        else:
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings3 = ('search',newtask['task_id'],now)
+                bindings4 = ('task',newtask['task_id'],now)
+                try:
+                    self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
+                self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
+            callback(newtask)
     def _rpc_new_task_callback(self,args,task,callback=None):
         if isinstance(task,Exception):
             callback(task)

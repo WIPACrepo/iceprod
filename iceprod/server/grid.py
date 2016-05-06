@@ -16,6 +16,7 @@ from collections import namedtuple, Counter
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
+from iceprod.core.util import Node_Resources
 from iceprod.server import module
 from iceprod.server import get_pkg_binary,GlobalID
 import iceprod.server
@@ -356,16 +357,20 @@ class grid(object):
     def setup_pilots(self, tasks):
         """Setup pilots for each task"""
         # do resource grouping
-        Resource = namedtuple('Resource', ['cpu','gpu','memory','disk'])
-        default_resource = Resource(1,0,2000,10000)
+        Resource = namedtuple('Resource', Node_Resources)
+        default_resource = Resource(**Node_Resources)
         groups = Counter()
         if isinstance(tasks,dict):
             tasks = tasks.values()
+        task_reqs = {}
         for t in tasks:
             if not t['reqs']:
                 t['reqs'] = {}
-            key = (t['debug'], default_resource._replace(**t['reqs']))
+            resources = default_resource._replace(**t['reqs'])
+            task_reqs[t] = resources
+            key = (t['debug'], resources)
             groups[key] += 1
+        self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
         for key in groups:
             debug, resources = key
             logger.info('submitting %d pilots for resource %r',

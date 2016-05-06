@@ -108,9 +108,9 @@ class condor(grid.grid):
                 if 'gpu' in task['reqs']:
                     p('request_gpus = {}'.format(task['reqs']['gpu']))
                 if 'memory' in task['reqs']:
-                    p('request_memory = {}'.format(task['reqs']['memory']))
+                    p('request_memory = {}'.format(int(task['reqs']['memory']*1000)))
                 if 'disk' in task['reqs']:
-                    p('request_disk = {}'.format(task['reqs']['disk']*1000))
+                    p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
 
             for b in batch_opts:
                 p(b+'='+batch_opts[b])

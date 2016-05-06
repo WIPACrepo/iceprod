@@ -12,6 +12,7 @@ logger = logging.getLogger('exe_json')
 from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core import dataclasses
+from iceprod.core.util import get_node_resources
 from iceprod.core.serialization import dict_to_dataclasses
 from iceprod.core.jsonRPCclient import JSONRPC
 from iceprod.core.jsonUtil import json_compressor,json_decode
@@ -41,10 +42,11 @@ def downloadtask(gridspec):
     hostname = functions.gethostname()
     ifaces = functions.getInterfaces()
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
-    # TODO: add resources like GPUs, high memory, etc
+    resources = get_node_resources()
     task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
                             hostname=hostname, ifaces=ifaces,
-                            python_unicode=python_unicode)
+                            python_unicode=python_unicode,
+                            **resources)
     if isinstance(task,Exception):
         # an error occurred
         raise task

@@ -104,6 +104,13 @@
             ["name", "str", "logfile name"],
             ["data", "MediumText", "logfile text"]
         ],
+        "task_lookup": [
+            ["task_id", "str"],
+            ["req_cpu", "int"],
+            ["req_gpu", "int"],
+            ["req_memory", "float"],
+            ["req_disk", "float"],
+        ]
         "search": [
             ["task_id", "str"],
             ["job_id", "str"],

@@ -1002,3 +1002,18 @@ class queue(_Methods_Base):
             for dataset_id,config_data in ret:
                 data = config_data
             callback(data)
+
+    @dbmethod
+    def queue_add_task_lookup(self, tasks, callback=None):
+        """
+        Add the tasks currently available for lookup by pilots.
+
+        Args:
+            tasks (dict): dict of {task_id: Node_Resources}
+        """
+        sql = 'replace into task_lookup (task_id,'
+        sql += ','.join('req_'+k for k in tasks.values()[0])
+        sql += ') values (?,'
+        sql += ','.join('?' for k in tasks.values()[0])+')'
+        bindings = [(task_id,)+tuple(tasks[task_id].values()) for task_id in tasks]
+        self.db.sql_write_task([sql for _ in bindings],bindings,callback=callback)

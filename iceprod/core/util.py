@@ -25,85 +25,96 @@ class NoncriticalError(Exception):
     def __reduce__(self):
         return (NoncriticalError,(self.value,))
 
+
+#: The types of node resources, with defaults
+Node_Resources = {
+    'cpu':1,
+    'gpu':0,
+    'memory':1, # in GB
+    'disk':1, # in GB
+}
+
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
-    ret = 1
-    flag = False
+    ret = None
     if os.path.exists('.machine.ad'):
         try:
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'cpus':
                     ret = int(line.split('=')[1])
-                    flag = True
                     break
         except Exception:
             pass
-    if not flag and 'NUM_CPUS' in os.environ:
+    if ret is None and 'NUM_CPUS' in os.environ:
         try:
             ret = int(os.environ['NUM_CPUS'])
         except Exception:
             pass
-    return ret
+    if ret is None:
+        return Node_Resources['cpu']
+    else:
+        return ret
 
 def get_gpus():
     """Detect the number of available (allocated) gpus."""
-    ret = 1
-    flag = False
+    ret = None
     if os.path.exists('.machine.ad'):
         try:
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'gpus':
                     ret = int(line.split('=')[1])
-                    flag = True
                     break
         except Exception:
             pass
-    if not flag and 'NUM_GPUS' in os.environ:
+    if ret is None and 'NUM_GPUS' in os.environ:
         try:
             ret = int(os.environ['NUM_GPUS'])
         except Exception:
             pass
-    if not flag and 'CUDA_VISIBLE_DEVICES' in os.environ:
+    if ret is None and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
             ret = int(len(os.environ['CUDA_VISIBLE_DEVICES'].split(',')))
         except Exception:
             pass
-    if not flag and 'GPU_DEVICE_ORDINAL' in os.environ:
+    if ret is None and 'GPU_DEVICE_ORDINAL' in os.environ:
         try:
             ret = int(len(os.environ['GPU_DEVICE_ORDINAL'].split(',')))
         except Exception:
             pass
-    if not flag and '_CONDOR_AssignedGPUs' in os.environ:
+    if ret is None and '_CONDOR_AssignedGPUs' in os.environ:
         try:
             ret = int(len(os.environ['_CONDOR_AssignedGPUs'].split(',')))
         except Exception:
             pass
-    return ret
+    if ret is None:
+        return Node_Resources['gpu']
+    else:
+        return ret
 
 def get_memory():
     """Detect the amount of available (allocated) memory (in GB)."""
-    ret = 1
-    flag = False
+    ret = None
     if os.path.exists('.machine.ad'):
         try:
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'memory':
                     ret = int(line.split('=')[1])/1000
-                    flag = True
                     break
         except Exception:
             pass
-    if not flag and 'NUM_MEMORY' in os.environ:
+    if ret is None and 'NUM_MEMORY' in os.environ:
         try:
             ret = int(os.environ['NUM_MEMORY'])
         except Exception:
             pass
-    return ret
+    if ret is None:
+        return Node_Resources['memory']
+    else:
+        return ret
 
 def get_disk():
     """Detect the amount of available (allocated) disk (in GB)."""
-    ret = 1
-    flag = False
+    ret = None
     if os.path.exists('.machine.ad'):
         try:
             for line in open('.machine.ad'):
@@ -113,20 +124,23 @@ def get_disk():
                     break
         except Exception:
             pass
-    if not flag and 'NUM_DISK' in os.environ:
+    if ret is None and 'NUM_DISK' in os.environ:
         try:
             ret = int(os.environ['NUM_DISK'])
         except Exception:
             pass
-    return ret
+    if ret is None:
+        return Node_Resources['disk']
+    else:
+        return ret
 
-#: The types of node resources, with detection methods
-Node_Resources = {
-    'cpu':get_cpus(),
-    'gpu':get_gpus(),
-    'memory':get_memory(),
-    'disk':get_disk(),
-}
+def get_node_resources():
+    return {
+        'cpu':get_cpus(),
+        'gpu':get_gpus(),
+        'memory':get_memory(),
+        'disk':get_disk(),
+    }
 
 
 class IFace(object):
