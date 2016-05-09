@@ -62,8 +62,8 @@ setup(
     name='iceprod',
     version=version,
     scripts=glob.glob('bin/*'),
-    packages=['iceprod', 'iceprod.client', 'iceprod.core',
-              'iceprod.modules', 'iceprod.server',
+    packages=['iceprod', 'iceprod.core', 'iceprod.modules',
+              'iceprod.server', 'iceprod.server.dbmethods',
               'iceprod.server.modules', 'iceprod.server.plugins'],
     package_data={
         # data files need to be listed both here (which determines what gets
@@ -73,7 +73,7 @@ setup(
         },
     author="IceCube Collaboration",
     author_email="simprod@icecube.wisc.edu", # TODO: better email address
-    url="http://icecube.wisc.edu", # TODO: better url
+    url="https://github.com/WIPACrepo/iceprod",
     #license="http://www.apache.org/licenses/LICENSE-2.0", # TODO: licensing
     description="IceProd is a set of grid middleware and job tracking tools, developed for the IceCube Collaboration.",
     classifiers=[
@@ -81,11 +81,10 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
-#        'Programming Language :: Python :: Implementation :: PyPy',
         ],
     **kwargs
 )
