@@ -141,7 +141,7 @@ class IceProdConfig(dict):
         """Save config from file."""
         if not self.loading:
             try:
-                text = json_encode(self)
+                text = json_encode(self, indent = 4)
                 # save securely
                 with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0600),'w') as f:
                     f.write(text)
