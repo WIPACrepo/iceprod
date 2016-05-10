@@ -24,7 +24,7 @@ import tornado.escape
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.server import dbmethods
+from iceprod.server import dbmethods, GlobalID
 from .dbmethods_test import dbmethods_base,DB
 
 
@@ -39,6 +39,10 @@ def get_tables(test_dir):
                  'submit_dir':test_dir, 'grid_queue_id':'lkn',
                  'failures':0, 'evictions':0, 'task_rel_id':None},
                 ],
+        'task_lookup':[
+                       {'task_id':task_id, 'req_cpu':1, 'req_gpu':0,
+                        'req_memory':1.0, 'req_disk':1000.0}
+                      ],
         'search':[
                   {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
                    'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
@@ -79,7 +83,7 @@ class dbmethods_rpc_test(dbmethods_base):
         ret_should_be = {'name':'value','options':{'task_id':task_id,
                                                    'task':'0', 'job': 0,
                                                    'jobs_submitted': 2,
-                                                   'dataset': 'd1',
+                                                   'dataset_id': 'd1',
                                                    'debug':True}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
@@ -461,7 +465,6 @@ class dbmethods_rpc_test(dbmethods_base):
         # try giving dict
         config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
-        config_json = serialization.serialize_json.dumps(config_job)
 
         cb.called = False
         self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
@@ -476,6 +479,9 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        config_json = serialization.serialize_json.dumps(config_job)
         if (not end_tables['config'] or
             end_tables['config'][0]['config_data'] != config_json):
             logger.info('%r', end_tables)
@@ -487,7 +493,6 @@ class dbmethods_rpc_test(dbmethods_base):
         # try giving job
         config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
-        config_json = serialization.serialize_json.dumps(config_job)
 
         cb.called = False
         self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
@@ -502,6 +507,9 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        config_json = serialization.serialize_json.dumps(config_job)
         if (not end_tables['config'] or
             end_tables['config'][0]['config_data'] != config_json):
             logger.info('%r', end_tables)
@@ -528,10 +536,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
-        if (not end_tables['config'] or
-            end_tables['config'][0]['config_data'] != config_json):
-            logger.info('%r', end_tables)
-            raise Exception('bad config table')
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        if not end_tables['config']:
+            raise Exception('no config table entry')
+        job = serialization.serialize_json.loads(end_tables['config'][0]['config_data'])
+        if job != config_job:
+            logger.info('actual: %r', job)
+            logger.info('should be: %r', config_job)
         if len(end_tables['task_rel']) != 1:
             logger.info('%r', end_tables)
             raise Exception('bad task_rel table')
@@ -554,7 +566,6 @@ class dbmethods_rpc_test(dbmethods_base):
             {'depends':['0'],'trays':[{'modules':[]}]}
         ],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
-        config_json = serialization.serialize_json.dumps(config_job)
 
         cb.called = False
         self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
@@ -569,11 +580,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
-        if (not end_tables['config'] or
-            end_tables['config'][0]['config_data'] != config_json):
-            logger.info('table: %r', end_tables['config'][0]['config_data'])
-            logger.info('should be: %r', config_json)
-            raise Exception('bad config table')
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        if not end_tables['config']:
+            raise Exception('no config table entry')
+        job = serialization.serialize_json.loads(end_tables['config'][0]['config_data'])
+        if job != config_job:
+            logger.info('actual: %r', job)
+            logger.info('should be: %r', config_job)
         if (len(end_tables['task_rel']) != 2 or
             end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
             logger.info('%r', end_tables['task_rel'])
@@ -585,7 +599,6 @@ class dbmethods_rpc_test(dbmethods_base):
             {'name':'second','depends':['first'],'trays':[{'modules':[]}]}
         ],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
-        config_json = serialization.serialize_json.dumps(config_job)
 
         cb.called = False
         self.mock.setup({'dataset':[], 'config':[], 'task_rel': []})
@@ -600,10 +613,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
-        if (not end_tables['config'] or
-            end_tables['config'][0]['config_data'] != config_json):
-            logger.info('table: %r', end_tables['config'][0]['config_data'])
-            logger.info('should be: %r', config_json)
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        if not end_tables['config']:
+            raise Exception('no config table entry')
+        job = serialization.serialize_json.loads(end_tables['config'][0]['config_data'])
+        if job != config_job:
+            logger.info('actual: %r', job)
+            logger.info('should be: %r', config_job)
             raise Exception('bad config table')
         if (len(end_tables['task_rel']) != 2 or
             end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
@@ -638,9 +655,7 @@ class dbmethods_rpc_test(dbmethods_base):
             {'depends':['d1.0'],'trays':[{'modules':[]}]},
         ],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
-        config_json = serialization.serialize_json.dumps(config_job)
         config_job2 = serialization.dict_to_dataclasses(config_dict2)
-        config_json2 = serialization.serialize_json.dumps(config_job2)
 
         cb.called = False
         self.mock.setup({'dataset':[], 'config':[],
@@ -660,11 +675,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
-        if (not end_tables['config'] or
-            end_tables['config'][0]['config_data'] != config_json2):
-            logger.info('table: %r', end_tables['config'][0]['config_data'])
-            logger.info('should be: %r', config_json2)
-            raise Exception('bad config table')
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job2['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        if not end_tables['config']:
+            raise Exception('no config table entry')
+        job2 = serialization.serialize_json.loads(end_tables['config'][0]['config_data'])
+        if job2 != config_job2:
+            logger.info('actual: %r', job2)
+            logger.info('should be: %r', config_job2)
         if (len(end_tables['task_rel']) != 2 or
             end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
             logger.info('%r', end_tables['task_rel'])
@@ -712,11 +730,14 @@ class dbmethods_rpc_test(dbmethods_base):
             logger.error('cb.ret = %r',cb.ret)
             raise Exception('callback ret != True')
         end_tables = self.mock.get(['dataset','config','task_rel'])
-        if (not end_tables['config'] or
-            end_tables['config'][0]['config_data'] != config_json2):
-            logger.info('table: %r', end_tables['config'][0]['config_data'])
-            logger.info('should be: %r', config_json2)
-            raise Exception('bad config table')
+        dataset_id = end_tables['dataset'][0]['dataset_id']
+        config_job2['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        if not end_tables['config']:
+            raise Exception('no config table entry')
+        job2 = serialization.serialize_json.loads(end_tables['config'][0]['config_data'])
+        if job2 != config_job2:
+            logger.info('actual: %r', job2)
+            logger.info('should be: %r', config_job2)
         if (len(end_tables['task_rel']) != 2 or
             end_tables['task_rel'][1]['depends'] != end_tables['task_rel'][0]['task_rel_id']):
             logger.info('%r', end_tables['task_rel'])

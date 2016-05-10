@@ -1125,10 +1125,12 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call generate_submit_file')
         if not submit.called:
             raise Exception('did not call submit')
-        pilot_dict = self.messaging.called[1][3]['pilot']
-        if (self.messaging.called[0][1] != 'auth_new_passkey' or
-            self.messaging.called[1][1] != 'queue_add_pilot' or
-            os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
+        if (self.messaging.called[0][1] != 'queue_add_task_lookup' or
+            self.messaging.called[1][1] != 'auth_new_passkey' or
+            self.messaging.called[2][1] != 'queue_add_pilot'):
+            raise Exception('unexpected messages')
+        pilot_dict = self.messaging.called[2][3]['pilot']
+        if (os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
             'grid_queue_id' not in pilot_dict or
             pilot_dict['num'] != 1):
             logger.info('%r',self.messaging.called)

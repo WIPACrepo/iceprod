@@ -44,7 +44,7 @@ class config_test(unittest.TestCase):
             if cfg['testing'] != [1,2,3]:
                 raise Exception('did not set param')
             expected = '{"testing":[1,2,3]}'
-            actual = open(cfg.filename).read()
+            actual = open(cfg.filename).read().replace(' ','').replace('\n','')
             if actual != expected:
                 logger.info('expected: %s',expected)
                 logger.info('actual: %s',actual)
@@ -58,7 +58,7 @@ class config_test(unittest.TestCase):
             if 'testing' in cfg:
                 raise Exception('did not delete param')
             expected = '{}'
-            actual = open(cfg.filename).read()
+            actual = open(cfg.filename).read().replace(' ','').replace('\n','')
             if actual != expected:
                 logger.info('expected: %s',expected)
                 logger.info('actual: %s',actual)

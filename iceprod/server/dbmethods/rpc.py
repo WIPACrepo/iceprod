@@ -64,10 +64,14 @@ class rpc(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         
         while True:
-            sql = 'select task_id from task_lookup where '
-            sql += ' and '.join('req_'+k+' <= ?' for k in reqs)
+            sql = 'select task_id from task_lookup '
+            if reqs:
+                sql += 'where'+' and '.join('req_'+k+' <= ?' for k in reqs)
             sql += ' limit 1'
-            bindings = tuple(reqs.values())
+            if reqs:
+                bindings = tuple(reqs.values())
+            else:
+                bindings = tuple()
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:

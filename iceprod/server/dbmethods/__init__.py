@@ -50,7 +50,8 @@ def dbmethod(*args,**kwargs):
                 ret = obj(*args,**kwargs)
             except Exception as e:
                 logger.info('got exception from dbmethod', exc_info=True)
-                ret = e
+                defaults['ignore_callback'] = True
+                raise
             if ret is not None:
                 defaults['ignore_callback'] = True
             return ret

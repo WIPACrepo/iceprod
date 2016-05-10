@@ -252,6 +252,7 @@ class dbmethods_queue_test(dbmethods_base):
         except:
             pass
         else:
+            logger.info('cb.ret=%r',cb.ret)
             raise Exception('no task: exception not raised')
 
         if cb.called is not False:
