@@ -18,9 +18,10 @@ except ImportError:
 
 kwargs = {}
 
-version = "2.0.dev1"
-
 current_path = os.path.dirname(os.path.realpath(__file__))
+
+with open(os.path.join(current_path,'VERSION')) as f:
+    kwargs['version'] = f.read().strip()
 
 with open(os.path.join(current_path,'README.rst')) as f:
     kwargs['long_description'] = f.read()
@@ -45,22 +46,20 @@ except Exception:
 
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
-    install_requires = ['certifi','tornado>=3.0', 'pyzmq']
+    install_requires = ['certifi','tornado>=3.0', 'pyzmq', 'setproctitle',
+                        'pycurl', 'pyOpenSSL', 'pyasn1', 'jsonschema']
     extras_require = {
-        'utils': ['setproctitle', 'pycurl', 'pyOpenSSL', 'pyasn1', 'jsonschema'],
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']
     }
     if sys.version_info < (3, 2):
         install_requires.extend(['futures','subprocess32'])
-    #    install_requires.append('backports.ssl_match_hostname')
     kwargs['install_requires'] = install_requires
     kwargs['extras_require'] = extras_require
     kwargs['zip_safe'] = False
 
 setup(
     name='iceprod',
-    version=version,
     scripts=glob.glob('bin/*'),
     packages=['iceprod', 'iceprod.core', 'iceprod.modules',
               'iceprod.server', 'iceprod.server.dbmethods',
