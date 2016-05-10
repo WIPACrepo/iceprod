@@ -121,7 +121,15 @@ class A:
         with open(test_script,'w') as f:
             f.write("""
 from __future__ import print_function
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class A(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
