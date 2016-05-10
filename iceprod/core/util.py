@@ -227,7 +227,7 @@ except ImportError:
                 if opts[k] is None:
                     cmd.append('--'+k)
                 else:
-                    cmd.append('--'+k+' '+opts[k])
+                    cmd.extend(['--'+k,opts[k]])
             subprocess.check_call(cmd)
         
         def fetch(self, url, filename, username=None, password=None,

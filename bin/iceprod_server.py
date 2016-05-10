@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/cvmfs/icecube.opensciencegrid.org/py2-v2/RHEL_6_x86_64/bin/python
 """
 Server process for running remote batch jobs.
 """
@@ -27,7 +27,13 @@ bin_dir = os.path.dirname( os.path.abspath(sys.argv[0]) )
 root_path = os.path.dirname( bin_dir )
 if not root_path in sys.path: sys.path.append( root_path )
 
-data_class_path = os.path.join( root_path, 'iceprod/server/data/www/dataclasses.js')
+import iceprod
+import iceprod.server
+import iceprod.server.basic_config
+import iceprod.server.RPCinternal
+import iceprod.core.logger
+
+data_class_path = iceprod.server.get_pkgdata_filename('iceprod.server','data/www/dataclasses.js')
 if not os.path.exists(data_class_path):
     print('Generating data classes')
     import inspect
@@ -42,12 +48,6 @@ if not os.path.exists(data_class_path):
     data = {'classes':dcs,'names':names}
     with open(data_class_path,'w') as f:
         f.write('var dataclasses='+json.dumps(data,separators=(',',':'))+';')
-
-import iceprod
-import iceprod.server
-import iceprod.server.basic_config
-import iceprod.server.RPCinternal
-import iceprod.core.logger
 
 def check_module(name, message = '', required = False):
     try:
