@@ -32,7 +32,7 @@ networking performance is generally poor so it is recommended only for
 development use).
 
 **Prerequisites**:
-IceProd runs on python 2.7, and 3.3+
+IceProd runs on python 2.7 and 3.3+
 
 The following are required:
 
@@ -48,8 +48,8 @@ Other non-essential dependencies:
 * nginx       (for ssl offloading and better security)
 * squid       (for http proxy)
 * libtool     (a globus dependency)
-* perl 5.10 + modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
-              (a globus dependency)
+* perl 5.10   (a globus dependency)
+  * perl modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
 * globus      (for gridftp)
 
 
@@ -65,7 +65,7 @@ Then install like::
 
 **Installing from master**:
 
-If you must install the dev version from master, do:
+If you must install the dev version from master, do::
 
     pip install --upgrade git+git://github.com/WIPACrepo/iceprod.git#egg=iceprod
 
