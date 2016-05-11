@@ -25,6 +25,7 @@ Installation
 ------------
 
 **Platforms**:
+
 IceProd should run on any Unix-like platform, although only
 Linux has been extensively tested and can be recommented for production
 deployment (even though Mac OS X is derived from BSD and supports kqueue, its
@@ -32,6 +33,7 @@ networking performance is generally poor so it is recommended only for
 development use).
 
 **Prerequisites**:
+
 IceProd runs on python 2.7 and 3.3+
 
 The following are required:
@@ -49,7 +51,9 @@ Other non-essential dependencies:
 * squid       (for http proxy)
 * libtool     (a globus dependency)
 * perl 5.10   (a globus dependency)
+
   * perl modules: Archive::Tar Compress::Zlib Digest::MD5 File::Spec IO::Zlib Pod::Parser XML::Parser
+
 * globus      (for gridftp)
 
 
