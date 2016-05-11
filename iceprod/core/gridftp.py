@@ -358,9 +358,11 @@ except ImportError:
                     callback(ret)
                 _cmd_async(cmd, callback=cb, timeout=timeout)
             else:
-                ret = _cmd(cmd, timeout=timeout)
-                if tmpdir:
-                    shutil.rmtree(tmpdir,ignore_errors=True)
+                try:
+                    ret = _cmd(cmd, timeout=timeout)
+                finally:
+                    if tmpdir:
+                        shutil.rmtree(tmpdir,ignore_errors=True)
                 return ret
 
         @classmethod
