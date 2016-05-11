@@ -37,6 +37,8 @@ if (subprocess.call(['which','uberftp']) or
 
 class gridftp_test(unittest.TestCase):
     def setUp(self):
+        super(gridftp_test,self).setUp()
+        
         self._timeout = 30
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.server_test_dir = os.path.join('gsiftp://gridftp.icecube.wisc.edu/data/sim/sim-new/tmp/test',
@@ -49,16 +51,15 @@ class gridftp_test(unittest.TestCase):
             pass
         if not os.path.exists(self.test_dir):
             os.mkdir(self.test_dir)
-        super(gridftp_test,self).setUp()
 
-    def tearDown(self):
-        try:
-            iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
-                                                request_timeout=self._timeout)
-        except:
-            pass
-        shutil.rmtree(self.test_dir)
-        super(gridftp_test,self).tearDown()
+        def cleanup():
+            try:
+                iceprod.core.gridftp.GridFTP.rmtree(self.server_test_dir,
+                                                    request_timeout=self._timeout)
+            except:
+                pass
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
     @unittest_reporter(skip=skip_tests)
     def test_01_supported_address(self):

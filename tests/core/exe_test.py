@@ -909,51 +909,6 @@ inithello(void)
         if os.path.exists(filename):
             raise Exception('failed to delete file')
 
-    @unittest_reporter(name='runmodule(): iceprod module (no src)')
-    def test_20_runmodule_iceprod_nosrc(self):
-        """Test runmodule with iceprod module and no src"""
-        # create the module object
-        module = iceprod.core.dataclasses.Module()
-        module['name'] = 'module'
-        module['running_class'] = 'iceprod.modules.ipmodule.Hello'
-
-        # create parameters
-        module['parameters'] = {'greeting': 'new greeting'}
-
-        # check that validate, resource_url, debug are in options
-        options = {}
-        if 'validate' not in options:
-            options['validate'] = True
-        if 'resource_url' not in options:
-            options['resource_url'] = 'http://x2100.icecube.wisc.edu/downloads'
-        if 'debug' not in options:
-            options['debug'] = False
-
-        # make sure some basic options are set
-        if 'data_url' not in options:
-            options['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
-        if 'svn_repository' not in options:
-            options['svn_repository'] = 'http://code.icecube.wisc.edu/svn/'
-        if 'job_temp' not in options:
-            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
-        if 'local_temp' not in options:
-            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
-
-        # set testing data directory
-        options['data_directory'] = os.path.join(self.test_dir,'data')
-
-        # set env
-        env = {'options': options}
-
-        # run the module
-        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
-            try:
-                iceprod.core.exe.runmodule(self.config, env,
-                                                 module)
-            except:
-                logger.error('running the module failed')
-                raise
-
     @unittest_reporter(name='runmodule(): iceprod module (from src)')
     def test_22_runmodule_iceprod_src(self):
         """Test runmodule with iceprod module and src"""
@@ -967,7 +922,15 @@ inithello(void)
         def down():
             if self.download_args['url'].endswith('test.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class Test(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -1026,7 +989,15 @@ class Test(IPBaseClass):
         def down():
             if self.download_args['url'].endswith('test.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class Test(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)

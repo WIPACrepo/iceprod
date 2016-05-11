@@ -120,13 +120,13 @@ class exe_json_test(unittest.TestCase):
         # mock the JSONRPC class
         task = {'dataset':10}
         def new_task(platform=None, hostname=None, ifaces=None,
-                     gridspec=None,python_unicode=None):
+                     gridspec=None, **kwargs):
             new_task.called = True
             new_task.platform = platform
             new_task.hostname = hostname
             new_task.ifaces = ifaces
             new_task.gridspec = gridspec
-            new_task.python_unicode = python_unicode
+            new_task.kwargs = kwargs
             return task
         new_task.called = False
         def f(*args,**kwargs):
@@ -152,7 +152,6 @@ class exe_json_test(unittest.TestCase):
         hostname = iceprod.core.functions.gethostname()
         ifaces = iceprod.core.functions.getInterfaces()
         gridspec = 'thegrid'
-        python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
         try:
             iceprod.core.exe_json.downloadtask(gridspec)
         except:
@@ -168,8 +167,6 @@ class exe_json_test(unittest.TestCase):
             raise Exception('JSONRPC.new_task() ifaces !=')
         if new_task.gridspec != gridspec:
             raise Exception('JSONRPC.new_task() gridspec !=')
-        if new_task.python_unicode != python_unicode:
-            raise Exception('JSONRPC.new_task() python_unicode !=')
 
     @unittest_reporter
     def test_92_finishtask(self):

@@ -346,7 +346,15 @@ inithello(void)
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -412,7 +420,15 @@ class MyTest(IPBaseClass):
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -459,7 +475,15 @@ class MyTest(IPBaseClass):
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -606,7 +630,15 @@ def MyTest():
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -656,7 +688,15 @@ class MyTest(IPBaseClass):
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -721,7 +761,15 @@ class MyTest(IPBaseClass):
         def down():
             if self.download_args['url'].endswith('mytest.py'):
                 return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class MyTest(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -785,7 +833,15 @@ class MyTest(IPBaseClass):
         def down(url):
             if url.endswith('test.py'):
                     return """
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class Test(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
