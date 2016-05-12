@@ -21,6 +21,13 @@ OPTIONS:
 EOF
 }
 
+# clear variables that we use
+unset PROXY
+unset SROOT
+unset PLATFORM
+unset ENV
+unset X509
+
 # get args
 INC=0
 while getopts ":hd:c:s:m:e:x:" opt; do
