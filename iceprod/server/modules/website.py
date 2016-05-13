@@ -456,11 +456,12 @@ class JSONRPCHandler(MyHandler):
             return
         except Exception:
             logger.info('error in DB method',exc_info=True)
-            self.json_error({'code':-32602,'message':'Invalid  params'})
+            self.json_error({'code':-32000,'message':'Server error'},
+                            status=500, id=id)
             return
         if isinstance(ret,Exception):
-            self.json_error({'code':-32602,'message':'Invalid  params',
-                             'data':str(ret)})
+            self.json_error({'code':-32000,'message':'Server error',
+                             'data':str(ret)}, status=500, id=id)
         else:
             # return response
             self.write({'jsonrpc':'2.0','result':ret,'id':id})

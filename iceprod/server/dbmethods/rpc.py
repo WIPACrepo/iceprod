@@ -66,7 +66,7 @@ class rpc(_Methods_Base):
         while True:
             sql = 'select task_id from task_lookup '
             if reqs:
-                sql += 'where'+' and '.join('req_'+k+' <= ?' for k in reqs)
+                sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
             sql += ' limit 1'
             if reqs:
                 bindings = tuple(reqs.values())
