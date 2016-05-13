@@ -98,7 +98,7 @@ class rpc(_Methods_Base):
                 sql3 = 'delete from task_lookup where task_id = ?'
                 bindings3 = (task_id,)
                 try:
-                    ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception as e:
                     ret = e
                 if isinstance(ret,Exception):

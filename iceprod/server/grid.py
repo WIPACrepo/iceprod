@@ -56,6 +56,7 @@ class grid(object):
 
         self.tasks_queued = 0
         self.tasks_processing = 0
+        self.grid_idle = 0
 
     ### Public Functions ###
 
@@ -69,6 +70,13 @@ class grid(object):
     def queue(self):
         """Queue tasks to the grid"""
         tasks = None
+
+        if ('submit_pilots' in self.cfg['queue'] and
+            self.cfg['queue']['submit_pilots']):
+            pilots = True
+        else:
+            pilots = False
+        
         with self.check_run():
             # calculate num tasks to queue
             tasks_on_queue = self.queue_cfg['tasks_on_queue']
@@ -93,44 +101,38 @@ class grid(object):
 
             if isinstance(datasets,Exception):
                 raise datasets
-            elif not datasets:
-                logger.warn('no datasets to queue')
-                return
             elif not isinstance(datasets,dict):
                 raise Exception('db.queue_get_queueing_datasets(%s) did not return a dict'%self.gridspec)
 
-        with self.check_run():
-            # get priority factors
-            qf_p = qf_d = qf_t = 1.0
-            if 'queueing_factor_priority' in self.queue_cfg:
-                qf_p = self.queue_cfg['queueing_factor_priority']
-            if 'queueing_factor_dataset' in self.queue_cfg:
-                qf_d = self.queue_cfg['queueing_factor_dataset']
-            if 'queueing_factor_tasks' in self.queue_cfg:
-                qf_t = self.queue_cfg['queueing_factor_tasks']
-
-            # assign each dataset a priority
-            dataset_prios = iceprod.server.calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
-            logger.debug('dataset prios: %r',dataset_prios)
-
-        with self.check_run():
-            # get tasks to queue
-            tasks = self.db.queue_get_queueing_tasks(dataset_prios=dataset_prios,
-                                                     gridspec_assignment=self.gridspec,
-                                                     num=change,async=False)
-            if isinstance(tasks,Exception):
-                raise tasks
-            if not tasks:
-                logger.warn('no tasks to queue, but a dataset can be queued')
-                return
-            elif not isinstance(tasks,dict):
-                raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
-
-        if tasks is not None:
-            if ('submit_pilots' in self.cfg['queue'] and
-                self.cfg['queue']['submit_pilots']):
+            if datasets:
                 with self.check_run():
-                    self.setup_pilots(tasks)
+                    # get priority factors
+                    qf_p = qf_d = qf_t = 1.0
+                    if 'queueing_factor_priority' in self.queue_cfg:
+                        qf_p = self.queue_cfg['queueing_factor_priority']
+                    if 'queueing_factor_dataset' in self.queue_cfg:
+                        qf_d = self.queue_cfg['queueing_factor_dataset']
+                    if 'queueing_factor_tasks' in self.queue_cfg:
+                        qf_t = self.queue_cfg['queueing_factor_tasks']
+
+                    # assign each dataset a priority
+                    dataset_prios = iceprod.server.calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
+                    logger.debug('dataset prios: %r',dataset_prios)
+
+                with self.check_run():
+                    # get tasks to queue
+                    tasks = self.db.queue_get_queueing_tasks(dataset_prios=dataset_prios,
+                                                             gridspec_assignment=self.gridspec,
+                                                             num=change,async=False)
+                    if isinstance(tasks,Exception):
+                        raise tasks
+                    elif not isinstance(tasks,dict):
+                        raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
+
+        if tasks:
+            if pilots:
+                with self.check_run():
+                    self.add_tasks_to_pilot_lookup(tasks)
             else:
                 for t in tasks:
                     with self.check_run():
@@ -139,6 +141,15 @@ class grid(object):
                         # submit to queueing system
                         self.submit(tasks[t])
             self.tasks_queued += len(tasks)
+
+        if pilots:
+            # now try to queue pilots
+            with self.check_run():
+                tasks = self.db.queue_get_task_lookup(async=False)
+                if isinstance(tasks,Exception):
+                    raise tasks
+            with self.check_run():
+                self.setup_pilots(tasks)
 
 
     ### Private Functions ###
@@ -241,6 +252,12 @@ class grid(object):
 
     def check_grid(self):
         """check the queueing system for problems"""
+        if ('submit_pilots' in self.cfg['queue'] and
+            self.cfg['queue']['submit_pilots']):
+            pilots = True
+        else:
+            pilots = False
+        
         # get time limits
         try:
             queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
@@ -263,8 +280,7 @@ class grid(object):
         now = datetime.utcnow()
 
         # get tasks from iceprod
-        if ('submit_pilots' in self.cfg['queue'] and
-            self.cfg['queue']['submit_pilots']):
+        if pilots:
             tasks = self.db.queue_get_pilots(async=False)
         else:
             tasks = self.db.queue_get_grid_tasks(gridspec=self.gridspec,async=False)
@@ -286,6 +302,7 @@ class grid(object):
         prechecked_dirs = set()
 
         # check the grid tasks
+        grid_idle = 0
         for grid_queue_id in set(grid_tasks).union(tasks):
             if grid_queue_id in grid_tasks:
                 status = grid_tasks[grid_queue_id]['status']
@@ -299,11 +316,12 @@ class grid(object):
                     # mixup - delete the grid side
                     remove_grid_tasks.add(grid_queue_id)
                 elif now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
-                    if ('submit_pilots' in self.cfg['queue'] and
-                        self.cfg['queue']['submit_pilots']):
+                    if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
+                elif status == 'queued':
+                    grid_idle += 1
             else: # must be in grid_tasks
                 # what iceprod doesn't know must be killed
                 if status in ('queued','processing','unknown'):
@@ -311,6 +329,7 @@ class grid(object):
             # queueing systems don't like deleteing directories they know
             # about, so put them on a list of "don't touch"
             prechecked_dirs.add(submit_dir)
+        self.grid_idle = grid_idle
 
         # check submit directories
         for x in os.listdir(self.submit_dir):
@@ -328,8 +347,7 @@ class grid(object):
         # reset tasks
         if reset_tasks:
             logger.info('reset %r',reset_tasks)
-            if ('submit_pilots' in self.cfg['queue'] and
-                self.cfg['queue']['submit_pilots']):
+            if pilots:
                 ret = self.db.queue_del_pilots(pilots=reset_tasks, async=False)
             else:
                 ret = self.db.queue_set_task_status(task=reset_tasks,
@@ -354,32 +372,60 @@ class grid(object):
                 logger.warn('could not delete submit dir %s',t,exc_info=True)
                 continue
 
-    def setup_pilots(self, tasks):
-        """Setup pilots for each task"""
-        # do resource grouping
+    def _get_resources(self, tasks):
+        """yield resource information for each task"""
         Resource = namedtuple('Resource', Node_Resources)
         default_resource = Resource(**Node_Resources)
-        groups = Counter()
-        if isinstance(tasks,dict):
-            tasks = tasks.values()
-        task_reqs = {}
         for t in tasks:
             if not t['reqs']:
                 t['reqs'] = {}
-            resources = default_resource._replace(**t['reqs'])
+            yield default_resource._replace(**t['reqs'])
+
+    def add_tasks_to_pilot_lookup(self, tasks):
+        task_reqs = {}
+        for resources in self._get_resources(tasks):
             task_reqs[t['task_id']] = resources._asdict()
-            key = (t['debug'], resources)
-            groups[key] += 1
-        self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
-        for key in groups:
-            debug, resources = key
+        ret = self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
+        if isinstance(ret,Exception):
+            logger.error('error add_task_lookup')
+            raise ret
+
+    def setup_pilots(self, tasks):
+        """Setup pilots for the task reqs"""
+        debug = False
+        if ('queue' in self.cfg and 'debug' in self.cfg['queue']
+            and self.cfg['queue']['debug']):
+            debug = True
+
+        # do resource grouping
+        groups = Counter()
+        if isinstance(tasks,dict):
+            tasks = tasks.values()
+        for resources in self._get_resources({'reqs':v} for v in tasks):
+            groups[resources] += 1
+
+        # determine how many pilots to queue
+        tasks_on_queue = self.queue_cfg['tasks_on_queue']
+        queue_num = min(len(tasks) - self.grid_idle, tasks_on_queue[1])
+
+        # select at least one from each resource group
+        groups2 = Counter()
+        while queue_num > 0:
+            for r in groups:
+                if r not in groups2 or groups2[r] < groups[r]:
+                    groups2[r] += 1
+                    queue_num -= 1
+                    if queue_num < 1:
+                        break
+        
+        for resources in groups2:
             logger.info('submitting %d pilots for resource %r',
-                        groups[key], resources)
+                        groups[resources], resources)
             pilot = {'task_id': 'pilot',
                      'name': 'pilot',
                      'debug': debug,
                      'reqs': resources._asdict(),
-                     'num': groups[key],
+                     'num': groups[resources],
             }
             self.setup_submit_directory(pilot)
             self.submit(pilot)

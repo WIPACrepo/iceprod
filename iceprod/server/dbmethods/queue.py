@@ -1017,3 +1017,61 @@ class queue(_Methods_Base):
         sql += ','.join('?' for k in tasks.values()[0])+')'
         bindings = [(task_id,)+tuple(tasks[task_id].values()) for task_id in tasks]
         self.db.sql_write_task([sql for _ in bindings],bindings,callback=callback)
+
+    @dbmethod
+    def queue_get_task_lookup(self, callback=None):
+        """
+        Get all the tasks in the lookup.
+        """
+        cb = partial(self._queue_get_task_lookup_callback,callback=callback)
+        self.db.blocking_task('queue',cb)
+    def _queue_get_task_lookup_callback(self, callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        tasks = {}
+        try:
+            # get tasks from lookup
+            sql = 'select * from task_lookup'
+            bindings = tuple()
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                callback(ret)
+                return
+            task_ids = {}
+            for row in ret:
+                row = self._list_to_dict('task_lookup',row)
+                tid = row.pop('task_id')
+                task_ids[tid] = row
+
+            # verify that they are valid
+            while task_ids:
+                tids = set(task_ids.keys()[:900])
+                sql = 'select task_id from search where task_id in ('
+                sql += ','.join('?' for _ in tids)
+                sql += ') and task_status = ?'
+                bindings = tuple(tids)+('queued',)
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                if isinstance(ret,Exception):
+                    callback(ret)
+                    return
+                valid = set()
+                for row in ret:
+                    valid.add(row[0])
+                remove = tids ^ valid
+                if remove:
+                    logger.info('task %s not valid, remove from task_lookup',
+                                task_id)
+                    sql = 'delete from task_lookup where task_id in ('
+                    sql +=  ','.join('?' for _ in remove)+')'
+                    bindings = tuple(remove)
+                    ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                    if isinstance(ret,Exception):
+                        callback(ret)
+                        return
+                for tid in valid:
+                    tasks[tid] = task_ids[tid]
+                task_ids = {t:task_ids[t] for t in task_ids if t not in tids}
+
+        except Exception as e:
+            callback(e)
+        else:
+            callback(tasks)

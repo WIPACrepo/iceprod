@@ -1099,6 +1099,7 @@ class grid_test(unittest.TestCase):
                               'max_task_queued_time':1000,
                               'max_task_processing_time':1000,
                               'max_task_reset_time':300,
+                              'tasks_on_queue': [1,10],
                               'ping_interval':60,
                               'monitor_address':'localhost'
                               }},
@@ -1119,17 +1120,16 @@ class grid_test(unittest.TestCase):
         generate_submit_file.ret = True
         submit.ret = '12345'
 
-        tasks = [{'task_id':'thetaskid','debug':False,'reqs':{}}]
+        tasks = {'thetaskid':{}}
         g.setup_pilots(tasks)
         if not generate_submit_file.called:
             raise Exception('did not call generate_submit_file')
         if not submit.called:
             raise Exception('did not call submit')
-        if (self.messaging.called[0][1] != 'queue_add_task_lookup' or
-            self.messaging.called[1][1] != 'auth_new_passkey' or
-            self.messaging.called[2][1] != 'queue_add_pilot'):
+        if (self.messaging.called[0][1] != 'auth_new_passkey' or
+            self.messaging.called[1][1] != 'queue_add_pilot'):
             raise Exception('unexpected messages')
-        pilot_dict = self.messaging.called[2][3]['pilot']
+        pilot_dict = self.messaging.called[1][3]['pilot']
         if (os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
             'grid_queue_id' not in pilot_dict or
             pilot_dict['num'] != 1):
