@@ -1040,7 +1040,7 @@ class queue(_Methods_Base):
             for row in ret:
                 row = self._list_to_dict('task_lookup',row)
                 tid = row.pop('task_id')
-                task_ids[tid] = row
+                task_ids[tid] = {k.replace('req_',''):row[k] for k in row}
 
             # verify that they are valid
             while task_ids:
