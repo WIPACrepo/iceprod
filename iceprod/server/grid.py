@@ -12,6 +12,7 @@ import logging
 from io import BytesIO
 from datetime import datetime,timedelta
 from collections import namedtuple, Counter
+import itertools
 
 from iceprod.core import dataclasses
 from iceprod.core import functions
@@ -373,7 +374,7 @@ class grid(object):
                 continue
 
     def _get_resources(self, tasks):
-        """yield resource information for each task"""
+        """yield resource information for each task in a list"""
         Resource = namedtuple('Resource', Node_Resources)
         default_resource = Resource(**Node_Resources)
         for t in tasks:
@@ -383,8 +384,10 @@ class grid(object):
 
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {}
-        for resources in self._get_resources(tasks):
-            task_reqs[t['task_id']] = resources._asdict()
+        task_iter = itertools.izip(tasks.keys(),
+                                   self._get_resources(tasks.values()))
+        for task_id, resources in task_iter:
+            task_reqs[task_id] = resources._asdict()
         ret = self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
         if isinstance(ret,Exception):
             logger.error('error add_task_lookup')
