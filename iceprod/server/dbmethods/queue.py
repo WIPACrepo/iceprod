@@ -1058,8 +1058,8 @@ class queue(_Methods_Base):
                     valid.add(row[0])
                 remove = tids ^ valid
                 if remove:
-                    logger.info('task %s not valid, remove from task_lookup',
-                                task_id)
+                    logger.info('tasks %r not valid, remove from task_lookup',
+                                remove)
                     sql = 'delete from task_lookup where task_id in ('
                     sql +=  ','.join('?' for _ in remove)+')'
                     bindings = tuple(remove)
