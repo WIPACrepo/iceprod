@@ -552,6 +552,8 @@ def runmodule(cfg, globalenv, module, stats={}):
         module['args'] = cfg.parseValue(module['args'],env)
     if module['src']:
         module['src'] = cfg.parseValue(module['src'],env)
+    if module['env_shell']:
+        module['env_shell'] = cfg.parseValue(module['env_shell'],env)
 
     try:
         # make subprocess to run the module
