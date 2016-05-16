@@ -95,8 +95,8 @@ class rpc(_Methods_Base):
             elif not ret:
                 logger.info('task %s not valid, remove from task_lookup',
                             task_id)
-                sql3 = 'delete from task_lookup where task_id = ?'
-                bindings3 = (task_id,)
+                sql = 'delete from task_lookup where task_id = ?'
+                bindings = (task_id,)
                 try:
                     ret = self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception as e:
