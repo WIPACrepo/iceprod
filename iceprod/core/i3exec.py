@@ -77,7 +77,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         else:
             logl = 'WARNING'
         if logfile:
-            logf = logfile
+            logf = os.path.abspath(logfile)
         else:
             logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
         iceprod.core.logger.setlogger('i3exec',
@@ -140,6 +140,11 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     for k in config['options']:
                         if k not in task_config['options']:
                             task_config['options'][k] = config['options'][k]
+                    # clear stdout,stderr,log
+                    for stream in (sys.stdout,sys.stderr):
+                        stream.flush()
+                        os.ftruncate(stream.fileno(), 0)
+                    iceprod.core.logger.rotate()
                     # run task
                     try:
                         runner(task_config,url,debug)

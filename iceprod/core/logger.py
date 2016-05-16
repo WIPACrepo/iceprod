@@ -71,3 +71,11 @@ def removestdout():
         if isinstance(handler,logging.StreamHandler):
             log.removeHandler(handler)
     logging.info('loggers=%s' % str(log.handlers))
+
+def rotate():
+    """Rotate the file in the root logger"""
+    log = logging.getLogger()
+    for handler in log.handlers:
+        if isinstance(handler,logging.handlers.RotatingFileHandler):
+            handler.doRollover()
+    logging.info('loggers=%s' % str(log.handlers))
