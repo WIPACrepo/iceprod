@@ -23,6 +23,9 @@ import logging.config
 import time
 import signal
 from functools import partial
+import tempfile
+import shutil
+
 
 from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
@@ -146,12 +149,18 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                         os.ftruncate(stream.fileno(), 0)
                     iceprod.core.logger.rotate()
                     # run task
+                    main_dir = os.getcwd()
                     try:
+                        tmpdir = tempfile.mkdtemp(dir=main_dir)
+                        os.chdir(tmpdir)
                         runner(task_config,url,debug)
                     except Exception:
                         errors += 1
                         logger.error('task encountered an error. current error count is %d',
                                      errors, exc_info=True)
+                    finally:
+                        os.chdir(main_dir)
+                        shutil.rmtree(tmpdir)
             if errors >= 5:
                 logger.failure('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
