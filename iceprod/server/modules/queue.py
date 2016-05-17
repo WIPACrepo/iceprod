@@ -242,6 +242,10 @@ class queue(module.module):
                 with self.check_run():
                     # do global queueing
                     try:
+                        # get num tasks to queue
+                        num = 100
+                        if plugin_cfg:
+                            num = plugin_cfg[0]['tasks_on_queue'][1]
                         # get priority factors
                         qf_p = 1.0
                         qf_d = 1.0
@@ -258,7 +262,7 @@ class queue(module.module):
                             qf_t = self.cfg['queue']['queueing_factor_tasks']
                         elif plugin_cfg:
                             qf_t = plugin_cfg[0]['queueing_factor_tasks']
-                        self.global_queueing(qf_p,qf_d,qf_t)
+                        self.global_queueing(qf_p,qf_d,qf_t,num=num)
                     except Exception:
                         logger.error('error in global queueing',exc_info=True)
 
@@ -287,7 +291,8 @@ class queue(module.module):
 
     def global_queueing(self, queueing_factor_priority=1.0,
                         queueing_factor_dataset=1.0,
-                        queueing_factor_tasks=1.0):
+                        queueing_factor_tasks=1.0,
+                        num=100):
         """
         Do global queueing.
 
@@ -298,6 +303,7 @@ class queue(module.module):
         :param queueing_factor_priority: queueing factor for priority
         :param queueing_factor_dataset: queueing factor for dataset id
         :param queueing_factor_tasks: queueing factor for number of tasks
+        :param num: number of tasks to queue
         """
         if self.global_queueing_lock:
             logger.info('already doing a global_queueing event, so skip')
@@ -335,6 +341,7 @@ class queue(module.module):
                           'queueing_factor_priority':queueing_factor_priority,
                           'queueing_factor_dataset':queueing_factor_dataset,
                           'queueing_factor_tasks':queueing_factor_tasks,
+                          'num':num,
                          }
                 send_master(self.cfg,'queue_master',callback=cb2,**params)
             except Exception:

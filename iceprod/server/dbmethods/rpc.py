@@ -755,6 +755,7 @@ class rpc(_Methods_Base):
                          queueing_factor_priority=1.0,
                          queueing_factor_dataset=1.0,
                          queueing_factor_tasks=1.0,
+                         num=100,
                          callback=None):
         """
         Handle global queueing request from a site.
@@ -767,6 +768,7 @@ class rpc(_Methods_Base):
         :param queueing_factor_priority: (optional) queueing factor for priority
         :param queueing_factor_dataset: (optional) queueing factor for dataset id
         :param queueing_factor_tasks: (optional) queueing factor for number of tasks
+        :param num: (optional) number of tasks to queue
         :returns: (via callback) dict of table entries to be merged
         """
         # priority factors
@@ -796,6 +798,7 @@ class rpc(_Methods_Base):
                 dataset_prios = calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
                 logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
                 self.parent.queue_get_queueing_tasks(dataset_prios,
+                                                     num=num,
                                                      resources=resources,
                                                      global_queueing=True,
                                                      callback=cb3)
