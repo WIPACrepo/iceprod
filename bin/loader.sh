@@ -89,7 +89,7 @@ fi
 if [ -z $PROXY ]; then
     PROXY="squid.icecube.wisc.edu:3128"
 fi
-export http_proxy=$PROXY
+#export http_proxy=$PROXY
 
 PYBIN=python
 if [ -d $PWD/iceprod ]; then
