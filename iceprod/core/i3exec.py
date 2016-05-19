@@ -153,6 +153,9 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     try:
                         tmpdir = tempfile.mkdtemp(dir=main_dir)
                         os.chdir(tmpdir)
+                        for f in os.listdir(main_dir):
+                            os.symlink(os.path.join(main_dir, f),
+                                       os.path.join(tmpdir, f))
                         runner(task_config,url,debug)
                     except Exception:
                         errors += 1
