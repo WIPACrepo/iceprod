@@ -671,7 +671,6 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
         # use pycurl
         logger.info('curl from %s to %s', url, dest_path)
         global pycurl_handle
-        post = 1
         for i in xrange(0,2):
             try:
                 kwargs = {}
@@ -685,20 +684,8 @@ def wget(url,dest='./',cache=False,proxy=False,options={}):
                     kwargs['ssl_key'] = options['sslkey']
                 if 'cacert' in options:
                     kwargs['cacert'] = options['cacert']
-                if post:
-                    # talk the iceprod server language
-                    f = open(dest_path,'w')
-                    if 'key' not in options:
-                        logger.warn('auth key not in options, so cannot communicate using POST with server')
-                        post = 0
-                        continue
-                    body = {'url':url,'key':options['key']}
-                    kwargs['postbody'] = json_encode(body)
-                    pycurl_handle.post(url,f.write,**kwargs)
-                    f.close()
-                else:
-                    # do regular get
-                    pycurl_handle.fetch(url,dest_path,**kwargs)
+                # do regular get
+                pycurl_handle.fetch(url,dest_path,**kwargs)
             except util.NoncriticalError as e:
                 ee = e.value
                 try:
@@ -811,7 +798,6 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
     if url[:5] in ('http:','https','ftp:/','ftps:'):
         # use pycurl
         global pycurl_handle
-        post = 1
         for i in xrange(0,2):
             try:
                 kwargs = {}
@@ -828,30 +814,18 @@ def wget_checksum(url,cache=False,proxy=False,options={}):
                 def cb(data):
                     cb.data += data
                 cb.data = ''
-                if post:
-                    # talk the iceprod server language
-                    if 'key' not in options:
-                        logger.warn('auth key not in options, so cannot communicate using POST with server')
-                        post = 0
+                # do regular get
+                # try every extension type for checksums
+                for type in ('sha512','sha256','sha1','md5'):
+                    try:
+                        url2 = url+type+'sum'
+                        pycurl_handle.post(url2,cb,**kwargs)
+                    except util.NoncriticalError:
                         continue
-                    body = {'url':url,'key':options['key'],'type':'checksum'}
-                    kwargs['postbody'] = json_encode(body)
-                    pycurl_handle.post(url,cb,**kwargs)
-                    ret = json_decode(cb.data)
-                    ret = (ret['checksum'],ret['type'])
-                else:
-                    # do regular get
-                    # try every extension type for checksums
-                    for type in ('sha512','sha256','sha1','md5'):
-                        try:
-                            url2 = url+type+'sum'
-                            pycurl_handle.post(url2,cb,**kwargs)
-                        except util.NoncriticalError:
-                            continue
-                        else:
-                            break
-                    if cb.data:
-                        ret = (cb.data,type)
+                    else:
+                        break
+                if cb.data:
+                    ret = (cb.data,type)
             except util.NoncriticalError as e:
                 ee = e.value
                 try:
