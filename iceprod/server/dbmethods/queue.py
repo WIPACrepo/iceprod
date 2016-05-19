@@ -674,7 +674,7 @@ class queue(_Methods_Base):
         try:
             sql = 'select dataset_id, task_id, task_status '
             sql += 'from search where dataset_id in ('
-            sql += ','.join(['?' for _ in dataset_prios]) + ')'
+            sql += ','.join(['?' for _ in dataset_prios]) + ') limit 999'
             bindings = tuple(dataset_prios)
             if gridspec:
                 sql += 'and gridspec = ? '
