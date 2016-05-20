@@ -940,11 +940,18 @@ class queue(_Methods_Base):
             callback(pilots)
 
     @dbmethod
-    def queue_del_pilots(self,pilots,callback=None):
+    def queue_del_pilots(self,pilots,callback=None,*args):
+        if not isinstance(pilots,list):
+            pilots = list(pilots)
+        if len(pilots) > 900:
+            cb = partial(self.queue_del_pilots,pilots[900:],callback=callback)
+            pilots = pilots[:900]
+        else:
+            cb = callback
         sql = 'delete from pilot where pilot_id in ('
         sql += ','.join('?' for _ in pilots)+')'
         bindings = tuple(pilots)
-        self.db.sql_write_task(sql,bindings,callback=callback)
+        self.db.sql_write_task(sql,bindings,callback=cb)
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):
