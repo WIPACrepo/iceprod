@@ -674,7 +674,7 @@ class queue(_Methods_Base):
         try:
             sql = 'select dataset_id, task_id, task_status '
             sql += 'from search where dataset_id in ('
-            sql += ','.join(['?' for _ in dataset_prios]) + ') limit 999'
+            sql += ','.join(['?' for _ in dataset_prios]) + ')'
             bindings = tuple(dataset_prios)
             if gridspec:
                 sql += 'and gridspec = ? '
@@ -689,15 +689,10 @@ class queue(_Methods_Base):
                 callback({})
                 return
             sql = 'select task_id, depends, requirements, task_rel_id '
-            sql += 'from task where task_id in ('
-            sql += ','.join('?' for _ in tasks) + ')'
-            bindings = tuple(tasks)
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-            if isinstance(ret,Exception):
-                raise ret
+            sql += 'from task where task_id in (%s)'
             datasets = {k:OrderedDict() for k in dataset_prios}
             task_rel_ids = {}
-            for task_id, depends, reqs, task_rel_id in ret:
+            for task_id, depends, reqs, task_rel_id in self._bulk_select(conn,sql,tasks):
                 dataset = tasks[task_id]['dataset']
                 status = tasks[task_id]['status']
                 tasks[task_id]['task_rel_id'] = task_rel_id
@@ -709,13 +704,8 @@ class queue(_Methods_Base):
                 if not reqs:
                     task_rel_ids[task_rel_id] = None
             sql = 'select task_rel_id, requirements from task_rel '
-            sql += 'where task_rel_id in ('
-            sql += ','.join('?' for _ in task_rel_ids) + ')'
-            bindings = tuple(task_rel_ids)
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-            if isinstance(ret,Exception):
-                raise ret
-            for task_rel_id, reqs in ret:
+            sql += 'where task_rel_id in (%s)'
+            for task_rel_id, reqs in self._bulk_select(conn,sql,task_rel_ids):
                 task_rel_ids[task_rel_id] = reqs
             for d in datasets:
                 for task_id in datasets[d]:
@@ -793,28 +783,20 @@ class queue(_Methods_Base):
             if len(tasks) >= num:
                 break
         sql = 'select dataset_id, jobs_submitted, debug from dataset '
-        sql += ' where dataset_id in ('
-        sql += ','.join('?' for _ in dataset_ids)+')'
-        bindings = tuple(dataset_ids)
+        sql += ' where dataset_id in (%s)'
         try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            dataset_debug = {d_id: (js,bool(debug)) for d_id,js,debug in
+                             self._bulk_select(conn,sql,dataset_ids)}
         except Exception as e:
             logger.debug('error getting dataset debug',exc_info=True)
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
+            callback(e)
             return
-        dataset_debug = {d_id: (js,bool(debug)) for d_id,js,debug in ret}
-        sql = 'select * from search where task_id in ('
-        sql += ','.join('?' for _ in tasks)+')'
-        bindings = tuple(tasks)
+        sql = 'select * from search where task_id in (%s)'
         try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            ret = self._bulk_select(conn,sql,tasks)
         except Exception as e:
             logger.debug('error queueing tasks',exc_info=True)
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
+            callback(e)
             return
         if ret:
             tasks = {}

@@ -132,6 +132,23 @@ class _Methods_Base():
             raise
         return ret
 
+    def _bulk_select(self, conn, sql, bindings):
+        """
+        Select many items by id.
+
+        sql should have %s for where bindings are inserted.
+        """
+        if not isinstance(bindings,list):
+            bindings = list(bindings)
+        while bindings:
+            bindings2 = bindings[:900]
+            bindings = bindings[900:]
+            sql2 = sql%(','.join('?' for _ in bindings2))
+            ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+            yield ret
+
     def _send_to_master(self, updates, callback=None):
         """Send an update to the master"""
         try:
