@@ -142,12 +142,14 @@ class _Methods_Base():
             bindings = list(bindings)
         while bindings:
             bindings2 = bindings[:900]
+            logger.info('bulk select %s %d',sql,len(bindings2))
             bindings = bindings[900:]
             sql2 = sql%(','.join('?' for _ in bindings2))
             ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
             if isinstance(ret,Exception):
                 raise ret
-            yield ret
+            for row in ret:
+                yield row
 
     def _send_to_master(self, updates, callback=None):
         """Send an update to the master"""
