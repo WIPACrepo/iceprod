@@ -70,6 +70,25 @@ class misc(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         tables = {}
 
+        sql = 'select depends from task where task_id in ('
+        sql += ','.join('?' for _ in task_ids)
+        sql += ')'
+        bindings = tuple(task_ids)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        if not ret:
+            callback({})
+            return
+        task_ids = set(task_ids)
+        for row in ret:
+            for d in row[0].split(','):
+                task_ids.add(d)
+
         sql = 'select * from search where task_id in ('
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
