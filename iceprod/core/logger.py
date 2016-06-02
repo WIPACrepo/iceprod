@@ -22,7 +22,7 @@ setlevel = {
 host = os.uname()[1].split(".")[0]
 
 def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
-              logsize=1048576,lognum=4):
+              logsize=16777216,lognum=4):
     """Add an output to the root logger"""
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
     
