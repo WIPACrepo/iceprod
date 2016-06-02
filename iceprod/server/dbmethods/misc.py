@@ -87,7 +87,9 @@ class misc(_Methods_Base):
         task_ids = set(task_ids)
         for row in ret:
             for d in row[0].split(','):
-                task_ids.add(d)
+                d = d.strip()
+                if d:
+                    task_ids.add(d)
 
         sql = 'select * from search where task_id in ('
         sql += ','.join('?' for _ in task_ids)
