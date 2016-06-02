@@ -33,7 +33,9 @@ def dbmethod(*args,**kwargs):
                         defaults['callback'](*args,**kwargs)
                     defaults['ignore_callback'] = True
                     if defaults['timeout_handle']:
-                        ioloop.remove_timeout(defaults['timeout_handle'])
+                        def remove_timeout():
+                            ioloop.remove_timeout(defaults['timeout_handle'])
+                        ioloop.add_callback(remove_timeout)
                 kwargs['callback'] = partial(cb,defaults)
                 def cb2(defaults,*args,**kwargs):
                     if not defaults['ignore_callback']:
