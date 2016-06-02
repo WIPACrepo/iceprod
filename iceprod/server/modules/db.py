@@ -375,6 +375,7 @@ except ImportError:
 else:
     class SQLite(DBAPI):
         """SQLite 3 implementation of DBAPI"""
+        db_conn_cache = {}
 
         def _setup_tables(self):
             """Setup tables, or modify existing tables to match new config"""
@@ -392,7 +393,7 @@ else:
                         sep = ', '
                 sql_create += ')'
                 scols = set(cols)
-                with conn() as c:
+                with conn as c:
                     cur = c.cursor()
                     try:
                         curcols = set()
@@ -469,25 +470,19 @@ else:
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
-            @contextmanager
-            def conn_wrapper():
-                logger.info('conn_wrapper - %r other connections', self._connections)
+
+            def make_db(name):
                 conn = apsw.Connection(name,**kwargs)
+                conn.cursor().execute('PRAGMA journal_mode = wal')
                 conn.setbusytimeout(100)
-                conn.cursor().execute('PRAGMA synchronous = OFF')
-                self._connections += 1
-                try:
-                    with conn:
-                        yield conn
-                finally:
-                    self._connections -= 1
-            @contextmanager
-            def archive_conn_wrapper():
-                archive_conn = apsw.Connection(name+'_archive',**kwargs)
-                archive_conn.setbusytimeout(100)
-                with archive_conn:
-                    yield archive_conn
-            return (conn_wrapper, archive_conn_wrapper)
+                return conn
+            if name not in SQLite.db_conn_cache:
+                SQLite.db_conn_cache[name] = make_db(name)
+            if name+'_archive' not in SQLite.db_conn_cache:
+                SQLite.db_conn_cache[name+'_archive'] = make_db(name+'_archive')
+
+            return (SQLite.db_conn_cache[name],
+                    SQLite.db_conn_cache[name+'_archive'])
 
         def _db_query(self,con,sql,bindings=None):
             """Make a db query and do error handling"""
@@ -515,12 +510,12 @@ else:
             ret = None
             try:
                 if sql is not None:
-                    with conn() as c:
+                    with conn as c:
                         cur = c.cursor()
                         self._db_query(cur,sql,bindings)
                         ret = cur.fetchall()
                 elif archive_sql is not None:
-                    with archive_conn() as ac:
+                    with archive_conn as ac:
                         archive_cur = ac.cursor()
                         self._db_query(archive_cur,archive_sql,archive_bindings)
                         ret = archive_cur.fetchall()
@@ -540,7 +535,7 @@ else:
             """Do a write query from the database"""
             try:
                 if sql is not None and archive_sql is not None:
-                    with conn() as c,archive_conn() as ac:
+                    with conn as c,archive_conn as ac:
                         cur = c.cursor()
                         archive_cur = ac.cursor()
                         if isinstance(sql,basestring):
@@ -554,7 +549,7 @@ else:
                             logger.info('sql: %r',sql)
                             raise Exception('sql is an unknown type')
                 elif sql is not None:
-                    with conn() as c:
+                    with conn as c:
                         cur = c.cursor()
                         if isinstance(sql,basestring):
                             self._db_query(cur,sql,bindings)
@@ -565,7 +560,7 @@ else:
                             logger.info('sql: %r',sql)
                             raise Exception('sql is an unknown type')
                 elif archive_sql is not None:
-                    with archive_conn() as ac:
+                    with archive_conn as ac:
                         archive_cur = ac.cursor()
                         if isinstance(archive_sql,basestring):
                             self._db_query(archive_cur,archive_sql,archive_bindings)
@@ -591,7 +586,7 @@ else:
             new_id = None
             if table+'_offset' in self.tables['setting']:
                 # global id
-                with conn() as c:
+                with conn as c:
                     cur = c.cursor()
                     if self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple()) is False:
                         raise Exception('failed to run query')
@@ -606,7 +601,7 @@ else:
                         raise Exception('failed to run query')
             elif table+'_last' in self.tables['setting']:
                 # local id
-                with conn() as c:
+                with conn as c:
                     cur = c.cursor()
                     if self._db_query(cur,'select '+table+'_last from setting',tuple()) is False:
                         raise Exception('failed to run query')
