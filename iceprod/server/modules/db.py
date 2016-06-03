@@ -3,7 +3,7 @@ Database server module
 """
 from __future__ import absolute_import, division, print_function
 
-from threading import Thread, Event, Condition
+from threading import Thread, Event, Condition, Lock
 import os
 import logging
 import time
@@ -375,6 +375,8 @@ except ImportError:
 else:
     class SQLite(DBAPI):
         """SQLite 3 implementation of DBAPI"""
+        conn_cache = {}
+        lock = Lock()
 
         def _setup_tables(self):
             """Setup tables, or modify existing tables to match new config"""
@@ -469,24 +471,35 @@ else:
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
+
+            def get_conn(name):
+                conn = apsw.Connection(name,**kwargs)
+                conn.cursor().execute('PRAGMA journal_mode = WAL')
+                conn.cursor().execute('PRAGMA synchronous = OFF')
+                conn.setbusytimeout(100)
+                return conn
+
+            if name not in SQLite.conn_cache:
+                SQLite.conn_cache[name] = get_conn(name)
+            if name+'_archive' not in SQLite.conn_cache:
+                SQLite.conn_cache[name+'_archive'] = get_conn(name+'_archive')
+            
             @contextmanager
             def conn_wrapper():
                 logger.info('conn_wrapper - %r other connections', self._connections)
-                conn = apsw.Connection(name,**kwargs)
-                conn.setbusytimeout(100)
-                conn.cursor().execute('PRAGMA synchronous = OFF')
+                conn = SQLite.conn_cache[name]
                 self._connections += 1
                 try:
-                    with conn:
-                        yield conn
+                    with SQLite.lock:
+                        with conn:
+                            yield conn
                 finally:
                     self._connections -= 1
             @contextmanager
             def archive_conn_wrapper():
-                archive_conn = apsw.Connection(name+'_archive',**kwargs)
-                archive_conn.setbusytimeout(100)
-                with archive_conn:
-                    yield archive_conn
+                conn = SQLite.conn_cache[name+'_archive']
+                with conn:
+                    yield conn
             return (conn_wrapper, archive_conn_wrapper)
 
         def _db_query(self,con,sql,bindings=None):
