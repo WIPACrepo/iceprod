@@ -940,7 +940,7 @@ class queue(_Methods_Base):
             callback(pilots)
 
     @dbmethod
-    def queue_del_pilots(self,pilots,callback=None,*args):
+    def queue_del_pilots(self,pilots,ret=None,callback=None):
         if not isinstance(pilots,list):
             pilots = list(pilots)
         if len(pilots) > 900:
