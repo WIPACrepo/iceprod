@@ -830,6 +830,18 @@ class rpc(_Methods_Base):
     def rpc_update_config(self, config_text, callback=None):
         self.db.messaging.config.set_config_string(config_text = config_text, callback=callback)
 
+    @dbmethod
+    def rpc_reset_task(self, task, callback=None):
+        self.parent.queue_set_task_status(task=task, status='reset', callback=callback)
+    
+    @dbmethod
+    def rpc_resume_task(self, task, callback=None):
+        self.parent.queue_set_task_status(task=task, status='resume', callback=callback)
+    
+    @dbmethod
+    def rpc_suspend_task(self, task, callback=None):
+        self.parent.queue_set_task_status(task=task, status='suspended', callback=callback)
+    
 
     ### Public Methods ###
 

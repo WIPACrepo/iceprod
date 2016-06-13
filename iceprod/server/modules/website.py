@@ -738,6 +738,7 @@ class Dataset(PublicHandler):
 
 class Task(PublicHandler):
     """Handle /task urls"""
+    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self,url):
         with self.catch_error(message='error generating dataset page'):
@@ -760,11 +761,16 @@ class Task(PublicHandler):
                     raise logs
                 self.render_handle('task_detail.html',task=task_details,logs=logs)
             elif status:
+                
+                passkey = yield self.db_call('auth_new_passkey')
+                if isinstance(passkey,Exception):
+                    raise passkey
+                
                 tasks = yield self.db_call('web_get_tasks_details',status=status,
                                            dataset_id=dataset_id)
                 if isinstance(tasks,Exception):
                     raise tasks
-                self.render_handle('task_browse.html',tasks=tasks)
+                self.render_handle('task_browse.html',tasks=tasks, passkey=passkey)
             else:
                 status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
                 if isinstance(status,Exception):
