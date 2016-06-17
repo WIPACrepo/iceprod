@@ -9,9 +9,9 @@
 {% for t in tasks %}
     <li>
         <a href="/task/{{ t }}">{{ tasks[t]['task_id'] }}</a>
-        <a href='javascript:call("reset_task");'>Reset</a>
-        <a href='javascript:call("resume_task");'>Resume</a>
-        <a href='javascript:call("suspend_task");'>Suspend</a>
+        <a href='javascript:call("reset_task", "{{ tasks[t]['task_id'] }}");'>Reset</a>
+        <a href='javascript:call("resume_task", "{{ tasks[t]['task_id'] }}");'>Resume</a>
+        <a href='javascript:call("suspend_task", "{{ tasks[t]['task_id'] }}");'>Suspend</a>
     </li>
 {% end %}
 </ul>
@@ -48,9 +48,9 @@
 <script type="text/javascript" src="/static/json-rpc.js"></script>
 <script type="text/javascript">
 
-function call(func_name){
-    RPCclient('reset_task', {passkey: "{{ passkey }}", task:'1' }, callback=function(return_data){
-        
+function call(func_name, task){
+    RPCclient(func_name, {passkey: "{{ passkey }}", task:task }, callback=function(return_data){
+
     });
 };
 </script>

@@ -746,6 +746,11 @@ class Task(PublicHandler):
                 url_parts = [x for x in url.split('/') if x]
             dataset_id = self.get_argument('dataset_id',default=None)
             status = self.get_argument('status',default=None)
+            
+            passkey = yield self.db_call('auth_new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+            
             if url and url_parts:
                 task_id = url_parts[0]
                 ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
@@ -759,12 +764,8 @@ class Task(PublicHandler):
                 logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
                 if isinstance(logs,Exception):
                     raise logs
-                self.render_handle('task_detail.html',task=task_details,logs=logs)
+                self.render_handle('task_detail.html',task=task_details,logs=logs,passkey=passkey)
             elif status:
-                
-                passkey = yield self.db_call('auth_new_passkey')
-                if isinstance(passkey,Exception):
-                    raise passkey
                 
                 tasks = yield self.db_call('web_get_tasks_details',status=status,
                                            dataset_id=dataset_id)

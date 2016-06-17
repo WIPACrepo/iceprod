@@ -21,6 +21,11 @@
   </div>
 </div>
 {% end %}
+<div style="padding:10px;">
+    <a href='javascript:call("reset_task");'>Reset</a>
+    <a href='javascript:call("resume_task");'>Resume</a>
+    <a href='javascript:call("suspend_task");'>Suspend</a>
+</div>
 </div>
 
 {% for k in logs %}
@@ -30,4 +35,18 @@
 </div>
 {% end %}
 
+{% end %}
+
+{% block body_scripts %}
+<script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript">
+    
+    var task = "{{ task['task_id'] }}";
+    
+    function call(func_name){
+        RPCclient(func_name, {passkey: "{{ passkey }}", task:task }, callback=function(return_data){
+                  
+                  });
+    };
+</script>
 {% end %}
