@@ -18,6 +18,7 @@ import shutil
 import inspect
 from functools import partial
 from collections import Container
+from contextlib import contextmanager
 
 try:
     import cPickle as pickle
@@ -77,6 +78,7 @@ class Config:
                 ret[attr] = self.parseValue(tmp,env)
         return ret
 
+@contextmanager
 def setupenv(cfg, obj, oldenv={}):
     """Set up an environment to run things in"""
     try:
@@ -142,38 +144,38 @@ def setupenv(cfg, obj, oldenv={}):
     except Exception as e:
         logger.critical('Serious error when setting up environment',exc_info=True)
         raise
-    return env
 
-def destroyenv(env):
-    """Do cleanup on env destruction"""
-    # upload data
-    if 'uploads' in env:
-        for d in env['uploads']:
-            try:
-                uploadData(env, d)
-            except util.NoncriticalError, e:
-                logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
-                if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
-                    raise
+    try:
+        yield env
+        
+        # upload data
+        if 'uploads' in env:
+            for d in env['uploads']:
+                try:
+                    uploadData(env, d)
+                except util.NoncriticalError, e:
+                    logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
+                    if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
+                        raise
+    finally:
+        # delete any files
+        if 'deletions' in env and len(env['deletions']) > 0:
+            for f in reversed(env['deletions']):
+                try:
+                    os.remove(f)
+                    base = os.path.basename(f)
+                except OSError, e:
+                    logger.error('failed to delete file %s - %s',(str(f),str(e)))
+                    if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
+                        raise
 
-    # delete any files
-    if 'deletions' in env and len(env['deletions']) > 0:
-        for f in reversed(env['deletions']):
-            try:
-                os.remove(f)
-                base = os.path.basename(f)
-            except OSError, e:
-                logger.error('failed to delete file %s - %s',(str(f),str(e)))
-                if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
-                    raise
-
-    # reset environment
-    if 'environment' in env:
-        for e in os.environ.keys():
-            if e not in env['environment']:
-                del os.environ[e]
-        for e in env['environment'].keys():
-            os.environ[e] = env['environment'][e]
+        # reset environment
+        if 'environment' in env:
+            for e in os.environ.keys():
+                if e not in env['environment']:
+                    del os.environ[e]
+            for e in env['environment'].keys():
+                os.environ[e] = env['environment'][e]
 
 def downloadResource(env, resource, remote_base=None,
                      local_base=None):
@@ -468,9 +470,7 @@ def runtask(cfg, globalenv, task):
 
     try:
         # set up local env
-        env = setupenv(cfg, task, globalenv)
-
-        try:
+        with setupenv(cfg, task, globalenv) as env:
             # run trays
             for tray in task['trays']:
                 tmpstat = {}
@@ -479,11 +479,6 @@ def runtask(cfg, globalenv, task):
                     stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
                     stats[tray['name']] = tmpstat[tmpstat.keys()[0]]
-
-        finally:
-            # destroy env
-            destroyenv(env)
-            del env
 
         # finish task
         if ('offline' in cfg.config['options'] and
@@ -518,18 +513,12 @@ def runtray(cfg, globalenv,tray,stats={}):
         for i in xrange(tray['iterations']):
             # set up local env
             tmpenv['options']['tray_iteration'] = i
-            env = setupenv(cfg, tray, tmpenv)
             tmpstat = {}
-
-            try:
+            with setupenv(cfg, tray, tmpenv) as env:
                 # run modules
                 for module in tray['modules']:
                     runmodule(cfg, env, module, stats=tmpstat)
-            finally:
-                stats[i] = tmpstat
-                # destroy env
-                destroyenv(env)
-                del env
+            stats[i] = tmpstat
 
     finally:
         # destroy tray temp
@@ -545,17 +534,16 @@ def runmodule(cfg, globalenv, module, stats={}):
         raise Exception('No module provided')
 
     # set up local env
-    env = setupenv(cfg, module, globalenv)
-    if module['running_class']:
-        module['running_class'] = cfg.parseValue(module['running_class'],env)
-    if module['args']:
-        module['args'] = cfg.parseValue(module['args'],env)
-    if module['src']:
-        module['src'] = cfg.parseValue(module['src'],env)
-    if module['env_shell']:
-        module['env_shell'] = cfg.parseValue(module['env_shell'],env)
+    with setupenv(cfg, module, globalenv) as env:
+        if module['running_class']:
+            module['running_class'] = cfg.parseValue(module['running_class'],env)
+        if module['args']:
+            module['args'] = cfg.parseValue(module['args'],env)
+        if module['src']:
+            module['src'] = cfg.parseValue(module['src'],env)
+        if module['env_shell']:
+            module['env_shell'] = cfg.parseValue(module['env_shell'],env)
 
-    try:
         # make subprocess to run the module
         process = run_module(cfg, env, module)
         try:
@@ -582,18 +570,14 @@ def runmodule(cfg, globalenv, module, stats={}):
                 pass
         if process.returncode:
             raise Exception('module failed')
-    finally:
-        # destroy env
-        destroyenv(env)
-        del env
 
-    # get stats, if available
-    if os.path.exists(constants['stats']):
-        new_stats = pickle.load(open(constants['stats']))
-        if module['name']:
-            stats[module['name']] = new_stats
-        else:
-            stats.update(new_stats)
+        # get stats, if available
+        if os.path.exists(constants['stats']):
+            new_stats = pickle.load(open(constants['stats']))
+            if module['name']:
+                stats[module['name']] = new_stats
+            else:
+                stats.update(new_stats)
 
 def run_module(cfg, env, module):
     """Helper to runmodule. Returns a running subprocess."""
