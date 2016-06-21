@@ -512,7 +512,7 @@ var Submission = (function( $ ) {
             html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="width:90%;min-height:400px">'
             html += '</textarea></div>';
             if (data.dataset == null) {
-                html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
+                html += '<div>Number of jobs: <input id="number_jobs" value="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57" /> <select id="gridspec" style="margin-left:10px">';
                 html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
                     html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
@@ -560,7 +560,15 @@ var Submission = (function( $ ) {
                     data.submit_data = job;
                 }
                 else if (data.state == 'expert')
-                    data.submit_data = JSON.parse($('#expert_submit').find('textarea').off().val());
+                {
+                    var text = $('#expert_submit').find('textarea').off().val();
+                    try {
+                        data.submit_data = JSON.parse(text);
+                    } catch (e) {
+                        $('#error').text('Failed to parse json');
+                        return;
+                    }
+                }
                 if (data.dataset == null) {
                     var njobs = parseInt($('#number_jobs').val());
                     if ( njobs == null || njobs == undefined || isNaN(njobs)) {
