@@ -664,67 +664,41 @@ inithello(void)
         """Test basic setupenv functionality"""
         obj = iceprod.core.dataclasses.Steering()
         # create an empty env
-        try:
-            empty_env = iceprod.core.exe.setupenv(self.config, obj)
-        except:
-            logger.error('creating empty env failed')
-            raise
+        with iceprod.core.exe.setupenv(self.config, obj) as empty_env:
+            # create secondary env
+            with iceprod.core.exe.setupenv(self.config, obj, empty_env) as env2:
+                # create something in env2, and check it's not in empty_env
+                env2['test'] = 'testing'
+                if 'test' in empty_env:
+                    raise Exception('env2 is a direct link to empty_env')
 
-        # create secondary env
-        try:
-            env2 = iceprod.core.exe.setupenv(self.config, obj, empty_env)
-        except:
-            logger.error('creating secondary env failed')
-            raise
+                # make new env from env2, and check it has that value
+                with iceprod.core.exe.setupenv(self.config, obj, env2) as env3:
+                    if 'test' not in env3 or env3['test'] != 'testing':
+                        raise Exception('env3 does not have test value')
 
-        # create something in env2, and check it's not in empty_env
-        env2['test'] = 'testing'
-        if 'test' in empty_env:
-            raise Exception('env2 is a direct link to empty_env')
+                    # check that modifying a value in env3 has no effect on env2
+                    env3['test'] = 'abcd'
+                    if env2['test'] != 'testing':
+                        raise Exception, 'env3 is a direct link to env2'
 
-        # make new env from env2, and check it has that value
-        try:
-            env3 = iceprod.core.exe.setupenv(self.config, obj, env2)
-        except:
-            logger.error('creating env3 failed')
-            raise
-        if 'test' not in env3 or env3['test'] != 'testing':
-            raise Exception('env3 does not have test value')
+                    # check that modifying a value in env2 has no effect on env3
+                    env2['test'] = 'dcba'
+                    if env3['test'] != 'abcd':
+                        raise Exception('env2 is a direct link to env3')
 
-        # check that modifying a value in env3 has no effect on env2
-        env3['test'] = 'abcd'
-        if env2['test'] != 'testing':
-            raise Exception, 'env3 is a direct link to env2'
-
-        # check that modifying a value in env2 has no effect on env3
-        env2['test'] = 'dcba'
-        if env3['test'] != 'abcd':
-            raise Exception('env2 is a direct link to env3')
-
-        # do second level checks, like dealing with parameters
-        obj.parameters = {}
-        try:
-            env4 = iceprod.core.exe.setupenv(self.config, obj)
-        except:
-            logger.error('creating empty env failed')
-            raise
-        try:
-            env5 = iceprod.core.exe.setupenv(self.config, obj, env4)
-        except:
-            logger.error('creating empty env failed')
-            raise
-        env5['parameters']['test'] = 1
-        if 'test' in env4['parameters']:
-            raise Exception('adding a parameter in env5 adds it to env4')
-        try:
-            env6 = iceprod.core.exe.setupenv(self.config, obj, env5)
-        except:
-            logger.error('creating empty env failed')
-            raise
-        env6['parameters']['test'] = 2
-        if env5['parameters']['test'] == 2:
-            raise Exception('modifying a parameter in env6 modifies ' +
-                            'it in env5')
+                    # do second level checks, like dealing with parameters
+                    obj.parameters = {}
+                    with iceprod.core.exe.setupenv(self.config, obj) as env4:
+                        with iceprod.core.exe.setupenv(self.config, obj, env4) as env5:
+                            env5['parameters']['test'] = 1
+                            if 'test' in env4['parameters']:
+                                raise Exception('adding a parameter in env5 adds it to env4')
+                            with iceprod.core.exe.setupenv(self.config, obj, env5) as env6:
+                                env6['parameters']['test'] = 2
+                                if env5['parameters']['test'] == 2:
+                                    raise Exception('modifying a parameter in env6 modifies ' +
+                                                    'it in env5')
 
     @unittest_reporter(name='setupenv(): steering')
     def test_11_setupenv_steering(self):
@@ -767,39 +741,35 @@ inithello(void)
         self.download_return = 'the data'
 
         # create the env
-        try:
-            env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'options':options})
-        except:
-            logger.error('creating env failed')
-            raise
+        with iceprod.core.exe.setupenv(self.config, steering,
+                                            {'options':options}) as env:
 
-        # test parameters
-        for p in steering['parameters']:
-            if p not in env['parameters']:
-                raise Exception('Parameters were not applied ' +
-                                'correctly: missing %r'%p)
+            # test parameters
+            for p in steering['parameters']:
+                if p not in env['parameters']:
+                    raise Exception('Parameters were not applied ' +
+                                    'correctly: missing %r'%p)
 
-        # test options
-        for p in options:
-            if p not in env['options']:
-                raise Exception('Options were not applied ' +
-                                'correctly: missing %r'%p)
+            # test options
+            for p in options:
+                if p not in env['options']:
+                    raise Exception('Options were not applied ' +
+                                    'correctly: missing %r'%p)
 
-        # test resource
-        if r['local'] not in env['files']:
-            raise Exception('downloadResource did not add the file ' +
-                            '%s to the env'%r['local'])
-        if (env['files'][r['local']] !=
-            os.path.join(self.test_dir,'resources',r['local'])):
-            raise Exception('downloadResource did not return the ' +
-                            'expected filename of %s' %
-                            os.path.join(self.test_dir,'resources',
-                                         r['local']))
-        if not os.path.isfile(env['files'][r['local']]):
-            raise Exception('downloadResource did not write to the ' +
-                            'expected filename of %s' %
-                            env['files'][r['local']])
+            # test resource
+            if r['local'] not in env['files']:
+                raise Exception('downloadResource did not add the file ' +
+                                '%s to the env'%r['local'])
+            if (env['files'][r['local']] !=
+                os.path.join(self.test_dir,'resources',r['local'])):
+                raise Exception('downloadResource did not return the ' +
+                                'expected filename of %s' %
+                                os.path.join(self.test_dir,'resources',
+                                             r['local']))
+            if not os.path.isfile(env['files'][r['local']]):
+                raise Exception('downloadResource did not write to the ' +
+                                'expected filename of %s' %
+                                env['files'][r['local']])
 
     @unittest_reporter(name='destroyenv(): steering')
     def test_12_destroyenv_steering(self):
@@ -843,20 +813,7 @@ inithello(void)
         # set download() return value
         self.download_return = 'the data'
 
-        # create the env
-        try:
-            env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'options':options})
-        except:
-            logger.error('creating env failed')
-            raise
-
-        # destroy the env
-        try:
-            iceprod.core.exe.destroyenv(env)
-        except:
-            logger.error('destroyenv error')
-            raise
+        
 
         # try a file deletion
         filename = os.path.join(self.test_dir,'test_file')
@@ -864,21 +821,8 @@ inithello(void)
             f.write('this is a test')
 
         # create the env
-        try:
-            env = iceprod.core.exe.setupenv(self.config, steering,
-                                            {'options':options})
-        except:
-            logger.error('creating env failed')
-            raise
-
-        env['deletions'] = [filename]
-
-        # destroy the env
-        try:
-            iceprod.core.exe.destroyenv(env)
-        except:
-            logger.error('destroyenv error')
-            raise
+        with iceprod.core.exe.setupenv(self.config, steering, {'options':options}) as env:
+            env['deletions'] = [filename]
 
         if os.path.exists(filename):
             raise Exception('failed to delete file')
@@ -886,22 +830,10 @@ inithello(void)
         # try environment reset
 
         # create the env
-        try:
-            env = iceprod.core.exe.setupenv(self.config, steering,
+        with iceprod.core.exe.setupenv(self.config, steering,
                                             {'options':options,
-                                             'deletions':[filename]})
-        except:
-            logger.error('creating env failed')
-            raise
-
-        os.environ['MyTestVar'] = 'testing'
-
-        # destroy the env
-        try:
-            iceprod.core.exe.destroyenv(env)
-        except:
-            logger.error('destroyenv error')
-            raise
+                                             'deletions':[filename]}) as env:
+            os.environ['MyTestVar'] = 'testing'
 
         if 'MyTestVar' in os.environ:
             raise Exception('failed to delete environment entry')

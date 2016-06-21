@@ -220,68 +220,65 @@ def runner(config,url,debug=False,offline=False):
 
     # set up global env, based on config['options'] and config.steering
     env_opts = cfg.parseObject(config['options'], {})
-    env = iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts})
-
-    logger.warn("config options: %r",config['options'])
-
-    if not offline:
-        # tell the server that we are processing this task
-        try:
-            iceprod.core.exe_json.processing(cfg)
-        except Exception as e:
-            logging.error(e)
-
-    # keep track of the start time
-    start_time = time.time()
-
-    # find tasks to run
     try:
-        if 'task' in config['options']:
-            logger.warn('task specified: %r',config['options']['task'])
-            # run only this task name or number
-            name = config['options']['task']
-            if isinstance(name, iceprod.core.dataclasses.String) and name.isdigit():
-                name = int(name)
-            if isinstance(name, iceprod.core.dataclasses.String):
-                # find task by name
-                for task in config['tasks']:
-                    if task['name'] == name:
-                        iceprod.core.exe.runtask(cfg, env, task)
-                        break
-                else:
-                    logger.critical('cannot find task named %r', name)
-                    raise Exception('cannot find specified task')
-            elif isinstance(name, int):
-                # find task by index
-                if (name >= 0 and
-                    name < len(config['tasks'])):
-                    iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
-                else:
-                    logger.critical('cannot find task index %d', name)
-                    raise Exception('cannot find specified task')
+        with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
+            logger.warn("config options: %r",config['options'])
 
-            else:
-                logger.critical('task specified in options is %r, but no task found',
-                                name)
-                raise Exception('cannot find specified task')
-        else:
-            # run all tasks in order
-            for task in config['tasks']:
-                iceprod.core.exe.runtask(cfg, env, task)
-    except Exception as e:
-        logger.error('task failed, exiting without running completion steps.',
-                     exc_info=True)
-        # set task status on server
-        if not offline:
+            if not offline:
+                # tell the server that we are processing this task
+                try:
+                    iceprod.core.exe_json.processing(cfg)
+                except Exception as e:
+                    logging.error(e)
+
+            # keep track of the start time
+            start_time = time.time()
+
+            # find tasks to run
             try:
-                iceprod.core.exe_json.taskerror(cfg, start_time=start_time)
+                if 'task' in config['options']:
+                    logger.warn('task specified: %r',config['options']['task'])
+                    # run only this task name or number
+                    name = config['options']['task']
+                    if isinstance(name, iceprod.core.dataclasses.String) and name.isdigit():
+                        name = int(name)
+                    if isinstance(name, iceprod.core.dataclasses.String):
+                        # find task by name
+                        for task in config['tasks']:
+                            if task['name'] == name:
+                                iceprod.core.exe.runtask(cfg, env, task)
+                                break
+                        else:
+                            logger.critical('cannot find task named %r', name)
+                            raise Exception('cannot find specified task')
+                    elif isinstance(name, int):
+                        # find task by index
+                        if (name >= 0 and
+                            name < len(config['tasks'])):
+                            iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
+                        else:
+                            logger.critical('cannot find task index %d', name)
+                            raise Exception('cannot find specified task')
+
+                    else:
+                        logger.critical('task specified in options is %r, but no task found',
+                                        name)
+                        raise Exception('cannot find specified task')
+                else:
+                    # run all tasks in order
+                    for task in config['tasks']:
+                        iceprod.core.exe.runtask(cfg, env, task)
             except Exception as e:
-                logger.error(e)
-        raise
-    else:
-        # destroy env
-        iceprod.core.exe.destroyenv(env)
-        del env
+                logger.error('task failed, exiting without running completion steps.',
+                             exc_info=True)
+                # set task status on server
+                if not offline:
+                    try:
+                        iceprod.core.exe_json.taskerror(cfg, start_time=start_time)
+                    except Exception as e:
+                        logger.error(e)
+                raise
+    
     finally:
         # upload log files to server
         try:
@@ -309,7 +306,9 @@ def runner(config,url,debug=False,offline=False):
                         iceprod.core.exe_json.uploadOut(cfg)
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
+
     logger.warn('finished without error')
+
 
 if __name__ == '__main__':
     # get arguments
