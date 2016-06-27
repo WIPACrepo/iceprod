@@ -1,3 +1,9 @@
+#submit_box
+{
+    font-family: monospace;
+    white-space: pre;
+}
+
 .table_form  { display: table;      }
 .table_form	p     { display: table-row;  }
 .table_form	label {
