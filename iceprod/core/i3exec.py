@@ -225,6 +225,7 @@ def runner(config,url,debug=False,offline=False):
 
     # set up global env, based on config['options'] and config.steering
     env_opts = cfg.parseObject(config['options'], {})
+    stats = {}
     try:
         with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
             logger.warn("config options: %r",config['options'])
@@ -251,7 +252,7 @@ def runner(config,url,debug=False,offline=False):
                         # find task by name
                         for task in config['tasks']:
                             if task['name'] == name:
-                                iceprod.core.exe.runtask(cfg, env, task)
+                                stats = iceprod.core.exe.runtask(cfg, env, task)
                                 break
                         else:
                             logger.critical('cannot find task named %r', name)
@@ -260,7 +261,7 @@ def runner(config,url,debug=False,offline=False):
                         # find task by index
                         if (name >= 0 and
                             name < len(config['tasks'])):
-                            iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
+                            stats = iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
                         else:
                             logger.critical('cannot find task index %d', name)
                             raise Exception('cannot find specified task')
@@ -269,10 +270,12 @@ def runner(config,url,debug=False,offline=False):
                         logger.critical('task specified in options is %r, but no task found',
                                         name)
                         raise Exception('cannot find specified task')
-                else:
+                elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
                         iceprod.core.exe.runtask(cfg, env, task)
+                else:
+                    raise Exception('task to run not specified')
             except Exception as e:
                 logger.error('task failed, exiting without running completion steps.',
                              exc_info=True)
@@ -312,7 +315,7 @@ def runner(config,url,debug=False,offline=False):
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
-    iceprod.core.exe_json.finishtask(cfg)
+    iceprod.core.exe_json.finishtask(cfg, stats)
     logger.warn('finished without error')
 
 

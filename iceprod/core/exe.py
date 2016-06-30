@@ -496,6 +496,8 @@ def runtask(cfg, globalenv, task):
             logger.warning('error removing task_temp directory: %r',
                            e, exc_info=True)
 
+    return stats
+
 
 def runtray(cfg, globalenv,tray,stats={}):
     """Run the specified tray"""
