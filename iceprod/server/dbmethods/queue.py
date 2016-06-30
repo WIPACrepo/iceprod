@@ -238,10 +238,7 @@ class queue(_Methods_Base):
                         sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         bindings3 = ('search',tt,now)
                         bindings4 = ('task',tt,now)
-                            self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
+                        self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
                     else:
                         bindings = (status,tt)
                         bindings2 = (status,now,tt)
