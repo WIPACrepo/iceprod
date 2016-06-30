@@ -538,12 +538,18 @@ class rpc(_Methods_Base):
     @dbmethod
     def rpc_update_pilot(self,pilot_id,callback=None,**kwargs):
         """Update the pilot table"""
+        logger.info('update pilot: %s',str(kwargs))
+        if not kwargs:
+            callback(Exception('no update given'))
+            return
         sql = 'update pilot set '
         bindings = []
         for name in self.db.tables['pilot']:
             if name in kwargs:
                 sql += name+'=? '
                 bindings.append(kwargs[name])
+        sql += ' where pilot_id = ?'
+        bindings.append(pilot_id)
         self.db.sql_write_task(sql,tuple(bindings),callback=callback)
 
     @dbmethod

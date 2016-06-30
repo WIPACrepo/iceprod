@@ -132,7 +132,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     kwargs = {}
                     task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
                     task_id = task_config['options']['task_id']
-                    iceprod.core.exe_json.update_pilot(pilot_id, task_id=task_id)
+                    iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
                 except Exception:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
@@ -168,7 +168,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     finally:
                         os.chdir(main_dir)
                         shutil.rmtree(tmpdir)
-                        iceprod.core.exe_json.update_pilot(pilot_id, task_id='')
+                        iceprod.core.exe_json.update_pilot(pilot_id, tasks='')
             if errors >= 5:
                 logger.critical('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
