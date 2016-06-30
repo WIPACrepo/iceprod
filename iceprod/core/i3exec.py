@@ -170,7 +170,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                         shutil.rmtree(tmpdir)
                         iceprod.core.exe_json.update_pilot(pilot_id, task_id='')
             if errors >= 5:
-                logger.failure('too many errors when running tasks')
+                logger.critical('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
 
 def runner(config,url,debug=False,offline=False):
@@ -312,7 +312,7 @@ def runner(config,url,debug=False,offline=False):
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
-    iceprod.core.exe_json.finish_task(cfg)
+    iceprod.core.exe_json.finishtask(cfg)
     logger.warn('finished without error')
 
 
