@@ -442,8 +442,6 @@ class grid(object):
             if isinstance(ret,Exception):
                 logger.error('error updating DB with pilots')
                 raise ret
-            elif ret:
-                
 
     def setup_submit_directory(self,task):
         """Set up submit directory"""
