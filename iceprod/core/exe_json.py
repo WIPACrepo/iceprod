@@ -161,3 +161,10 @@ def uploadOut(cfg):
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot send output')
     _upload_logfile(cfg, cfg.config['options']['task_id'],'stdout',constants['stdout'])
+
+def update_pilot(pilot_id, **kwargs):
+    """Update the pilot table"""
+    ret = JSONRPC.update_pilot(pilot_id=pilot_id, **kwargs)
+    if isinstance(ret,Exception):
+        # an error occurred
+        raise ret

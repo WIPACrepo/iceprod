@@ -12,6 +12,7 @@ optional arguments:
   -u URL, --url URL     URL of the iceprod server
   -p PASSKEY, --passkey PASSKEY
                         passkey for communcation with iceprod server
+  --pilot_id PILOTID    ID of the pilot (if this is a pilot)
   -d, --debug           Enable debug actions and logging
   --offline             Enable offline mode (don't talk with server)
 """
@@ -67,7 +68,7 @@ def load_config(cfgfile):
     return config
 
 def main(cfgfile=None, logfile=None, url=None, debug=False,
-         passkey='', offline=False):
+         passkey='', pilot_id=None, offline=False):
     """Main task runner for iceprod"""
     global logger
     # set up stdout and stderr
@@ -128,7 +129,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             errors = 0
             while errors < 5:
                 try:
+                    kwargs = {}
                     task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
+                    task_id = task_config['options']['task_id']
+                    iceprod.core.exe_json.update_pilot(pilot_id, task_id=task_id)
                 except Exception:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
@@ -164,6 +168,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     finally:
                         os.chdir(main_dir)
                         shutil.rmtree(tmpdir)
+                        iceprod.core.exe_json.update_pilot(pilot_id, task_id='')
             if errors >= 5:
                 logger.failure('too many errors when running tasks')
         logger.warn('finished running normally; exiting...')
@@ -307,6 +312,7 @@ def runner(config,url,debug=False,offline=False):
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
+    iceprod.core.exe_json.finish_task(cfg)
     logger.warn('finished without error')
 
 
@@ -320,6 +326,8 @@ if __name__ == '__main__':
                         help='URL of the iceprod server')
     parser.add_argument('-p','--passkey', type=str,
                         help='passkey for communcation with iceprod server')
+    parser.add_argument('--pilot_id', type=str, default=None,
+                        help='ID of the pilot (if this is a pilot)')
     parser.add_argument('-d','--debug', action='store_true', default=False,
                         help='Enable debug actions and logging')
     parser.add_argument('--offline', action='store_true', default=False,

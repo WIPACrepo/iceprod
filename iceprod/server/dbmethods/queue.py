@@ -209,52 +209,48 @@ class queue(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         now = nowstr()
         if isinstance(task,String):
-            # single task
-            sql = 'update search set task_status = ? '
-            sql += ' where task_id = ?'
-            sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, status_changed = ? where task_id = ?'
-            bindings = (status,task)
-            bindings2 = (status,now,task)
-        elif isinstance(task,Iterable):
-            b = ','.join(['?' for _ in xrange(len(task))])
-            sql = 'update search set task_status = ? '
-            sql += ' where task_id in ('+b+')'
-            sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, status_changed = ? where task_id in ('+b+')'
-            bindings = (status,)+tuple(task)
-            bindings2 = (status,now)+tuple(task)
-        else:
+            task = [task]
+        elif not isinstance(task,Iterable):
             callback(Exception('unknown type for task'))
             return
+        
+        msql = 'update search set task_status = ? '
+        msql += ' where task_id = ?'
+        msql2 = 'update task set prev_status = status, '
+        msql2 += ' status = ?, status_changed = ? where task_id = ?'
+
+        # process in batches of 900
         try:
-            ret = self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-        else:
-            if isinstance(task,String):
-                task=(task,)
-            for t in task:
+            while task:
+                t = task[:900]
+                task = task[900:]
+                b = ','.join('?' for _ in t)
                 sql = 'update search set task_status = ? '
-                sql += ' where task_id = ?'
+                sql += ' where task_id in ('+b+')'
                 sql2 = 'update task set prev_status = status, '
-                sql2 += ' status = ?, status_changed = ? where task_id = ?'
-                bindings = (status,t)
-                bindings2 = (status,now,t)
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('search',t,now)
-                    bindings4 = ('task',t,now)
-                    try:
-                        self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    self._send_to_master(('search',t,now,sql,bindings))
-                    self._send_to_master(('task',t,now,sql2,bindings2))
+                sql2 += ' status = ?, status_changed = ? where task_id in ('+b+')'
+                bindings = (status,)+tuple(t)
+                bindings2 = (status,now)+tuple(t)
+                self.db._db_write(conn,[sql,sql2],[bindings,bindings2],None,None,None)
+                
+                for tt in t:
+                    if self._is_master():
+                        sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                        bindings3 = ('search',tt,now)
+                        bindings4 = ('task',tt,now)
+                            self.db._db_write(conn,[sql3,sql3],[bindings3,bindings4],None,None,None)
+                        except Exception as e:
+                            logger.info('error updating master_update_history',
+                                        exc_info=True)
+                    else:
+                        bindings = (status,tt)
+                        bindings2 = (status,now,tt)
+                        self._send_to_master(('search',t,now,msql,bindings))
+                        self._send_to_master(('task',t,now,msql2,bindings2))
+        except Exception as e:
+            logger.info('error updating task status', exc_info=True)
+            callback(e)
+        else:
             callback(True)
 
     @dbmethod
@@ -895,25 +891,41 @@ class queue(_Methods_Base):
         callback(tasks)
 
     @dbmethod
+    def queue_new_pilot_ids(self,num,callback=None):
+        cb = partial(self._queue_new_pilot_ids_blocking, num, callback=callback)
+        self.db.non_blocking_task(cb)
+    def _queue_new_pilot_ids_blocking(self,num,callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        ret = []
+        for i in range(num):
+            pilot_id = self.db._increment_id_helper('pilot',conn)
+            ret.append(pilot_id)
+        callback(ret)
+
+    @dbmethod
     def queue_add_pilot(self,pilot,callback=None):
-        """Add a pilot to the DB"""
+        """
+        Add a pilot to the DB
+
+        Args:
+            pilot: The pilot dict.
+
+        Returns:
+            list: A list of pilot ids.
+        """
         cb = partial(self._queue_add_pilot_blocking, pilot, callback=callback)
         self.db.non_blocking_task(cb)
     def _queue_add_pilot_blocking(self,pilot,callback=None):
         conn,archive_conn = self.db._dbsetup()
         now = nowstr()
-        n = 1
-        if 'num' in pilot:
-            n = pilot['num']
         s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
-        s += 'submit_dir) values (?,?,?,?)'
+        s += 'submit_dir, tasks) values (?,?,?,?,?)'
         sql = []
         bindings = []
-        for i in range(n):
-            pilot_id = self.db._increment_id_helper('pilot',conn)
+        for i,pilot_id in enumerate(pilot['pilot_ids']):
             grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
             sql.append(s)
-            bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir']))
+            bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
         
         try:
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
@@ -936,22 +948,43 @@ class queue(_Methods_Base):
             for row in ret:
                 tmp = self._list_to_dict('pilot',row)
                 tmp['submit_time'] = str2datetime(tmp['submit_time'])
+                tmp['tasks'] = tmp['tasks'].split(',')
                 pilots.append(tmp)
             callback(pilots)
 
     @dbmethod
-    def queue_del_pilots(self,pilots,ret=None,callback=None):
+    def queue_del_pilots(self,pilots,callback=None):
+        cb = partial(self._queue_del_pilots_blocking, pilots, callback=callback)
+        self.db.non_blocking_task(cb)
+    def _queue_del_pilots_blocking(self,pilots,callback=None):
+        conn,archive_conn = self.db._dbsetup()
+        now = nowstr()
         if not isinstance(pilots,list):
             pilots = list(pilots)
-        if len(pilots) > 900:
-            cb = partial(self.queue_del_pilots,pilots[900:],callback=callback)
-            pilots = pilots[:900]
+
+        task_ids = set()
+        try:
+            # work in batches of 900
+            while pilots:
+                p = pilots[:900]
+                pilots = pilots[900:]
+                
+                sql = 'select tasks from pilot where pilot_id in ('
+                sql += ','.join('?' for _ in p)+')'
+                bindings = tuple(p)
+                ret = self.db._db_read(conn,sql,bindings,None,None,None)
+                for row in ret:
+                    task_ids.update(row[0].split(','))
+                
+                sql = 'delete from pilot where pilot_id in ('
+                sql += ','.join('?' for _ in p)+')'
+                bindings = tuple(p)
+                self.db._db_write(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            logger.debug('error deleting pilots',exc_info=True)
+            callback(e)
         else:
-            cb = callback
-        sql = 'delete from pilot where pilot_id in ('
-        sql += ','.join('?' for _ in pilots)+')'
-        bindings = tuple(pilots)
-        self.db.sql_write_task(sql,bindings,callback=cb)
+            self.queue_set_task_status(task_ids,'reset',callback=callback)
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):

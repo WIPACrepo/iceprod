@@ -163,7 +163,8 @@
             ["pilot_id", "str"],
             ["grid_queue_id", "str"],
             ["submit_time", "str", "datetime"],
-            ["submit_dir", "Text"]
+            ["submit_dir", "Text"],
+            ["tasks", "Text", "csv list of processing task_ids"]
         ],
         "user": [
             ["user_id", "str"],

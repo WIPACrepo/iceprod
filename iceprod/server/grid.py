@@ -314,8 +314,12 @@ class grid(object):
             if grid_queue_id in tasks:
                 # iceprod knows about this one
                 if submit_dir and submit_dir != tasks[grid_queue_id]['submit_dir']:
-                    # mixup - delete the grid side
+                    # mixup - delete both
                     remove_grid_tasks.add(grid_queue_id)
+                    if pilots:
+                        reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
+                    else:
+                        reset_tasks.add(tasks[grid_queue_id]['task_id'])
                 elif now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
@@ -430,12 +434,16 @@ class grid(object):
                      'reqs': resources._asdict(),
                      'num': groups[resources],
             }
+            pilot_ids = self.db.queue_new_pilot_ids(num=pilot['num'],async=False)
+            pilot['pilot_ids'] = pilot_ids
             self.setup_submit_directory(pilot)
             self.submit(pilot)
             ret = self.db.queue_add_pilot(pilot=pilot,async=False)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with pilots')
                 raise ret
+            elif ret:
+                
 
     def setup_submit_directory(self,task):
         """Set up submit directory"""

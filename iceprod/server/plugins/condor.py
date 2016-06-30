@@ -100,7 +100,6 @@ class condor(grid.grid):
                 p('transfer_output_remaps = "iceprod_log=iceprod_log_$(Process)'
                   ';iceprod_out=iceprod_out_$(Process)'
                   ';iceprod_err=iceprod_err_$(Process)"')
-            p('arguments = ',' '.join(args))
 
             if 'reqs' in task:
                 if 'cpu' in task['reqs']:
@@ -117,9 +116,15 @@ class condor(grid.grid):
             if requirements:
                 p('requirements = ('+')&&('.join(requirements)+')')
 
-            if 'num' in task:
+            if task['task_id'] == 'pilot' and 'pilot_ids' in task:
+                for pilot_id in task['pilot_ids']:
+                    p('arguments = ',' '.join(args + ['--pilot_id', pilot_id]))
+                    p('queue')
+            elif 'num' in task:
+                p('arguments = ',' '.join(args))
                 p('queue {}'.format(task['num']))
             else:
+                p('arguments = ',' '.join(args))
                 p('queue')
 
     def submit(self,task):

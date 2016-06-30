@@ -536,6 +536,17 @@ class rpc(_Methods_Base):
                 callback(False)
 
     @dbmethod
+    def rpc_update_pilot(self,pilot_id,callback=None,**kwargs):
+        """Update the pilot table"""
+        sql = 'update pilot set '
+        bindings = []
+        for name in self.db.tables['pilot']:
+            if name in kwargs:
+                sql += name+'=? '
+                bindings.append(kwargs[name])
+        self.db.sql_write_task(sql,tuple(bindings),callback=callback)
+
+    @dbmethod
     def rpc_submit_dataset(self,data,difplus='',description='',gridspec='',
                            njobs=1,stat_keys=[],debug=False,
                            callback=None):
