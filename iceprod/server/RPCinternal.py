@@ -210,63 +210,73 @@ class Base(AsyncSendReceive):
         :param service: The service name, optional
         :param callback: The callback function, optional
         """
-        # check stream
-        if self.stream.closed():
-            # try to reconnect
-            self.restart()
-
-        if client_id:
-            message = [client_id]
-        else:
-            message = []
-
-        old_request = None
         if type in (MessageFactory.MESSAGE_TYPE.RESPONSE,
                     MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
             if seq is None:
                 raise Exception('RESPONSE must have seq number')
-            # format data for sending
-            message.extend(MessageFactory.createMessage(data,seq,type,
-                                                        serialized=serialized))
-            # save message to history
-            with self.recv_history_lock:
-                self.recv_history[seq] = message
-                if len(self.recv_history) >= self.history_length:
-                    # hit history length, so kill FIFO message
-                    self.recv_history.popitem(last=False)
-        elif type in (MessageFactory.MESSAGE_TYPE.SERVICE,
-                      MessageFactory.MESSAGE_TYPE.SERVER,
-                      MessageFactory.MESSAGE_TYPE.BROADCAST):
-            kwargs = {'serialized':serialized}
-            if type == MessageFactory.MESSAGE_TYPE.SERVICE:
-                if not service:
-                    raise Exception('need a service name')
-                kwargs['service_name'] = service
-            # set timeout
-            if not isinstance(timeout,(int,float)):
-                timeout = 60.0
-            elif timeout < 0.1:
-                timeout = 0.1
-            # make new sequence number
-            seq = random.randint(0,MessageFactory.MAX_SEQ)
-            with self.send_history_lock:
-                while seq in self.send_history:
-                    seq = random.randint(0,MessageFactory.MAX_SEQ)
-                cb_err = partial(self._response_timeout,seq)
-                tt = self.io_loop.add_timeout((time.time()+timeout),cb_err)
-                self.send_history[seq] = (callback,tt)
-                if len(self.send_history) >= self.history_length:
-                    # hit history length, so kill FIFO message
-                    old_request = self.send_history.popitem(last=False)
-            # format data for sending
-            message.extend(MessageFactory.createMessage(data,seq,type,**kwargs))
+        elif type == MessageFactory.MESSAGE_TYPE.SERVICE:
+            if not service:
+                raise Exception('need a service name')
 
-        # send message (make sure we're on the ioloop thread)
-        self.io_loop.add_callback(partial(super(Base,self).send,message))
-        logger.debug('sending message:%s',str(data))
+        def cb():
+            # check stream
+            if self.stream.closed():
+                # try to reconnect
+                self.restart()
 
-        if old_request:
-            self._send_history_full(item[0],item[1][0],item[1][1])
+            if client_id:
+                message = [client_id]
+            else:
+                message = []
+
+            old_request = None
+            if type in (MessageFactory.MESSAGE_TYPE.RESPONSE,
+                        MessageFactory.MESSAGE_TYPE.BROADCAST_ACK):
+                # format data for sending
+                message.extend(MessageFactory.createMessage(data,seq,type,
+                                                            serialized=serialized))
+                # save message to history
+                with self.recv_history_lock:
+                    self.recv_history[seq] = message
+                    if len(self.recv_history) >= self.history_length:
+                        # hit history length, so kill FIFO message
+                        self.recv_history.popitem(last=False)
+            elif type in (MessageFactory.MESSAGE_TYPE.SERVICE,
+                          MessageFactory.MESSAGE_TYPE.SERVER,
+                          MessageFactory.MESSAGE_TYPE.BROADCAST):
+                kwargs = {'serialized':serialized}
+                if type == MessageFactory.MESSAGE_TYPE.SERVICE:
+                    kwargs['service_name'] = service
+                # set timeout
+                if not isinstance(timeout,(int,float)):
+                    timeout = 60.0
+                elif timeout < 0.1:
+                    timeout = 0.1
+                # make new sequence number
+                seq = random.randint(0,MessageFactory.MAX_SEQ)
+                with self.send_history_lock:
+                    while seq in self.send_history:
+                        seq = random.randint(0,MessageFactory.MAX_SEQ)
+                    cb_err = partial(self._response_timeout,seq)
+                    tt = self.io_loop.call_later(timeout,cb_err)
+                    self.send_history[seq] = (callback,tt)
+                    if len(self.send_history) >= self.history_length:
+                        # hit history length, so kill FIFO message
+                        old_request = self.send_history.popitem(last=False)
+                # format data for sending
+                message.extend(MessageFactory.createMessage(data,seq,type,**kwargs))
+
+            # send message
+            super(Base,self).send(message)
+            logger.debug('sending message:%s',str(data))
+
+            if old_request:
+                self._send_history_full(old_request[0],
+                                        old_request[1][0],
+                                        old_request[1][1])
+
+        # make sure we're on the ioloop thread before doing anything
+        self.io_loop.add_callback(cb)
 
     def _handle_stream_error(self):
         # stream is corrupted at this point, so reset
