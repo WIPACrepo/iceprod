@@ -835,7 +835,7 @@ class RPCService():
                     async = True
             if async is False:
                 # return like normal function
-                logger.info('async request for %s',methodname)
+                logger.info('sync request for %s',methodname)
                 def cb(ret=None):
                     cb.ret = ret
                     cb.event.set()
