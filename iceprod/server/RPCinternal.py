@@ -218,7 +218,8 @@ class Base(AsyncSendReceive):
             if not service:
                 raise Exception('need a service name')
 
-        def cb():
+        def cb(data, serialized, seq, timeout, client_id, type,
+               service, callback):
             # check stream
             if self.stream.closed():
                 # try to reconnect
@@ -276,7 +277,8 @@ class Base(AsyncSendReceive):
                                         old_request[1][1])
 
         # make sure we're on the ioloop thread before doing anything
-        self.io_loop.add_callback(cb)
+        self.io_loop.add_callback(cb, data, serialized, seq, timeout,
+                                  client_id, type, service, callback)
 
     def _handle_stream_error(self):
         # stream is corrupted at this point, so reset
