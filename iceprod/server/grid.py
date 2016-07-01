@@ -349,6 +349,13 @@ class grid(object):
                     continue # skip for suspended or failed tasks
                 delete_dirs.add(d)
 
+        if pilots:
+            logger.info('%d processing pilots', len(tasks)-len(reset_tasks)-grid_idle)
+            logger.info('%d queued pilots', grid_idle)
+            logger.info('%d ->reset', len(reset_tasks))
+            logger.info('%d ->grid remove', len(remove_grid_tasks))
+            logger.info('%d ->submit clean', len(delete_dirs))
+
         # reset tasks
         if reset_tasks:
             logger.info('reset %r',reset_tasks)
