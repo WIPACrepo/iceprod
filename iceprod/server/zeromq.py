@@ -45,15 +45,14 @@ class ZmqProcess(object):
             try:
                 self.io_loop.start()
             except zmq.ZMQError as e:
+                self._restart = True
                 if e.errno == errno.EINTR:
-                    self._restart = True
                     logger.warn('ZMQError: EINTR',exc_info=True)
                 else:
                     logger.warn('ZMQError',exc_info=True)
-                    raise
             except Exception:
+                self._restart = True
                 logger.warn('ioloop error',exc_info=True)
-                raise
         self.io_loop.close()
 
     def restart(self):
