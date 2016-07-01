@@ -210,6 +210,8 @@ class queue(_Methods_Base):
         msql2 += ' status = ?, status_changed = ? where task_id = ?'
 
         # process in batches of 900
+        if not isinstance(task,list):
+            task = list(task)
         try:
             while task:
                 t = task[:900]
