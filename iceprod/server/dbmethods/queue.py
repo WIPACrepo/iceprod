@@ -148,10 +148,11 @@ class queue(_Methods_Base):
                 if status not in task_groups:
                     task_groups[status] = {}
                 task_groups[status][task_id] = tasks[task_id]
-            callback(task_groups)
         except Exception as e:
             logger.info('error getting active tasks', exc_info=True)
             callback(e)
+        else:
+            callback(task_groups)
 
     @dbmethod
     def queue_get_grid_tasks(self,gridspec,callback=None):
@@ -182,10 +183,11 @@ class queue(_Methods_Base):
                     'submit_time': tasks[task_id]['status_changed'],
                     'submit_dir': tasks[task_id]['submit_dir'],
                 })
-            callback(task_ret)
         except Exception as e:
             logger.info('error getting grid tasks', exc_info=True)
             callback(e)
+        else:
+            callback(task_ret)
 
     @dbmethod
     def queue_set_task_status(self,task,status,callback=None):
@@ -811,6 +813,7 @@ class queue(_Methods_Base):
                 elif not ret or not ret[0]:
                     logger.warn('failed to find job with known job_id')
                     callback(Exception('no job_index'))
+                    return
                 for job_id,job_index in ret:
                     for task_id in job_ids[job_id]:
                         tasks[task_id]['job'] = job_index
@@ -886,9 +889,13 @@ class queue(_Methods_Base):
     def _queue_new_pilot_ids_blocking(self,num,callback=None):
         conn,archive_conn = self.db._dbsetup()
         ret = []
-        for i in range(num):
-            pilot_id = self.db._increment_id_helper('pilot',conn)
-            ret.append(pilot_id)
+        try:
+            for i in range(num):
+                pilot_id = self.db._increment_id_helper('pilot',conn)
+                ret.append(pilot_id)
+        except Exception as e:
+            logger.info('new pilot_ids error', exc_info=True)
+            ret = e
         callback(ret)
 
     @dbmethod
