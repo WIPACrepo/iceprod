@@ -320,7 +320,8 @@ class grid(object):
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
-                elif now - tasks[grid_queue_id]['submit_time'] > time_dict[status]:
+                elif (grid_queue_id not in grid_tasks or
+                      now - tasks[grid_queue_id]['submit_time'] > time_dict[status]):
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
