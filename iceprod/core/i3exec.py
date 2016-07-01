@@ -131,8 +131,6 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 try:
                     kwargs = {}
                     task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
-                    task_id = task_config['options']['task_id']
-                    iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
                 except Exception:
                     errors += 1
                     logger.error('cannot download task. current error count is %d',
@@ -143,6 +141,9 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 if task_config is None:
                     break # assuming server wants client to exit
                 else:
+                    task_id = task_config['options']['task_id']
+                    iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
+
                     # add grid-specific config
                     for k in config['options']:
                         if k not in task_config['options']:
