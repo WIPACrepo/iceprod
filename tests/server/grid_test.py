@@ -24,11 +24,7 @@ try:
 except:
     import pickle
 
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
+import unittest
 from flexmock import flexmock
 
 import iceprod.server

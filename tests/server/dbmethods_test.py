@@ -18,12 +18,7 @@ import StringIO
 from itertools import izip
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
+import unittest
 import tornado.escape
 from tornado.testing import AsyncTestCase
 

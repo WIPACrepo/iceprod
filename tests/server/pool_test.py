@@ -9,11 +9,7 @@ from tests.util import unittest_reporter, glob_tests
 import logging
 logger = logging.getLogger('pool_test')
 import os, sys, time
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from threading import Thread
 

@@ -14,14 +14,8 @@ import shutil
 import tempfile
 import random
 import socket
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
-
+import unittest
 import iceprod.server.basic_config
-
 
 class basic_config_test(unittest.TestCase):
     def setUp(self):
