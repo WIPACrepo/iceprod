@@ -970,7 +970,9 @@ class queue(_Methods_Base):
                 bindings = tuple(p)
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
                 for row in ret:
-                    task_ids.update(row[0].split(','))
+                    tasks = row[0].strip()
+                    if tasks:
+                        task_ids.update(x for x in row[0].split(',') if x)
                 
                 sql = 'delete from pilot where pilot_id in ('
                 sql += ','.join('?' for _ in p)+')'
@@ -980,7 +982,8 @@ class queue(_Methods_Base):
             logger.debug('error deleting pilots',exc_info=True)
             callback(e)
         else:
-            self.queue_set_task_status(task_ids,'reset',callback=callback)
+            if task_ids:
+                self.queue_set_task_status(task_ids,'reset',callback=callback)
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):
