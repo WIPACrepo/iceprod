@@ -716,6 +716,15 @@ class Dataset(PublicHandler):
             filter_results = {n:self.get_arguments(n) for n in filter_options}
             if url and url_parts:
                 dataset_id = url_parts[0]
+                if dataset_id.isdigit():
+                    try:
+                        if int(dataset_id) < 10000000:
+                            ret = yield self.db_call('web_get_dataset_by_name',
+                                                     name=dataset_id)
+                            if not isinstance(ret,Exception):
+                                dataset_id = ret
+                    except:
+                        pass
                 ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
@@ -752,6 +761,15 @@ class Task(PublicHandler):
                 raise passkey
             
             if url and url_parts:
+                if dataset_id.isdigit():
+                    try:
+                        if int(dataset_id) < 10000000:
+                            ret = yield self.db_call('web_get_dataset_by_name',
+                                                     name=dataset_id)
+                            if not isinstance(ret,Exception):
+                                dataset_id = ret
+                    except:
+                        pass
                 task_id = url_parts[0]
                 ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
                                          dataset_id=dataset_id)

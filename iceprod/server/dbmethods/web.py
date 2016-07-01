@@ -246,3 +246,18 @@ class web(_Methods_Base):
         """Get sites matching kwargs"""
         # TODO: finish this
         raise NotImplementedException()
+
+    @dbmethod
+    def web_get_dataset_by_name(self, name, callback=None):
+        """Get a dataset by its name"""
+        sql = 'select dataset_id from dataset where name = ?'
+        bindings = (name,)
+        cb = partial(self._web_dataset_by_name_callback, callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _web_dataset_by_name_callback(self, ret, callback=None):
+        if isinstance(ret, Exception):
+            callback(ret)
+        elif len(ret) == 1:
+            callback(ret[0][0])
+        else:
+            callback(Exception('name not found'))
