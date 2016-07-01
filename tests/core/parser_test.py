@@ -15,11 +15,7 @@ import random
 import string
 import subprocess
 import threading
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from flexmock import flexmock
 

@@ -15,11 +15,7 @@ import time
 import shutil
 import tempfile
 import signal
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from flexmock import flexmock
 

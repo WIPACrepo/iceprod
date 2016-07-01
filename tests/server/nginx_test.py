@@ -16,11 +16,7 @@ import random
 import threading
 import glob
 import subprocess
-
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from threading import Thread
 
