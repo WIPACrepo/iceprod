@@ -205,7 +205,7 @@ class grid(object):
         max_task_reset_time = self.queue_cfg['max_task_reset_time']
         if 'reset' in tasks:
             for t in tasks['reset'].values():
-                if t['failures'] >= 3:
+                if t['failures'] >= 3 or not self.gridspec:
                     idle_tasks.append(t)
                 else:
                     waiting_tasks.append(t)

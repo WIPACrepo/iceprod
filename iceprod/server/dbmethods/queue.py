@@ -123,9 +123,16 @@ class queue(_Methods_Base):
             callback(True)
 
     @dbmethod
-    def queue_get_active_tasks(self, gridspec, callback=None):
-        """Get a dict of active tasks (queued,processing,reset,resume) on this site and plugin,
-           returning {status:{tasks}} where each task = join of search and task tables"""
+    def queue_get_active_tasks(self, gridspec=None, callback=None):
+        """
+        Get a dict of active tasks (queued,processing,reset,resume).
+
+        Args:
+            gridspec (str): The gridspec (None for master)
+
+        Returns:
+            dict: {status:{task_id:task}}
+        """
         if not callback:
             return
         cb = partial(self._queue_get_active_tasks_blocking,gridspec,callback=callback)
@@ -134,9 +141,11 @@ class queue(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         try:
             sql = 'select task_id from search '
-            sql += 'where gridspec like ? '
+            bindings = tuple()
+            if gridspec:
+                sql += 'where gridspec like ? '
+                bindings = ('%'+gridspec+'%',)
             sql += ' and task_status in ("queued","processing","reset","resume")'
-            bindings = ('%'+gridspec+'%',)
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
             tasks = set(row[0] for row in ret)
 

@@ -80,6 +80,27 @@ class schedule(module.module):
         self.scheduler.schedule('every 1 minutes',
                 partial(self._db_call, 'cron_generate_web_graphs'))
 
+        if ('master' in self.cfg and 'status' in self.cfg['master'] and
+            self.cfg['master']['status']):
+            self._master_schedule()
+
+    def _master_schedule(self):
+        # fake a grid, so we can do grid-like things
+        from iceprod.server.grid import grid
+        @contextmanager
+        def checkrun():
+            yield
+        class DB():
+            def __init__(self, db_call):
+                self._db_call = db_call
+            def __getattr__(self, name):
+                return partial(self._db_call, name)
+        args = [None, self.cfg['queue']['*'], self.cfg, checkrun,
+                DB(self._db_call)]
+        master_grid = grid(args)
+
+        self.scheduler.schedule('every 1 minutes', master_grid.check_iceprod)
+
     def _db_call(self,func,**kwargs):
         """Call DB func, handling any errors"""
         logger.info('running %s',func)
