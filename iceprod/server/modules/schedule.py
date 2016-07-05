@@ -95,13 +95,8 @@ class schedule(module.module):
         @contextmanager
         def checkrun():
             yield
-        class DB():
-            def __init__(self, db_call):
-                self._db_call = db_call
-            def __getattr__(self, name):
-                return partial(self._db_call, name)
         args = [None, self.cfg['queue']['*'], self.cfg, checkrun,
-                DB(self._db_call)]
+                self.messaging.db]
         master_grid = grid(args)
 
         self.scheduler.schedule('every 1 minutes', master_grid.check_iceprod)
