@@ -140,12 +140,13 @@ class queue(_Methods_Base):
     def _queue_get_active_tasks_blocking(self, gridspec, callback=None):
         conn,archive_conn = self.db._dbsetup()
         try:
-            sql = 'select task_id from search '
-            bindings = tuple()
+            sql = 'select task_id from search where '
+            sql += 'task_status in ("queued","processing","reset","resume")'
             if gridspec:
-                sql += 'where gridspec like ? '
+                sql += ' and gridspec like ?'
                 bindings = ('%'+gridspec+'%',)
-            sql += ' and task_status in ("queued","processing","reset","resume")'
+            else:
+                bindings = tuple()
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
             tasks = set(row[0] for row in ret)
 
