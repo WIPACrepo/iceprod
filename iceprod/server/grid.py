@@ -38,7 +38,8 @@ class grid(object):
         if not isinstance(args,(list,tuple)) or len(args) < 5:
             raise Exception('Bad args - not enough of them')
         self.gridspec = args[0]
-        (self.grid_id,self.name) = self.gridspec.split('.')
+        if self.gridspec:
+            self.grid_id, self.name = self.gridspec.split('.', 1)
         self.queue_cfg = args[1]
         self.cfg = args[2]
         self.check_run = args[3]
