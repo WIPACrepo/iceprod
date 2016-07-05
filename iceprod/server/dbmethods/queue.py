@@ -236,8 +236,8 @@ class queue(_Methods_Base):
                     else:
                         bindings = (status,tt)
                         bindings2 = (status,now,tt)
-                        self._send_to_master(('search',t,now,msql,bindings))
-                        self._send_to_master(('task',t,now,msql2,bindings2))
+                        self._send_to_master(('search',tt,now,msql,bindings))
+                        self._send_to_master(('task',tt,now,msql2,bindings2))
         except Exception as e:
             logger.info('error updating task status', exc_info=True)
             callback(e)
