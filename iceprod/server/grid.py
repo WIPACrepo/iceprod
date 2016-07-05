@@ -230,6 +230,7 @@ class grid(object):
 
         logger.info('%d processing tasks',self.tasks_processing)
         logger.info('%d queued tasks',self.tasks_queued)
+        logger.info('%d waiting tasks',self.tasks_waiting)
         logger.info('%d ->idle',len(idle_tasks))
         logger.info('%d ->waiting',len(waiting_tasks))
         logger.info('%d ->reset',len(reset_tasks))
