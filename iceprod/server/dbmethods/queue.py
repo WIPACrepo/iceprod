@@ -994,6 +994,8 @@ class queue(_Methods_Base):
         else:
             if task_ids:
                 self.queue_set_task_status(task_ids,'reset',callback=callback)
+            else:
+                callback()
 
     @dbmethod
     def queue_get_cfg_for_task(self,task_id,callback=None):
