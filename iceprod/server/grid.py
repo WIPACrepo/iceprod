@@ -93,10 +93,10 @@ class grid(object):
             elif self.tasks_queued >= min_tasks:
                 change = 0 # min jobs already queued
             else:
-                num_to_queue = max_tasks - self.tasks_processing
-                if num_to_queue > min_tasks:
-                    num_to_queue = min_tasks - self.tasks_queued
+                num_to_queue = min(max_tasks - self.tasks_processing,
+                                   min_tasks - self.tasks_queued)
                 change = min(change,num_to_queue)
+            logger.info('can queue up to %d tasks', change)
 
             # get queueing datasets from database
             datasets = self.db.queue_get_queueing_datasets(async=False)
