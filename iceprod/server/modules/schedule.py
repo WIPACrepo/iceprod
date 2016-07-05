@@ -39,7 +39,12 @@ class schedule(module.module):
         if not self.scheduler:
             # make Scheduler
             self.scheduler = Scheduler()
-            self._make_schedule()
+            try:
+                self._make_schedule()
+            except Exception:
+                logger.info('error making schedule', exc_info=True)
+                self.messaging.daemon.stop()
+                raise
 
         # start things
         self.scheduler.start()
