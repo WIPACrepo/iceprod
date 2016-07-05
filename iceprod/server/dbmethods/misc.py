@@ -325,7 +325,10 @@ class misc(_Methods_Base):
             sql2 += 'where table_name = ? and update_index = ?'
             bindings2 = (table,index)
             ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
-            if ret and ret[0][0] >= timestamp:
+            prev_timestamp = None
+            for row in ret:
+                prev_timestamp = row[0]
+            if prev_timestamp and prev_timestamp >= timestamp:
                 logger.info('newer data already present for %s %s %s',
                             table, index, timestamp)
                 callback(None)
@@ -334,7 +337,7 @@ class misc(_Methods_Base):
         except MySQLdb.IntegrityError:
             logger.warn('dropping history for %r', sql, exc_info=True)
         except Exception as e:
-            logger.warn('error finding old timestamp', exc_info=True)
+            logger.warn('error updating master', exc_info=True)
             ret = e
         else:
             sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
@@ -342,7 +345,7 @@ class misc(_Methods_Base):
             try:
                 ret = self.db._db_write(conn,sql2,bindings2,None,None,None)
             except Exception as e:
-                logger.warn('error updating history', exc_info=True)
+                logger.warn('error updating update_history', exc_info=True)
                 ret = e
         if callback:
             callback(ret)
