@@ -231,10 +231,12 @@ class queue(module.module):
                                      exc_info=True)
 
                 # queue tasks to grids
+                num_queued = 0
                 for p in plugins:
                     with self.check_run():
                         try:
                             p.queue()
+                            num_queued += p.tasks_queued + p.tasks_processing
                         except Exception:
                             logger.error('plugin %s.queue() raised exception',
                                          p.__class__.__name__,exc_info=True)
@@ -243,26 +245,28 @@ class queue(module.module):
                     # do global queueing
                     try:
                         # get num tasks to queue
-                        num = 100
+                        tasks_on_queue = [1000, 100]
                         if plugin_cfg:
-                            num = plugin_cfg[0]['tasks_on_queue'][1]
-                        # get priority factors
-                        qf_p = 1.0
-                        qf_d = 1.0
-                        qf_t = 1.0
-                        if 'queueing_factor_priority' in self.cfg['queue']:
-                            qf_p = self.cfg['queue']['queueing_factor_priority']
-                        elif plugin_cfg:
-                            qf_p = plugin_cfg[0]['queueing_factor_priority']
-                        if 'queueing_factor_dataset' in self.cfg['queue']:
-                            qf_d = self.cfg['queue']['queueing_factor_dataset']
-                        elif plugin_cfg:
-                            qf_d = plugin_cfg[0]['queueing_factor_dataset']
-                        if 'queueing_factor_tasks' in self.cfg['queue']:
-                            qf_t = self.cfg['queue']['queueing_factor_tasks']
-                        elif plugin_cfg:
-                            qf_t = plugin_cfg[0]['queueing_factor_tasks']
-                        self.global_queueing(qf_p,qf_d,qf_t,num=num)
+                            tasks_on_queue = plugin_cfg[0]['tasks_on_queue']
+                        num = min(tasks_on_queue[0] - num_queued, tasks_on_queue[1])
+                        if num > 0:
+                            # get priority factors
+                            qf_p = 1.0
+                            qf_d = 1.0
+                            qf_t = 1.0
+                            if 'queueing_factor_priority' in self.cfg['queue']:
+                                qf_p = self.cfg['queue']['queueing_factor_priority']
+                            elif plugin_cfg:
+                                qf_p = plugin_cfg[0]['queueing_factor_priority']
+                            if 'queueing_factor_dataset' in self.cfg['queue']:
+                                qf_d = self.cfg['queue']['queueing_factor_dataset']
+                            elif plugin_cfg:
+                                qf_d = plugin_cfg[0]['queueing_factor_dataset']
+                            if 'queueing_factor_tasks' in self.cfg['queue']:
+                                qf_t = self.cfg['queue']['queueing_factor_tasks']
+                            elif plugin_cfg:
+                                qf_t = plugin_cfg[0]['queueing_factor_tasks']
+                            self.global_queueing(qf_p,qf_d,qf_t,num=num)
                     except Exception:
                         logger.error('error in global queueing',exc_info=True)
 
