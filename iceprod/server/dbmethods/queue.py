@@ -125,7 +125,7 @@ class queue(_Methods_Base):
     @dbmethod
     def queue_get_active_tasks(self, gridspec=None, callback=None):
         """
-        Get a dict of active tasks (queued,processing,reset,resume).
+        Get a dict of active tasks (waiting,queued,processing,reset,resume).
 
         Args:
             gridspec (str): The gridspec (None for master)
@@ -141,7 +141,7 @@ class queue(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         try:
             sql = 'select task_id from search where '
-            sql += 'task_status in ("queued","processing","reset","resume")'
+            sql += 'task_status in ("waiting","queued","processing","reset","resume")'
             if gridspec:
                 sql += ' and gridspec like ?'
                 bindings = ('%'+gridspec+'%',)

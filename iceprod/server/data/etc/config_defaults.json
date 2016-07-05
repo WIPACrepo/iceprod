@@ -8,6 +8,7 @@
             "description":"generic grid plugin",
             "type":"type of grid",
             "tasks_on_queue":[1,10],
+            "max_task_waiting_time":86400,
             "max_task_queued_time":86400,
             "max_task_processing_time":86400,
             "max_task_reset_time":3600,

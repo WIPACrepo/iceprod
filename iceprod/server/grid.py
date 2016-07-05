@@ -172,6 +172,20 @@ class grid(object):
         waiting_tasks = []
         idle_tasks = []
 
+        # check the waiting status
+        tasks_waiting = 0
+        if 'waiting' in tasks:
+            max_task_waiting_time = self.queue_cfg['max_task_waiting_time']
+            for t in tasks['waiting'].values():
+                try:
+                    if now - t['status_changed'] > timedelta(seconds=max_task_waiting_time):
+                        reset_tasks.append(t)
+                    else:
+                        tasks_waiting += 1
+                except:
+                    logging.warn('error waiting->reset for %r', t,
+                                 exc_info=True)
+
         # check the queued status
         tasks_queued = 0
         if 'queued' in tasks:
