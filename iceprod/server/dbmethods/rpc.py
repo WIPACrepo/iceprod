@@ -826,14 +826,21 @@ class rpc(_Methods_Base):
 
     @dbmethod
     def rpc_master_update(self, updates, callback=None):
-        def cb(ret):
+        def cb(updates, ret=None, callback=None):
             if isinstance(ret, Exception):
                 callback(ret)
             elif updates:
-                self.parent.misc_update_master_db(*updates.pop(0),callback=cb)
+                u = updates.pop(0)
+                cb2 = partial(cb, updates, callback=callback)
+                try:
+                    self.parent.misc_update_master_db(*u, callback=cb2)
+                except Exception:
+                    logger.warn('failed to apply update: %r', u, exc_info=True)
+                    raise
+                    #cb2()
             else:
                 callback()
-        cb(None)
+        cb(updates, callback=callback)
 
     @dbmethod
     def rpc_stop_module(self, module_name, callback=None):
