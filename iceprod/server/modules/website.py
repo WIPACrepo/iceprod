@@ -761,7 +761,7 @@ class Task(PublicHandler):
                 raise passkey
             
             if url and url_parts:
-                if dataset_id.isdigit():
+                if dataset_id and dataset_id.isdigit():
                     try:
                         if int(dataset_id) < 10000000:
                             ret = yield self.db_call('web_get_dataset_by_name',
