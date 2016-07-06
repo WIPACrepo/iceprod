@@ -147,6 +147,8 @@ class condor(grid.grid):
             if not line.strip():
                 continue
             gid,status,cmd = line.split()
+            if 'loader.sh' not in cmd:
+                continue
             if status == '1':
                 status = 'queued'
             elif status == '2':
