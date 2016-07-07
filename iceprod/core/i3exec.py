@@ -71,108 +71,113 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
          passkey='', pilot_id=None, offline=False):
     """Main task runner for iceprod"""
     global logger
-    # set up stdout and stderr
-    stdout = partial(to_file,sys.stdout,constants['stdout'])
-    stderr = partial(to_file,sys.stderr,constants['stderr'])
-    with stdout(), stderr():
-        # set up logger
-        if debug:
-            logl = 'INFO'
-        else:
-            logl = 'WARNING'
-        if logfile:
-            logf = os.path.abspath(logfile)
-        else:
-            logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
-        iceprod.core.logger.setlogger('i3exec',
-                                      None,
-                                      loglevel=logl,
-                                      logfile=logf,
-                                      logsize=67108864,
-                                      lognum=1)
-        iceprod.core.logger.removestdout()
-        logger = logging.getLogger('i3exec')
-        logger.warn('starting...%s ' % logger.name)
+    # set up logger
+    if debug:
+        logl = 'INFO'
+    else:
+        logl = 'WARNING'
+    if logfile:
+        logf = os.path.abspath(logfile)
+    else:
+        logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
+    iceprod.core.logger.setlogger('i3exec',
+                                  None,
+                                  loglevel=logl,
+                                  logfile=logf,
+                                  logsize=67108864,
+                                  lognum=1)
+    iceprod.core.logger.removestdout()
+    logger = logging.getLogger('i3exec')
+    logger.warn('starting...%s ' % logger.name)
 
-        signal.signal(signal.SIGQUIT, handler)
-        signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGQUIT, handler)
+    signal.signal(signal.SIGINT, handler)
 
-        if cfgfile is None:
-            logger.critical('There is no cfgfile')
-            raise Exception('missing cfgfile')
-        config = load_config(cfgfile)
-        logger.info('config: %r',config)
+    if cfgfile is None:
+        logger.critical('There is no cfgfile')
+        raise Exception('missing cfgfile')
+    config = load_config(cfgfile)
+    logger.info('config: %r',config)
 
-        if offline is True:
-            # run in offline mode
-            runner(config,url,debug,offline)
-            return
+    if offline is True:
+        # run in offline mode
+        runner(config,url,debug,offline)
+        return
 
-        # setup jsonRPC
-        kwargs = {}
-        if 'username' in config['options']:
-            kwargs['username'] = config['options']['username']
-        if 'password' in config['options']:
-            kwargs['password'] = config['options']['password']
-        if 'ssl' in config['options'] and config['options']['ssl']:
-            kwargs.update(config['options']['ssl'])
-        iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
+    # setup jsonRPC
+    kwargs = {}
+    if 'username' in config['options']:
+        kwargs['username'] = config['options']['username']
+    if 'password' in config['options']:
+        kwargs['password'] = config['options']['password']
+    if 'ssl' in config['options'] and config['options']['ssl']:
+        kwargs.update(config['options']['ssl'])
+    iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
-        if 'tasks' in config and config['tasks']:
-            logger.info('default configuration - a single task')
+    if 'tasks' in config and config['tasks']:
+        logger.info('default configuration - a single task')
+        # set up stdout and stderr
+        stdout = partial(to_file,sys.stdout,constants['stdout'])
+        stderr = partial(to_file,sys.stderr,constants['stderr'])
+        with stdout(), stderr():
             runner(config,url,debug)
-        else:
-            logger.info('pilot mode - get many tasks from server')
-            if 'gridspec' not in config['options']:
-                logger.critical('gridspec missing')
-                raise Exception('gridspec missing')
-            errors = 0
-            while errors < 5:
+
+    else:
+        logger.info('pilot mode - get many tasks from server')
+        if 'gridspec' not in config['options']:
+            logger.critical('gridspec missing')
+            raise Exception('gridspec missing')
+        errors = 0
+        while errors < 5:
+            try:
+                kwargs = {}
+                task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
+            except Exception:
+                errors += 1
+                logger.error('cannot download task. current error count is %d',
+                             errors, exc_info=True)
+                continue
+            logger.info('task config: %r', task_config)
+
+            if task_config is None:
+                break # assuming server wants client to exit
+            else:
+                task_id = task_config['options']['task_id']
+                iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
+
+                # add grid-specific config
+                for k in config['options']:
+                    if k not in task_config['options']:
+                        task_config['options'][k] = config['options'][k]
+
+                # run task in tmp dir
+                main_dir = os.getcwd()
                 try:
-                    kwargs = {}
-                    task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
+                    tmpdir = tempfile.mkdtemp(dir=main_dir)
+                    os.chdir(tmpdir)
+                    for f in os.listdir(main_dir):
+                        os.symlink(os.path.join(main_dir, f),
+                                   os.path.join(tmpdir, f))
+
+                    # clear log
+                    iceprod.core.logger.rotate()
+
+                    # set up stdout and stderr
+                    stdout = partial(to_file,sys.stdout,constants['stdout'])
+                    stderr = partial(to_file,sys.stderr,constants['stderr'])
+                    with stdout(), stderr():
+                        runner(task_config,url,debug)
                 except Exception:
                     errors += 1
-                    logger.error('cannot download task. current error count is %d',
+                    logger.error('task encountered an error. current error count is %d',
                                  errors, exc_info=True)
-                    continue
-                logger.info('task config: %r', task_config)
-
-                if task_config is None:
-                    break # assuming server wants client to exit
-                else:
-                    task_id = task_config['options']['task_id']
-                    iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
-
-                    # add grid-specific config
-                    for k in config['options']:
-                        if k not in task_config['options']:
-                            task_config['options'][k] = config['options'][k]
-                    # clear stdout,stderr,log
-                    for stream in (sys.stdout,sys.stderr):
-                        stream.flush()
-                        os.ftruncate(stream.fileno(), 0)
-                    iceprod.core.logger.rotate()
-                    # run task
-                    main_dir = os.getcwd()
-                    try:
-                        tmpdir = tempfile.mkdtemp(dir=main_dir)
-                        os.chdir(tmpdir)
-                        for f in os.listdir(main_dir):
-                            os.symlink(os.path.join(main_dir, f),
-                                       os.path.join(tmpdir, f))
-                        runner(task_config,url,debug)
-                    except Exception:
-                        errors += 1
-                        logger.error('task encountered an error. current error count is %d',
-                                     errors, exc_info=True)
-                    finally:
-                        os.chdir(main_dir)
-                        shutil.rmtree(tmpdir)
-                        iceprod.core.exe_json.update_pilot(pilot_id, tasks='')
-            if errors >= 5:
-                logger.critical('too many errors when running tasks')
-        logger.warn('finished running normally; exiting...')
+                finally:
+                    os.chdir(main_dir)
+                    shutil.rmtree(tmpdir)
+                    iceprod.core.exe_json.update_pilot(pilot_id, tasks='')
+        if errors >= 5:
+            logger.critical('too many errors when running tasks')
+    logger.warn('finished running normally; exiting...')
 
 def runner(config,url,debug=False,offline=False):
     """Run a config"""
