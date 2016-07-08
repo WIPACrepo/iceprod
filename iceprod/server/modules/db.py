@@ -710,7 +710,7 @@ if MySQLdb:
                                         x += ' TEXT NOT NULL DEFAULT "" '
                                     elif t == 'MediumText':
                                         x += ' MEDIUMTEXT NOT NULL DEFAULT "" '
-                                addcols.append(x)
+                                    addcols.append(x)
 
                             full_sql = 'alter table '+table_name+' '
                             if addcols:
