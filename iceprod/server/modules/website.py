@@ -201,7 +201,7 @@ class website(module.module):
                             raise Exception('Bad ssl cert or key')
                     if not cert:
                         # auto-generate self-signed cert
-                        create_cert('$PWD/cert','$PWD/key',days=30)
+                        create_cert('$PWD/cert','$PWD/key',days=365)
                         cert = os.path.expandvars('$PWD/cert')
                         key = os.path.expandvars('$PWD/key')
                         self.cfg['system']['ssl']['autogen'] = True
