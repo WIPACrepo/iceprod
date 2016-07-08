@@ -40,22 +40,6 @@ class queue(_Methods_Base):
             return tasks
 
     @dbmethod
-    def queue_get_site_id(self,callback=None):
-        """Get the current site_id"""
-        sql = 'select site_id from setting'
-        bindings = tuple()
-        cb = partial(self._queue_get_site_id_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _queue_get_site_id_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            elif ret is None or len(ret) < 1 or len(ret[0]) < 1:
-                callback(Exception('no site id'))
-            else:
-                callback(ret[0][0])
-
-    @dbmethod
     def queue_set_site_queues(self,site_id,queues,callback=None):
         """Set the site queues"""
         cb = partial(self._queue_set_site_queues_blocking,site_id,queues,

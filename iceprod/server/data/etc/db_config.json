@@ -207,7 +207,6 @@
         ],
         "setting": [
             ["setting_id", "str"],
-            ["site_id", "str"],
             ["node_offset", "str", "these tables have the site+offset id type"],
             ["dataset_offset", "str"],
             ["dataset_notes_offset", "str"],

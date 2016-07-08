@@ -222,6 +222,7 @@ class DBAPI(object):
 
     def init(self):
         """Initialize the settings table if there is nothing there"""
+        site_id = self.cfg['site_id']
         conn,archive_conn = self._dbsetup()
         sql = 'select * from setting where setting_id = 0'
         bindings = tuple()
@@ -237,12 +238,9 @@ class DBAPI(object):
         sql += ','.join(['?' for _ in self.tables['setting'].keys()])
         sql += ')'
         bindings = tuple()
-        site_id = GlobalID.siteID_gen()
         for key in self.tables['setting']:
             if key == 'setting_id':
                 bindings += (0,)
-            elif key == 'site_id':
-                bindings += (site_id,)
             elif key.endswith('_last'):
                 bindings += (GlobalID.int2char(0),)
             elif key.endswith('_offset'):
@@ -606,13 +604,13 @@ else:
                 # global id
                 with conn() as c:
                     cur = c.cursor()
-                    if self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple()) is False:
+                    if self._db_query(cur,'select '+table+'_offset from setting',tuple()) is False:
                         raise Exception('failed to run query')
                     ret = cur.fetchall()
-                    if not ret or not ret[0]:
+                    if (not ret) or not ret[0]:
                         raise Exception('bad return value')
-                    site_id = ret[0][0]
-                    old_id = ret[0][1]
+                    site_id = self.cfg['site_id']
+                    old_id = ret[0][0]
                     old_id = GlobalID.localID_ret(old_id,type='int')
                     new_id = GlobalID.globalID_gen(old_id+1,site_id)
                     if self._db_query(cur,'update setting set '+table+'_offset = ?',(new_id,)) is False:
@@ -1105,10 +1103,10 @@ if MySQLdb:
                 # global id
                 try:
                     cur = conn.cursor()
-                    self._db_query(cur,'select site_id, '+table+'_offset from setting',tuple())
+                    self._db_query(cur,'select '+table+'_offset from setting',tuple())
                     ret = cur.fetchall()
-                    site_id = ret[0][0]
-                    old_id = ret[0][1]
+                    site_id = self.cfg['site_id']
+                    old_id = ret[0][0]
                     old_id = GlobalID.localID_ret(old_id,type='int')
                     new_id = GlobalID.globalID_gen(old_id+1,site_id)
                     self._db_query(cur,'update setting set '+table+'_offset = ?',(new_id,))
