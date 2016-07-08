@@ -622,7 +622,7 @@ else:
                     if self._db_query(cur,'select '+table+'_last from setting',tuple()) is False:
                         raise Exception('failed to run query')
                     ret = cur.fetchall()
-                    if not ret or not ret[0]:
+                    if (not ret) or not ret[0]:
                         raise Exception('bad return value')
                     old_id = ret[0][0]
                     new_id = GlobalID.int2char(GlobalID.char2int(old_id)+1)
@@ -712,10 +712,15 @@ if MySQLdb:
                                         x += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                                 addcols.append(x)
 
-                            full_sql = 'alter table '+table_name+' add column ('
-                            full_sql += ','.join(col for col in addcols)
-                            full_sql += '), drop column '
-                            full_sql += ', drop column '.join('`'+col+'`' for col in rmcols)
+                            full_sql = 'alter table '+table_name+' '
+                            if addcols:
+                                full_sql += 'add column '
+                                full_sql += ', add column '.join(col for col in addcols)
+                            if addcols and rmcols:
+                                full_sql += ', '
+                            if rmcols:
+                                full_sql += 'drop column '
+                                full_sql += ', drop column '.join('`'+col+'`' for col in rmcols)
                             cur.execute(full_sql)
                         else:
                             # table is good
