@@ -721,7 +721,7 @@ class Dataset(PublicHandler):
                         if int(dataset_id) < 10000000:
                             ret = yield self.db_call('web_get_dataset_by_name',
                                                      name=dataset_id)
-                            if not isinstance(ret,Exception):
+                            if ret and not isinstance(ret,Exception):
                                 dataset_id = ret
                     except:
                         pass
@@ -766,7 +766,7 @@ class Task(PublicHandler):
                         if int(dataset_id) < 10000000:
                             ret = yield self.db_call('web_get_dataset_by_name',
                                                      name=dataset_id)
-                            if not isinstance(ret,Exception):
+                            if ret and not isinstance(ret,Exception):
                                 dataset_id = ret
                     except:
                         pass

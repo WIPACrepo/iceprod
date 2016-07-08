@@ -801,8 +801,8 @@ class grid_test(unittest.TestCase):
             raise Exception('did not remove grid_queue_id 0')
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
-        if any('queue_del_pilots' == x[1] for x in self.messaging.called):
-            raise Exception('called queue_del_pilots when nothing to reset')
+        if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
+            raise Exception('did not call queue_del_pilots')
 
         # old pilots on queue
         active_tasks = [{'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
@@ -1122,10 +1122,11 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call generate_submit_file')
         if not submit.called:
             raise Exception('did not call submit')
-        if (self.messaging.called[0][1] != 'auth_new_passkey' or
-            self.messaging.called[1][1] != 'queue_add_pilot'):
+        if (self.messaging.called[0][1] != 'queue_new_pilot_ids' or
+            self.messaging.called[1][1] != 'auth_new_passkey' or
+            self.messaging.called[2][1] != 'queue_add_pilot'):
             raise Exception('unexpected messages')
-        pilot_dict = self.messaging.called[1][3]['pilot']
+        pilot_dict = self.messaging.called[2][3]['pilot']
         if (os.path.dirname(pilot_dict['submit_dir']) != submit_dir or
             'grid_queue_id' not in pilot_dict or
             pilot_dict['num'] != 1):

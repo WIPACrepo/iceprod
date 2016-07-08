@@ -906,21 +906,21 @@ class queue(_Methods_Base):
         cb = partial(self._queue_add_pilot_blocking, pilot, callback=callback)
         self.db.non_blocking_task(cb)
     def _queue_add_pilot_blocking(self,pilot,callback=None):
-        conn,archive_conn = self.db._dbsetup()
-        now = nowstr()
-        s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
-        s += 'submit_dir, tasks) values (?,?,?,?,?)'
-        sql = []
-        bindings = []
-        for i,pilot_id in enumerate(pilot['pilot_ids']):
-            grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
-            sql.append(s)
-            bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
-        
         try:
+            conn,archive_conn = self.db._dbsetup()
+            now = nowstr()
+            s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
+            s += 'submit_dir, tasks) values (?,?,?,?,?)'
+            sql = []
+            bindings = []
+            for i,pilot_id in enumerate(pilot['pilot_ids']):
+                grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
+                sql.append(s)
+                bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
+        
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:
-            logger.debug('error setting status',exc_info=True)
+            logger.debug('error adding pilot',exc_info=True)
             ret = e
         callback(ret)
 

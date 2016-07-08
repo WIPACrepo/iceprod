@@ -230,7 +230,7 @@ class dbmethods_auth_test(dbmethods_base):
                 {'site_id':1,'auth_key':'key'},
             ],
             'setting':[
-                {'site_id':1,'passkey_last':'0'},
+                {'passkey_last':'0'},
             ],
             'passkey':[
                 {'auth_key':key,'expire':dbmethods.datetime2str(exp)}
