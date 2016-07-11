@@ -136,6 +136,8 @@ def online_rpc(url,input=''):
             out['result'] = True
         elif method == 'stillrunning':
             out['result'] = True
+        elif method == 'update_pilot':
+            out['result'] = True
         elif method == 'finish_task':
             out['result'] = True
         elif method == 'task_error':
@@ -317,6 +319,9 @@ inithello(void)
         config['options']['local_temp'] = os.path.join(self.test_dir,'local_temp')
         config['options']['data_directory'] = os.path.join(self.test_dir,'data')
         config['options']['loglevel'] = 'info'
+        config['options']['task_id'] = 'a'
+        config['options']['dataset_id'] = 'a'
+        config['options']['job'] = 0
         config['steering'] = iceprod.core.dataclasses.Steering()
         return config
 
@@ -371,7 +376,8 @@ class MyTest(IPBaseClass):
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             raise
 
@@ -388,7 +394,8 @@ class MyTest(IPBaseClass):
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             pass
         else:
@@ -445,7 +452,8 @@ class MyTest(IPBaseClass):
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             raise
 
@@ -500,7 +508,8 @@ class MyTest(IPBaseClass):
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             raise
 
@@ -600,7 +609,8 @@ def MyTest():
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             raise
 
@@ -655,7 +665,8 @@ class MyTest(IPBaseClass):
 
         # try to run the config
         try:
-            i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                        passkey=passkey, offline=offline)
         except:
             pass
         else:
@@ -668,6 +679,9 @@ class MyTest(IPBaseClass):
         cfgfile = os.path.join(self.test_dir,'test_steering.json')
         config = self.make_config()
         config['options']['task_id'] = 'task_id'
+        config['options']['dataset_id'] = 'a'
+        config['options']['job'] = 0
+        config['options']['task'] = 'task'
         task = iceprod.core.dataclasses.Task()
         task['name'] = 'task'
         config['tasks'].append(task)
@@ -722,7 +736,8 @@ class MyTest(IPBaseClass):
 
             # try to run the config
             try:
-                i3exec.main(cfgfile,logfile,url,debug,passkey,offline)
+                i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
+                            passkey=passkey, offline=offline)
             except:
                 raise
             if 'new_task' in online_rpc.called_methods:
@@ -740,10 +755,13 @@ class MyTest(IPBaseClass):
         # create basic config file
         cfgfile = os.path.join(self.test_dir,'test_steering.json')
         config = self.make_config()
+        config['options']['task_id'] = 'task_id'
+        config['options']['dataset_id'] = 'a'
+        config['options']['job'] = 0
+        config['options']['task'] = 'task'
         task = iceprod.core.dataclasses.Task()
         task['name'] = 'task'
         config['tasks'].append(task)
-        config['options']['task_id'] = 'task_id'
         tray = iceprod.core.dataclasses.Tray()
         tray['name'] = 'tray'
         task['trays'].append(tray)
@@ -786,7 +804,7 @@ class MyTest(IPBaseClass):
             # set some default values
             logfile = logging.getLogger().handlers[0].stream.name
             url = 'http://localhost:%d'%port
-            debug = False
+            debug = True
             passkey = 'pass'
             offline = False
             config = iceprod.core.dataclasses.Job()
@@ -794,7 +812,8 @@ class MyTest(IPBaseClass):
 
             # try to run the config
             try:
-                i3exec.main(config,logfile,url,debug,passkey,offline)
+                i3exec.main(config, logfile=logfile, url=url, debug=debug,
+                            passkey=passkey, offline=offline)
             except:
                 raise
             if 'new_task' not in online_rpc.called_methods:

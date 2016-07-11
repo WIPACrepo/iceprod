@@ -101,7 +101,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     if offline is True:
         # run in offline mode
-        runner(config,url,debug,offline)
+        runner(config, url, debug=debug, offline=offline)
         return
 
     # setup jsonRPC
@@ -120,7 +120,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         stdout = partial(to_file,sys.stdout,constants['stdout'])
         stderr = partial(to_file,sys.stderr,constants['stderr'])
         with stdout(), stderr():
-            runner(config,url,debug)
+            runner(config, url, debug=debug)
 
     else:
         logger.info('pilot mode - get many tasks from server')
@@ -166,7 +166,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     stdout = partial(to_file,sys.stdout,constants['stdout'])
                     stderr = partial(to_file,sys.stderr,constants['stderr'])
                     with stdout(), stderr():
-                        runner(task_config,url,debug)
+                        runner(task_config, url, debug=debug)
                 except Exception:
                     errors += 1
                     logger.error('task encountered an error. current error count is %d',
@@ -296,7 +296,7 @@ def runner(config,url,debug=False,offline=False):
     finally:
         # upload log files to server
         try:
-            if 'upload' in config['options']:
+            if (not offline) and 'upload' in config['options']:
                 if isinstance(config['options']['upload'],
                               iceprod.core.dataclasses.String):
                     upload = config['options']['upload'].lower().split('|')
@@ -321,7 +321,8 @@ def runner(config,url,debug=False,offline=False):
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
-    iceprod.core.exe_json.finishtask(cfg, stats)
+    if not offline:
+        iceprod.core.exe_json.finishtask(cfg, stats)
     logger.warn('finished without error')
 
 
