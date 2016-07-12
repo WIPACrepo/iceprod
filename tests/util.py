@@ -55,11 +55,13 @@ def unittest_reporter(*args,**kwargs):
             skip = bool(skip)
         @wraps(obj)
         def wrapper(*args, **kwargs):
+            from iceprod.core import to_log
             if skip:
                 printer('Test '+test_name,skipped=True)
                 return
             try:
-                obj(*args,**kwargs)
+                with to_log(sys.stdout), to_log(sys.stderr):
+                    obj(*args,**kwargs)
             except Exception as e:
                 logging.error('Error running %s test',name,
                              exc_info=True)

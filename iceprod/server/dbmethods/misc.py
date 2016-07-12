@@ -13,7 +13,7 @@ import uuid
 import shutil
 from io import BytesIO
 
-# load IntegrityError
+# load mysql Error
 try:
     import MySQLdb
 except ImportError:
@@ -21,7 +21,7 @@ except ImportError:
         import pymysql as MySQLdb
     except:
         class MySQLdb:
-            class IntegrityError(Exception):
+            class Error(Exception):
                 pass
 
 import iceprod.core.functions
@@ -334,7 +334,7 @@ class misc(_Methods_Base):
                 callback(None)
                 return
             ret = self.db._db_write(conn,sql,tuple(bindings),None,None,None)
-        except MySQLdb.IntegrityError:
+        except MySQLdb.Error:
             logger.warn('dropping history for %r', sql, exc_info=True)
         except Exception as e:
             logger.warn('error updating master', exc_info=True)
@@ -344,6 +344,9 @@ class misc(_Methods_Base):
             bindings2 = (table,index,timestamp)
             try:
                 ret = self.db._db_write(conn,sql2,bindings2,None,None,None)
+            except MySQLdb.Error:
+                logger.warn('mysql error updating update_history',
+                            exc_info=True)
             except Exception as e:
                 logger.warn('error updating update_history', exc_info=True)
                 ret = e

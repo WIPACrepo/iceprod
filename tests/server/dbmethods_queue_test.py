@@ -33,56 +33,6 @@ from .dbmethods_test import dbmethods_base
 
 class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
-    def test_100_queue_get_site_id(self):
-        """Test queue_get_site_id"""
-        site_id = 'asdfasdfsdf'
-
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
-        # normal site test
-        tables = {
-            'setting':[
-                {'site_id':site_id},
-            ],
-        }
-
-        cb.called = False
-        self.mock.setup(tables)
-
-        self._db.queue_get_site_id(callback=cb)
-
-        if cb.called is False:
-            raise Exception('normal site: callback not called')
-        if cb.ret != site_id:
-            raise Exception('normal site: callback ret != site_id')
-
-        # site not in db
-        self.mock.setup({'setting':[]})
-        cb.called = False
-
-        self._db.queue_get_site_id(callback=cb)
-
-        if cb.called is False:
-            raise Exception('not in db: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('not in db: callback ret != Exception')
-
-        # sql error
-        self.mock.setup(tables)
-        self.mock.failures = 1
-        cb.called = False
-
-        self._db.queue_get_site_id(callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
-
-    @unittest_reporter
     def test_110_queue_get_active_tasks(self):
         """Test queue_get_active_tasks"""
         gridspec = 'klsjdfl.grid1'
@@ -1860,7 +1810,8 @@ class dbmethods_queue_test(dbmethods_base):
 
         submit_dir = os.path.join(self.test_dir,'submit')
         pilot = {'task_id':'pilot', 'name':'pilot', 'debug':False, 'reqs':{},
-                 'submit_dir': submit_dir, 'grid_queue_id':'12345'}
+                 'submit_dir': submit_dir, 'grid_queue_id':'12345',
+                 'pilot_ids': ['a']}
 
         cb.called = False
         self.mock.setup({'pilot':[]})
@@ -1879,6 +1830,7 @@ class dbmethods_queue_test(dbmethods_base):
         # try 3 at once
         cb.called = False
         pilot['num'] = 3
+        pilot['pilot_ids'] = ['a', 'b', 'c']
         self.mock.setup({'pilot':[]})
         self._db.queue_add_pilot(pilot,callback=cb)
         if cb.called is False:

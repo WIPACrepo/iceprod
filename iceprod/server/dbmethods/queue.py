@@ -40,22 +40,6 @@ class queue(_Methods_Base):
             return tasks
 
     @dbmethod
-    def queue_get_site_id(self,callback=None):
-        """Get the current site_id"""
-        sql = 'select site_id from setting'
-        bindings = tuple()
-        cb = partial(self._queue_get_site_id_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _queue_get_site_id_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            elif ret is None or len(ret) < 1 or len(ret[0]) < 1:
-                callback(Exception('no site id'))
-            else:
-                callback(ret[0][0])
-
-    @dbmethod
     def queue_set_site_queues(self,site_id,queues,callback=None):
         """Set the site queues"""
         cb = partial(self._queue_set_site_queues_blocking,site_id,queues,
@@ -922,21 +906,21 @@ class queue(_Methods_Base):
         cb = partial(self._queue_add_pilot_blocking, pilot, callback=callback)
         self.db.non_blocking_task(cb)
     def _queue_add_pilot_blocking(self,pilot,callback=None):
-        conn,archive_conn = self.db._dbsetup()
-        now = nowstr()
-        s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
-        s += 'submit_dir, tasks) values (?,?,?,?,?)'
-        sql = []
-        bindings = []
-        for i,pilot_id in enumerate(pilot['pilot_ids']):
-            grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
-            sql.append(s)
-            bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
-        
         try:
+            conn,archive_conn = self.db._dbsetup()
+            now = nowstr()
+            s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
+            s += 'submit_dir, tasks) values (?,?,?,?,?)'
+            sql = []
+            bindings = []
+            for i,pilot_id in enumerate(pilot['pilot_ids']):
+                grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
+                sql.append(s)
+                bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
+        
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
         except Exception as e:
-            logger.debug('error setting status',exc_info=True)
+            logger.debug('error adding pilot',exc_info=True)
             ret = e
         callback(ret)
 

@@ -70,6 +70,8 @@ class DB(SQLite):
         self.failures = None
         cfg['db'] = {}
         cfg['db']['name'] = os.path.join(self.tmpdir,'db')
+        if 'site_id' not in cfg:
+            cfg['site_id'] = 'a'
         super(DB,self).__init__(cfg,messaging,**kwargs)
 
     def setup(self, tables={}):

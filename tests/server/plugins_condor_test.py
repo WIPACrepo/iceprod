@@ -251,7 +251,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # call with queued job
         caller.called = False
-        caller.ret = '1234.0 1 '+os.path.join(submit_dir,'cmd.sh')
+        caller.ret = '1234.0 1 '+os.path.join(submit_dir,'loader.sh')
 
         ret = g.get_grid_status()
         if not caller.called:
@@ -265,7 +265,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # call with processing job
         caller.called = False
-        caller.ret = '1234.0 2 '+os.path.join(submit_dir,'cmd.sh')
+        caller.ret = '1234.0 2 '+os.path.join(submit_dir,'loader.sh')
 
         ret = g.get_grid_status()
         if not caller.called:
@@ -279,7 +279,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # call with completed job
         caller.called = False
-        caller.ret = '1234.0 4 '+os.path.join(submit_dir,'cmd.sh')
+        caller.ret = '1234.0 4 '+os.path.join(submit_dir,'loader.sh')
 
         ret = g.get_grid_status()
         if not caller.called:
@@ -294,7 +294,7 @@ class plugins_condor_test(grid_test.grid_test):
         # call with error job
         for s in ('3','5','6'):
             caller.called = False
-            caller.ret = '1234.0 '+s+' '+os.path.join(submit_dir,'cmd.sh')
+            caller.ret = '1234.0 '+s+' '+os.path.join(submit_dir,'loader.sh')
 
             ret = g.get_grid_status()
             if not caller.called:
@@ -308,7 +308,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # call with unknown job
         caller.called = False
-        caller.ret = '1234.0 blah '+os.path.join(submit_dir,'cmd.sh')
+        caller.ret = '1234.0 blah '+os.path.join(submit_dir,'loader.sh')
 
         ret = g.get_grid_status()
         if not caller.called:

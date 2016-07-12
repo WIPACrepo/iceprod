@@ -201,7 +201,7 @@ class website(module.module):
                             raise Exception('Bad ssl cert or key')
                     if not cert:
                         # auto-generate self-signed cert
-                        create_cert('$PWD/cert','$PWD/key',days=30)
+                        create_cert('$PWD/cert','$PWD/key',days=365)
                         cert = os.path.expandvars('$PWD/cert')
                         key = os.path.expandvars('$PWD/key')
                         self.cfg['system']['ssl']['autogen'] = True
@@ -722,7 +722,7 @@ class Dataset(PublicHandler):
                         if int(dataset_id) < 10000000:
                             ret = yield self.db_call('web_get_dataset_by_name',
                                                      name=dataset_id)
-                            if not isinstance(ret,Exception):
+                            if ret and not isinstance(ret,Exception):
                                 dataset_id = ret
                     except:
                         pass
@@ -767,7 +767,7 @@ class Task(PublicHandler):
                         if int(dataset_id) < 10000000:
                             ret = yield self.db_call('web_get_dataset_by_name',
                                                      name=dataset_id)
-                            if not isinstance(ret,Exception):
+                            if ret and not isinstance(ret,Exception):
                                 dataset_id = ret
                     except:
                         pass
