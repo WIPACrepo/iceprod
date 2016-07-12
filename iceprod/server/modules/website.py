@@ -272,6 +272,7 @@ class website(module.module):
                 (r"/site(/.*)?", Site, handler_args),
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
+                (r"/log/(.*)/(.*)", Log, handler_args),
                 (r"/login", Login, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
@@ -800,6 +801,18 @@ class Documentation(PublicHandler):
     def get(self, url):
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
         self.write(documentation.load_doc(doc_path+'/' + url))
+        self.flush()
+
+class Log(PublicHandler):
+    @tornado.web.authenticated
+    @tornado.gen.coroutine
+    def get(self, url, log):
+        logs = yield self.db_call('web_get_logs',task_id=url)
+        log_text = logs[log]
+        html = '<html><body>'
+        html += log_text.replace('\n', '<br/>')
+        html += '</body></html>'
+        self.write(html)
         self.flush()
 
 
