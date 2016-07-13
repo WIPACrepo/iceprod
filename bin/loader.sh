@@ -67,6 +67,12 @@ done
 shift $INC
 echo " "
 
+# touch the log, out, err files so they exist
+# this prevents HTCondor from complaining
+touch iceprod_log
+touch iceprod_out
+touch iceprod_err
+
 # calculate platform
 OSTYPE=`uname`
 if [ $OSTYPE = 'Linux' ]; then
