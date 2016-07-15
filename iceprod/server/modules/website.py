@@ -274,6 +274,7 @@ class website(module.module):
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/log/(.*)/(.*)", Log, handler_args),
                 (r"/login", Login, handler_args),
+                (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
             ],static_path=static_path,
               template_path=template_path,
@@ -384,7 +385,7 @@ class JSONRPCHandler(MyHandler):
     """
     def check_xsrf_cookie(self):
         pass
-    
+
     @tornado.gen.coroutine
     def post(self):
         """Parses json in the jsonrpc format, returning results in
@@ -676,9 +677,9 @@ class Site(PublicHandler):
             passkey = yield self.db_call('auth_new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-        
+
             config = yield self.config_call('get_config_string')
-        
+
             self.render_handle('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
             '''
             filter_options = {}
@@ -756,11 +757,11 @@ class Task(PublicHandler):
                 url_parts = [x for x in url.split('/') if x]
             dataset_id = self.get_argument('dataset_id',default=None)
             status = self.get_argument('status',default=None)
-            
+
             passkey = yield self.db_call('auth_new_passkey')
             if isinstance(passkey,Exception):
                 raise passkey
-            
+
             if url and url_parts:
                 if dataset_id and dataset_id.isdigit():
                     try:
@@ -785,7 +786,7 @@ class Task(PublicHandler):
                     raise logs
                 self.render_handle('task_detail.html',task=task_details,logs=logs,passkey=passkey)
             elif status:
-                
+
                 tasks = yield self.db_call('web_get_tasks_details',status=status,
                                            dataset_id=dataset_id)
                 if isinstance(tasks,Exception):
@@ -847,3 +848,9 @@ class Login(PublicHandler):
             self.redirect(self.get_argument('next', '/'))
         else:
             self.render_handle('login.html',status='failed')
+
+class Logout(PublicHandler):
+    def get(self):
+        self.clear_cookie("user")
+        self.current_user = None
+        self.render_handle('logout.html',status=None)
