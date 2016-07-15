@@ -59,7 +59,7 @@ class Pilot(object):
             self.monitor_thread.start()
         else:
             logger.warn('no psutil. not checking resource usage')
-        
+
         self.run()
         if psutil:
             self.monitor_running = False
@@ -68,7 +68,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 0.1 # check every X seconds
+            sleep_time = 1.0 # check every X seconds
             disk_sleep_time = 180
             disk_start_time = time.time()
             while self.monitor_running:
@@ -101,7 +101,7 @@ class Pilot(object):
                             processes.reverse() # kill children first
                             for p in processes:
                                 p.terminate()
-                            
+
                             def on_terminate(proc):
                                 logger.info("process %r terminated with exit code %r",
                                             proc, proc.returncode)
