@@ -813,7 +813,7 @@ class MyTest(IPBaseClass):
             # try to run the config
             try:
                 i3exec.main(config, logfile=logfile, url=url, debug=debug,
-                            passkey=passkey, offline=offline)
+                            passkey=passkey, offline=offline, pilot_id='pp')
             except:
                 raise
             if 'new_task' not in online_rpc.called_methods:

@@ -33,7 +33,7 @@ def setupjsonRPC(url, passkey, **kwargs):
                             'echo failed (%r).  url=%s and passkey=%s'
                             %(ret,url,passkey))
 
-def downloadtask(gridspec):
+def downloadtask(gridspec, resources=None):
     """Download a new task from the server"""
     try:
         platform = os.environ['PLATFORM']
@@ -42,7 +42,8 @@ def downloadtask(gridspec):
     hostname = functions.gethostname()
     ifaces = functions.getInterfaces()
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
-    resources = get_node_resources()
+    if not resources:
+        resources = get_node_resources()
     task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
                             hostname=hostname, ifaces=ifaces,
                             python_unicode=python_unicode,
@@ -112,7 +113,7 @@ def taskerror(cfg, start_time=None):
         else:
             t = None
         if os.path.exists('stderr'):
-            log = json_compressor.compress(open('stderr').read()[-1000:])
+            log = json_compressor.compress(open('stderr').read())
         else:
             log = ''
         error_info = {'hostname':hostname, 'time_used': t, 'error_summary':log}
@@ -122,6 +123,24 @@ def taskerror(cfg, start_time=None):
     ret = JSONRPC.task_error(task=cfg.config['options']['task_id'],
                              error_info=error_info)
     if isinstance(ret,Exception):
+        # an error occurred
+        raise ret
+
+def task_kill(task_id, resources=None, reason=None):
+    """Tell the server that we killed a task"""
+    try:
+        error_info = {'hostname': functions.gethostname()}
+        if resources and 'time' in resources:
+            error_info['time_used'] = resources.pop('time',0)
+        if resources:
+            error_info['resources'] = resources
+        if reason:
+            error_info['error_summary'] = json_compressor.compress(reason)
+    except Exception:
+        logger.warn('failed to collect error info', exc_info=True)
+        error_info = None
+    ret = JSONRPC.task_error(task=task_id, error_info=error_info)
+    if isinstance(ret, Exception):
         # an error occurred
         raise ret
 

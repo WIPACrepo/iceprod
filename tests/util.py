@@ -151,6 +151,15 @@ class messaging_mock(object):
                                 self.__service))
         return _Service(self.__request,name)
 
+def return_once(*args, **kwargs):
+    """Return every argument once, then return end_value repeatedly"""
+    end_value = kwargs.pop('end_value', Exception())
+    for a in args:
+        yield a
+    while True:
+        yield end_value
+
+
 def cmp_list(a,b):
     """Compare all items in a with b"""
     for aa,bb in zip(a,b):

@@ -64,7 +64,7 @@ class rpc(_Methods_Base):
         conn,archive_conn = self.db._dbsetup()
         
         while True:
-            sql = 'select task_id from task_lookup '
+            sql = 'select * from task_lookup '
             if reqs:
                 sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
             sql += ' limit 1'
@@ -79,10 +79,16 @@ class rpc(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
                 return
-            elif not ret or not ret[0]:
+            task_id = None
+            resources = {}
+            for row in ret:
+                row = self._list_to_dict('task_lookup',row)
+                task_id = row.pop('task_id')
+                for k in row:
+                    resources[k.replace('req_','')] = row[k]
+            if not task_id:
                 callback(None)
                 return
-            task_id = ret[0][0]
             sql = 'select * from search where task_id = ? and task_status = ?'
             bindings = (task_id,'queued')
             try:
@@ -148,6 +154,7 @@ class rpc(_Methods_Base):
             newtask['jobs_submitted'] = js
             newtask['debug'] = bool(debug)
             break
+        newtask['resources'] = resources
 
         now = nowstr()
         sql = 'update search set task_status = ? '
@@ -200,6 +207,7 @@ class rpc(_Methods_Base):
             config['options']['job'] = task['job']
             config['options']['jobs_submitted'] = task['jobs_submitted']
             config['options']['debug'] = task['debug']
+            config['options']['resources'] = task['resources']
             callback(config)
 
     @dbmethod
@@ -374,90 +382,117 @@ class rpc(_Methods_Base):
         callback(True)
 
     @dbmethod
-    def rpc_task_error(self,task,error_info=None,callback=None):
-        """Mark task as ERROR"""
+    def rpc_task_error(self, task, error_info=None, callback=None):
+        """Mark task as ERROR and possibly adjust resources"""
         if not task:
             raise Exception('no task specified')
-        cb = partial(self._rpc_task_error_blocking,task,error_info,
+        cb = partial(self._rpc_task_error_blocking, task, error_info,
                      callback=callback)
         self.db.non_blocking_task(cb)
-    def _rpc_task_error_blocking(self,task,error_info,callback=None):
+    def _rpc_task_error_blocking(self,task_id,error_info,callback=None):
         conn,archive_conn = self.db._dbsetup()
-        sql = 'select task_id,failures from task where task_id = ?'
-        bindings = (task,)
         try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-        elif not ret:
-            callback(Exception('sql error in task_error'))
-        else:
-            sql = 'select search.task_id,debug from search '
-            sql += 'join dataset on search.dataset_id = dataset.dataset_id '
+            sql = 'select failures, requirements, task_rel_id from task '
             sql += 'where task_id = ?'
-            bindings = (task,)
-            try:
-                ret2 = self.db._db_read(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret2 = e
-            if isinstance(ret2,Exception):
-                callback(ret2)
-            elif not ret2:
-                callback(Exception('sql error in task_error'))
-            else:
-                task = None
-                failures=0
-                for t,f in ret:
-                    task = t
-                    failures = f
-                    break
-                failures += 1
-                debug = False
-                for t,d in ret2:
-                    debug = (d == True)
-                if debug:
-                    status = 'suspended'
-                elif failures >= self.db.cfg['queue']['max_resets']:
-                    status = 'failed'
-                else:
-                    status = 'reset'
-
-                now = nowstr()
-                sql = 'update search set task_status = ? '
-                sql += ' where task_id = ?'
-                bindings = (status,task)
-                sql2 = 'update task set prev_status = status, '
-                sql2 += ' status = ?, failures = ?, status_changed = ? where task_id = ?'
-                bindings2 = (status,failures,now,task)
-                sql3 = 'replace into task_stat (task_stat_id, task_id, stat) '
-                sql3 += 'values (?,?,?)'
-                task_stat_id = self.db._increment_id_helper('task_stat',conn)
-                stat = {'error_'+now: error_info}
-                bindings3 = (task_stat_id, task, json_encode(stat))
+            bindings = (task_id,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if not ret or not ret[0]:
+                raise Exception('did not get failures')
+            failures = 0
+            task_reqs = {}
+            task_rel_id = None
+            for row in ret:
+                failures = row[0] + 1
+                task_rel_id = row[2]
                 try:
-                    ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
-                except Exception as e:
-                    ret = e
-                if isinstance(ret,Exception):
-                    callback(ret)
+                    task_reqs = json_decode(row[1])
+                except Exception:
+                    pass
+            sql = 'select requirements from task_rel where task_rel_id = ?'
+            bindings = (task_rel_id,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if not ret or not ret[0]:
+                raise Exception('did not get task_rel requirements')
+            for row in ret:
+                try:
+                    reqs = json_decode(row[0])
+                    for r in reqs:
+                        if r not in task_reqs:
+                            task_reqs[r] = r
+                except Exception:
+                    pass
+            sql = 'select dataset_id from search where task_id = ?'
+            bindings = (task_id,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if not ret or not ret[0]:
+                raise Exception('did not get dataset_id')
+            dataset_id = ret[0][0]
+            sql = 'select debug from dataset where dataset_id = ?'
+            bindings = (dataset_id,)
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+            if not ret or not ret[0]:
+                raise Exception('did not get debug')
+            debug = ret[0][0] in (True, 1, 'true', 'T')
+            if debug:
+                status = 'suspended'
+            elif failures >= self.db.cfg['queue']['max_resets']:
+                status = 'failed'
+            else:
+                status = 'reset'
+
+            now = nowstr()
+            sql = 'update search set task_status = ? '
+            sql += ' where task_id = ?'
+            bindings = (status,task_id)
+            sql2 = 'update task set prev_status = status, '
+            sql2 += ' status = ?, failures = ?, status_changed = ? '
+            bindings2 = [status,failures,now]
+            if error_info and 'requirements' in error_info:
+                # update requirements
+                for req in error_info['requirements']:
+                    req_value = error_info['requirements'][req]
+                    if isinstance(req_value, dataclasses.Number):
+                        req_value *= 1.5
+                        if req not in task_reqs or task_reqs[req] < req_value:
+                            task_reqs[req] = req_value
+                    elif req not in task_reqs:
+                        task_reqs[req] = req_value
+                sql2 += ', requirements = ? '
+                bindings2.append(json_encode(task_reqs))
+            sql2 += ' where task_id = ?'
+            bindings2 = tuple(bindings2+[task_id])
+            sql3 = 'replace into task_stat (task_stat_id, task_id, stat) '
+            sql3 += 'values (?,?,?)'
+            task_stat_id = self.db._increment_id_helper('task_stat',conn)
+            stat = {'error_'+now: error_info}
+            bindings3 = (task_stat_id, task_id, json_encode(stat))
+            try:
+                ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
+            except Exception as e:
+                ret = e
+            if isinstance(ret,Exception):
+                callback(ret)
+            else:
+                if self._is_master():
+                    msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                    mbindings1 = ('search',task_id,now)
+                    mbindings2 = ('task',task_id,now)
+                    mbindings3 = ('task_stat',task_stat_id,now)
+                    try:
+                        self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
                 else:
-                    if self._is_master():
-                        msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                        mbindings1 = ('search',task,now)
-                        mbindings2 = ('task',task,now)
-                        mbindings3 = ('task_stat',task_stat_id,now)
-                        try:
-                            self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
-                        except Exception as e:
-                            logger.info('error updating master_update_history',
-                                        exc_info=True)
-                    else:
-                        self._send_to_master(('search',task,now,sql,bindings))
-                        self._send_to_master(('task',task,now,sql2,bindings2))
-                        self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
-                    callback(True)
+                    self._send_to_master(('search',task_id,now,sql,bindings))
+                    self._send_to_master(('task',task_id,now,sql2,bindings2))
+                    self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
+                callback(True)
+        except Exception as e:
+            logger.info('error in task_error', exc_info=True)
+            ret = e
+        callback(ret)
+
 
     @dbmethod
     def rpc_upload_logfile(self,task,name,data,callback=None):

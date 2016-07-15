@@ -28,11 +28,15 @@ class NoncriticalError(Exception):
 
 #: The types of node resources, with defaults
 Node_Resources = {
-    'cpu':1,
-    'gpu':0,
-    'memory':1, # in GB
-    'disk':1, # in GB
+    'cpu': 1,
+    'gpu': 0,
+    'memory': 1, # in GB
+    'disk': 1, # in GB
 }
+
+#: The types of task resources, with defaults
+Task_Resources = Node_Resources.copy()
+Task_Resources['time'] = 24 # in hours
 
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
@@ -120,7 +124,6 @@ def get_disk():
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'disk':
                     ret = int(line.split('=')[1])/1000000
-                    flag = True
                     break
         except Exception:
             pass
@@ -134,6 +137,34 @@ def get_disk():
     else:
         return ret
 
+def get_time():
+    """Detect the time allocated for the job."""
+    ret = None
+    if os.path.exists('.machine.ad'):
+        try:
+            max_time = None
+            age = None
+            for line in open('.machine.ad'):
+                if line and line.split('=')[0].strip().lower() == 'GLIDEIN_Max_Walltime':
+                    max_time = int(line.split('=')[1])
+                elif line and line.split('=')[0].strip().lower() == 'MonitorSelfAge':
+                    age = int(line.split('=')[1])
+                if max_time and age:
+                    break
+            if max_time and age:
+                ret = (max_time - age) // 3600
+        except Exception:
+            pass
+    if ret is None and 'NUM_TIME' in os.environ:
+        try:
+            ret = int(os.environ['NUM_TIME'])
+        except Exception:
+            pass
+    if ret is None:
+        return Task_Resources['time']
+    else:
+        return ret
+
 def get_node_resources():
     return {
         'cpu':get_cpus(),
@@ -142,6 +173,14 @@ def get_node_resources():
         'disk':get_disk(),
     }
 
+def get_task_resources():
+    return {
+        'cpu':get_cpus(),
+        'gpu':get_gpus(),
+        'memory':get_memory(),
+        'disk':get_disk(),
+        'time':get_time(),
+    }
 
 class IFace(object):
     """A network interface object

@@ -33,6 +33,7 @@ import iceprod.core.dataclasses
 import iceprod.core.serialization
 import iceprod.core.exe
 import iceprod.core.exe_json
+import iceprod.core.pilot
 
 import iceprod.core.logger
 logging.basicConfig()
@@ -114,69 +115,25 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         kwargs.update(config['options']['ssl'])
     iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
-    if 'tasks' in config and config['tasks']:
-        logger.info('default configuration - a single task')
+    def run_wrapper(cfg):
+        # clear log
+        iceprod.core.logger.rotate()
         # set up stdout and stderr
         stdout = partial(to_file,sys.stdout,constants['stdout'])
         stderr = partial(to_file,sys.stderr,constants['stderr'])
         with stdout(), stderr():
-            runner(config, url, debug=debug)
+            runner(cfg, url, debug=debug)
 
-    else:
-        logger.info('pilot mode - get many tasks from server')
-        if 'gridspec' not in config['options']:
-            logger.critical('gridspec missing')
-            raise Exception('gridspec missing')
-        errors = 0
-        while errors < 5:
-            try:
-                kwargs = {}
-                task_config = iceprod.core.exe_json.downloadtask(config['options']['gridspec'])
-            except Exception:
-                errors += 1
-                logger.error('cannot download task. current error count is %d',
-                             errors, exc_info=True)
-                continue
-            logger.info('task config: %r', task_config)
+    if 'tasks' in config and config['tasks']:
+        logger.info('default configuration - a single task')
+        run_wrapper(config)
+        return
 
-            if task_config is None:
-                break # assuming server wants client to exit
-            else:
-                task_id = task_config['options']['task_id']
-                iceprod.core.exe_json.update_pilot(pilot_id, tasks=task_id)
-
-                # add grid-specific config
-                for k in config['options']:
-                    if k not in task_config['options']:
-                        task_config['options'][k] = config['options'][k]
-
-                # run task in tmp dir
-                main_dir = os.getcwd()
-                try:
-                    tmpdir = tempfile.mkdtemp(dir=main_dir)
-                    os.chdir(tmpdir)
-                    for f in os.listdir(main_dir):
-                        os.symlink(os.path.join(main_dir, f),
-                                   os.path.join(tmpdir, f))
-
-                    # clear log
-                    iceprod.core.logger.rotate()
-
-                    # set up stdout and stderr
-                    stdout = partial(to_file,sys.stdout,constants['stdout'])
-                    stderr = partial(to_file,sys.stderr,constants['stderr'])
-                    with stdout(), stderr():
-                        runner(task_config, url, debug=debug)
-                except Exception:
-                    errors += 1
-                    logger.error('task encountered an error. current error count is %d',
-                                 errors, exc_info=True)
-                finally:
-                    os.chdir(main_dir)
-                    shutil.rmtree(tmpdir)
-                    iceprod.core.exe_json.update_pilot(pilot_id, tasks='')
-        if errors >= 5:
-            logger.critical('too many errors when running tasks')
+    logger.info('pilot mode - get many tasks from server')
+    if 'gridspec' not in config['options']:
+        logger.critical('gridspec missing')
+        raise Exception('gridspec missing')
+    iceprod.core.pilot.Pilot(config, runner=run_wrapper, pilot_id=pilot_id)
     logger.warn('finished running normally; exiting...')
 
 def runner(config,url,debug=False,offline=False):
