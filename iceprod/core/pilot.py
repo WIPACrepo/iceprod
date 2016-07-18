@@ -23,7 +23,27 @@ try:
 except ImportError:
     psutil = None
 
+try:
+    from setproctitle import setproctitle
+except ImportError:
+    def setproctitle(name):
+        pass
+
 Task = namedtuple('Task', ['p','process','resources','tmpdir'])
+
+def set_title(func, title):
+    """
+    Try setting the process title, then go on to call func
+
+    Args:
+        func (callable): The function that we really want to run
+        title (str): The new process title
+    """
+    try:
+        setproctitle(title)
+    except Exception:
+        pass
+    func()
 
 class Pilot(object):
     """
@@ -68,7 +88,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 1.0 # check every X seconds
+            sleep_time = 0.1 # check every X seconds
             disk_sleep_time = 180
             disk_start_time = time.time()
             while self.monitor_running:
@@ -77,6 +97,10 @@ class Pilot(object):
                     logger.info('pilot monitor - checking resource usage')
                     for task_id in list(self.tasks):
                         task = self.tasks[task_id]
+                        if not task.p.is_alive():
+                            self.lock.notify()
+                            continue
+
                         used_resources = {r:0 for r in task.resources}
                         processes = [task.process]+task.process.children()
                         for p in processes:
@@ -225,7 +249,8 @@ class Pilot(object):
                            os.path.join(tmpdir, f))
 
             # start the task
-            p = Process(target=partial(self.runner, config))
+            p = Process(target=partial(set_title, partial(self.runner, config),
+                                       'iceprod_task_{}'.format(task_id)))
             p.start()
             if psutil:
                 ps = psutil.Process(p.pid)
