@@ -10,6 +10,7 @@ import shutil
 from functools import partial
 from multiprocessing import Process
 from collections import namedtuple
+from datetime import timedelta
 
 from iceprod.core import exe_json
 from iceprod.core.util import Task_Resources, get_task_resources
@@ -64,7 +65,7 @@ class Pilot(object):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
-        self.run_timeout = run_timeout
+        self.run_timeout = timedelta(seconds=run_timeout)
 
         # set up resources for pilot
         self.lock = Condition()
@@ -97,6 +98,7 @@ class Pilot(object):
                 for task_id in list(self.tasks):
                     task = self.tasks[task_id]
                     if not task.p.is_alive():
+                        logger.info('not alive, so notify')
                         self.lock.notify()
                         continue
 
@@ -137,11 +139,13 @@ class Pilot(object):
                         exe_json.task_kill(task_id, resources=used_resources,
                                            reason=reason)
                         # try to queue another task
+                        logger.info('killed, so notify')
                         self.lock.notify()
 
                 duration = time.time()-start_time
+                logger.debug('sleep_time %d, duration %d',sleep_time,duration)
                 if duration < sleep_time:
-                    yield self.lock.wait(timeout=sleep_time - duration)
+                    yield self.lock.wait(timeout=timedelta(seconds=sleep_time-duration))
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
@@ -193,8 +197,9 @@ class Pilot(object):
 
             # wait until we can queue more tasks
             while running or self.tasks:
-                logger.info('wait while tasks are running')
-                self.lock.wait(timeout=self.run_timeout)
+                logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
+                ret = yield self.lock.wait(timeout=self.run_timeout)
+                logger.info('yield returned %r',ret)
                 # check if any processes have died
                 for task_id in list(self.tasks):
                     if not self.tasks[task_id].p.is_alive():
