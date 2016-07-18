@@ -40,7 +40,7 @@ installed, you will need to install the dependencies yourself.
 Required Dependencies
 """""""""""""""""""""
 
-* tornado >= 3.0
+* tornado >= 4.2
 * pyzmq
 * jsonschema
 
