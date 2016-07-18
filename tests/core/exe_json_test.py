@@ -54,7 +54,7 @@ class exe_json_test(unittest.TestCase):
         self.config.config['options']['offline'] = True
 
     @unittest_reporter
-    def test_90_setupjsonRPC(self):
+    def test_01_setupjsonRPC(self):
         """Test setupjsonRPC"""
         # mock the JSONRPC class
         def start(*args,**kwargs):
@@ -110,7 +110,7 @@ class exe_json_test(unittest.TestCase):
 
 
     @unittest_reporter
-    def test_91_downloadtask(self):
+    def test_10_downloadtask(self):
         """Test downloadtask"""
         # mock the JSONRPC class
         task = {'dataset':10}
@@ -164,7 +164,7 @@ class exe_json_test(unittest.TestCase):
             raise Exception('JSONRPC.new_task() gridspec !=')
 
     @unittest_reporter
-    def test_92_finishtask(self):
+    def test_20_finishtask(self):
         """Test finishtask"""
         # mock the JSONRPC class
         task_id = 'a task'
@@ -206,7 +206,7 @@ class exe_json_test(unittest.TestCase):
             raise Exception('JSONRPC.finish_task() stats !=')
 
     @unittest_reporter
-    def test_93_stillrunning(self):
+    def test_30_stillrunning(self):
         """Test stillrunning"""
         try:
             # mock the JSONRPC class
@@ -270,7 +270,7 @@ class exe_json_test(unittest.TestCase):
                 del self.config.config['options']['DBkill']
 
     @unittest_reporter
-    def test_94_taskerror(self):
+    def test_40_taskerror(self):
         """Test taskerror"""
         # mock the JSONRPC class
         task_id = 'a task'
@@ -322,12 +322,82 @@ class exe_json_test(unittest.TestCase):
             raise Exception('JSONRPC.task_error() task_id !=')
         if ((not task_error.error_info) or
             task_error.error_info['time_used'] < 200 or
-            json_compressor.uncompress(task_error.error_info['error_summary'])[-100:] != data[-100:]):
+            json_compressor.uncompress(task_error.error_info['error_summary']) != data):
             logger.info('error_info: %r', task_error.error_info)
             raise Exception('error_info incorrect')
 
     @unittest_reporter
-    def test_95_uploadLogging(self):
+    def test_41_task_kill(self):
+        """Test task_kill"""
+        # mock the JSONRPC class
+        task_id = 'a task'
+        def task_error(task, error_info=None):
+            task_error.called = True
+            task_error.task_id = task
+            task_error.error_info = error_info
+            return None
+        task_error.called = False
+        def f(*args,**kwargs):
+            name = kwargs.pop('func_name')
+            if 'callback' in kwargs:
+                cb = kwargs.pop('callback')
+            else:
+                cb = None
+            if name == 'task_error':
+                ret = task_error(*args,**kwargs)
+            else:
+                ret = Exception()
+            if cb:
+                cb(ret)
+            else:
+                return ret
+        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
+        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
+
+        try:
+            iceprod.core.exe_json.task_kill(task_id)
+        except:
+            logger.error('running task_kill failed')
+            raise
+        if not task_error.called:
+            raise Exception('JSONRPC.task_error() not called')
+        if task_error.task_id != task_id:
+            raise Exception('JSONRPC.task_error() task_id !=')
+
+        resources = {'cpu': 1, 'memory': 3.4, 'disk': 0.2}
+        try:
+            iceprod.core.exe_json.task_kill(task_id, resources)
+        except:
+            logger.error('running task_kill failed')
+            raise
+        if not task_error.called:
+            raise Exception('JSONRPC.task_error() not called')
+        if task_error.task_id != task_id:
+            raise Exception('JSONRPC.task_error() task_id !=')
+        if ((not task_error.error_info) or
+            task_error.error_info['resources'] != resources):
+            logger.info('error_info: %r', task_error.error_info)
+            raise Exception('error_info incorrect')
+
+        resources = {'time': 34.2}
+        reason = 'testing'
+        try:
+            iceprod.core.exe_json.task_kill(task_id, resources, reason=reason)
+        except:
+            logger.error('running task_kill failed')
+            raise
+        if not task_error.called:
+            raise Exception('JSONRPC.task_error() not called')
+        if task_error.task_id != task_id:
+            raise Exception('JSONRPC.task_error() task_id !=')
+        if ((not task_error.error_info) or
+            'resources' in task_error.error_info or
+            json_compressor.uncompress(task_error.error_info['error_summary']) != reason):
+            logger.info('error_info: %r', task_error.error_info)
+            raise Exception('error_info incorrect')
+
+    @unittest_reporter
+    def test_50_uploadLogging(self):
         """Test uploading logfiles"""
         # mock the JSONRPC class
         task_id = 'a task'

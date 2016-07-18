@@ -540,6 +540,12 @@ class grid(object):
 
         filelist = [filename]
 
+        if 'reqs' in task:
+            # add resources
+            config['options']['resources'] = {}
+            for r in task['reqs']:
+                config['options']['resources'][r] = task['reqs'][r]
+
         # add server options
         config['options']['task_id'] = task['task_id']
         config['options']['task'] = task['name']

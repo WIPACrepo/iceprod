@@ -5,7 +5,12 @@ import multiprocessing
 class CoverageProcess(multiprocessing.Process):
     def run(self):
         import coverage
-        cov = coverage.coverage(data_suffix=True,source='iceprod',branch=True)
+        import os
+        cwd = os.getcwd()
+        while os.path.basename(cwd).startswith('tmp'):
+            cwd = os.path.dirname(cwd)
+        cov = coverage.Coverage(data_suffix=True, branch=True,
+                                source=[os.path.join(cwd,'iceprod')])
         cov.start()
         super(CoverageProcess,self).run()
         cov.stop()

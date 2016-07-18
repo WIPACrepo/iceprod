@@ -34,8 +34,12 @@ def get_tables(test_dir):
                 {'task_id':task_id, 'status':'queued', 'prev_status':'waiting',
                  'error_message':None, 'status_changed':now,
                  'submit_dir':test_dir, 'grid_queue_id':'lkn',
-                 'failures':0, 'evictions':0, 'task_rel_id':None},
+                 'failures':0, 'evictions':0, 'task_rel_id':'a'},
                 ],
+        'task_rel':[
+                    {'task_rel_id': 'a', 'dataset_id': 'd1', 'task_index': 0,
+                     'name': '0', 'depends': '', 'requirements': ''}
+                   ],
         'task_lookup':[
                        {'task_id':task_id, 'req_cpu':1, 'req_gpu':0,
                         'req_memory':1.0, 'req_disk':1000.0}
@@ -81,7 +85,8 @@ class dbmethods_rpc_test(dbmethods_base):
                                                    'task':'0', 'job': 0,
                                                    'jobs_submitted': 2,
                                                    'dataset_id': 'd1',
-                                                   'debug':True}}
+                                                   'debug':True,
+                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1000.0}}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
@@ -233,6 +238,26 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('bad stat name')
         if stat.values()[0] != {'a':1}:
             raise Exception('bad stat value')
+
+        # update requirements
+        cb.called = False
+        reqs = {'cpu': 1, 'test': 'blah'}
+
+        self._db.rpc_task_error(task_id, error_info={'requirements':reqs}, callback=cb)
+
+        if cb.called is False:
+            raise Exception('everything working: callback not called')
+        if isinstance(cb.ret,Exception):
+            logger.error('cb.ret = %r',cb.ret)
+            raise Exception('everything working: callback ret is Exception')
+        end_tables = self.mock.get(['task','task_stat'])
+        taskstat_end = end_tables['task_stat'][-1]
+        if not taskstat_end:
+            raise Exception('no stats')
+        stat = json_decode(taskstat_end['stat'])
+        self.assertIn('requirements', stat.values()[0])
+        end_taskreq = json_decode(end_tables['task'][0]['requirements'])
+        self.assertEqual(end_taskreq.keys(), reqs.keys())
 
         # failure
         cb.called = False

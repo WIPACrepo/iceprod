@@ -70,6 +70,7 @@ class website(module.module):
 
         # set up local variables
         self.nginx = None
+        self.http_server = None
 
         # start website
         self.start()
