@@ -749,7 +749,6 @@ class Dataset(PublicHandler):
 
 class Task(PublicHandler):
     """Handle /task urls"""
-    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self,url):
         with self.catch_error(message='error generating dataset page'):
@@ -805,7 +804,6 @@ class Documentation(PublicHandler):
         self.flush()
 
 class Log(PublicHandler):
-    @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self, url, log):
         logs = yield self.db_call('web_get_logs',task_id=url)
