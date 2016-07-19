@@ -236,11 +236,10 @@ class pilot_multi_test(unittest.TestCase):
         task_cfg2 = {'options':{'task_id':'b'}}
         download.side_effect = return_once(dict(task_cfg), end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
-        runner = lambda x:time.sleep(1110.1)
+        runner = lambda x:time.sleep(0.1)
         start_time = time.time()
         p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01)
         duration_single = time.time() - start_time
-        raise Exception('blah')
         
         download.side_effect = return_once(task_cfg, None, task_cfg2, end_value=None)
         start_time = time.time()
