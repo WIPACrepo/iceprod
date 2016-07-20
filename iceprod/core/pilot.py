@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import time
 import logging
 import tempfile
@@ -12,11 +13,14 @@ from multiprocessing import Process
 from collections import namedtuple
 from datetime import timedelta
 
+from iceprod.core import to_file, constants
 from iceprod.core import exe_json
 from iceprod.core.util import Task_Resources, get_task_resources
 from iceprod.core.dataclasses import Number, String
+import iceprod.core.logger
 
 logger = logging.getLogger('pilot')
+logger.setLevel(logging.DEBUG)
 
 from tornado import gen
 from tornado.ioloop import IOLoop
@@ -35,9 +39,9 @@ except ImportError:
 
 Task = namedtuple('Task', ['p','process','resources','tmpdir'])
 
-def set_title(func, title):
+def process_wrapper(func, title):
     """
-    Try setting the process title, then go on to call func
+    Set process title. Set log file, stdout, stderr. Then go on to call func.
 
     Args:
         func (callable): The function that we really want to run
@@ -47,7 +51,12 @@ def set_title(func, title):
         setproctitle(title)
     except Exception:
         pass
-    func()
+
+    iceprod.core.logger.new_file(constants['stdlog'])
+    stdout = partial(to_file,sys.stdout,constants['stdout'])
+    stderr = partial(to_file,sys.stderr,constants['stderr'])
+    with stdout(), stderr():
+        func()
 
 class Pilot(object):
     """
@@ -249,12 +258,9 @@ class Pilot(object):
         try:
             tmpdir = tempfile.mkdtemp(dir=main_dir)
             os.chdir(tmpdir)
-            for f in os.listdir(main_dir):
-                os.symlink(os.path.join(main_dir, f),
-                           os.path.join(tmpdir, f))
 
             # start the task
-            p = Process(target=partial(set_title, partial(self.runner, config),
+            p = Process(target=partial(process_wrapper, partial(self.runner, config),
                                        'iceprod_task_{}'.format(task_id)))
             p.start()
             if psutil:

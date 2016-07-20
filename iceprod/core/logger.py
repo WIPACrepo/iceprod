@@ -64,6 +64,19 @@ def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
                     loglevel,logfile,logsize,lognum)
 
+def new_file(filename):
+    """Write logging to a new file"""
+    log = logging.getLogger()
+    for handler in log.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            new_handler = logging.handlers.RotatingFileHandler(filename, 'a',
+                                                               handler.maxBytes,
+                                                               handler.backupCount)
+            new_handler.setFormatter(handler.formatter)
+            log.removeHandler(handler)
+            log.addHandler(new_handler)
+    logging.info('loggers=%s' % str(log.handlers))
+
 def removestdout():
     """Remove the stdout log output from the root logger"""
     log = logging.getLogger()

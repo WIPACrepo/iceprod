@@ -52,6 +52,11 @@ class pilot_test(unittest.TestCase):
             pilot.psutil = normal_psutil
         self.addCleanup(c)
 
+        # mock iceprod.core.logger.new_file
+        patcher = mock.patch('iceprod.core.logger.new_file')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
         # convert multiprocessing to direct calls
         patcher = mock.patch('iceprod.core.pilot.Process')
         self.process = patcher.start()
@@ -183,6 +188,11 @@ class pilot_multi_test(unittest.TestCase):
             os.chdir(maindir)
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
+
+        # mock iceprod.core.logger.new_file
+        patcher = mock.patch('iceprod.core.logger.new_file')
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     @mock.patch('iceprod.core.exe_json.update_pilot')
     @mock.patch('iceprod.core.exe_json.downloadtask')

@@ -115,25 +115,20 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         kwargs.update(config['options']['ssl'])
     iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
 
-    def run_wrapper(cfg):
-        # clear log
-        iceprod.core.logger.rotate()
+    if 'tasks' in config and config['tasks']:
+        logger.info('default configuration - a single task')
         # set up stdout and stderr
         stdout = partial(to_file,sys.stdout,constants['stdout'])
         stderr = partial(to_file,sys.stderr,constants['stderr'])
         with stdout(), stderr():
-            runner(cfg, url, debug=debug)
+            runner(config, url, debug=debug)
+    else:
+        logger.info('pilot mode - get many tasks from server')
+        if 'gridspec' not in config['options']:
+            logger.critical('gridspec missing')
+            raise Exception('gridspec missing')
+        iceprod.core.pilot.Pilot(config, runner=runner, pilot_id=pilot_id)
 
-    if 'tasks' in config and config['tasks']:
-        logger.info('default configuration - a single task')
-        run_wrapper(config)
-        return
-
-    logger.info('pilot mode - get many tasks from server')
-    if 'gridspec' not in config['options']:
-        logger.critical('gridspec missing')
-        raise Exception('gridspec missing')
-    iceprod.core.pilot.Pilot(config, runner=run_wrapper, pilot_id=pilot_id)
     logger.warn('finished running normally; exiting...')
 
 def runner(config,url,debug=False,offline=False):
