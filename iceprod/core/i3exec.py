@@ -127,7 +127,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         if 'gridspec' not in config['options']:
             logger.critical('gridspec missing')
             raise Exception('gridspec missing')
-        iceprod.core.pilot.Pilot(config, runner=runner, pilot_id=pilot_id)
+        iceprod.core.pilot.Pilot(config, runner=partial(runner, url),
+                                 pilot_id=pilot_id)
 
     logger.warn('finished running normally; exiting...')
 
