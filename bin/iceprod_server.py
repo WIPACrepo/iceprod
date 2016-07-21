@@ -355,6 +355,14 @@ def do_action(cfgfile, action):
     messaging.start()
     getattr(messaging.daemon,action)()
 
+def setup_I3PROD():
+    if 'I3PROD' not in os.environ:
+        os.environ['I3PROD'] = os.getcwd()
+    for d in ('var/log','var/run','etc'):
+        d = os.path.join(os.environ['I3PROD'],d)
+        if not os.path.exists(d):
+            os.makedirs(d)
+
 if __name__ == '__main__':
     import argparse
 
@@ -372,6 +380,8 @@ if __name__ == '__main__':
                         help='File creation umask')
     args = parser.parse_args()
 
+    setup_I3PROD()
+
     if args.file:
         cfgfile = os.path.expanduser(os.path.expandvars(args.file))
     else:
@@ -385,11 +395,7 @@ if __name__ == '__main__':
         # now daemonize
         from iceprod.server.daemon import Daemon
         pidfile = os.path.expanduser(os.path.expandvars(args.pidfile))
-        if not os.path.exists(pidfile):
-            pidfile = os.path.join(os.getcwd(),'iceprod.pid')
         chdir = os.path.expanduser(os.path.expandvars('$I3PROD'))
-        if not os.path.exists(chdir):
-            chdir = os.getcwd()
         umask = args.umask
         d = Daemon(pidfile,partial(main,cfgfile,cfgdata),
                    chdir=chdir,

@@ -52,6 +52,11 @@ class pilot_test(unittest.TestCase):
             pilot.psutil = normal_psutil
         self.addCleanup(c)
 
+        # mock iceprod.core.logger.new_file
+        patcher = mock.patch('iceprod.core.logger.new_file')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
         # convert multiprocessing to direct calls
         patcher = mock.patch('iceprod.core.pilot.Process')
         self.process = patcher.start()
@@ -184,6 +189,11 @@ class pilot_multi_test(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
+        # mock iceprod.core.logger.new_file
+        patcher = mock.patch('iceprod.core.logger.new_file')
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     @mock.patch('iceprod.core.exe_json.update_pilot')
     @mock.patch('iceprod.core.exe_json.downloadtask')
     @unittest_reporter(name='Pilot.monitor()')
@@ -192,7 +202,7 @@ class pilot_multi_test(unittest.TestCase):
         download.side_effect = return_once(task_cfg, end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
         runner = lambda x:time.sleep(0.2)
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=10.01)
         update.assert_has_calls([mock.call('a',tasks='a'), mock.call('a',tasks='')])
 
     @mock.patch('iceprod.core.exe_json.update_pilot')

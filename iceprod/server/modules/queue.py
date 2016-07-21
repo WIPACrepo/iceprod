@@ -112,7 +112,7 @@ class queue(module.module):
         use_ssl = 'system' in self.cfg and 'ssl' in self.cfg['system'] and self.cfg['system']['ssl']
         if (use_ssl and 'cert' in self.cfg['system']['ssl']):
             if 'I3PROD' in os.environ:
-                remote_cacert = os.path.expandvars(os.path.join('$I3PROD','remote_cacert'))
+                remote_cacert = os.path.expandvars(os.path.join('$I3PROD','etc','remote_cacert'))
             else:
                 remote_cacert = os.path.expandvars(os.path.join('$PWD','remote_cacert'))
             with open(remote_cacert,'w') as f:
