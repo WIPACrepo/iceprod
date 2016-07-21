@@ -99,8 +99,10 @@ def read_db_conf(field_name=None):
     """
     Read the DB conf data from file.
 
-    :param field_name: (optional) field to return
-    :returns: either a specific field, or all fields in a dict
+    Args:
+        field_name (string): (optional) field to return
+    Returns:
+        Either a specific field, or all fields in a dict
     """
     if not read_db_conf.cache:
         filename = get_pkgdata_filename('iceprod.server','data/etc/db_config.json')
