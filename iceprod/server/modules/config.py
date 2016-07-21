@@ -18,8 +18,9 @@ class config(module.module):
 
     This is a module wrapper around
     :class:`iceprod.server.config.IceProdConfig`.
-
-    :param filename: filename for config file (optional)
+    
+    Args:
+        filename (string): filename for config file (optional)
     """
 
     def __init__(self,*args,**kwargs):
