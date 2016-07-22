@@ -257,9 +257,15 @@ class Pilot(object):
         main_dir = os.getcwd()
         try:
             tmpdir = tempfile.mkdtemp(dir=main_dir)
-            os.chdir(tmpdir)
+
+            # symlink important files
+            if 'ssl' in config['options']:
+                for f in config['options']['ssl']:
+                    os.symlink(config['options']['ssl'],
+                               os.path.join(tmpdir,config['options']['ssl']))
 
             # start the task
+            os.chdir(tmpdir)
             p = Process(target=partial(process_wrapper, partial(self.runner, config),
                                        'iceprod_task_{}'.format(task_id)))
             p.start()
