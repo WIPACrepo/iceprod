@@ -261,8 +261,8 @@ class Pilot(object):
             # symlink important files
             if 'ssl' in config['options']:
                 for f in config['options']['ssl']:
-                    os.symlink(config['options']['ssl'],
-                               os.path.join(tmpdir,config['options']['ssl']))
+                    os.symlink(config['options']['ssl'][f],
+                               os.path.join(tmpdir,config['options']['ssl'][f]))
 
             # start the task
             os.chdir(tmpdir)
