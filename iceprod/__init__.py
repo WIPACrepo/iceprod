@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """The IceProd Grid Middleware and tools."""
 
 from __future__ import absolute_import, division, print_function
@@ -10,6 +9,6 @@ from __future__ import absolute_import, division, print_function
 # is zero for an official release, positive for a development branch,
 # or negative for a release candidate or beta (after the base version
 # number has been incremented)
-__version__ = version = "2.0.dev1"
-version_info = (2, 0, 0, -100)
+__version__ = '2.0.4'
+version_info = (2, 0, 4, 1)
 

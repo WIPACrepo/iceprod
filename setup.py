@@ -20,8 +20,13 @@ kwargs = {}
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 
-with open(os.path.join(current_path,'VERSION')) as f:
-    kwargs['version'] = f.read().strip()
+with open(os.path.join(current_path,'iceprod','__init__.py')) as f:
+    for line in f.readlines():
+        if '__version__' in line:
+            kwargs['version'] = line.split('=')[-1].split('\'')[1]
+            break
+    else:
+        raise Exception('cannot find __version__')
 
 with open(os.path.join(current_path,'README.rst')) as f:
     kwargs['long_description'] = f.read()
@@ -76,6 +81,15 @@ setup(
     #license="http://www.apache.org/licenses/LICENSE-2.0", # TODO: licensing
     description="IceProd is a set of grid middleware and job tracking tools, developed for the IceCube Collaboration.",
     classifiers=[
+        # How mature is this project? Common values are
+        #   3 - Alpha
+        #   4 - Beta
+        #   5 - Production/Stable
+        'Development Status :: 3 - Alpha',
+
+        'Operating System :: POSIX :: Linux',
+        'Topic :: System :: Distributed Computing',
+
 #        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
