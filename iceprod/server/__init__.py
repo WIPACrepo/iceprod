@@ -195,7 +195,7 @@ def salt(length=2):
     import string
     import random
     letters = string.letters+string.digits
-    return ''.join([random.choice(letters) for _ in range(length)])
+    return ''.join([random.SystemRandom().choice(letters) for _ in range(length)])
 
 class KwargConfig(object):
     """A way to validate kwargs passed in to a class"""
@@ -244,15 +244,6 @@ class KwargConfig(object):
                 if not os.path.isdir(d):
                     os.makedirs(d)
 
-def zipfile(fmt= "iceprod-%(version)s"):
-    vars = {'version':__version__, 'platform':os.uname()[0],'arch': os.uname()[4]}
-    return fmt % vars
-
-def mktar(libdir,outfile):
-    curdir = os.getcwd()
-    os.chdir(os.path.join(libdir,'..'))
-    os.system("zip -q -r %s.zip %s -i \*.py" % (outfile,os.path.split(libdir)[-1]))
-    os.chdir(curdir)
 
 def get_pkgdata_filename(package, resource):
     """Get a filename for a resource bundled within the package"""

@@ -24,13 +24,10 @@ import logging
 from functools import partial
 
 from iceprod.core.dataclasses import String,Number,Integral
+from iceprod.server import salt
 
 logger = logging.getLogger('nginx')
 
-def salt():
-    """Returns a string of 2 random letters"""
-    letters = string.letters+string.digits
-    return random.choice(letters)+random.choice(letters)
 
 def rotate(filename):
     """Rotate a filename.  Useful for log files."""
