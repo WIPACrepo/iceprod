@@ -818,7 +818,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -872,7 +872,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':2,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -911,7 +911,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
                 {'dataset_id':'d2', 'name':'test dataset',
                  'description':'a simple test', 'gridspec':gridspec+'a',
@@ -921,7 +921,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -963,7 +963,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1002,7 +1002,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1041,7 +1041,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1078,7 +1078,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':2,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1123,7 +1123,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1154,7 +1154,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
                 {'dataset_id':'d2', 'name':'test dataset',
                  'description':'a simple test', 'gridspec':gridspec,
@@ -1163,7 +1163,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1226,7 +1226,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
                 {'dataset_id':'d2', 'name':'test dataset',
                  'description':'a simple test', 'gridspec':'blah',
@@ -1235,7 +1235,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'task_rel':[
@@ -1323,7 +1323,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'priority':0, 'jobs_submitted':1, 'tasks_submitted':1,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'search':[
@@ -1402,7 +1402,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'search':[
@@ -1563,7 +1563,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
                 {'dataset_id':'d2', 'name':'test dataset',
                  'description':'a simple test', 'gridspec':gridspec,
@@ -1573,7 +1573,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'search':[
@@ -1651,7 +1651,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'search':[
@@ -1743,7 +1743,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'tasks_submitted':4,
                  'start_date':now, 'end_date':'',
                  'temporary_storage':'', 'global_storage':'',
-                 'parent_id':'sdf', 'stat_keys':'[]',
+                 'groups_id':'', 'stat_keys':'[]',
                  'categoryvalue_ids':'', 'debug':True},
             ],
             'search':[

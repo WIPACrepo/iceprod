@@ -20,7 +20,8 @@ from iceprod.core import serialization
 from iceprod.core.util import Node_Resources
 from iceprod.server import module
 from iceprod.server import get_pkg_binary,GlobalID
-import iceprod.server
+from iceprod.server import dataset_prio
+
 
 logger = logging.getLogger('grid')
 
@@ -108,6 +109,17 @@ class grid(object):
 
             if datasets:
                 with self.check_run():
+                    groups = self.db.rpc_get_groups(async=False)
+
+                with self.check_run():
+                    if groups:
+                        filters = None
+                        if 'group_filters' in self.cfg:
+                            filters = self.cfg['group_filters']
+                        datasets = dataset_prio.apply_group_prios(datasets,
+                                groups=groups, filters=filters)
+
+                with self.check_run():
                     # get priority factors
                     qf_p = qf_d = qf_t = 1.0
                     if 'queueing_factor_priority' in self.queue_cfg:
@@ -118,7 +130,10 @@ class grid(object):
                         qf_t = self.queue_cfg['queueing_factor_tasks']
 
                     # assign each dataset a priority
-                    dataset_prios = iceprod.server.calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
+                    dataset_prios = dataset_prio.calc_datasets_prios(datasets,
+                            queueing_factor_priority=qf_p,
+                            queueing_factor_dataset=qf_d,
+                            queueing_factor_tasks=qf_t)
                     logger.debug('dataset prios: %r',dataset_prios)
 
                 with self.check_run():

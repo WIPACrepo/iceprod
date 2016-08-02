@@ -43,7 +43,7 @@
             ["end_date", "str", "datetime"],
             ["temporary_storage", "Text"],
             ["global_storage", "Text"],
-            ["parent_id", "str"],
+            ["groups_id", "str", "group this dataset is assigned to"],
             ["stat_keys", "Text", "json of [key1,key2]"],
             ["categoryvalue_ids", "Text", "csv list of categoryvalues"],
             ["debug", "bool"]
@@ -172,7 +172,14 @@
             ["password", "str"],
             ["email", "str"],
             ["admin", "bool"],
+            ["groups", "Text", "csv list of group_ids"],
             ["last_login_time", "str", "datetime"]
+        ],
+        "groups": [
+            ["groups_id", "str"],
+            ["name", "str"],
+            ["description", "Text"],
+            ["priority", "float", "value between 0 and 1"]
         ],
         "session": [
             ["session_id", "str"],
@@ -225,6 +232,7 @@
             ["passkey_last", "str"],
             ["pilot_last", "str"],
             ["user_offset", "str"],
+            ["groups_offset", "str"],
             ["session_last", "str"],
             ["webstat_last", "str"],
             ["webnote_last", "str"],

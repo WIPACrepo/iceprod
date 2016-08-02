@@ -347,6 +347,8 @@ class queue(module.module):
                           'queueing_factor_tasks':queueing_factor_tasks,
                           'num':num,
                          }
+                if 'group_filters' in self.cfg:
+                    params['filters'] = self.cfg['group_filters']
                 send_master(self.cfg,'queue_master',callback=cb2,**params)
             except Exception:
                 logger.warn('error in global_queueing cb:',

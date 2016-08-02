@@ -168,6 +168,7 @@ class misc(_Methods_Base):
             callback(ret)
             return
         categoryvalue_ids = set()
+        group_ids = set()
         if ret:
             keys = []
             for row in ret:
@@ -175,9 +176,29 @@ class misc(_Methods_Base):
                 if row2['categoryvalue_ids']:
                     for cv_id in row2['categoryvalue_ids'].split(','):
                         categoryvalue_ids.add(cv_id)
+                if row2['group_id']:
+                    group_ids.add(row2['group_id'])
                 if not keys:
                     keys = row2.keys()
             tables['dataset'] = {'keys':keys,'values':ret}
+
+        sql = 'select * from groups where group_ids in ('
+        sql += ','.join('?' for _ in group_ids) + ')'
+        bindings = tuple(group_ids)
+        try:
+            ret = self.db._db_read(conn,sql,bindings,None,None,None)
+        except Exception as e:
+            ret = e
+        if isinstance(ret,Exception):
+            callback(ret)
+            return
+        if ret:
+            keys = []
+            for row in ret:
+                if not keys:
+                    keys = self._list_to_dict('groups',row).keys()
+                    break
+            tables['groups'] = {'keys':keys,'values':ret}
 
         sql = 'select * from task_rel where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)

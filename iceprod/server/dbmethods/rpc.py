@@ -12,7 +12,8 @@ from iceprod.core.util import Node_Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.server import GlobalID, calc_datasets_prios
+from iceprod.server import GlobalID
+from iceprod.server import dataset_prio
 
 from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime,nowstr
 
@@ -708,7 +709,7 @@ class rpc(_Methods_Base):
             sql = 'insert into dataset (dataset_id,name,description,gridspec,'
             sql += 'status,username,institution,submit_host,priority,'
             sql += 'jobs_submitted,tasks_submitted,start_date,end_date,'
-            sql += 'temporary_storage,global_storage,parent_id,stat_keys,'
+            sql += 'temporary_storage,global_storage,groups_id,stat_keys,'
             sql += 'categoryvalue_ids,debug)'
             sql += ' values ('+','.join(['?' for _ in bindings])+')'
             db_updates_sql.append(sql)
@@ -803,7 +804,26 @@ class rpc(_Methods_Base):
             callback(True)
 
     @dbmethod
+    def rpc_get_groups(self, callback=None):
+        """
+        Get all the groups.
+        """
+        def cb(ret):
+            if isinstance(ret,Exception):
+                callback(ret)
+            else:
+                groups = {}
+                for row in ret:
+                    r = self._list_to_dict('groups',row)
+                    groups[r['groups_id']] = r
+                callback(groups)
+        sql = 'select * from groups'
+        self.db.sql_read_task(sql, tuple(), callback=cb)
+
+
+    @dbmethod
     def rpc_queue_master(self,resources=None,
+                         filters=None,
                          queueing_factor_priority=1.0,
                          queueing_factor_dataset=1.0,
                          queueing_factor_tasks=1.0,
@@ -817,6 +837,7 @@ class rpc(_Methods_Base):
         the necessary resources should be available on the site.
 
         :param resources: (optional) the available resources on the site
+        :param filters: (optional) group filters on the site
         :param queueing_factor_priority: (optional) queueing factor for priority
         :param queueing_factor_dataset: (optional) queueing factor for dataset id
         :param queueing_factor_tasks: (optional) queueing factor for number of tasks
@@ -839,6 +860,22 @@ class rpc(_Methods_Base):
             else:
                 logger.debug('rpc_queue_master(): tasks: %r',tasks)
                 self.parent.misc_get_tables_for_task(tasks,callback=callback)
+        def cb2(groups,datasets=None):
+            if isinstance(groups,Exception):
+                callback(groups)
+            else:
+                datasets = dataset_prio.apply_group_prios(datasets,
+                        groups=groups, filters=filters)
+                dataset_prios = dataset_prio.calc_datasets_prios(datasets,
+                        queueing_factor_priority=qf_p,
+                        queueing_factor_dataset=qf_d,
+                        queueing_factor_tasks=qf_t)
+                logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
+                self.parent.queue_get_queueing_tasks(dataset_prios,
+                                                     num=num,
+                                                     resources=resources,
+                                                     global_queueing=True,
+                                                     callback=cb4)
         def cb2(datasets):
             if isinstance(datasets,Exception):
                 callback(datasets)
@@ -847,13 +884,7 @@ class rpc(_Methods_Base):
             elif not isinstance(datasets,dict):
                 callback(Exception('queue_get_queueing_datasets() did not return a dict'))
             else:
-                dataset_prios = calc_datasets_prios(datasets,qf_p,qf_d,qf_t)
-                logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
-                self.parent.queue_get_queueing_tasks(dataset_prios,
-                                                     num=num,
-                                                     resources=resources,
-                                                     global_queueing=True,
-                                                     callback=cb3)
+                self.parent.rpc_get_groups(callback=partial(cb2,datasets=datasets))
         def cb(ret):
             self.parent.queue_get_queueing_datasets(callback=cb2)
         # buffer tasks before queueing
