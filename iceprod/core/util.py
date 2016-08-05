@@ -240,13 +240,22 @@ except ImportError:
                          'post302':None,
                          'post303':None,
                         }
-        
+
+        def _build_cmd(self, url, opts):
+            cmd = ['curl']
+            for k in opts:
+                if opts[k] is None:
+                    cmd.append('--'+k)
+                else:
+                    cmd.extend(['--'+k, opts[k]])
+            cmd.append(url)
+            return cmd
+
         def put(self, url, filename, username=None, password=None,
                 sslcert=None, sslkey=None, cacert=None):
             """Upload a file using POST"""
             opts = self.opts
             opts.update({
-                'url':url,
                 'data-binary':'@'+filename,
                 'max-time':'1800',
             })
@@ -261,20 +270,14 @@ except ImportError:
                 opts['key'] = str(sslkey)
             if cacert:
                 opts['cacert'] = str(cacert)
-            cmd = ['curl']
-            for k in opts:
-                if opts[k] is None:
-                    cmd.append('--'+k)
-                else:
-                    cmd.append('--'+k+'='+opts[k])
+            cmd = self._build_cmd(url, opts)
             subprocess.check_call(cmd)
-        
+
         def fetch(self, url, filename, username=None, password=None,
                 sslcert=None, sslkey=None, cacert=None):
             """Download a file using GET"""
             opts = self.opts
             opts.update({
-                'url':url,
                 'output':filename,
             })
             if username:
@@ -288,15 +291,10 @@ except ImportError:
                 opts['key'] = str(sslkey)
             if cacert:
                 opts['cacert'] = str(cacert)
-            cmd = ['curl']
-            for k in opts:
-                if opts[k] is None:
-                    cmd.append('--'+k)
-                else:
-                    cmd.append('--'+k+' '+opts[k])
+            cmd = self._build_cmd(url, opts)
             subprocess.check_call(cmd)
-        
-        def post(self, url, writefunc, username=None, password=None, 
+
+        def post(self, url, writefunc, username=None, password=None,
                 sslcert=None, sslkey=None, cacert=None, headerfunc=None,
                 postbody=None, timeout=None):
             """Download a file using POST, output to writefunc"""
@@ -309,7 +307,6 @@ except ImportError:
             try:
                 opts = self.opts
                 opts.update({
-                    'url':url,
                     'output':filename,
                 })
                 if postbody:
@@ -329,19 +326,14 @@ except ImportError:
                     opts['key'] = str(sslkey)
                 if cacert:
                     opts['cacert'] = str(cacert)
-                cmd = ['curl']
-                for k in opts:
-                    if opts[k] is None:
-                        cmd.append('--'+k)
-                    else:
-                        cmd.append('--'+k+' '+opts[k])
+                cmd = self._build_cmd(url, opts)
                 subprocess.check_call(cmd)
                 if headerfunc and callable(headerfunc):
                     headerfunc(open(headerfunc_file).read())
                 writefunc(open(filename).read())
             finally:
                 shutil.rmtree(tmp_dir)
-        
+
 else:
     class PycURL(object):
         """An object to download/upload files using pycURL"""

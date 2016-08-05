@@ -24,7 +24,7 @@ def setupjsonRPC(url, passkey, **kwargs):
     try:
         ret = JSONRPC.echo(value='e')
     except Exception as e:
-        logger.error('error: %r',e)
+        logger.error('error',exc_info=True)
         raise Exception('JSONRPC communcation did not start.  '
                         'url=%s and passkey=%s'%(url,passkey))
     else:
