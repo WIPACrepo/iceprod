@@ -352,6 +352,7 @@ class grid(object):
             # about, so put them on a list of "don't touch"
             prechecked_dirs.add(submit_dir)
         self.grid_idle = grid_idle
+        self.grid_processing = len(tasks)-len(reset_tasks)-grid_idle
 
         # check submit directories
         for x in os.listdir(self.submit_dir):
@@ -367,8 +368,8 @@ class grid(object):
                 delete_dirs.add(d)
 
         if pilots:
-            logger.info('%d processing pilots', len(tasks)-len(reset_tasks)-grid_idle)
-            logger.info('%d queued pilots', grid_idle)
+            logger.info('%d processing pilots', self.grid_processing)
+            logger.info('%d queued pilots', self.grid_idle)
             logger.info('%d ->reset', len(reset_tasks))
             logger.info('%d ->grid remove', len(remove_grid_tasks))
             logger.info('%d ->submit clean', len(delete_dirs))
@@ -437,7 +438,12 @@ class grid(object):
 
         # determine how many pilots to queue
         tasks_on_queue = self.queue_cfg['tasks_on_queue']
-        queue_num = min(len(tasks) - self.grid_idle, tasks_on_queue[1])
+        queue_tot_max = tasks_on_queue[1] - self.grid_processing - self.grid_idle
+        queue_idle_max = tasks_on_queue[0] - self.grid_idle
+        queue_interval_max = tasks_on_queue[2] if len(tasks_on_queue) > 2 else tasks_on_queue[0]
+        queue_num = min(len(tasks) - self.grid_idle, queue_tot_max,
+                        queue_idle_max, queue_interval_max)
+        logger.info('queueing %d pilots', queue_num)
 
         # select at least one from each resource group
         groups2 = Counter()
