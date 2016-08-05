@@ -19,6 +19,7 @@ multiprocessing.Process = CoverageProcess
 
 import os
 import sys
+import time
 import signal
 import logging
 import logging.handlers
@@ -91,5 +92,11 @@ if args.server:
     test_suites.addTests(loader.discover('tests.server',args.file_glob+'_test.py'))
 
 # run tests
-runner = unittest.TextTestRunner(verbosity=0)
-runner.run(test_suites)
+test_result = unittest.TestResult()
+start_time = time.time()
+test_suites.run(test_result)
+print('-'*70)
+print('Ran %d tests in %0.3fs'%(test_suites.countTestCases(),time.time()-start_time))
+if not test_result.wasSuccessful():
+    print('%d tests failed'%len(test_result.errors))
+    sys.exit(1)
