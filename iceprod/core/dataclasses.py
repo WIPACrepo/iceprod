@@ -256,6 +256,27 @@ class _TaskCommon(dict):
         except Exception:
             return False
 
+class Requirement(dict):
+    plural = 'Requirements'
+    def __init__(self, *args,**kwargs):
+        self['cpu'] = ''
+        self['gpu'] = ''
+        self['memory'] = ''
+        self['disk'] = ''
+        super(Requirement,self).__init__(*args,**kwargs)
+
+    def output(self):
+        """Output dict with values and (optionally) the object name for
+        new objects."""
+        ret = {}
+        for n in self:
+            ret[n] = self[n]
+        return ret
+    def convert(self):
+        pass
+    def valid(self):
+        return (self['cpu'] is None or isinstance(self['cpu'],(String,Number)) ) and (self['gpu'] is None or isinstance(self['gpu'],(String,Number)) ) and (self['memory'] is None or isinstance(self['memory'],(String,Number)) ) and (self['disk'] is None or isinstance(self['disk'],(String,Number)))
+
 class Task(_TaskCommon):
     """
     Holds all information about a task.
@@ -270,7 +291,7 @@ class Task(_TaskCommon):
         self['depends']  = []
         self['batchsys'] = None
         self['trays']    = []
-        self['requirements'] = {}
+        self['requirements'] = Requirement()
         super(Task,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -317,7 +338,7 @@ class Task(_TaskCommon):
                         self['batchsys'].valid())) and
                     isinstance(self['trays'],list) and
                     all(isinstance(t,Tray) and t.valid() for t in self['trays']) and
-                    isinstance(self['requirements'],dict)
+                    isinstance(self['requirements'],Requirement)
                    )
         except Exception:
             return False

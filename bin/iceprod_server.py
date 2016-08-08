@@ -408,4 +408,3 @@ if __name__ == '__main__':
             do_action(cfgfile,args.action)
         else:
             main(cfgfile)
-
