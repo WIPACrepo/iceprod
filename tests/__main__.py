@@ -95,6 +95,9 @@ if args.server:
 test_result = unittest.TestResult()
 start_time = time.time()
 test_suites.run(test_result)
+for err in test_result.errors:
+    if 'ModuleImportFailure' in str(err[0]):
+        print(err[1])
 print('-'*70)
 print('Ran %d tests in %0.3fs'%(test_suites.countTestCases(),time.time()-start_time))
 if not test_result.wasSuccessful():
