@@ -102,7 +102,7 @@ def get_memory():
         try:
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'memory':
-                    ret = int(line.split('=')[1])/1000
+                    ret = int(line.split('=')[1])/1000.
                     break
         except Exception:
             pass
@@ -123,7 +123,7 @@ def get_disk():
         try:
             for line in open('.machine.ad'):
                 if line and line.split('=')[0].strip().lower() == 'disk':
-                    ret = int(line.split('=')[1])/1000000
+                    ret = int(line.split('=')[1])/1000000.
                     break
         except Exception:
             pass

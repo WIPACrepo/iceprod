@@ -185,9 +185,15 @@ class Pilot(object):
                         running = False
                     break
                 else:
-                    task_id = None
                     try:
                         task_id = task_config['options']['task_id']
+                    except Exception:
+                        errors += 1
+                        if errors > 5:
+                            running = False
+                        logger.warn('error getting task_id from config')
+                        continue
+                    try:
                         self.create_task(task_config)
                     except Exception:
                         errors += 1
@@ -195,6 +201,7 @@ class Pilot(object):
                             running = False
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
+                        exe_json.task_kill(task_id, reason='failed to create task')
                     else:
                         tasks_running += 1
                         for r in self.resources:
