@@ -834,22 +834,24 @@ class Other(PublicHandler):
 class Login(PublicHandler):
     """Handle the login url"""
     def get(self):
+        n = self.get_argument('next', default='/')
         if 'password' in self.cfg['webserver']:
-            self.render_handle('login.html',status=None)
+            self.render_handle('login.html', status=None, next=n)
         else:
             self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(self.get_argument('next', '/'))
+            self.redirect()
 
     def post(self):
+        n = self.get_argument('next', default='/')
         if ('password' in self.cfg['webserver'] and
             self.get_argument('pwd') == self.cfg['webserver']['password']):
             self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(self.get_argument('next', '/'))
+            self.redirect(n)
         else:
-            self.render_handle('login.html',status='failed')
+            self.render_handle('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):
     def get(self):
         self.clear_cookie("user")
         self.current_user = None
-        self.render_handle('logout.html',status=None)
+        self.render_handle('logout.html', status=None)
