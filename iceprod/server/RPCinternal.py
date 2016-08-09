@@ -855,7 +855,8 @@ class RPCService():
 
         # make async request to server
         self._cl.send({'method':methodname,'params':kwargs}, **request_args)
-        logger.info('sent method %s with params %r',methodname,kwargs)
+        logger.info('sent method %s',methodname)
+        logger.debug('with params %r',kwargs)
 
     def __nonzero__(self):
         return not not self._cl
