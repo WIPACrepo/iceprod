@@ -839,7 +839,7 @@ class Login(PublicHandler):
             self.render_handle('login.html', status=None, next=n)
         else:
             self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect()
+            self.redirect(n)
 
     def post(self):
         n = self.get_argument('next', default='/')
