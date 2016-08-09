@@ -20,17 +20,11 @@ from tornado.netutil import bind_sockets
 from iceprod.server import get_pkgdata_filename
 from iceprod.core.functions import getInterfaces, get_local_ip_address
 
-def locateconfig():
+def locateconfig(filename='iceprod.cfg'):
     """Locate a config file"""
-    hostname = os.uname()[1].split('.')[0]
-    cfgpaths = []
-    if ('I3PROD' in os.environ and
-        os.path.isdir(os.path.expandvars('$I3PROD'))):
-        cfgpaths.append(os.path.expandvars('$I3PROD'))
-    if ('I3PREFIX' in os.environ and
-        os.path.isdir(os.path.expandvars('$I3PREFIX'))):
-        cfgpaths.append(os.path.expandvars('$I3PREFIX'))
-    cfgpaths.append(os.getcwd())
+    cfgpaths = [os.path.expandvars('$I3PROD')]
+    if os.getcwd() not in cfgpaths:
+        cfgpaths.append(os.getcwd())
     cfgpath = get_pkgdata_filename('iceprod.server','data')
     if cfgpath:
         cfgpaths.append(cfgpath)
@@ -42,17 +36,10 @@ def locateconfig():
             # try for an iceprod directory
             if os.path.isdir(os.path.join(cfgpath,'etc','iceprod')):
                 cfgpaths.insert(i,os.path.join(cfgpath,'etc','iceprod'))
-    while cfgpaths:
-        cfgpath = cfgpaths.pop(0)
-        # try common file names
-        if os.path.isfile(os.path.join(cfgpath,'iceprod.cfg')):
-            cfgpath = os.path.join(cfgpath,'iceprod.cfg')
-        elif os.path.isfile(os.path.join(cfgpath,hostname+'.cfg')):
-            cfgpath = os.path.join(cfgpath,hostname+'.cfg')
-        else:
-            continue
-        return cfgpath
-    raise Exception('cfgpath is not a valid path')
+    for cfgpath in cfgpaths:
+        if os.path.isfile(os.path.join(cfgpath,filename)):
+            return os.path.join(cfgpath,filename)
+    raise Exception('config {} not found'.format(filename))
 
 class BasicConfig(object):
     """
@@ -77,7 +64,7 @@ class BasicConfig(object):
 
         # messaging server url
         is_mac = platform.system().lower() == 'darwin'
-        if (not force_tcp) and not is_mac and hasattr(socket, 'AF_UNIX'):
+        if (not force_tcp) and (not is_mac) and hasattr(socket, 'AF_UNIX'):
             self.messaging_url = 'ipc://'+os.path.join(os.getcwd(),'unix_socket.sock')
         else:
             # attempt to bind to an ip

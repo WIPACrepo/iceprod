@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 from tests.util import unittest_reporter, glob_tests
 
 import logging
-logger = logging.getLogger('parser')
+logger = logging.getLogger('parser_test')
 
 import os, sys, time
 import shutil
@@ -633,6 +633,23 @@ class parser_test(unittest.TestCase):
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('test4: ret != expected')
 
+    @unittest_reporter
+    def test_30_parse_job_bin(self):
+        """Test parsing the job binning. A bug found during prod-test."""
+        for j in (0,15,248,1389,10000,10001,20482,83727,493837,1393728):
+            job = dataclasses.Job()
+            job['steering'] = dataclasses.Steering()
+            job['options'] = {
+                'job': j,
+            }
+            p = parser.ExpParser()
+
+            # run tests
+            ret = p.parse("$sprintf('%06d-%06d',$eval($(job)//10000*10000),$eval($eval($(job)//10000+1)*10000))",job=job)
+            expected = '%06d-%06d'%(j//10000*10000,(j//10000+1)*10000)
+            if ret != expected:
+                logger.info('ret=%r, expected=%r',ret,expected)
+                raise Exception('ret != expected')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

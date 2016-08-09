@@ -9,6 +9,7 @@ import logging
 
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.server import GlobalID, get_pkgdata_filename
+from iceprod.server.basic_config import locateconfig
 
 import json
 try:
@@ -17,7 +18,6 @@ try:
 except ImportError:
     validate = None
     ValidationError = Exception
-
 
 logger = logging.getLogger('config')
 
@@ -41,7 +41,7 @@ class IceProdConfig(dict):
         if filename:
             self.filename = filename
         else:
-            self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
+            self.filename = locateconfig('iceprod_config.json')
         self.validate = validate
         self.loading = False
 
