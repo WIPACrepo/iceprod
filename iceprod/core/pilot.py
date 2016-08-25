@@ -103,10 +103,10 @@ class Pilot(object):
                                  constants['stdlog']):
                     if os.path.exists(os.path.join(dirs,filename)):
                         with open(filename,'a') as f:
-                            print(file=f, '')
-                            print(file=f, '----',dirs,'----')
+                            print('')
+                            print('----',dirs,'----', file=f)
                             with open(os.path.join(dirs,filename)) as f2:
-                                print(file=f, f2.read())
+                                print(f2.read(), file=f)
 
     @gen.coroutine
     def monitor(self):
