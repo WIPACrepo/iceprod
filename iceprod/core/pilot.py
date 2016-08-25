@@ -12,6 +12,7 @@ from functools import partial
 from multiprocessing import Process
 from collections import namedtuple
 from datetime import timedelta
+from glob import glob
 
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
@@ -70,10 +71,11 @@ class Pilot(object):
         config (dict): the configuration dictionary
         runner (callable): the task/config runner
     """
-    def __init__(self, config, runner, pilot_id, run_timeout=60):
+    def __init__(self, config, runner, pilot_id, debug=False, run_timeout=60):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
+        self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
 
         # set up resources for pilot
@@ -93,6 +95,18 @@ class Pilot(object):
             logger.warn('no psutil. not checking resource usage')
 
         self.ioloop.run_sync(self.run)
+
+        if self.debug:
+            # append out, err, log
+            for dirs in glob('tmp*'):
+                for filename in (constants['stdout'], constants['stderr'],
+                                 constants['stdlog']):
+                    if os.path.exists(os.path.join(dirs,filename)):
+                        with open(filename,'a') as f:
+                            print(file=f, '')
+                            print(file=f, '----',dirs,'----')
+                            with open(os.path.join(dirs,filename)) as f2:
+                                print(file=f, f2.read())
 
     @gen.coroutine
     def monitor(self):
@@ -300,8 +314,9 @@ class Pilot(object):
             for r in task.resources:
                 if r in ('cpu','memory','disk', 'gpu'):
                     self.resources[r] += task.resources[r]
-            # clean tmpdir
-            shutil.rmtree(task.tmpdir)
+            if not self.debug:
+                # clean tmpdir
+                shutil.rmtree(task.tmpdir)
         except Exception:
             logger.warn('error cleaning up task', exc_info=True)
 
