@@ -144,7 +144,7 @@ class Nginx(object):
                 if not isinstance(v,String):
                     raise Exception('%s is not a string'%(str(s)))
                 if t in ('file','dir'):
-                    v = os.path.expanduser(os.path.expandvars(v))
+                    v = os.path.abspath(os.path.expanduser(os.path.expandvars(v)))
                     if not ('_file' in s or '_log' in s or 'cache' in s):
                         try:
                             os.path.exists(v)
