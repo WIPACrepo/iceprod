@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Groups{% end %}
+
+{% block head_scripts %}
+<style>
+div.row {
+    width: 100%;
+}
+div.row.header>div.col {
+    font-weight: bold;
+}
+div.row>div.col {
+    display: inline;
+    padding: .5em;
+}
+div.row>div.name {
+    width: 20em;
+}
+div.row>div.priority {
+    width: 10em;
+}
+div.row>div.description {
+    width: auto;
+}
+</style>
+{% end %}
+
+{% block body %}
+
+<div id="groups" class="{{ 'editable' if edit else '' }}">
+    <div class="row header">
+        <div class="col name">Name</div>
+        <div class="col priority">Priority</div>
+        <div class="col description">Description</div>
+    </div>
+    {% for g in groups %}
+    <div class="row">
+        <input type="hidden" class="id" value="{{ g }}" />
+        {% if edit %}
+        <div class="col name"><input type="text" value="{{ groups[g]['name'] }}" /></div>
+        <div class="col priority"><input type="text" value="{{ groups[g]['priority'] }}" /></div>
+        <div class="col description"><input type="text" value="{{ groups[g]['description'] }}" /></div>
+        {% else %}
+        <div class="col name">{{ groups[g]['name'] }}</div>
+        <div class="col priority">{{ groups[g]['priority'] }}</div>
+        <div class="col description">{{ groups[g]['description'] }}</div>
+        {% end %}
+    </div>
+    {% end %}
+</div>
+{% if edit %}
+<input type="submit" id="submit" value="Update" />
+<div id="status"></div>
+{% end %}
+
+{% end %}
+
+{% block body_scripts %}
+
+{% if edit %}
+<script src="/static/json-rpc.js"></script>
+<script>
+jQuery(document).ready(function(){
+    $('#submit').on('click', function(event){
+        var groups = {};
+        $('#groups div.row:not(.header)').each(function(index, value){
+            var id = $(value).find('input.id').val();
+            console.log('id:'+id);
+            var prio = parseFloat($(value).find('.priority input').val());
+            if (!isFinite(prio)) {
+                $('#status').html('priority is not a number')
+                return;
+            }
+            groups[id] = {
+                name: $(value).find('.name input').val(),
+                priority: prio,
+                description: $(value).find('.description input').val()
+            };
+        });
+        var data = {
+            user: "{{ current_user }}",
+            passkey: "{{ passkey }}",
+            groups: groups
+        };
+        RPCclient('set_groups', data, callback=function(return_data){
+            $('#status').html('OK')
+        });
+    });
+});
+</script>
+{% end %}
+
+{% end %}

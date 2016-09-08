@@ -820,6 +820,68 @@ class rpc(_Methods_Base):
         sql = 'select * from groups'
         self.db.sql_read_task(sql, tuple(), callback=cb)
 
+    @dbmethod
+    def rpc_set_groups(self, user=None, passkey=None, groups=None, callback=None):
+        """
+        Set all the groups.
+        """
+        def cb(ret):
+            if ret is not True:
+                callback(Exception('invalid passkey'))
+            else:
+                cb2 = partial(self._rpc_set_groups_blocking, user, groups, callback)
+                self.db.blocking_task('groups',cb2)
+        self.parent.auth_authorize_task(passkey, callback=cb)
+    def _rpc_set_groups_blocking(self, user, groups, callback=None):
+        try:
+            conn,archive_conn = self.db._dbsetup()
+
+            # check user authorization to set groups
+
+            # get groups
+            sql = 'select * from groups'
+            ret = self.db._db_read(conn,sql,tuple(),None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+
+            # set groups
+            updates_sql = []
+            updates_bindings = []
+
+            delete_ids = set()
+            update_ids = {}
+            existing_ids = set()
+            for groups_id,name,desc,prio in ret:
+                if groups_id not in groups:
+                    delete_ids.add(groups_id)
+                else:
+                    existing_ids.add(groups_id)
+                    g = groups[groups_id]
+                    if (g['name'] != name or g['description'] != desc or
+                        g['priority'] != prio):
+                        update_ids[groups_id] = g
+
+            create_ids = set(groups) - existing_ids
+
+            if delete_ids:
+                updates_sql.append('delete from groups where groups_id in ('+(','.join('?' for _ in delete_ids)+')'))
+                updates_bindings.append(tuple(delete_ids))
+            for ids in update_ids:
+                updates_sql.append('update groups set name=?, description=?, priority=? where groups_id=?')
+                updates_bindings.append((groups[ids]['name'],groups[ids]['description'],groups[ids]['priority'],ids))
+            for ids in create_ids:
+                updates_sql.append('insert into groups (name,description,priority) values (?,?,?)')
+                updates_bindings.append((groups[ids]['name'],groups[ids]['description'],groups[ids]['priority']))
+
+            ret = self.db._db_write(conn,updates_sql,updates_bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+
+        except Exception as e:
+            logger.warn('failed to set groups', exc_info=True)
+            callback(e)
+        else:
+            callback(True)
 
     @dbmethod
     def rpc_queue_master(self,resources=None,

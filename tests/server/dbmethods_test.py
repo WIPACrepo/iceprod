@@ -139,6 +139,9 @@ class DB(SQLite):
 class dbmethods_base(unittest.TestCase):
     def setUp(self):
         super(dbmethods_base,self).setUp()
+        self.maxDiff = None
+        self.longMessage = True
+        
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
 
         # get hostname

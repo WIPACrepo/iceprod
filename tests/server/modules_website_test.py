@@ -15,6 +15,7 @@ import tempfile
 import random
 import threading
 import signal
+import subprocess
 from datetime import datetime,timedelta
 from functools import partial
 import unittest
@@ -35,6 +36,18 @@ try:
     from iceprod.server import ssl_cert
 except ImportError:
     ssl_cert = None
+
+# check for javascript testing
+try:
+    from selenium import webdriver
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    with to_log(sys.stdout):
+        subprocess.check_call(['which','phantomjs'])
+    testjs = True
+except Exception:
+    logger.info('skipping javascript tests', exc_info=True)
+    testjs = False
 
 class _Nginx(object):
     def __init__(self,*args,**kwargs):
@@ -72,10 +85,8 @@ class modules_website_test(unittest.TestCase):
                                  'proxycache_dir':os.path.join(self.test_dir,'proxy'),
                                  'proxy_request_timeout':10,
                                 },
-                    'db':{'address':'localhost',
-                          'ssl':True,
-                         },
-                    'system':{},
+                    'db':{'name':'test'},
+                    'system':{'ssl':False},
                     'download':{'http_username':None,
                                 'http_password':None,
                                },
@@ -631,6 +642,111 @@ class modules_website_test(unittest.TestCase):
 
             time.sleep(0.1)
 
+        finally:
+            ioloop.stop()
+            web.stop()
+
+    @unittest_reporter(skip=not testjs)
+    def test_40_groups(self):
+        def start():
+            start.called = True
+        flexmock(website).should_receive('start').replace_with(start)
+        start.called = False
+
+        passkey = 'key'
+        groups = {
+            'a': {'name':'/Sim','priority':0.3,'description':'blah'},
+            'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
+        }
+
+        web = website(basic_config.BasicConfig())
+        web.messaging = messaging_mock()
+        web.messaging.ret = {'db':{'auth_new_passkey': passkey,
+                                  'rpc_get_groups': groups,
+                                  }
+                            }
+        web.cfg = self.cfg
+        with to_log(sys.stderr):
+            web._start()
+
+        # actual start
+        ioloop = tornado.ioloop.IOLoop.instance()
+        t = threading.Thread(target=ioloop.start)
+        t.start()
+
+        try:
+            driver = webdriver.PhantomJS()
+            driver.get('http://localhost:%d/groups'%self.cfg['webserver']['port'])
+            web_groups = {}
+            for row in driver.find_elements_by_css_selector("#groups div.row:not(.header)"):
+                logger.info('%r',row)
+                gid = row.find_element_by_css_selector("input.id").get_attribute('value')
+                web_groups[gid] = {
+                    'name': row.find_element_by_class_name('name').text,
+                    'priority': float(row.find_element_by_class_name('priority').text),
+                    'description': row.find_element_by_class_name('description').text,
+                }
+            self.assertEqual(groups, web_groups)
+        finally:
+            ioloop.stop()
+            web.stop()
+
+    @unittest_reporter(skip=not testjs)
+    def test_41_groups_edit(self):
+        def start():
+            start.called = True
+        flexmock(website).should_receive('start').replace_with(start)
+        start.called = False
+
+        passkey = 'key'
+        groups = {
+            'a': {'name':'/Sim','priority':0.3,'description':'blah'},
+            'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
+        }
+
+        web = website(basic_config.BasicConfig())
+        web.messaging = messaging_mock()
+        web.messaging.ret = {'db':{'auth_new_passkey': passkey,
+                                   'auth_authorize_task': True,
+                                   'rpc_get_groups': groups,
+                                   'rpc_set_groups': True,
+                                   'web_get_datasets': [],
+                                  }
+                            }
+        web.cfg = self.cfg
+        with to_log(sys.stderr):
+            web._start()
+
+        # actual start
+        ioloop = tornado.ioloop.IOLoop.instance()
+        t = threading.Thread(target=ioloop.start)
+        t.start()
+
+        try:
+            driver = webdriver.PhantomJS()
+            #driver = webdriver.Firefox()
+            driver.implicitly_wait(1)
+            driver.get('http://localhost:%d/login'%self.cfg['webserver']['port'])
+            driver.get('http://localhost:%d/groups'%self.cfg['webserver']['port'])
+            row = driver.find_elements_by_css_selector("#groups div.row:not(.header)")[0]
+            groups['a'] = {'name':'/SimProd','priority':0.4,'description':'blah3'}
+            for name,value in groups['a'].items():
+                e = row.find_element_by_class_name(name)
+                i = e.find_element_by_tag_name('input')
+                i.clear()
+                i.send_keys(str(value))
+                #WebDriverWait(driver, 1).until(EC.staleness_of(i))
+            driver.find_element_by_id('submit').click()
+            try:
+                WebDriverWait(driver, 1).until(EC.text_to_be_present_in_element(
+                    (webdriver.common.by.By.ID,'status'),'OK'))
+            finally:
+                logger.warn('status: %r',driver.find_element_by_id('status').text)
+            c = web.messaging.called[-1]
+            logger.info('%r',c)
+            self.assertEqual(c[:2], ['db','rpc_set_groups'])
+            web_groups = c[-1]['groups']
+            self.assertDictEqual(groups, web_groups)
         finally:
             ioloop.stop()
             web.stop()

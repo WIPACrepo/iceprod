@@ -782,6 +782,131 @@ class dbmethods_rpc_test(dbmethods_base):
                 raise Exception('tables have changed')
 
     @unittest_reporter
+    def test_110_rpc_get_groups(self):
+        """Test rpc_get_groups"""
+
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+        cb.called = False
+
+        # correct
+        cb.called = False
+        tables = {
+            'groups':[
+                {'groups_id':'a','name':'/foo','description':'bar','priority':1.3},
+                {'groups_id':'b','name':'/foo/bar','description':'bar2','priority':0.3}
+            ],
+        }
+        self.mock.setup(tables)
+        self._db.rpc_get_groups(callback=cb)
+
+        self.assertTrue(cb.called)
+        ret_should_be = {row['groups_id']:row for row in tables['groups']}
+        self.assertEqual(cb.ret, ret_should_be)
+
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(tables, end_tables)
+
+        # failure
+        cb.called = False
+        self.mock.setup(tables)
+        self.mock.failures=1
+        self._db.rpc_get_groups(callback=cb)
+
+        self.assertTrue(cb.called)
+        self.assertIsInstance(cb.ret,Exception)
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(tables, end_tables)
+
+    @unittest_reporter
+    def test_111_rpc_set_groups(self):
+        """Test rpc_set_groups"""
+
+        def cb(ret):
+            cb.called = True
+            cb.ret = ret
+        cb.called = False
+        
+        user = 'user'
+        key = 'thekey'
+        expiration = dbmethods.datetime2str(datetime.now()+timedelta(days=1))
+        tables = {
+            'groups':[
+                {'groups_id':'a','name':'/foo','description':'bar','priority':1.3},
+                {'groups_id':'b','name':'/foo/bar','description':'bar2','priority':0.3}
+            ],
+            'passkey': [
+                {'passkey_id':'a','auth_key':key,'expire':expiration},
+            ],
+        }
+
+        # delete everything
+        cb.called = False
+        self.mock.setup(tables)
+        newgroups = {}
+        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+
+        self.assertTrue(cb.called)
+        self.assertTrue(cb.ret)
+
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(end_tables, {'groups':[]})
+
+        # update one
+        cb.called = False
+        self.mock.setup(tables)
+        newgroups = {row['groups_id']:row for row in tables['groups']}
+        newgroups['a']['priority'] = 4.5
+        newgroups['a']['name'] = '/fee'
+        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+
+        self.assertTrue(cb.called)
+        self.assertTrue(cb.ret)
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(end_tables, {'groups':[newgroups[k] for k in newgroups]})
+
+        # delete and update
+        cb.called = False
+        self.mock.setup(tables)
+        newgroups = {row['groups_id']:row for row in tables['groups']}
+        newgroups['a']['priority'] = 4.5
+        newgroups['a']['name'] = '/fee'
+        del newgroups['b']
+        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+
+        self.assertTrue(cb.called)
+        self.assertTrue(cb.ret)
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(end_tables, {'groups':[newgroups[k] for k in newgroups]})
+
+        # add one
+        cb.called = False
+        self.mock.setup(tables)
+        newgroups = {row['groups_id']:row for row in tables['groups']}
+        newgroups['-1'] = {'name':'/baz','description':'foobar','priority':3.2}
+        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+
+        self.assertTrue(cb.called)
+        self.assertTrue(cb.ret)
+        end_tables = self.mock.get(['groups'])
+        self.assertEqual(end_tables['groups'][-1]['name'], '/baz')
+        ret_should_be = {'groups':[newgroups[k] for k in newgroups]}
+        ret_should_be['groups'][-1]['groups_id'] = end_tables['groups'][-1]['groups_id']
+        self.assertEqual(end_tables, ret_should_be)
+
+        # test sql errors
+        for i in range(1,4):
+            cb.called = False
+            self.mock.setup(tables)
+            self.mock.failures = i
+            self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+            self.assertTrue(cb.called)
+            self.assertIsInstance(cb.ret,Exception)
+            end_tables = self.mock.get(['passkey','groups'])
+            self.assertEqual(tables, end_tables)
+
+    @unittest_reporter
     def test_200_rpc_queue_master(self):
         """Test rpc_queue_master"""
 
