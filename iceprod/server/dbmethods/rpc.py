@@ -884,6 +884,72 @@ class rpc(_Methods_Base):
             callback(True)
 
     @dbmethod
+    def rpc_get_user_groups(self, username, callback=None):
+        """
+        Get the groups a username belongs to.
+        """
+        if username is None:
+            raise Exception('no username')
+        def cb2(ret):
+            if isinstance(ret,Exception):
+                callback(ret)
+            else:
+                groups = {}
+                for row in ret:
+                    r = self._list_to_dict('groups',row)
+                    groups[r['groups_id']] = r
+                callback(groups)
+        def cb(ret):
+            if isinstance(ret,Exception):
+                callback(ret)
+            elif (not ret) or (not ret[0]):
+                callback(Exception('cannot find username %s'%username))
+            elif not ret[0][0]:
+                callback({}) # no groups
+            else:
+                groups = ret[0][0].split(',')
+                sql = 'select * from groups where groups_id in ('
+                sql += ','.join('?' for _ in groups)+')'
+                self.db.sql_read_task(sql, tuple(groups), callback=cb2)
+        sql = 'select groups from user where username=?'
+        self.db.sql_read_task(sql, (username,), callback=cb)
+
+    @dbmethod
+    def rpc_set_user_groups(self, user=None, passkey=None, username=None,
+                            groups=None, callback=None):
+        """
+        Set the groups of a username.
+        """
+        def cb(ret):
+            if ret is not True:
+                callback(Exception('invalid passkey'))
+            else:
+                cb2 = partial(self._rpc_set_user_groups_blocking, user,
+                              username, groups, callback)
+                self.db.blocking_task('groups',cb2)
+        self.parent.auth_authorize_task(passkey, callback=cb)
+    def _rpc_set_user_groups_blocking(self, user, username, groups, callback=None):
+        try:
+            conn,archive_conn = self.db._dbsetup()
+
+            # check user authorization to set groups
+
+            # set groups
+            sql = 'update user set groups = ? where username = ?'
+            bindings = (','.join(groups), username)
+
+            ret = self.db._db_write(conn,sql,bindings,None,None,None)
+            if isinstance(ret,Exception):
+                raise ret
+
+        except Exception as e:
+            logger.warn('failed to set groups for username %s', username,
+                        exc_info=True)
+            callback(e)
+        else:
+            callback(True)
+
+    @dbmethod
     def rpc_queue_master(self,resources=None,
                          filters=None,
                          queueing_factor_priority=1.0,
