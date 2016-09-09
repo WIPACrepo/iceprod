@@ -829,15 +829,10 @@ class dbmethods_rpc_test(dbmethods_base):
         cb.called = False
         
         user = 'user'
-        key = 'thekey'
-        expiration = dbmethods.datetime2str(datetime.now()+timedelta(days=1))
         tables = {
             'groups':[
                 {'groups_id':'a','name':'/foo','description':'bar','priority':1.3},
                 {'groups_id':'b','name':'/foo/bar','description':'bar2','priority':0.3}
-            ],
-            'passkey': [
-                {'passkey_id':'a','auth_key':key,'expire':expiration},
             ],
         }
 
@@ -845,7 +840,7 @@ class dbmethods_rpc_test(dbmethods_base):
         cb.called = False
         self.mock.setup(tables)
         newgroups = {}
-        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+        self._db.rpc_set_groups(user=user, groups=newgroups, callback=cb)
 
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -859,7 +854,7 @@ class dbmethods_rpc_test(dbmethods_base):
         newgroups = {row['groups_id']:row for row in tables['groups']}
         newgroups['a']['priority'] = 4.5
         newgroups['a']['name'] = '/fee'
-        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+        self._db.rpc_set_groups(user=user, groups=newgroups, callback=cb)
 
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -873,7 +868,7 @@ class dbmethods_rpc_test(dbmethods_base):
         newgroups['a']['priority'] = 4.5
         newgroups['a']['name'] = '/fee'
         del newgroups['b']
-        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+        self._db.rpc_set_groups(user=user, groups=newgroups, callback=cb)
 
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -885,7 +880,7 @@ class dbmethods_rpc_test(dbmethods_base):
         self.mock.setup(tables)
         newgroups = {row['groups_id']:row for row in tables['groups']}
         newgroups['-1'] = {'name':'/baz','description':'foobar','priority':3.2}
-        self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+        self._db.rpc_set_groups(user=user, groups=newgroups, callback=cb)
 
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -896,14 +891,14 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertEqual(end_tables, ret_should_be)
 
         # test sql errors
-        for i in range(1,4):
+        for i in range(1,3):
             cb.called = False
             self.mock.setup(tables)
             self.mock.failures = i
-            self._db.rpc_set_groups(user=user, passkey=key, groups=newgroups, callback=cb)
+            self._db.rpc_set_groups(user=user, groups=newgroups, callback=cb)
             self.assertTrue(cb.called)
             self.assertIsInstance(cb.ret,Exception)
-            end_tables = self.mock.get(['passkey','groups'])
+            end_tables = self.mock.get(['groups'])
             self.assertEqual(tables, end_tables)
 
     @unittest_reporter
@@ -984,8 +979,6 @@ class dbmethods_rpc_test(dbmethods_base):
         cb.called = False
 
         user = 'user'
-        key = 'thekey'
-        expiration = dbmethods.datetime2str(datetime.now()+timedelta(days=1))
         tables = {
             'groups':[
                 {'groups_id':'a','name':'/foo','description':'bar','priority':1.3},
@@ -995,16 +988,13 @@ class dbmethods_rpc_test(dbmethods_base):
                 {'user_id':'a','username':'bob','groups':'a,b'},
                 {'user_id':'b','username':'john','groups':''},
             ],
-            'passkey': [
-                {'passkey_id':'a','auth_key':key,'expire':expiration},
-            ],
         }
 
         # correct
         cb.called = False
         self.mock.setup(tables)
         tables2 = self.mock.get(['user'])
-        self._db.rpc_set_user_groups(user=user, passkey=key, username='bob',
+        self._db.rpc_set_user_groups(user=user, username='bob',
                                      groups=['a'], callback=cb)
 
         self.assertTrue(cb.called)
@@ -1017,7 +1007,7 @@ class dbmethods_rpc_test(dbmethods_base):
 
         # try for no groups
         cb.called = False
-        self._db.rpc_set_user_groups(user=user, passkey=key, username='bob',
+        self._db.rpc_set_user_groups(user=user, username='bob',
                                      groups=[], callback=cb)
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -1029,7 +1019,7 @@ class dbmethods_rpc_test(dbmethods_base):
         
         # try for several groups
         cb.called = False
-        self._db.rpc_set_user_groups(user=user, passkey=key, username='bob',
+        self._db.rpc_set_user_groups(user=user, username='bob',
                                      groups=['a','b'], callback=cb)
         self.assertTrue(cb.called)
         self.assertTrue(cb.ret)
@@ -1040,17 +1030,16 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertEqual(end_tables, ret_should_be)
         
         # test sql errors
-        for i in range(1,3):
-            cb.called = False
-            self.mock.setup(tables)
-            tables2 = self.mock.get(['user'])
-            self.mock.failures = i
-            self._db.rpc_set_user_groups(user=user, passkey=key, username='bob',
-                                         groups=[], callback=cb)
-            self.assertTrue(cb.called)
-            self.assertIsInstance(cb.ret,Exception)
-            end_tables = self.mock.get(['groups','user'])
-            self.assertTrue(cmp_dict(tables2, end_tables), 'tables are modified')
+        cb.called = False
+        self.mock.setup(tables)
+        tables2 = self.mock.get(['groups','user'])
+        self.mock.failures = 1
+        self._db.rpc_set_user_groups(user=user, username='bob',
+                                     groups=[], callback=cb)
+        self.assertTrue(cb.called)
+        self.assertIsInstance(cb.ret,Exception)
+        end_tables = self.mock.get(['groups','user'])
+        self.assertTrue(cmp_dict(tables2, end_tables), 'tables are modified')
 
     @unittest_reporter
     def test_200_rpc_queue_master(self):

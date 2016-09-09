@@ -821,17 +821,12 @@ class rpc(_Methods_Base):
         self.db.sql_read_task(sql, tuple(), callback=cb)
 
     @dbmethod
-    def rpc_set_groups(self, user=None, passkey=None, groups=None, callback=None):
+    def rpc_set_groups(self, user=None, groups=None, callback=None):
         """
         Set all the groups.
         """
-        def cb(ret):
-            if ret is not True:
-                callback(Exception('invalid passkey'))
-            else:
-                cb2 = partial(self._rpc_set_groups_blocking, user, groups, callback)
-                self.db.blocking_task('groups',cb2)
-        self.parent.auth_authorize_task(passkey, callback=cb)
+        cb = partial(self._rpc_set_groups_blocking, user, groups, callback)
+        self.db.blocking_task('groups',cb)
     def _rpc_set_groups_blocking(self, user, groups, callback=None):
         try:
             conn,archive_conn = self.db._dbsetup()
@@ -915,19 +910,14 @@ class rpc(_Methods_Base):
         self.db.sql_read_task(sql, (username,), callback=cb)
 
     @dbmethod
-    def rpc_set_user_groups(self, user=None, passkey=None, username=None,
+    def rpc_set_user_groups(self, user=None, username=None,
                             groups=None, callback=None):
         """
         Set the groups of a username.
         """
-        def cb(ret):
-            if ret is not True:
-                callback(Exception('invalid passkey'))
-            else:
-                cb2 = partial(self._rpc_set_user_groups_blocking, user,
-                              username, groups, callback)
-                self.db.blocking_task('groups',cb2)
-        self.parent.auth_authorize_task(passkey, callback=cb)
+        cb = partial(self._rpc_set_user_groups_blocking, user,
+                     username, groups, callback)
+        self.db.blocking_task('groups',cb)
     def _rpc_set_user_groups_blocking(self, user, username, groups, callback=None):
         try:
             conn,archive_conn = self.db._dbsetup()
