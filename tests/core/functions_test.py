@@ -1044,7 +1044,7 @@ class functions_test(unittest.TestCase):
             raise Exception('simple http: data not equal.  expected %r and got %r'%(data,data2))
 
         # try download from iceprod server (POST only)
-        self.fetch_error = iceprod.core.util.NoncriticalError('HTTP error code: %d'%405)
+        #self.fetch_error = iceprod.core.util.NoncriticalError('HTTP error code: %d'%405)
         download_options = {'key':'abcd'}
 
         # download file from resources

@@ -103,10 +103,10 @@ class Pilot(object):
                                  constants['stdlog']):
                     if os.path.exists(os.path.join(dirs,filename)):
                         with open(filename,'a') as f:
-                            print(file=f, '')
-                            print(file=f, '----',dirs,'----')
+                            print('')
+                            print('----',dirs,'----', file=f)
                             with open(os.path.join(dirs,filename)) as f2:
-                                print(file=f, f2.read())
+                                print(f2.read(), file=f)
 
     @gen.coroutine
     def monitor(self):
@@ -199,9 +199,15 @@ class Pilot(object):
                         running = False
                     break
                 else:
-                    task_id = None
                     try:
                         task_id = task_config['options']['task_id']
+                    except Exception:
+                        errors += 1
+                        if errors > 5:
+                            running = False
+                        logger.warn('error getting task_id from config')
+                        continue
+                    try:
                         self.create_task(task_config)
                     except Exception:
                         errors += 1
@@ -209,6 +215,7 @@ class Pilot(object):
                             running = False
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
+                        exe_json.task_kill(task_id, reason='failed to create task')
                     else:
                         tasks_running += 1
                         for r in self.resources:
@@ -275,7 +282,7 @@ class Pilot(object):
             # symlink important files
             if 'ssl' in config['options']:
                 for f in config['options']['ssl']:
-                    os.symlink(config['options']['ssl'][f],
+                    os.symlink(os.path.join(main_dir,config['options']['ssl'][f]),
                                os.path.join(tmpdir,config['options']['ssl'][f]))
 
             # start the task

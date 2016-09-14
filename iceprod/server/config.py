@@ -88,12 +88,12 @@ class IceProdConfig(dict):
         finally:
             self.loading = False
 
-    def do_validate(self, obj):
+    def do_validate(self):
         if validate and self.validate:
             try:
                 filename = get_pkgdata_filename('iceprod.server', 'data/etc/iceprod_schema.json')
                 schema = json.load(open(filename))
-                validate(obj, schema)
+                validate(self, schema)
             except ValidationError as e:
                 path = '.'.join(e.path)
                 logger.warn('Validation error at "%s": %s' % (path, e.message))
@@ -108,9 +108,9 @@ class IceProdConfig(dict):
             if os.path.exists(self.filename):
                 text = open(self.filename).read()
                 obj = json_decode(text)
-                self.do_validate(obj)
                 for key in obj:
                     self[key] = obj[key]
+                self.do_validate()
         except ValidationError:
             raise
         except Exception:
@@ -124,9 +124,9 @@ class IceProdConfig(dict):
         try:
             self.loading = True
             obj = json_decode(text)
-            self.do_validate(obj)
             for key in obj:
                 self[key] = obj[key]
+            self.do_validate()
         except Exception:
             ok = False
         finally:
