@@ -38,6 +38,15 @@ Node_Resources = {
 Task_Resources = Node_Resources.copy()
 Task_Resources['time'] = 24 # in hours
 
+#: Overusage limits
+Task_Resource_Overusage = {
+    'cpu': {'ignore': 2., 'allowed': 2.}, # allow up to 2x without checking
+    'gpu': {'ignore': 1.5, 'allowed': 1.5},
+    'memory': {'ignore': 0, 'allowed': 3.}, # allow up to 3x if available
+    'disk': {'ignore': 0, 'allowed': 10.},
+    'time': {'ignore': 0, 'allowed': 2.},
+}
+
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
     ret = None
