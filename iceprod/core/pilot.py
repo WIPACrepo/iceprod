@@ -145,7 +145,7 @@ class Pilot(object):
                             overusage_percent = used_resources[r]*1.0/task.resources[r]
                             if (r in Task_Resource_Overusage and
                                 (overusage_percent < Task_Resource_Overusage[r]['ignore'] or
-                                 (overusage < self.resource[r] and
+                                 (overusage < self.resources[r] and
                                   overusage_percent < Task_Resource_Overusage[r]['percent']
                                 ))):
                                 logger.info('managable overusage of %s for %r',
