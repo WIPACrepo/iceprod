@@ -30,7 +30,6 @@
         "lib_dir":"$PWD",
         "port":8888,
         "tornado_port":8889,
-        "numcpus":1,
         "sites":{},
         "password":"admin"
     },
