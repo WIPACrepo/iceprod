@@ -146,7 +146,7 @@ class Pilot(object):
                             if (r in Task_Resource_Overusage and
                                 (overusage_percent < Task_Resource_Overusage[r]['ignore'] or
                                  (overusage < self.resources[r] and
-                                  overusage_percent < Task_Resource_Overusage[r]['percent']
+                                  overusage_percent < Task_Resource_Overusage[r]['allowed']
                                 ))):
                                 logger.info('managable overusage of %s for %r',
                                             r, task_id)
