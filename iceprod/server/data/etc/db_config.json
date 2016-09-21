@@ -157,7 +157,8 @@
         "passkey": [
             ["passkey_id", "str"],
             ["auth_key", "str"],
-            ["expire", "str", "datetime"]
+            ["expire", "str", "datetime"],
+            ["user_id", "str"]
         ],
         "pilot": [
             ["pilot_id", "str"],
@@ -169,7 +170,9 @@
         "user": [
             ["user_id", "str"],
             ["username", "str"],
-            ["password", "str"],
+            ["name", "str"],
+            ["salt", "str"],
+            ["hash", "str"],
             ["email", "str"],
             ["admin", "bool"],
             ["groups", "Text", "csv list of group_ids"],

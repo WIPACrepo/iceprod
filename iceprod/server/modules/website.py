@@ -345,6 +345,36 @@ def catch_error(method):
             self.send_error(500, message=message)
     return wrapper
 
+def authenticated_secure(method):
+    """Decorate methods with this to require that the user be logged in
+    to a secure area.
+
+    If the user is not logged in, they will be redirected to the configured
+    `login url <RequestHandler.get_login_url>`.
+
+    If you configure a login url with a query parameter, Tornado will
+    assume you know what you're doing and use it as-is.  If not, it
+    will add a `next` parameter so the login page knows where to send
+    you once you're logged in.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user_secure:
+            if self.request.method in ("GET", "HEAD"):
+                url = self.get_login_url()
+                if "?" not in url:
+                    if urlparse.urlsplit(url).scheme:
+                        # if login url is absolute, make next absolute too
+                        next_url = self.request.full_url()
+                    else:
+                        next_url = self.request.uri
+                    url += "?" + urlencode(dict(next=next_url,secure=True))
+                self.redirect(url)
+                return
+            raise HTTPError(403)
+        return method(self, *args, **kwargs)
+    return wrapper
+
 
 class MyHandler(tornado.web.RequestHandler):
     """Default Handler"""
@@ -560,7 +590,13 @@ class PublicHandler(MyHandler):
         return namespace
 
     def get_current_user(self):
-        return self.get_secure_cookie("user")
+        user = self.get_secure_cookie("user", max_age_days=1)
+        user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
+        self.current_user_secure = (user_secure is not None)
+        if user_secure is None or user == user_secure:
+            return user
+        else:
+            return None
 
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
@@ -831,6 +867,31 @@ class GroupsHandler(PublicHandler):
             render_args['passkey'] = passkey
         self.render('groups.html', **render_args)
 
+class UserAccount(PublicHandler):
+    """View/modify a user account"""
+    @catch_error
+    @authenticated_secure
+    @tornado.gen.coroutine
+    def get(self):
+        username = self.get_argument('username', default=self.current_user)
+        account = yield self.db_call('website_get_user_account')
+        if isinstance(account, Exception):
+            raise account
+        self.render('user_account.html', account=account)
+
+    @catch_error
+    @authenticated_secure
+    @tornado.gen.coroutine
+    def post(self):
+        username = self.get_argument('username', default=self.current_user)
+        password = self.get_argument('password', default=None)
+        if not password:
+            raise Exception('invalid password')
+        ret = yield self.db_call('website_edit_user_account', password=password)
+        if isinstance(ret, Exception):
+            raise ret
+        self.get()
+
 class Help(PublicHandler):
     """Help Page"""
     @catch_error
@@ -850,25 +911,22 @@ class Login(PublicHandler):
     @catch_error
     def get(self):
         n = self.get_argument('next', default='/')
+        secure = self.get_argument('secure', default=None)
         if 'password' in self.cfg['webserver']:
             self.render('login.html', status=None, next=n)
         else:
+            if secure:
+                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
             self.set_secure_cookie('user', 'admin', expires_days=1)
             self.redirect(n)
 
-    @catch_error
     def post(self):
-        n = self.get_argument('next', default='/')
-        if ('password' in self.cfg['webserver'] and
-            self.get_argument('pwd') == self.cfg['webserver']['password']):
-            self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(n)
-        else:
-            self.render('login.html', status='failed', next=n)
+        self.get()
 
 class Logout(PublicHandler):
     @catch_error
     def get(self):
         self.clear_cookie("user")
+        self.clear_cookie("user_secure")
         self.current_user = None
         self.render('logout.html', status=None)
