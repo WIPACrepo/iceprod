@@ -18,7 +18,7 @@ copyright = '2014, IceCube Collaboration'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-version = release = iceprod.version
+version = release = iceprod.__version__
 
 extensions = [
     'sphinx.ext.autodoc',
