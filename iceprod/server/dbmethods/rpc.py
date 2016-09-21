@@ -61,6 +61,8 @@ class rpc(_Methods_Base):
         for k in Node_Resources:
             if k in args and args[k] != Node_Resources[k]:
                 reqs[k] = args[k]
+            else:
+                reqs[k] = Node_Resources[k]
         conn,archive_conn = self.db._dbsetup()
         
         while True:

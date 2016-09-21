@@ -107,7 +107,8 @@ class condor(grid.grid):
                 if 'gpu' in task['reqs']:
                     p('request_gpus = {}'.format(task['reqs']['gpu']))
                 if 'memory' in task['reqs']:
-                    p('request_memory = {}'.format(int(task['reqs']['memory']*1000)))
+                    # extra 100MB for pilot
+                    p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
                 if 'disk' in task['reqs']:
                     p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
 
