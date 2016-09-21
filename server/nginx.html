@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Nginx &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Pool" href="pool.html" />
+    <link rel="prev" title="Module" href="module.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pool.html" title="Pool"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="module.html" title="Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="nginx">
+<span id="index-0"></span><span id="id1"></span><h1>Nginx<a class="headerlink" href="#nginx" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-iceprod.server.nginx"></span><p>Nginx is used to handle static content and proxy all other requests to
+the <a class="reference external" href="iceprod.server.modules.website">website module</a>. It also handles
+most of the web security as a SSL/TLS front-end and more generally as
+a hardened attack surface.</p>
+<p>Nginx is easily capable of handling 100+ https connections per second per
+cpu core (on fairly old and weak hardware, at that). It is unlikely to be
+the performance bottleneck.</p>
+<dl class="class">
+<dt id="iceprod.server.nginx.Nginx">
+<em class="property">class </em><code class="descclassname">iceprod.server.nginx.</code><code class="descname">Nginx</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#Nginx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.Nginx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around the Nginx webserver.</p>
+<p>Set up Nginx</p>
+<dl class="method">
+<dt id="iceprod.server.nginx.Nginx.kill">
+<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#Nginx.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.Nginx.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop server</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.nginx.Nginx.logrotate">
+<code class="descname">logrotate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#Nginx.logrotate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.Nginx.logrotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotate log files</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.nginx.Nginx.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#Nginx.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.Nginx.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start server</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.nginx.Nginx.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#Nginx.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.Nginx.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop server</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.nginx.deleteoldlogs">
+<code class="descclassname">iceprod.server.nginx.</code><code class="descname">deleteoldlogs</code><span class="sig-paren">(</span><em>filename</em>, <em>days=30</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#deleteoldlogs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.deleteoldlogs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete old log files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.nginx.find_mime">
+<code class="descclassname">iceprod.server.nginx.</code><code class="descname">find_mime</code><span class="sig-paren">(</span><em>hints=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#find_mime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.find_mime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Locate mime.types file, if possible.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.nginx.find_nginx">
+<code class="descclassname">iceprod.server.nginx.</code><code class="descname">find_nginx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#find_nginx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.find_nginx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Locate nginx, if possible.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.nginx.rotate">
+<code class="descclassname">iceprod.server.nginx.</code><code class="descname">rotate</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/nginx.html#rotate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.nginx.rotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotate a filename.  Useful for log files.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="module.html"
+                        title="previous chapter">Module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pool.html"
+                        title="next chapter">Pool</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/nginx.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pool.html" title="Pool"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="module.html" title="Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

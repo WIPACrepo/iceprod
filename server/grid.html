@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Grid Queueing &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Asynchronous GridFTP" href="gridftp.html" />
+    <link rel="prev" title="File IO" href="file_io.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gridftp.html" title="Asynchronous GridFTP"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="file_io.html" title="File IO"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.grid">
+<span id="grid-queueing"></span><span id="grid"></span><span id="index-0"></span><h1>Grid Queueing<a class="headerlink" href="#module-iceprod.server.grid" title="Permalink to this headline">¶</a></h1>
+<p>Interface for configuring and submitting jobs on a computing cluster.
+Do not use this class directly. Instead use one of the implementations
+that inherit from this class.</p>
+<dl class="class">
+<dt id="iceprod.server.grid.grid">
+<em class="property">class </em><code class="descclassname">iceprod.server.grid.</code><code class="descname">grid</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface for a generic job distribution system.
+Do not use this class directly.  Use one of the plugins.</p>
+<dl class="attribute">
+<dt id="iceprod.server.grid.grid.GRID_STATES">
+<code class="descname">GRID_STATES</code><em class="property"> = ('queued', 'processing', 'completed', 'error', 'unknown')</em><a class="headerlink" href="#iceprod.server.grid.grid.GRID_STATES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.check_and_clean">
+<code class="descname">check_and_clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_and_clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_and_clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check and Clean the Grid</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.queue">
+<code class="descname">queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.queue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queue tasks to the grid</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.check_iceprod">
+<code class="descname">check_iceprod</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_iceprod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_iceprod" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if any task is in a state for too long</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.check_grid">
+<code class="descname">check_grid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>check the queueing system for problems</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.add_tasks_to_pilot_lookup">
+<code class="descname">add_tasks_to_pilot_lookup</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.add_tasks_to_pilot_lookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.add_tasks_to_pilot_lookup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.setup_pilots">
+<code class="descname">setup_pilots</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.setup_pilots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.setup_pilots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup pilots for the task reqs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.setup_submit_directory">
+<code class="descname">setup_submit_directory</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.setup_submit_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.setup_submit_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up submit directory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.write_cfg">
+<code class="descname">write_cfg</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.write_cfg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.write_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the config file for a task</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.get_submit_args">
+<code class="descname">get_submit_args</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.get_submit_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.get_submit_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the submit arguments to start the loader script.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.get_grid_status">
+<code class="descname">get_grid_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.get_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all tasks running on the queue system.
+Returns {grid_queue_id:{status,submit_dir}}</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.generate_submit_file">
+<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em>, <em>filelist=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.generate_submit_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate queueing system submit file for task in dir.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.submit">
+<code class="descname">submit</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Submit task to queueing system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.grid.grid.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove tasks from queueing system.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="file_io.html"
+                        title="previous chapter">File IO</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gridftp.html"
+                        title="next chapter">Asynchronous GridFTP</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/grid.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gridftp.html" title="Asynchronous GridFTP"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="file_io.html" title="File IO"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

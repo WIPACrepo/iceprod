@@ -1,0 +1,306 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Pool &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Schedule" href="schedule.html" />
+    <link rel="prev" title="Nginx" href="nginx.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="schedule.html" title="Schedule"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="nginx.html" title="Nginx"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pool">
+<span id="index-0"></span><span id="id1"></span><h1>Pool<a class="headerlink" href="#pool" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-iceprod.server.pool"></span><p>Simple Thread Pools</p>
+<p>copyright (c) 2012 the icecube collaboration</p>
+<dl class="class">
+<dt id="iceprod.server.pool.deque2">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">deque2</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#deque2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.deque2" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="iceprod.server.pool.deque2.put">
+<code class="descname">put</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.deque2.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an element to the right side of the deque.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.put_nowait">
+<code class="descname">put_nowait</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.deque2.put_nowait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an element to the right side of the deque.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.deque2.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove and return the leftmost element.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.get_nowait">
+<code class="descname">get_nowait</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.deque2.get_nowait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove and return the leftmost element.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.pool.deque2.qsize">
+<code class="descname">qsize</code><a class="headerlink" href="#iceprod.server.pool.deque2.qsize" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__len__() &lt;==&gt; len(x)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.pool.deque2.unfinished_tasks">
+<code class="descname">unfinished_tasks</code><a class="headerlink" href="#iceprod.server.pool.deque2.unfinished_tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>x.__len__() &lt;==&gt; len(x)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.pool.deque2.mutex">
+<code class="descname">mutex</code><em class="property"> = None</em><a class="headerlink" href="#iceprod.server.pool.deque2.mutex" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.empty">
+<code class="descname">empty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.deque2.empty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all elements from the deque.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.full">
+<code class="descname">full</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#deque2.full"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.deque2.full" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.task_done">
+<code class="descname">task_done</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#deque2.task_done"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.deque2.task_done" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.deque2.join">
+<code class="descname">join</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#deque2.join"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.deque2.join" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.ThreadPool">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">ThreadPool</code><span class="sig-paren">(</span><em>num_threads=1</em>, <em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pool of threads consuming tasks from a queue</p>
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.pause">
+<code class="descname">pause</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.pause"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.pause" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.start">
+<code class="descname">start</code><span class="sig-paren">(</span><em>num_threads=None</em>, <em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.finish">
+<code class="descname">finish</code><span class="sig-paren">(</span><em>blocking=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.finish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.finish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for completion of all the tasks in the queue</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.disable_output_queue">
+<code class="descname">disable_output_queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.disable_output_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.disable_output_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.enable_output_queue">
+<code class="descname">enable_output_queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.enable_output_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.enable_output_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.add_task">
+<code class="descname">add_task</code><span class="sig-paren">(</span><em>func</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.add_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the queue</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.ThreadPool.map">
+<code class="descname">map</code><span class="sig-paren">(</span><em>func</em>, <em>iterargs=None</em>, <em>iterkwargs=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPool.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPool.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map a function to iterables containing any arguments</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.ThreadPoolDeque">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">ThreadPoolDeque</code><span class="sig-paren">(</span><em>num_threads=1</em>, <em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#ThreadPoolDeque"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.ThreadPoolDeque" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread Pool with deque as base.  Good for single-process work.  Do not use with multiprocessing.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.PriorityThreadPool">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">PriorityThreadPool</code><span class="sig-paren">(</span><em>num_threads=1</em>, <em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#PriorityThreadPool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.PriorityThreadPool" title="Permalink to this definition">¶</a></dt>
+<dd><p>A priority queue backed ThreadPool</p>
+<dl class="attribute">
+<dt id="iceprod.server.pool.PriorityThreadPool.maxint">
+<code class="descname">maxint</code><em class="property"> = 9223372036854775807</em><a class="headerlink" href="#iceprod.server.pool.PriorityThreadPool.maxint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.PriorityThreadPool.time">
+<code class="descname">time</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.server.pool.PriorityThreadPool.time" title="Permalink to this definition">¶</a></dt>
+<dd><p>time() -&gt; floating point number</p>
+<p>Return the current time in seconds since the Epoch.
+Fractions of a second may be present if the system clock provides them.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.GroupingThreadPool">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">GroupingThreadPool</code><span class="sig-paren">(</span><em>num_threads=1</em>, <em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#GroupingThreadPool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.GroupingThreadPool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread Pool that groups multiple tasks into a single task.  Good for combining db transactions.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.SingleGrouping">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">SingleGrouping</code><span class="sig-paren">(</span><em>init=None</em>, <em>exit=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#SingleGrouping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.SingleGrouping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Single Threaded Grouping Thread Pool.  Good for DB writes, since only one can happen at a time.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.pool.NamedThreadPool">
+<em class="property">class </em><code class="descclassname">iceprod.server.pool.</code><code class="descname">NamedThreadPool</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Thread Pool that groups tasks by name, running only one &#8220;name&#8221; at once.</p>
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.pause">
+<code class="descname">pause</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.pause"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.pause" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.start">
+<code class="descname">start</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.finish">
+<code class="descname">finish</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.finish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.finish" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.disable_output_queue">
+<code class="descname">disable_output_queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.disable_output_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.disable_output_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.enable_output_queue">
+<code class="descname">enable_output_queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.enable_output_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.enable_output_queue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.pool.NamedThreadPool.add_task">
+<code class="descname">add_task</code><span class="sig-paren">(</span><em>name</em>, <em>func</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/pool.html#NamedThreadPool.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.pool.NamedThreadPool.add_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to the queue</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="nginx.html"
+                        title="previous chapter">Nginx</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="schedule.html"
+                        title="next chapter">Schedule</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/pool.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="schedule.html" title="Schedule"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="nginx.html" title="Nginx"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

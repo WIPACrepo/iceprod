@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>File IO &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Grid Queueing" href="grid.html" />
+    <link rel="prev" title="DB Methods" href="dbmethods.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Grid Queueing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dbmethods.html" title="DB Methods"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.file_io">
+<span id="id1"></span><span id="file-io"></span><span id="index-0"></span><h1>File IO<a class="headerlink" href="#module-iceprod.server.file_io" title="Permalink to this headline">¶</a></h1>
+<p>A <a class="reference external" href="https://docs.python.org/dev/library/concurrent.futures.html">Futures</a>-based
+file IO library using the Tornado
+<a class="reference external" href="http://tornado.readthedocs.org/en/latest/concurrent.html#tornado.concurrent.run_on_executor">concurrent.run_on_executor</a>
+decorator. Requires either Python &gt;= 3.2 or the <cite>futures</cite> package from pip.</p>
+<p>Tornado applications should be able to use it directly in a
+<a class="reference external" href="http://tornado.readthedocs.org/en/latest/gen.html#tornado.gen.coroutine">gen.coroutine</a>
+decorator, like so:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">iceprod.server.file_io</span> <span class="k">import</span> <span class="n">AsyncFileIO</span>
+<span class="k">class</span> <span class="nc">MyHandler</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">io</span> <span class="o">=</span> <span class="n">AsyncFileIO</span><span class="p">()</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">io</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;my_file.txt&#39;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">AsyncFileIO</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="iceprod.server.file_io.AsyncFileIO">
+<em class="property">class </em><code class="descclassname">iceprod.server.file_io.</code><code class="descname">AsyncFileIO</code><span class="sig-paren">(</span><em>executor=None</em>, <em>io_loop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Async File IO hidden behind threads using concurrent.futures.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>executor</strong> &#8211; A concurrent.futures.Executor object, optional.
+Defaults to a 1 thread Executor.</li>
+<li><strong>io_loop</strong> &#8211; A tornado.ioloop.IOLoop object, optional.
+Defaults to the current IOLoop.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iceprod.server.file_io.AsyncFileIO.open">
+<code class="descname">open</code><span class="sig-paren">(</span><em>name</em>, <em>mode=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> &#8211; Filename of a file.</li>
+<li><strong>mode</strong> &#8211; Mode to open a file in, optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">file object.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be opened.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.file_io.AsyncFileIO.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>file</em>, <em>bytes=65536</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read from an open file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>file</strong> &#8211; Open file object.</li>
+<li><strong>bytes</strong> &#8211; Number of bytes to read, defaults to 64k.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Data read from file.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be read from.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.file_io.AsyncFileIO.readline">
+<code class="descname">readline</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.readline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.readline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a line from an open file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> &#8211; Open file object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A line from the file.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body">IOError if file cannot be read from.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.file_io.AsyncFileIO.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>file</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write some data to an open file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>file</strong> &#8211; Open file object.</li>
+<li><strong>data</strong> &#8211; Some data to write.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last">IOError if file cannot be written to.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.file_io.AsyncFileIO.close">
+<code class="descname">close</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/file_io.html#AsyncFileIO.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.file_io.AsyncFileIO.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close an open file object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> &#8211; Open file object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body">IOError if file cannot be closed.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dbmethods.html"
+                        title="previous chapter">DB Methods</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="grid.html"
+                        title="next chapter">Grid Queueing</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/file_io.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Grid Queueing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dbmethods.html" title="DB Methods"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

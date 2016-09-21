@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JSON Utilities &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="Config File Meta-Language Parser" href="parser.html" />
+    <link rel="prev" title="JSON-RPC" href="jsonRPCclient.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="parser.html" title="Config File Meta-Language Parser"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="jsonRPCclient.html" title="JSON-RPC"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.core.jsonUtil">
+<span id="json-utilities"></span><span id="jsonutil"></span><span id="index-0"></span><h1>JSON Utilities<a class="headerlink" href="#module-iceprod.core.jsonUtil" title="Permalink to this headline">¶</a></h1>
+<p>Some JSON encoding and decoding utilities.</p>
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.json_compressor">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">json_compressor</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#json_compressor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.json_compressor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for files and other large things sent over json.
+Great for log files.</p>
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.json_compressor.compress">
+<em class="property">static </em><code class="descname">compress</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#json_compressor.compress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.json_compressor.compress" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.json_compressor.uncompress">
+<em class="property">static </em><code class="descname">uncompress</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#json_compressor.uncompress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.json_compressor.uncompress" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.datetime_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">datetime_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#datetime_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.datetime_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.datetime_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#datetime_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.datetime_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.datetime_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#datetime_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.datetime_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.date_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">date_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#date_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.date_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.date_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#date_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.date_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.time_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">time_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#time_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.time_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.time_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#time_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.time_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.binary_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">binary_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#binary_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.binary_converter" title="Permalink to this definition">¶</a></dt>
+<dd><p>note that is is really only for decode of json, since python bytes are strings</p>
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.binary_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#binary_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.binary_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.binary_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#binary_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.binary_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.bytearray_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">bytearray_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#bytearray_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.bytearray_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.bytearray_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#bytearray_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.bytearray_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.bytearray_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#bytearray_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.bytearray_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.set_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">set_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#set_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.set_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.set_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#set_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.set_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.set_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#set_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.set_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.var_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">var_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#var_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.var_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.var_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#var_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.var_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.var_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#var_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.var_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.iface_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">iface_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#iface_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.iface_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.iface_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#iface_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.iface_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.iface_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#iface_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.iface_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonUtil.repr_converter">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">repr_converter</code><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#repr_converter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.repr_converter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.repr_converter.dumps">
+<em class="property">static </em><code class="descname">dumps</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#repr_converter.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.repr_converter.dumps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="iceprod.core.jsonUtil.repr_converter.loads">
+<em class="property">static </em><code class="descname">loads</code><span class="sig-paren">(</span><em>obj</em>, <em>name=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#repr_converter.loads"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.repr_converter.loads" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.jsonUtil.objToJSON">
+<code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">objToJSON</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#objToJSON"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.objToJSON" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.jsonUtil.JSONToObj">
+<code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">JSONToObj</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#JSONToObj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.JSONToObj" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.jsonUtil.recursive_unicode">
+<code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">recursive_unicode</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#recursive_unicode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.recursive_unicode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Walks a simple data structure, converting byte strings to unicode.</p>
+<p>Supports lists, tuples, and dictionaries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.jsonUtil.json_encode">
+<code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">json_encode</code><span class="sig-paren">(</span><em>value</em>, <em>indent=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#json_encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.json_encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>JSON-encodes the given Python object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.jsonUtil.json_decode">
+<code class="descclassname">iceprod.core.jsonUtil.</code><code class="descname">json_decode</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonUtil.html#json_decode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonUtil.json_decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns Python objects for the given JSON string.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="jsonRPCclient.html"
+                        title="previous chapter">JSON-RPC</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="parser.html"
+                        title="next chapter">Config File Meta-Language Parser</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/jsonUtil.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="parser.html" title="Config File Meta-Language Parser"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="jsonRPCclient.html" title="JSON-RPC"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

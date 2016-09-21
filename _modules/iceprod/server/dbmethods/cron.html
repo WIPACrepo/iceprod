@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.dbmethods.cron &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server.dbmethods" href="../dbmethods.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" accesskey="U">iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.dbmethods.cron</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Cron database methods</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">dbmethod</span><span class="p">,</span><span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span> <span class="n">nowstr</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods.cron&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="cron"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron">[docs]</a><span class="k">class</span> <span class="nc">cron</span><span class="p">(</span><span class="n">_Methods_Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The scheduled (cron) DB methods.</span>
+
+<span class="sd">    Takes a handle to a subclass of iceprod.server.modules.db.DBAPI</span>
+<span class="sd">    as an argument.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="cron.cron_dataset_completion"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_dataset_completion">[docs]</a>    <span class="k">def</span> <span class="nf">cron_dataset_completion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check for newly completed datasets and mark them as such&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id,jobs_submitted,tasks_submitted &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from dataset where status = ? &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_dataset_completion_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_cron_dataset_completion_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">ntasks</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;jobs_submitted&#39;</span><span class="p">:</span><span class="n">njobs</span><span class="p">,</span>
+                                        <span class="s">&#39;tasks_submitted&#39;</span><span class="p">:</span><span class="n">ntasks</span><span class="p">,</span>
+                                        <span class="s">&#39;task_status&#39;</span><span class="p">:</span><span class="nb">set</span><span class="p">(),</span>
+                                        <span class="s">&#39;ntasks&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id,task_status from search &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id in (&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">])</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">datasets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_dataset_completion_callback2</span><span class="p">,</span><span class="n">datasets</span><span class="p">,</span>
+                         <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_cron_dataset_completion_callback2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">datasets</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">task_status</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;ntasks&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;task_status&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task_status</span><span class="p">)</span>
+
+            <span class="n">dataset_status</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">dataset_id</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+                <span class="n">total_tasks</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;tasks_submitted&#39;</span><span class="p">]</span>
+                <span class="c">#tasks_per_job = int(total_tasks/total_jobs)</span>
+                <span class="n">ntasks</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;ntasks&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">ntasks</span> <span class="o">&lt;</span> <span class="n">total_tasks</span><span class="p">:</span>
+                    <span class="k">continue</span> <span class="c"># not all tasks accounted for</span>
+                <span class="n">task_statuses</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;task_status&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;waiting&#39;</span><span class="p">,</span><span class="s">&#39;queued&#39;</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="s">&#39;resume&#39;</span><span class="p">,</span><span class="s">&#39;reset&#39;</span><span class="p">}:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;dataset %s task statues %r&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">task_statuses</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">}:</span>
+                        <span class="n">dataset_status</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;complete&#39;</span>
+                    <span class="k">elif</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="s">&#39;failed&#39;</span><span class="p">}:</span>
+                        <span class="n">dataset_status</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;errors&#39;</span>
+                    <span class="k">elif</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="s">&#39;failed&#39;</span><span class="p">,</span><span class="s">&#39;suspended&#39;</span><span class="p">}:</span>
+                        <span class="n">dataset_status</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;suspended&#39;</span>
+            <span class="k">if</span> <span class="n">dataset_status</span><span class="p">:</span>
+                <span class="c"># update dataset statuses</span>
+                <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+                <span class="n">statuses</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">dataset_id</span> <span class="ow">in</span> <span class="n">dataset_status</span><span class="p">:</span>
+                    <span class="n">status</span> <span class="o">=</span> <span class="n">dataset_status</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;dataset %s marked as %s&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">status</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">:</span>
+                        <span class="n">statuses</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="n">statuses</span><span class="p">[</span><span class="n">status</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span>
+                <span class="n">multi_sql</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">multi_bindings</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">master_sql</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">master_bindings</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">:</span>
+                    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span><span class="p">,)</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update dataset set status = ?&#39;</span>
+                    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s">&#39;complete&#39;</span><span class="p">:</span>
+                        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;, end_date = ? &#39;</span>
+                        <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">now</span><span class="p">,)</span>
+                    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id in (&#39;</span>
+                    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">[</span><span class="n">s</span><span class="p">]])</span>
+                    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
+                    <span class="n">bindings</span> <span class="o">+=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">[</span><span class="n">s</span><span class="p">]])</span>
+                    <span class="n">multi_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+                    <span class="n">multi_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+                    <span class="c"># now prepare individual master sqls</span>
+                    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span><span class="p">,)</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update dataset set status = ?&#39;</span>
+                    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s">&#39;complete&#39;</span><span class="p">:</span>
+                        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;, end_date = ? &#39;</span>
+                        <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">now</span><span class="p">,)</span>
+                    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id = ? &#39;</span>
+                    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">statuses</span><span class="p">[</span><span class="n">s</span><span class="p">]:</span>
+                        <span class="n">master_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+                        <span class="n">master_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bindings</span><span class="o">+</span><span class="p">(</span><span class="n">d</span><span class="p">,))</span>
+                <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_dataset_completion_callback3</span><span class="p">,</span>
+                             <span class="n">master_sql</span><span class="p">,</span><span class="n">master_bindings</span><span class="p">,</span><span class="n">now</span><span class="p">,</span>
+                             <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">multi_sql</span><span class="p">,</span><span class="n">multi_bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_cron_dataset_completion_callback3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">master_sql</span><span class="p">,</span>
+                                           <span class="n">master_bindings</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span>
+                                           <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="k">for</span> <span class="n">sql</span><span class="p">,</span><span class="n">bindings</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">master_sql</span><span class="p">,</span><span class="n">master_bindings</span><span class="p">):</span>
+                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">bindings</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">sql</span><span class="p">,</span><span class="n">bindings</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">master_sql</span><span class="p">,</span><span class="n">master_bindings</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">bindings</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+            <span class="c"># TODO: consolidate dataset statistics</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="cron.cron_remove_old_passkeys"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_remove_old_passkeys">[docs]</a>    <span class="k">def</span> <span class="nf">cron_remove_old_passkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from passkey where expire &lt; ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_remove_old_passkeys_cb</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_cron_remove_old_passkeys_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="cron.cron_generate_web_graphs"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_generate_web_graphs">[docs]</a>    <span class="k">def</span> <span class="nf">cron_generate_web_graphs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_status, count(*) from search &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where task_status not in (?,?,?) group by task_status&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;idle&#39;</span><span class="p">,</span><span class="s">&#39;waiting&#39;</span><span class="p">,</span><span class="s">&#39;complete&#39;</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_generate_web_graphs_cb</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_cron_generate_web_graphs_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">status</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+        <span class="n">graph_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;graph&#39;</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into graph (graph_id, name, value, timestamp) &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?,?)&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">graph_id</span><span class="p">,</span> <span class="s">&#39;active_tasks&#39;</span><span class="p">,</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">results</span><span class="p">),</span> <span class="n">now</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_generate_web_graphs_cb2</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_cron_generate_web_graphs_cb2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">time_interval</span> <span class="o">=</span> <span class="n">datetime2str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">-</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select count(*) from task where status = ? and &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;status_changed &gt; ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;complete&#39;</span><span class="p">,</span> <span class="n">time_interval</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_generate_web_graphs_cb3</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_cron_generate_web_graphs_cb3</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;completions&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">ret</span> <span class="ow">and</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="n">graph_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;graph&#39;</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into graph (graph_id, name, value, timestamp) &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?,?)&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">graph_id</span><span class="p">,</span> <span class="s">&#39;completed_tasks&#39;</span><span class="p">,</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">results</span><span class="p">),</span> <span class="n">now</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cron_generate_web_graphs_cb4</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_cron_generate_web_graphs_cb4</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" >iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

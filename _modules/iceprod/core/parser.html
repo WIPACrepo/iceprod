@@ -1,0 +1,527 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.core.parser &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.core" href="../core.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" accesskey="U">iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.core.parser</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A `recursive descent parser </span>
+<span class="sd">&lt;http://en.wikipedia.org/wiki/Recursive_descent_parser&gt;`_ for the IceProd meta </span>
+<span class="sd">language. Most commonly used in IceProd dataset configurations to refer to </span>
+<span class="sd">other parts of the same configuration.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="k">class</span> <span class="nc">safe_eval</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ast</span>
+    <span class="kn">import</span> <span class="nn">operator</span> <span class="k">as</span> <span class="nn">op</span>
+    <span class="c"># supported operators</span>
+    <span class="n">operators</span> <span class="o">=</span> <span class="p">{</span><span class="n">ast</span><span class="o">.</span><span class="n">Add</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">add</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">Sub</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">sub</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">Mult</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">Div</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">truediv</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">FloorDiv</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">floordiv</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">Mod</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">mod</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">Pow</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">pow</span><span class="p">,</span>
+                 <span class="n">ast</span><span class="o">.</span><span class="n">BitXor</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">xor</span><span class="p">}</span>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="safe_eval.eval"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.safe_eval.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">expr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Safe evaluation of arithmatic operations using </span>
+<span class="sd">        :mod:`Abstract Syntax Trees &lt;ast&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">__eval</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c"># Module(body=[Expr(value=...)])</span></div>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__eval</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">ast</span><span class="o">.</span><span class="n">Num</span><span class="p">):</span> <span class="c"># &lt;number&gt;</span>
+            <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="n">n</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">ast</span><span class="o">.</span><span class="n">operator</span><span class="p">):</span> <span class="c"># &lt;operator&gt;</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">operators</span><span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">ast</span><span class="o">.</span><span class="n">BinOp</span><span class="p">):</span> <span class="c"># &lt;left&gt; &lt;operator&gt; &lt;right&gt;</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">__eval</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">op</span><span class="p">)(</span><span class="n">cls</span><span class="o">.</span><span class="n">__eval</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">left</span><span class="p">),</span> <span class="n">cls</span><span class="o">.</span><span class="n">__eval</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">right</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+
+<span class="k">class</span> <span class="nc">GrammarException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+<span class="k">class</span> <span class="nc">ParseObj</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A object container for temporary parsed objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obj</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span>
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attempt conversion to int, float, bool&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;true&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;false&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="k">False</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span>           
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;&#39;%s&#39; object has no attribute &#39;__getitem__&#39;&quot;</span><span class="o">%</span>
+                            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,))</span>
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span>
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">other</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">other</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">obj</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">==</span> <span class="n">other</span>
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span> <span class="o">==</span> <span class="n">other</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ExpParser"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.ExpParser">[docs]</a><span class="k">class</span> <span class="nc">ExpParser</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Expression parsing class for parameter values.</span>
+<span class="sd">    </span>
+<span class="sd">    Grammar Definition::</span>
+<span class="sd">    </span>
+<span class="sd">        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~[]{}</span>
+<span class="sd">        word     := char | char + word</span>
+<span class="sd">        starter  := $</span>
+<span class="sd">        scopeL   := (</span>
+<span class="sd">        scopeR   := )</span>
+<span class="sd">        symbol   := starter | starter + word</span>
+<span class="sd">        phrase   := symbol + scopeL + sentence + scopeR</span>
+<span class="sd">        sentence := phrase | word | phrase + sentence | word + sentence</span>
+<span class="sd">    </span>
+<span class="sd">    Keywords:</span>
+<span class="sd">    </span>
+<span class="sd">    * steering : A parameter from :class:`iceprod.core.dataclasses.Steering`</span>
+<span class="sd">    * system : A system value from :class:`iceprod.core.dataclasses.Steering`</span>
+<span class="sd">    * args, options : An option value from :class:`iceprod.core.dataclasses.Job`</span>
+<span class="sd">    * metadata : A value from :class:`iceprod.core.dataclasses.Dif` or</span>
+<span class="sd">      :class:`iceprod.core.dataclasses.Plus`</span>
+<span class="sd">    * eval : An arithmatic expression</span>
+<span class="sd">    * choice : A random choice from a list of possibilites</span>
+<span class="sd">    * sprintf : The sprintf string syntax</span>
+<span class="sd">    </span>
+<span class="sd">    Examples::</span>
+<span class="sd">    </span>
+<span class="sd">        $steering(my_parameter)</span>
+<span class="sd">        $system(gpu_opts)</span>
+<span class="sd">        $args(option1)</span>
+<span class="sd">        $options(option1)</span>
+<span class="sd">        $metadata(sensor_name)</span>
+<span class="sd">        $eval(1+2)</span>
+<span class="sd">        $choice(1,2,3,4)</span>
+<span class="sd">        $sprintf(&quot;%04d&quot;,4)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c"># dict of keyword : function mappings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;steering&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">steering_func</span><span class="p">,</span>
+                         <span class="s">&#39;system&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_func</span><span class="p">,</span>
+                         <span class="s">&#39;args&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">options_func</span><span class="p">,</span>
+                         <span class="s">&#39;options&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">options_func</span><span class="p">,</span>
+                         <span class="s">&#39;metadata&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">difplus_func</span><span class="p">,</span>
+                         <span class="s">&#39;eval&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_func</span><span class="p">,</span>
+                         <span class="s">&#39;choice&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">choice_func</span><span class="p">,</span>
+                         <span class="s">&#39;sprintf&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sprintf_func</span>
+                        <span class="p">}</span>
+    
+<div class="viewcode-block" id="ExpParser.parse"><a class="viewcode-back" href="../../../core/parser.html#iceprod.core.parser.ExpParser.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">,</span><span class="n">job</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">env</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse the input, expanding where possible.</span>
+<span class="sd">        </span>
+<span class="sd">        :param input: input string</span>
+<span class="sd">        :param job: :class:`iceprod.core.dataclasses.Job`, optional</span>
+<span class="sd">        :param env: env dictionary, optional</span>
+<span class="sd">        :returns: expanded string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">input</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">input</span>
+        <span class="nb">input</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="c"># set job and env</span>
+        <span class="k">if</span> <span class="n">job</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="n">job</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">env</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="n">env</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># start at a depth of 0</span>
+        <span class="c"># parse input</span>
+        <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="c"># unset job and env</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="c"># return parsed output</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="n">right</span><span class="p">)</span><span class="o">.</span><span class="n">output</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">sentence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarError</span><span class="p">(</span><span class="s">&#39;too recursive, check for circular dependencies&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phrase</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">GrammarException</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">word</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(),</span><span class="nb">input</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">left</span> <span class="ow">and</span> <span class="n">right</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">left2</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+            <span class="n">left</span> <span class="o">+=</span> <span class="n">left2</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">right</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">left</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">phrase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="c"># should be symbol + scopeL + sentence + scopeR</span>
+        <span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbol</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">sL</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scopeL</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">sen</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">sR</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scopeR</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+        
+        <span class="c"># do actual processing</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_phrase</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">sen</span><span class="p">))</span>
+        
+        <span class="c"># return processed work + input to the right</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">right</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">symbol</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="c"># should be starter | starter + word</span>
+        <span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">starter</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">word</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">GrammarException</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">right</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">sym</span> <span class="o">+</span> <span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">scopeL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;(&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing scopeL&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">scopeR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing scopeR&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">starter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;$&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing symbol starter&#39;</span><span class="p">)</span>
+
+    <span class="n">special_chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="s">&#39;$()&#39;</span><span class="p">)</span>
+    <span class="n">chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">printable</span><span class="p">)</span><span class="o">-</span><span class="n">special_chars</span>
+    <span class="k">def</span> <span class="nf">word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">special_chars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">special_chars</span>
+        <span class="n">chars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chars</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">l</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">input</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;</span><span class="se">\\</span><span class="s">&#39;</span> <span class="ow">and</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">&lt;</span> <span class="n">l</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">special_chars</span><span class="p">:</span>
+                <span class="n">l</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="nb">input</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">elif</span> <span class="nb">input</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">chars</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;no chars in word&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[:</span><span class="n">i</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="n">i</span><span class="p">:]))</span>
+
+    <span class="c"># done with grammar</span>
+    <span class="c"># do actual work now</span>
+
+    <span class="k">def</span> <span class="nf">process_phrase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sym</span><span class="p">,</span><span class="n">sentence</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; symbol is $ + word</span>
+<span class="sd">            sentence is reduced to word</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">sym</span> <span class="o">==</span> <span class="s">&#39;$&#39;</span><span class="p">:</span>
+            <span class="n">keyword</span> <span class="o">=</span> <span class="n">sentence</span>
+            <span class="n">param</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">keyword</span> <span class="o">=</span> <span class="n">sym</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">param</span> <span class="o">=</span> <span class="n">sentence</span>
+        <span class="c"># search for keyword in special list</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span> <span class="ow">and</span> <span class="n">param</span> <span class="o">!=</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keywords</span><span class="p">[</span><span class="n">keyword</span><span class="p">](</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+            <span class="k">except</span> <span class="n">GrammarException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># do general search for keyword</span>
+            <span class="n">keyword</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">keyword</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;parameters&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="ow">and</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]:</span>
+                <span class="c"># search env params first</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">keyword</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="n">keyword</span><span class="p">],</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="c"># search job second</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="n">keyword</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="k">elif</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span> <span class="c"># search options third</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">keyword</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s">&#39;error&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">pass</span>
+        
+        <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">sym</span><span class="o">+</span><span class="s">&#39;(&#39;</span><span class="o">+</span><span class="n">sentence</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">left</span><span class="p">,</span><span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">left</span> <span class="o">+</span> <span class="n">right</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    
+    <span class="k">def</span> <span class="nf">steering_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find param in steering&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;parameters&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;steering:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">system_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find param in steering.system&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;system&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;system:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">options_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find param in options&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;options:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">difplus_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find param in dif plus&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># try dif, then plus</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">][</span><span class="s">&#39;dif&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">][</span><span class="s">&#39;plus&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;difplus:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">choice_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate param as choice expression&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;not a valid choice&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">eval_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate param as arithmetic expression&quot;&quot;&quot;</span>
+        <span class="c">#bad = re.search(r&#39;(import)|(open)|(for)|(while)|(def)|(class)|(lambda)&#39;, param )</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="ow">or</span> <span class="p">(</span><span class="n">b</span> <span class="ow">in</span> <span class="n">param</span><span class="p">),(</span><span class="s">&#39;import&#39;</span><span class="p">,</span><span class="s">&#39;open&#39;</span><span class="p">,</span><span class="s">&#39;for&#39;</span><span class="p">,</span><span class="s">&#39;while&#39;</span><span class="p">,</span><span class="s">&#39;def&#39;</span><span class="p">,</span><span class="s">&#39;class&#39;</span><span class="p">,</span><span class="s">&#39;lambda&#39;</span><span class="p">),</span><span class="k">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;Unsafe operator call&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">safe_eval</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;Eval is not basic arithmetic&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">sprintf_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate param as sprintf.  param = arg_str, arg0, arg1, ... &quot;&quot;&quot;</span>
+        <span class="c"># separate into format string and args</span>
+        <span class="n">strchar</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">strchar</span> <span class="ow">in</span> <span class="s">&#39;</span><span class="se">\&#39;</span><span class="s">&quot;&#39;</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">strchar</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&quot;Can&#39;t find closing quote for format string&quot;</span><span class="p">)</span>
+            <span class="n">fmt_str</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">pos</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&quot;Can&#39;t find end of format string&quot;</span><span class="p">)</span>
+            <span class="n">fmt_str</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">pos</span><span class="p">]</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="n">pos</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">pos</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">pos2</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pos2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="n">pos</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">pos2</span><span class="p">])</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">pos2</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># cast args to correct type</span>
+            <span class="k">def</span> <span class="nf">cast_string</span><span class="p">(</span><span class="n">fstring</span><span class="p">,</span><span class="n">arg</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;cast string to value according to formatting character&quot;&quot;&quot;</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">fstring</span><span class="p">:</span> <span class="k">return</span> <span class="n">arg</span>
+                <span class="k">if</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;cs&#39;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;</span><span class="se">\&#39;</span><span class="s">&quot;&#39;</span><span class="p">:</span>            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>                          <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;r&#39;</span><span class="p">:</span>           <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;idu&#39;</span><span class="p">:</span>         <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="s">&#39;feg&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;x&#39;</span><span class="p">:</span>   <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="s">&#39;0x%s&#39;</span> <span class="o">%</span> <span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">fstring</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;o&#39;</span><span class="p">:</span>           <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="s">&#39;0%s&#39;</span> <span class="o">%</span> <span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;Unable to cast %s using format %s&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span><span class="n">fstring</span><span class="p">))</span>
+            
+            <span class="n">fstrings</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&#39;\%[#0\- +]{0,1}[0-9]*\.{0,1}[0-9]*[csridufegExXo]&#39;</span><span class="p">,</span><span class="n">fmt_str</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">cast_string</span><span class="p">,</span><span class="n">fstrings</span><span class="p">,</span><span class="n">args</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)]</span>
+            
+            <span class="c"># do sprintf on fmt_str and args</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">fmt_str</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">fmt_str</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" >iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

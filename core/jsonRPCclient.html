@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JSON-RPC &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="JSON Utilities" href="jsonUtil.html" />
+    <link rel="prev" title="Core Init" href="init.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="jsonUtil.html" title="JSON Utilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="init.html" title="Core Init"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="json-rpc">
+<span id="index-0"></span><h1>JSON-RPC<a class="headerlink" href="#json-rpc" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="json-rpc-message-protocol">
+<span id="jsonrpcprotocol"></span><h2>JSON-RPC Message Protocol<a class="headerlink" href="#json-rpc-message-protocol" title="Permalink to this headline">¶</a></h2>
+<p>The RPC protocol is built on http(s), with the body containing
+a json-encoded dictionary:</p>
+<p>Request Object:</p>
+<ul class="simple">
+<li>method (string) - Name of the method to be invoked.</li>
+<li>params (dict) - Keyword arguments to the method.</li>
+</ul>
+<p>Response Object:</p>
+<ul class="simple">
+<li>result (object) - The returned result from the method. This is REQUIRED on
+success, and MUST NOT exist if there was an error.</li>
+<li>error (object) - A description of the error, likely an Exception object.
+This is REQUIRED on error and MUST NOT exist on success.</li>
+</ul>
+</div>
+<div class="section" id="module-iceprod.core.jsonRPCclient">
+<span id="json-rpc-client"></span><span id="jsonrpcclient"></span><h2>JSON-RPC Client<a class="headerlink" href="#module-iceprod.core.jsonRPCclient" title="Permalink to this headline">¶</a></h2>
+<p>A simple jsonrpc client using pycurl for the http connection</p>
+<dl class="class">
+<dt id="iceprod.core.jsonRPCclient.JSONRPC">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonRPCclient.</code><code class="descname">JSONRPC</code><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#JSONRPC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>JSONRPC client connection.</p>
+<p>Call JSON-RPC functions as regular function calls.</p>
+<p>JSON-RPC spec: <a class="reference external" href="http://www.jsonrpc.org/specification">http://www.jsonrpc.org/specification</a></p>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">JSONRPC</span><span class="o">.</span><span class="n">set_task_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span><span class="s">&#39;waiting&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="classmethod">
+<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.start">
+<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">start</code><span class="sig-paren">(</span><em>timeout=None</em>, <em>address=None</em>, <em>passkey=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the JSONRPC Client.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.stop">
+<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop the JSONRPC Client.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.restart">
+<em class="property">classmethod </em><code class="descclassname">MetaJSONRPC.</code><code class="descname">restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#iceprod.core.jsonRPCclient.JSONRPC.MetaJSONRPC.restart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restart the JSONRPC Client.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.jsonRPCclient.Client">
+<em class="property">class </em><code class="descclassname">iceprod.core.jsonRPCclient.</code><code class="descname">Client</code><span class="sig-paren">(</span><em>timeout=60.0</em>, <em>address=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raw JSONRPC client object</p>
+<dl class="attribute">
+<dt id="iceprod.core.jsonRPCclient.Client.id">
+<code class="descname">id</code><em class="property"> = 0</em><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.jsonRPCclient.Client.idlock">
+<code class="descname">idlock</code><em class="property"> = &lt;_RLock owner=None count=0&gt;</em><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.idlock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.jsonRPCclient.Client.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.close" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.jsonRPCclient.Client.newid">
+<em class="property">classmethod </em><code class="descname">newid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.newid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.newid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.jsonRPCclient.Client.request">
+<code class="descname">request</code><span class="sig-paren">(</span><em>methodname</em>, <em>kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/jsonRPCclient.html#Client.request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.jsonRPCclient.Client.request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send request to RPC Server</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">JSON-RPC</a><ul>
+<li><a class="reference internal" href="#json-rpc-message-protocol">JSON-RPC Message Protocol</a></li>
+<li><a class="reference internal" href="#module-iceprod.core.jsonRPCclient">JSON-RPC Client</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="init.html"
+                        title="previous chapter">Core Init</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="jsonUtil.html"
+                        title="next chapter">JSON Utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/jsonRPCclient.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="jsonUtil.html" title="JSON Utilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="init.html" title="Core Init"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

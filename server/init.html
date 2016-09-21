@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Server Init &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Module" href="module.html" />
+    <link rel="prev" title="Asynchronous GridFTP" href="gridftp.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="module.html" title="Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gridftp.html" title="Asynchronous GridFTP"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server">
+<span id="id1"></span><span id="server-init"></span><span id="index-0"></span><h1>Server Init<a class="headerlink" href="#module-iceprod.server" title="Permalink to this headline">¶</a></h1>
+<p>Some general functions used by the iceprod server</p>
+<dl class="function">
+<dt id="iceprod.server.find_module_recursive">
+<code class="descclassname">iceprod.server.</code><code class="descname">find_module_recursive</code><span class="sig-paren">(</span><em>name</em>, <em>path=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#find_module_recursive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.find_module_recursive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively search for submodule. Submodules must be separated with a &#8216;.&#8217;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.listmodules">
+<code class="descclassname">iceprod.server.</code><code class="descname">listmodules</code><span class="sig-paren">(</span><em>package_name=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#listmodules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.listmodules" title="Permalink to this definition">¶</a></dt>
+<dd><p>List modules in a package or directory</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.run_module">
+<code class="descclassname">iceprod.server.</code><code class="descname">run_module</code><span class="sig-paren">(</span><em>name</em>, <em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#run_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.run_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import and start the module</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.GlobalID">
+<em class="property">class </em><code class="descclassname">iceprod.server.</code><code class="descname">GlobalID</code><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Global ID configuration and generation</p>
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.CHARS">
+<code class="descname">CHARS</code><em class="property"> = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'</em><a class="headerlink" href="#iceprod.server.GlobalID.CHARS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.CHARS_LEN">
+<code class="descname">CHARS_LEN</code><em class="property"> = 62</em><a class="headerlink" href="#iceprod.server.GlobalID.CHARS_LEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.INTS_DICT">
+<code class="descname">INTS_DICT</code><em class="property"> = {'1': 53, '0': 52, '3': 55, '2': 54, '5': 57, '4': 56, '7': 59, '6': 58, '9': 61, '8': 60, 'A': 26, 'C': 28, 'B': 27, 'E': 30, 'D': 29, 'G': 32, 'F': 31, 'I': 34, 'H': 33, 'K': 36, 'J': 35, 'M': 38, 'L': 37, 'O': 40, 'N': 39, 'Q': 42, 'P': 41, 'S': 44, 'R': 43, 'U': 46, 'T': 45, 'W': 48, 'V': 47, 'Y': 50, 'X': 49, 'Z': 51, 'a': 0, 'c': 2, 'b': 1, 'e': 4, 'd': 3, 'g': 6, 'f': 5, 'i': 8, 'h': 7, 'k': 10, 'j': 9, 'm': 12, 'l': 11, 'o': 14, 'n': 13, 'q': 16, 'p': 15, 's': 18, 'r': 17, 'u': 20, 't': 19, 'w': 22, 'v': 21, 'y': 24, 'x': 23, 'z': 25}</em><a class="headerlink" href="#iceprod.server.GlobalID.INTS_DICT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.IDLEN">
+<code class="descname">IDLEN</code><em class="property"> = 15</em><a class="headerlink" href="#iceprod.server.GlobalID.IDLEN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.MAXSITEID">
+<code class="descname">MAXSITEID</code><em class="property"> = 10000000000</em><a class="headerlink" href="#iceprod.server.GlobalID.MAXSITEID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.MAXLOCALID">
+<code class="descname">MAXLOCALID</code><em class="property"> = 1000000000000000</em><a class="headerlink" href="#iceprod.server.GlobalID.MAXLOCALID" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.int2char">
+<em class="property">classmethod </em><code class="descname">int2char</code><span class="sig-paren">(</span><em>i</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.int2char"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.int2char" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.char2int">
+<em class="property">classmethod </em><code class="descname">char2int</code><span class="sig-paren">(</span><em>c</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.char2int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.char2int" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.siteID_gen">
+<em class="property">classmethod </em><code class="descname">siteID_gen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.siteID_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.siteID_gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a new site id</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.globalID_gen">
+<em class="property">classmethod </em><code class="descname">globalID_gen</code><span class="sig-paren">(</span><em>id</em>, <em>site_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.globalID_gen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.globalID_gen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a new global id given a local id and site id</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.localID_ret">
+<em class="property">classmethod </em><code class="descname">localID_ret</code><span class="sig-paren">(</span><em>id</em>, <em>type='str'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.localID_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.localID_ret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a local id from a global id</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.GlobalID.siteID_ret">
+<em class="property">classmethod </em><code class="descname">siteID_ret</code><span class="sig-paren">(</span><em>id</em>, <em>type='str'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#GlobalID.siteID_ret"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.GlobalID.siteID_ret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a site id from a global id</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.GlobalID.string">
+<code class="descname">string</code><em class="property"> = &lt;module 'string' from '/usr/lib/python2.7/string.pyc'&gt;</em><a class="headerlink" href="#iceprod.server.GlobalID.string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.calc_dataset_prio">
+<code class="descclassname">iceprod.server.</code><code class="descname">calc_dataset_prio</code><span class="sig-paren">(</span><em>dataset</em>, <em>queueing_factor_priority=1.0</em>, <em>queueing_factor_dataset=1.0</em>, <em>queueing_factor_tasks=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#calc_dataset_prio"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.calc_dataset_prio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the dataset priority.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dataset</strong> &#8211; a dataset with &#8216;dataset_id&#8217;, &#8216;priority&#8217; and &#8216;tasks_submitted&#8217;</li>
+<li><strong>queueing_factor_priority</strong> &#8211; queueing factor for priority</li>
+<li><strong>queueing_factor_dataset</strong> &#8211; queueing factor for dataset id</li>
+<li><strong>queueing_factor_tasks</strong> &#8211; queueing factor for number of tasks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.calc_datasets_prios">
+<code class="descclassname">iceprod.server.</code><code class="descname">calc_datasets_prios</code><span class="sig-paren">(</span><em>datasets</em>, <em>queueing_factor_priority=1.0</em>, <em>queueing_factor_dataset=1.0</em>, <em>queueing_factor_tasks=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#calc_datasets_prios"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.calc_datasets_prios" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the dataset priority for each dataset, normalized.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dataset</strong> &#8211; a dataset with &#8216;dataset_id&#8217;, &#8216;priority&#8217; and &#8216;tasks_submitted&#8217;</li>
+<li><strong>queueing_factor_priority</strong> &#8211; queueing factor for priority</li>
+<li><strong>queueing_factor_dataset</strong> &#8211; queueing factor for dataset id</li>
+<li><strong>queueing_factor_tasks</strong> &#8211; queueing factor for number of tasks</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.salt">
+<code class="descclassname">iceprod.server.</code><code class="descname">salt</code><span class="sig-paren">(</span><em>length=2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#salt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.salt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string of random letters</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.KwargConfig">
+<em class="property">class </em><code class="descclassname">iceprod.server.</code><code class="descname">KwargConfig</code><a class="reference internal" href="../_modules/iceprod/server.html#KwargConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.KwargConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>A way to validate kwargs passed in to a class</p>
+<dl class="method">
+<dt id="iceprod.server.KwargConfig.validate">
+<code class="descname">validate</code><span class="sig-paren">(</span><em>kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#KwargConfig.validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.KwargConfig.validate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.get_pkgdata_filename">
+<code class="descclassname">iceprod.server.</code><code class="descname">get_pkgdata_filename</code><span class="sig-paren">(</span><em>package</em>, <em>resource</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#get_pkgdata_filename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.get_pkgdata_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a filename for a resource bundled within the package</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.get_pkg_binary">
+<code class="descclassname">iceprod.server.</code><code class="descname">get_pkg_binary</code><span class="sig-paren">(</span><em>package</em>, <em>binary</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server.html#get_pkg_binary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.get_pkg_binary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Try finding the binary path based on the python package</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gridftp.html"
+                        title="previous chapter">Asynchronous GridFTP</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="module.html"
+                        title="next chapter">Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/init.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="module.html" title="Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gridftp.html" title="Asynchronous GridFTP"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Detailed Configuration &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="DB Methods" href="dbmethods.html" />
+    <link rel="prev" title="Basic Configuration" href="basic_config.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dbmethods.html" title="DB Methods"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="basic_config.html" title="Basic Configuration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.config">
+<span id="detailed-configuration"></span><span id="config"></span><span id="index-0"></span><h1>Detailed Configuration<a class="headerlink" href="#module-iceprod.server.config" title="Permalink to this headline">¶</a></h1>
+<p>Detailed configuration for IceProd</p>
+<dl class="class">
+<dt id="iceprod.server.config.IceProdConfig">
+<em class="property">class </em><code class="descclassname">iceprod.server.config.</code><code class="descname">IceProdConfig</code><span class="sig-paren">(</span><em>filename=None</em>, <em>defaults=True</em>, <em>validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>IceProd configuration.</p>
+<p>The main iceprod configuration. Designed to be modified in-program,
+not worrying about hand-editing. Currently uses a json file as backing.</p>
+<p>Use just like a dictionary. Note that load() and save() are called
+automatically, but are available for manual calling.</p>
+<p>Note that this class is not thread-safe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> &#8211; filename for config file (optional)</li>
+<li><strong>defaults</strong> &#8211; use default values (optional: default True)</li>
+<li><strong>validate</strong> &#8211; turn validation on/off (optional: default True)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.defaults">
+<code class="descname">defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set default values if unset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.do_validate">
+<code class="descname">do_validate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.do_validate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.do_validate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.load">
+<code class="descname">load</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load config from file, overwriting current contents.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.load_string">
+<code class="descname">load_string</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.load_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.load_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.save_to_string">
+<code class="descname">save_to_string</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.save_to_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.save_to_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.config.IceProdConfig.save">
+<code class="descname">save</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/config.html#IceProdConfig.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.config.IceProdConfig.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save config from file.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="basic_config.html"
+                        title="previous chapter">Basic Configuration</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dbmethods.html"
+                        title="next chapter">DB Methods</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/config.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dbmethods.html" title="DB Methods"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="basic_config.html" title="Basic Configuration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

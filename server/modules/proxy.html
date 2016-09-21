@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Proxy Module &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="IceProd Server" href="../index.html" />
+    <link rel="next" title="Queueing Module" href="queue.html" />
+    <link rel="prev" title="Database Module" href="db.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="queue.html" title="Queueing Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="db.html" title="Database Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.modules.proxy">
+<span id="id1"></span><span id="proxy-module"></span><span id="index-0"></span><h1>Proxy Module<a class="headerlink" href="#module-iceprod.server.modules.proxy" title="Permalink to this headline">¶</a></h1>
+<p>The proxy module is a convenience module for starting and stopping a
+proxy server with IceProd. It currently uses
+<a class="reference external" href="http://www.squid-cache.org/">Squid</a>, which requires installation before
+use. The module will auto-configure <cite>Squid</cite>, so a default install suffices.</p>
+<p>Note that large grids should probably configure and use their own proxy
+infrastructure instead of running this module.</p>
+<dl class="class">
+<dt id="iceprod.server.modules.proxy.proxy">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.proxy.</code><code class="descname">proxy</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the proxy module, which runs a squid proxy</p>
+<dl class="method">
+<dt id="iceprod.server.modules.proxy.proxy.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start proxy if not already running</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.proxy.proxy.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop proxy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.proxy.proxy.kill">
+<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kill proxy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.proxy.proxy.update_cfg">
+<code class="descname">update_cfg</code><span class="sig-paren">(</span><em>newcfg</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.update_cfg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.update_cfg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the cfg, making any necessary changes</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.proxy.ProxyService">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.proxy.</code><code class="descname">ProxyService</code><span class="sig-paren">(</span><em>mod</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#ProxyService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.ProxyService" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override the basic <code class="xref py py-class docutils literal"><span class="pre">Service</span></code> handler to provide a more
+effecient reload method.</p>
+<dl class="method">
+<dt id="iceprod.server.modules.proxy.ProxyService.reload">
+<code class="descname">reload</code><span class="sig-paren">(</span><em>cfg</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#ProxyService.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.ProxyService.reload" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="db.html"
+                        title="previous chapter">Database Module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="queue.html"
+                        title="next chapter">Queueing Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/modules/proxy.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="queue.html" title="Queueing Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="db.html" title="Database Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>From Submission to Queue &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="IceProd Server Details" href="index.html" />
+    <link rel="next" title="Task Relationships" href="task_relationships.html" />
+    <link rel="prev" title="IceProd Server Details" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="task_relationships.html" title="Task Relationships"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Server Details"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="from-submission-to-queue">
+<span id="submit-to-queue"></span><span id="index-0"></span><h1>From Submission to Queue<a class="headerlink" href="#from-submission-to-queue" title="Permalink to this headline">¶</a></h1>
+<p>The following is an explanation of how tasks go from a user
+submission to queued on a grid.</p>
+<div class="section" id="dataset-submission">
+<h2>Dataset Submission<a class="headerlink" href="#dataset-submission" title="Permalink to this headline">¶</a></h2>
+<p>The submit process takes a dataset config as input, usually
+through the website. It then creates the following entries:</p>
+<ul class="simple">
+<li>dataset</li>
+<li>config</li>
+<li>task_rel - one for each task</li>
+</ul>
+<p>Note that if the IceProd instance you submit through does not
+know about a dataset dependency, submission will fail. Try submitting
+through the master instance in that case.</p>
+</div>
+<div class="section" id="buffering">
+<h2>Buffering<a class="headerlink" href="#buffering" title="Permalink to this headline">¶</a></h2>
+<p>Jobs and tasks get buffered, or allocated, when there is empty
+space on a queue that they can run at. Whole jobs are buffered at
+once, so more than the requested number of tasks may be buffered.</p>
+<p>The following entries are made:</p>
+<ul class="simple">
+<li>search</li>
+<li>task</li>
+<li>job</li>
+</ul>
+<div class="section" id="algorithm">
+<h3>Algorithm<a class="headerlink" href="#algorithm" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Get the possible datasets we can buffer from<ul>
+<li>Get number of jobs submitted for each dataset</li>
+<li>Subtract off already buffered jobs</li>
+</ul>
+</li>
+<li>Get task_rel for each dataset</li>
+<li>For each dataset, and potential job to buffer:<ul>
+<li>Generate task dependencies for each task<ul>
+<li>Get a task_rel for the current task</li>
+<li>If missing a task_rel, load it</li>
+<li>Figure out which task is referenced for each task_rel dependency</li>
+</ul>
+</li>
+<li>If a dependency is not met, do not buffer</li>
+<li>Else, buffer the job and associated tasks</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="queueing">
+<h2>Queueing<a class="headerlink" href="#queueing" title="Permalink to this headline">¶</a></h2>
+<p>Once a task is in <cite>waiting</cite> or <cite>idle</cite>, it can be queued
+(pending dependencies and requirements).  See <a class="reference internal" href="lifecycles.html#lifecycles"><span class="std std-ref">Lifecycles</span></a> for the
+actual happenings from this point on.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">From Submission to Queue</a><ul>
+<li><a class="reference internal" href="#dataset-submission">Dataset Submission</a></li>
+<li><a class="reference internal" href="#buffering">Buffering</a><ul>
+<li><a class="reference internal" href="#algorithm">Algorithm</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#queueing">Queueing</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">IceProd Server Details</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="task_relationships.html"
+                        title="next chapter">Task Relationships</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/details/submit_to_queue.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="task_relationships.html" title="Task Relationships"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Server Details"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

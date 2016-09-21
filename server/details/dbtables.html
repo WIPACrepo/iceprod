@@ -1,0 +1,389 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DB Config &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <style> .gray {color:gray} </style><div class="section" id="db-config">
+<span id="dbconfig"></span><h1>DB Config<a class="headerlink" href="#db-config" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tables">
+<span id="dbtables"></span><h2>Tables<a class="headerlink" href="#tables" title="Permalink to this headline">¶</a></h2>
+<p><strong>site</strong></p>
+<ul class="simple">
+<li>site_id : str</li>
+<li>name : str</li>
+<li>institution : str</li>
+<li>queues : Text  <span class="gray"># json of {gridspec:{type,description,resources:{k:[total,empty]}}}</span></li>
+<li>auth_key : str</li>
+<li>website_url : str</li>
+<li>version : str</li>
+<li>last_update : str  <span class="gray"># datetime</span></li>
+<li>admin_name : str</li>
+<li>admin_email : str</li>
+</ul>
+<p><strong>node</strong></p>
+<ul class="simple">
+<li>node_id : str</li>
+<li>hostname : str</li>
+<li>domain : str</li>
+<li>last_update : str  <span class="gray"># datetime</span></li>
+<li>stats : Text  <span class="gray"># json of {name:value}</span></li>
+</ul>
+<p><strong>dataset</strong></p>
+<ul class="simple">
+<li>dataset_id : str</li>
+<li>name : str</li>
+<li>description : str</li>
+<li>gridspec : Text  <span class="gray"># json of {task:[gridspec]}</span></li>
+<li>status : str  <span class="gray"># possible statuses: processing, complete, suspended, errors</span></li>
+<li>username : str</li>
+<li>institution : str</li>
+<li>submit_host : str</li>
+<li>priority : int</li>
+<li>jobs_submitted : int</li>
+<li>tasks_submitted : int</li>
+<li>start_date : str  <span class="gray"># datetime</span></li>
+<li>end_date : str  <span class="gray"># datetime</span></li>
+<li>temporary_storage : Text</li>
+<li>global_storage : Text</li>
+<li>parent_id : str</li>
+<li>stat_keys : Text  <span class="gray"># json of [key1,key2]</span></li>
+<li>categoryvalue_ids : Text  <span class="gray"># csv list of categoryvalues</span></li>
+<li>debug : bool</li>
+</ul>
+<p><strong>dataset_notes</strong></p>
+<ul class="simple">
+<li>dataset_nodes_id : str</li>
+<li>dataset_id : str</li>
+<li>username : str</li>
+<li>date : str  <span class="gray"># datetime</span></li>
+<li>comment : MediumText</li>
+</ul>
+<p><strong>dataset_stat</strong></p>
+<ul class="simple">
+<li>dataset_stat_id : str</li>
+<li>dataset_id : str</li>
+<li>stat : MediumText  <span class="gray"># json of {name:value}</span></li>
+</ul>
+<p><strong>job</strong></p>
+<ul class="simple">
+<li>job_id : str</li>
+<li>status : str  <span class="gray"># possible statuses: processing, complete, suspended, errors</span></li>
+<li>job_index : int  <span class="gray"># index of the job within the dataset</span></li>
+<li>status_changed : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>job_stat</strong></p>
+<ul class="simple">
+<li>job_stat_id : str</li>
+<li>job_id : str</li>
+<li>stat : MediumText  <span class="gray"># json of {name:value}</span></li>
+</ul>
+<p><strong>task_rel</strong></p>
+<ul class="simple">
+<li>task_rel_id : str</li>
+<li>dataset_id : str</li>
+<li>task_index : int  <span class="gray"># index of the task within the config</span></li>
+<li>name : str  <span class="gray"># name of the task</span></li>
+<li>depends : Text  <span class="gray"># csv list of task_rel_ids</span></li>
+<li>requirements : Text  <span class="gray"># json of {name:value}</span></li>
+</ul>
+<p><strong>task</strong></p>
+<ul class="simple">
+<li>task_id : str</li>
+<li>status : str  <span class="gray"># possible statuses: idle, waiting, queued, processing, complete, suspended, failed, resume, reset</span></li>
+<li>prev_status : str</li>
+<li>error_message : Text</li>
+<li>status_changed : str  <span class="gray"># datetime</span></li>
+<li>submit_dir : Text</li>
+<li>grid_queue_id : str</li>
+<li>failures : int</li>
+<li>evictions : int</li>
+<li>depends : Text  <span class="gray"># csv list of task_ids</span></li>
+<li>requirements : Text  <span class="gray"># json of {name:value}. overrides task_rel requirements</span></li>
+<li>task_rel_id : str</li>
+</ul>
+<p><strong>task_stat</strong></p>
+<ul class="simple">
+<li>task_stat_id : str</li>
+<li>task_id : str</li>
+<li>stat : MediumText  <span class="gray"># json of {name:value}</span></li>
+</ul>
+<p><strong>task_log</strong></p>
+<ul class="simple">
+<li>task_log_id : str</li>
+<li>task_id : str</li>
+<li>name : str  <span class="gray"># logfile name</span></li>
+<li>data : MediumText  <span class="gray"># logfile text</span></li>
+</ul>
+<p><strong>task_lookup</strong></p>
+<ul class="simple">
+<li>task_id : str</li>
+<li>req_cpu : int</li>
+<li>req_gpu : int</li>
+<li>req_memory : float</li>
+<li>req_disk : float</li>
+</ul>
+<p><strong>search</strong></p>
+<ul class="simple">
+<li>task_id : str</li>
+<li>job_id : str</li>
+<li>dataset_id : str</li>
+<li>gridspec : str</li>
+<li>name : str  <span class="gray"># identifies the task in job by name or number</span></li>
+<li>task_status : str  <span class="gray"># a replica of task:status</span></li>
+</ul>
+<p><strong>config</strong></p>
+<ul class="simple">
+<li>dataset_id : str</li>
+<li>config_data : MediumText  <span class="gray"># serialized config</span></li>
+<li>difplus_data : MediumText  <span class="gray"># serialized config</span></li>
+</ul>
+<p><strong>data</strong></p>
+<ul class="simple">
+<li>data_id : str</li>
+<li>task_id : str</li>
+<li>url : Text</li>
+<li>compression : str</li>
+<li>type : str</li>
+</ul>
+<p><strong>resource</strong></p>
+<ul class="simple">
+<li>resource_id : str</li>
+<li>url : Text</li>
+<li>compression : str</li>
+<li>arch : str</li>
+</ul>
+<p><strong>categorydef</strong></p>
+<ul class="simple">
+<li>categorydef_id : str</li>
+<li>name : str</li>
+<li>description : str</li>
+</ul>
+<p><strong>categoryvalue</strong></p>
+<ul class="simple">
+<li>categoryvalue_id : str</li>
+<li>categorydef_id : str</li>
+<li>name : str</li>
+<li>description : Text</li>
+</ul>
+<p><strong>history</strong></p>
+<ul class="simple">
+<li>history_id : str</li>
+<li>username : str</li>
+<li>cmd : Text</li>
+<li>timestamp : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>passkey</strong></p>
+<ul class="simple">
+<li>passkey_id : str</li>
+<li>auth_key : str</li>
+<li>expire : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>pilot</strong></p>
+<ul class="simple">
+<li>pilot_id : str</li>
+<li>grid_queue_id : str</li>
+<li>submit_time : str  <span class="gray"># datetime</span></li>
+<li>submit_dir : Text</li>
+<li>tasks : Text  <span class="gray"># csv list of processing task_ids</span></li>
+</ul>
+<p><strong>user</strong></p>
+<ul class="simple">
+<li>user_id : str</li>
+<li>username : str</li>
+<li>password : str</li>
+<li>email : str</li>
+<li>admin : bool</li>
+<li>last_login_time : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>session</strong></p>
+<ul class="simple">
+<li>session_id : str</li>
+<li>session_key : str</li>
+<li>pass_key : str</li>
+<li>last_time : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>webstat</strong></p>
+<ul class="simple">
+<li>webstat_id : str</li>
+<li>name : str</li>
+<li>value : MediumText  <span class="gray"># json data</span></li>
+<li>last_update_time : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>webnote</strong></p>
+<ul class="simple">
+<li>webnote_id : str</li>
+<li>page : str</li>
+<li>username : str</li>
+<li>timestamp : str  <span class="gray"># datetime</span></li>
+<li>note : Text</li>
+</ul>
+<p><strong>graph</strong></p>
+<ul class="simple">
+<li>graph_id : str</li>
+<li>name : str</li>
+<li>value : Text  <span class="gray"># json data</span></li>
+<li>timestamp : str  <span class="gray"># datetime</span></li>
+</ul>
+<p><strong>master_update_history</strong></p>
+<ul class="simple">
+<li>master_update_history_id : str</li>
+<li>table_name : str</li>
+<li>update_index : str</li>
+<li>timestamp : str</li>
+</ul>
+<p><strong>setting</strong></p>
+<ul class="simple">
+<li>setting_id : str</li>
+<li>node_offset : str  <span class="gray"># these tables have the site+offset id type</span></li>
+<li>dataset_offset : str</li>
+<li>dataset_notes_offset : str</li>
+<li>dataset_stat_offset : str</li>
+<li>job_offset : str</li>
+<li>job_stat_offset : str</li>
+<li>task_rel_offset : str</li>
+<li>task_offset : str</li>
+<li>task_stat_offset : str</li>
+<li>task_log_offset : str</li>
+<li>data_offset : str</li>
+<li>resource_offset : str</li>
+<li>categorydef_offset : str</li>
+<li>categoryvalue_offset : str</li>
+<li>history_offset : str</li>
+<li>passkey_last : str</li>
+<li>pilot_last : str</li>
+<li>user_offset : str</li>
+<li>session_last : str</li>
+<li>webstat_last : str</li>
+<li>webnote_last : str</li>
+<li>graph_last : str</li>
+<li>master_update_history_last : str</li>
+</ul>
+</div>
+<div class="section" id="archive-tables">
+<h2>Archive Tables<a class="headerlink" href="#archive-tables" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>site</li>
+<li>node</li>
+<li>dataset</li>
+<li>dataset_notes</li>
+<li>dataset_stat</li>
+<li>job</li>
+<li>job_stat</li>
+<li>task</li>
+<li>task_stat</li>
+<li>task_log</li>
+<li>config</li>
+<li>resource</li>
+<li>data</li>
+</ul>
+</div>
+<div class="section" id="key">
+<h2>Key<a class="headerlink" href="#key" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>str : A short string up to 256 characters</li>
+<li>Text : A string up to 2^16 characters</li>
+<li>MediumText : A string up to 2^24 characters</li>
+<li>bool : A boolean (true/false)</li>
+<li>int : An integer</li>
+<li>float : A floating point number</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DB Config</a><ul>
+<li><a class="reference internal" href="#tables">Tables</a></li>
+<li><a class="reference internal" href="#archive-tables">Archive Tables</a></li>
+<li><a class="reference internal" href="#key">Key</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/details/dbtables.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

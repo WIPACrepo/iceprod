@@ -1,0 +1,836 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Dataclasses &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="Execution" href="exe.html" />
+    <link rel="prev" title="IceProd Core" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="exe.html" title="Execution"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Core"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dataclasses">
+<span id="index-0"></span><span id="id1"></span><h1>Dataclasses<a class="headerlink" href="#dataclasses" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-iceprod.core.dataclasses"></span><p>A set of classes that holds dataset configuration data.</p>
+<p>Each class is based on a dictionary and only contains simple elements for
+easy serialization to json (or other formats). A full dataset configuration
+can be had by serializing the <a class="reference internal" href="#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">Job</span></code></a> class.</p>
+<p>The <cite>convert</cite> method of each class will turn any regular dictionary objects
+into special <cite>dataclasses</cite> objects.</p>
+<p>The <cite>valid</cite> method of each class will test the validity of the data to be
+an actual dataset config.</p>
+<p>The <cite>output</cite> method of each class will create json with info on each
+dataclass, to be used in javascript.</p>
+<div class="section" id="configuration-objects">
+<h2>Configuration Objects<a class="headerlink" href="#configuration-objects" title="Permalink to this headline">¶</a></h2>
+<p>The building blocks of how datasets, jobs, and tasks are configured.</p>
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Job">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Job</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Job"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Job" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds all information about a running job.</p>
+<p>If the <cite>options</cite> are empty, this is the same as a dataset
+configuration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dataset</strong> &#8211; 0</li>
+<li><strong>parent_id</strong> &#8211; 0</li>
+<li><strong>version</strong> &#8211; 3</li>
+<li><strong>options</strong> &#8211; {} &#8211; a dict of parameters to pass to the task runner</li>
+<li><strong>steering</strong> &#8211; None</li>
+<li><strong>tasks</strong> &#8211; []</li>
+<li><strong>difplus</strong> &#8211; None</li>
+<li><strong>description</strong> &#8211; <p>&#8220;&#8221;</p>
+</li>
+<li><strong>categories</strong> &#8211; []</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Job.plural">
+<code class="descname">plural</code><em class="property"> = 'Jobs'</em><a class="headerlink" href="#iceprod.core.dataclasses.Job.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Job.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Job.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Job.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Job.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Job.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Job.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Job.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Job.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Job.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Steering">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Steering</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Steering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Steering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds all information that goes in the steering section of a configuration.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parameters</strong> &#8211; {}</li>
+<li><strong>batchsys</strong> &#8211; None</li>
+<li><strong>system</strong> &#8211; {} &#8211; just specialized parameters</li>
+<li><strong>resources</strong> &#8211; []</li>
+<li><strong>data</strong> &#8211; []</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Steering.plural">
+<code class="descname">plural</code><em class="property"> = 'Steering'</em><a class="headerlink" href="#iceprod.core.dataclasses.Steering.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Steering.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Steering.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Steering.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Steering.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Steering.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Steering.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Steering.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Steering.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Steering.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses._TaskCommon">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">_TaskCommon</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_TaskCommon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._TaskCommon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds common attributes used by task, tray, module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; <p>&#8216;&#8217;</p>
+</li>
+<li><strong>resources</strong> &#8211; []</li>
+<li><strong>data</strong> &#8211; []</li>
+<li><strong>classes</strong> &#8211; []</li>
+<li><strong>parameters</strong> &#8211; {}</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iceprod.core.dataclasses._TaskCommon.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_TaskCommon.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._TaskCommon.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses._TaskCommon.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_TaskCommon.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._TaskCommon.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Task">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Task</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iceprod.core.dataclasses._TaskCommon" title="iceprod.core.dataclasses._TaskCommon"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses._TaskCommon</span></code></a></p>
+<p>Holds all information about a task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>depends</strong> &#8211; [] &#8211; a list of task names</li>
+<li><strong>batchsys</strong> &#8211; None</li>
+<li><strong>trays</strong> &#8211; []</li>
+<li><strong>requirements</strong> &#8211; {} &#8211; a dict of requirements</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Task.plural">
+<code class="descname">plural</code><em class="property"> = 'Tasks'</em><a class="headerlink" href="#iceprod.core.dataclasses.Task.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Task.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Task.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Task.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Task.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Task.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Task.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Task.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Task.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Task.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Tray">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Tray</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Tray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Tray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iceprod.core.dataclasses._TaskCommon" title="iceprod.core.dataclasses._TaskCommon"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses._TaskCommon</span></code></a></p>
+<p>Holds all information about a tray.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>iterations</strong> &#8211; 1</li>
+<li><strong>modules</strong> &#8211; []</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Tray.plural">
+<code class="descname">plural</code><em class="property"> = 'Trays'</em><a class="headerlink" href="#iceprod.core.dataclasses.Tray.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Tray.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Tray.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Tray.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Tray.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Tray.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Tray.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Tray.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Tray.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Tray.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Module">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Module</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iceprod.core.dataclasses._TaskCommon" title="iceprod.core.dataclasses._TaskCommon"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses._TaskCommon</span></code></a></p>
+<p>Holds all information about a module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>running_class</strong> &#8211; None &#8211; the python class or function to call</li>
+<li><strong>src</strong> &#8211; None &#8211; src of class or script</li>
+<li><strong>args</strong> &#8211; None &#8211; args to give to class or src if not an iceprod module</li>
+<li><strong>env_shell</strong> &#8211; None &#8211; src of script which sets env and calls arg</li>
+<li><strong>env_clear</strong> &#8211; False &#8211; clear the env before calling the module
+(calls env_shell after clearing, if defined)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note that <cite>env_clear</cite> should be used carefully, as it wipes out
+any loaded classes.</p>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Module.plural">
+<code class="descname">plural</code><em class="property"> = 'Modules'</em><a class="headerlink" href="#iceprod.core.dataclasses.Module.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Module.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Module.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Module.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Module.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Module.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Module.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Module.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Module.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Module.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Class">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Class</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Class" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class object, downloaded from a url.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; None &#8211; required</li>
+<li><strong>src</strong> &#8211; None &#8211; if downloaded from url</li>
+<li><strong>resource_name</strong> &#8211; None &#8211; if present in resource object</li>
+<li><strong>recursive</strong> &#8211; False</li>
+<li><strong>libs</strong> &#8211; None &#8211; if more than default lib directory</li>
+<li><strong>env_vars</strong> &#8211; None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Class.plural">
+<code class="descname">plural</code><em class="property"> = 'Classes'</em><a class="headerlink" href="#iceprod.core.dataclasses.Class.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Class.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Class.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Class.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Class.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Class.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Class.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Class.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Class.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Class.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses._ResourceCommon">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">_ResourceCommon</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_ResourceCommon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds common attributes used by Resource and Data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>remote</strong> &#8211; <p>&#8216;&#8217;</p>
+</li>
+<li><strong>local</strong> &#8211; <p>&#8216;&#8217;</p>
+</li>
+<li><strong>compression</strong> &#8211; False</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses._ResourceCommon.compression_options">
+<code class="descname">compression_options</code><em class="property"> = [False, True, 'none', 'gzip', 'gz', 'bzip', 'bz2', 'lzma']</em><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon.compression_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses._ResourceCommon.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_ResourceCommon.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses._ResourceCommon.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#_ResourceCommon.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses._ResourceCommon.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Resource">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Resource</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Resource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iceprod.core.dataclasses._ResourceCommon" title="iceprod.core.dataclasses._ResourceCommon"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses._ResourceCommon</span></code></a></p>
+<p>A resource object, representing a file to download.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><strong>arch</strong> &#8211; None</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Resource.plural">
+<code class="descname">plural</code><em class="property"> = 'Resources'</em><a class="headerlink" href="#iceprod.core.dataclasses.Resource.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Resource.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Resource.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Resource.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Resource.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Resource.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Resource.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Resource.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Resource.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Resource.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Data">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Data</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#iceprod.core.dataclasses._ResourceCommon" title="iceprod.core.dataclasses._ResourceCommon"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses._ResourceCommon</span></code></a></p>
+<p>A data object, representing input and/or output of data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference external" href="http://python.readthedocs.io/en/latest/library/functions.html#type" title="(in Python v3.6)"><strong>type</strong></a> &#8211; &#8216;permanent&#8217; &#8211; required</li>
+<li><strong>movement</strong> &#8211; &#8216;both&#8217; &#8211; required</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Data.plural">
+<code class="descname">plural</code><em class="property"> = 'Data'</em><a class="headerlink" href="#iceprod.core.dataclasses.Data.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Data.type_options">
+<code class="descname">type_options</code><em class="property"> = ['permanent', 'tray_temp', 'task_temp', 'job_temp', 'dataset_temp', 'site_temp']</em><a class="headerlink" href="#iceprod.core.dataclasses.Data.type_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Data.movement_options">
+<code class="descname">movement_options</code><em class="property"> = ['input', 'output', 'both']</em><a class="headerlink" href="#iceprod.core.dataclasses.Data.movement_options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Data.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Data.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Data.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Data.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Data.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Data.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Data.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Data.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Data.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Data.storage_location">
+<code class="descname">storage_location</code><span class="sig-paren">(</span><em>env</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Data.storage_location"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Data.storage_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get storage location from the environment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>env</strong> &#8211; environment</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">storage location as a string, or raises Exception</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="metadata-objects">
+<h2>Metadata Objects<a class="headerlink" href="#metadata-objects" title="Permalink to this headline">¶</a></h2>
+<p>Metadata for NSF requirements</p>
+<dl class="class">
+<dt id="iceprod.core.dataclasses.DifPlus">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">DifPlus</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DifPlus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DifPlus" title="Permalink to this definition">¶</a></dt>
+<dd><p>A DifPlus object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>dif</strong> &#8211; None</li>
+<li><strong>plus</strong> &#8211; None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.DifPlus.plural">
+<code class="descname">plural</code><em class="property"> = 'DifPlus'</em><a class="headerlink" href="#iceprod.core.dataclasses.DifPlus.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DifPlus.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DifPlus.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DifPlus.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DifPlus.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DifPlus.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DifPlus.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DifPlus.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DifPlus.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DifPlus.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Dif">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Dif</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Dif"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Dif" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>A Dif object.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>entry_id</strong> &#8211; None</li>
+<li><strong>entry_title</strong> &#8211; None</li>
+<li><strong>parameters</strong> &#8211; &#8216; &#8216;</li>
+<li><strong>iso_topic_category</strong> &#8211; &#8216;geoscientificinformation&#8217;</li>
+<li><strong>data_ceter</strong> &#8211; None</li>
+<li><strong>summary</strong> &#8211; &#8216; &#8216;</li>
+<li><strong>metadata_name</strong> &#8211; &#8216;[CEOS IDN DIF]&#8217;</li>
+<li><strong>metadata_version</strong> &#8211; &#8216;9.4&#8217;</li>
+<li><strong>personnel</strong> &#8211; []</li>
+<li><strong>sensor_name</strong> &#8211; &#8216;ICECUBE&#8217;</li>
+<li><strong>source_name</strong> &#8211; &#8216;SIMULATION&#8217;</li>
+<li><strong>dif_creation_date</strong> &#8211; time.strftime(&#8220;%Y-%m-%d&#8221;)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Dif.plural">
+<code class="descname">plural</code><em class="property"> = 'Dif'</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Dif.valid_parameters">
+<code class="descname">valid_parameters</code><em class="property"> = ['SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Atmospheric', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Extraterrestrial Point Source', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Gamma Ray Burst', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; WIMPS', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Diffuse Source', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Extreme High Energy', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Super Nova', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Cosmic Ray Muon Component', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Tau', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Cascades', 'SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Galactic Plane', 'SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays', 'SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Composition', 'SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Air Shower', 'SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Cosmic Ray Muons', 'SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Moon Shadow', 'SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics', 'SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics &gt; Photomultiplier Tubes', 'SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics &gt; Digital Optical Modules', 'EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets', 'EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling', 'EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling &gt; Hole Drilling', 'EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling &gt; Hole Refreeze']</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_parameters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Dif.valid_source_name">
+<code class="descname">valid_source_name</code><em class="property"> = {'EXPERIMENTAL': 'Data with an instrumentation based source', 'SIMULATION': 'Data which are numerically generated'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_source_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Dif.valid_sensor_name">
+<code class="descname">valid_sensor_name</code><em class="property"> = {'AMANDA-A': 'Prototype Antarctic Muon and Neutrino Detector Array', 'SPASE-2': 'South Pole Air Shower Experiment 2', 'EHWD': 'Enhanced Hot Water Drill', 'SPASE-1': 'South Pole Air Shower Experiment 1', 'VULCAN': 'South Pole Air-Cherenkov Telescope', 'ICETOP': 'IceTop', 'GASP': 'Gamma Astronomy-South Pole', 'SPTR': 'South Pole TDRSS Relay', 'RPSC-MET': 'Raytheon Polar Services Corporation Meteorology', 'ICECUBE': 'IceCube', 'RICE': 'Radio Ice Cherenkov Experiment', 'AMANDA': 'Antarctic Muon and Neutrino Detector Array'}</em><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid_sensor_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Dif.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Dif.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Dif.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Dif.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Dif.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Dif.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Dif.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Dif.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Dif.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Plus">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Plus</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Plus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Plus" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>A Plus object.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference internal" href="../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start" title="iceprod.server.modules.proxy.proxy.start"><strong>start</strong></a> &#8211; None</li>
+<li><strong>end</strong> &#8211; None</li>
+<li><strong>category</strong> &#8211; None</li>
+<li><strong>subcategory</strong> &#8211; None</li>
+<li><strong>run_number</strong> &#8211; None</li>
+<li><strong>i3db_key</strong> &#8211; None</li>
+<li><strong>simdb_key</strong> &#8211; None</li>
+<li><strong>project</strong> &#8211; [] &#8211; [{name: version}]</li>
+<li><strong>steering_file</strong> &#8211; None</li>
+<li><strong>log_file</strong> &#8211; None</li>
+<li><strong>command_line</strong> &#8211; None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Plus.plural">
+<code class="descname">plural</code><em class="property"> = 'Plus'</em><a class="headerlink" href="#iceprod.core.dataclasses.Plus.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Plus.valid_category">
+<code class="descname">valid_category</code><em class="property"> = ['unclassified', 'generated', 'propagated', 'unbiased', 'filtered', 'calibration', 'monitoring', 'webcam', 'hole', 'TestDAQ', 'FAT', 'log', 'upmu', 'minbias', 'cascades', 'high-energy', 'wimp', 'GRB']</em><a class="headerlink" href="#iceprod.core.dataclasses.Plus.valid_category" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Plus.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Plus.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Plus.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Plus.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Plus.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Plus.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Plus.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Plus.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Plus.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.Personnel">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">Personnel</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Personnel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Personnel" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>A Personnel object.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>role</strong> &#8211; None</li>
+<li><strong>first_name</strong> &#8211; None</li>
+<li><strong>last_name</strong> &#8211; None</li>
+<li><a class="reference external" href="http://python.readthedocs.io/en/latest/library/email.html#module-email" title="(in Python v3.6)"><strong>email</strong></a> &#8211; None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.Personnel.plural">
+<code class="descname">plural</code><em class="property"> = 'Personnel'</em><a class="headerlink" href="#iceprod.core.dataclasses.Personnel.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Personnel.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Personnel.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Personnel.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Personnel.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Personnel.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Personnel.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.Personnel.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#Personnel.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.Personnel.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.core.dataclasses.DataCenter">
+<em class="property">class </em><code class="descclassname">iceprod.core.dataclasses.</code><code class="descname">DataCenter</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DataCenter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>A Data Center object.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; None</li>
+<li><strong>personnel</strong> &#8211; []</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.DataCenter.plural">
+<code class="descname">plural</code><em class="property"> = 'DataCenter'</em><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter.plural" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.core.dataclasses.DataCenter.valid_names">
+<code class="descname">valid_names</code><em class="property"> = ['UWI-MAD/A3RI &gt; Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison']</em><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter.valid_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DataCenter.output">
+<code class="descname">output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DataCenter.output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output dict with values and (optionally) the object name for
+new objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DataCenter.convert">
+<code class="descname">convert</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DataCenter.convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter.convert" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.dataclasses.DataCenter.valid">
+<code class="descname">valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/dataclasses.html#DataCenter.valid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.dataclasses.DataCenter.valid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Dataclasses</a><ul>
+<li><a class="reference internal" href="#configuration-objects">Configuration Objects</a></li>
+<li><a class="reference internal" href="#metadata-objects">Metadata Objects</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">IceProd Core</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="exe.html"
+                        title="next chapter">Execution</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/dataclasses.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="exe.html" title="Execution"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Core"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

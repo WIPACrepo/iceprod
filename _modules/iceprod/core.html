@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.core &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.core</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Some constants and basic functions with wide uses.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+
+<span class="c"># some basic constants used for the task runner</span>
+<span class="n">constants</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;stdout&#39;</span><span class="p">:</span> <span class="s">&#39;iceprod_out&#39;</span><span class="p">,</span>
+             <span class="s">&#39;stderr&#39;</span><span class="p">:</span> <span class="s">&#39;iceprod_err&#39;</span><span class="p">,</span>
+             <span class="s">&#39;stdlog&#39;</span><span class="p">:</span> <span class="s">&#39;iceprod_log&#39;</span><span class="p">,</span>
+             <span class="s">&#39;stats&#39;</span><span class="p">:</span> <span class="s">&#39;iceprod_stats&#39;</span><span class="p">,</span>
+             <span class="s">&#39;args&#39;</span><span class="p">:</span> <span class="s">&#39;iceprod_args&#39;</span><span class="p">,}</span>
+
+<span class="nd">@contextmanager</span>
+<div class="viewcode-block" id="to_file"><a class="viewcode-back" href="../../core/init.html#iceprod.core.to_file">[docs]</a><span class="k">def</span> <span class="nf">to_file</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="s">&#39;out&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;redirect a stream (like stdout) to regular file</span>
+<span class="sd">    </span>
+<span class="sd">       :param stream: previous file object</span>
+<span class="sd">       :param file: new file object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">oldstream</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">dup</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="c"># go do something useful</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">oldstream</span><span class="p">,</span> <span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span></div>
+
+<span class="nd">@contextmanager</span>
+<div class="viewcode-block" id="to_log"><a class="viewcode-back" href="../../core/init.html#iceprod.core.to_log">[docs]</a><span class="k">def</span> <span class="nf">to_log</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s">&#39;info&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;redirect a stream (like stdout) to log file</span>
+<span class="sd">    </span>
+<span class="sd">       :param stream: file object</span>
+<span class="sd">       :param prefix: logging prefix</span>
+<span class="sd">       :param level: logging level</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prefix</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">stream</span> <span class="o">==</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;stdout&#39;</span>
+        <span class="k">elif</span> <span class="n">stream</span> <span class="o">==</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="s">&#39;stderr&#39;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+    
+    <span class="n">oldstream</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">dup</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+    <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="c"># go do something useful</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">dup2</span><span class="p">(</span><span class="n">oldstream</span><span class="p">,</span> <span class="n">stream</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="s">&#39;debug&#39;</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">level</span> <span class="o">==</span> <span class="s">&#39;info&#39;</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;warn&#39;</span><span class="p">,</span><span class="s">&#39;warning&#39;</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;err&#39;</span><span class="p">,</span><span class="s">&#39;error&#39;</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">level</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;crit&#39;</span><span class="p">,</span><span class="s">&#39;critical&#39;</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error printing logging&#39;</span><span class="p">)</span></div>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

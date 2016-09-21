@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Quickstart &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="index.html" />
+    <link rel="next" title="IceProd Core" href="core/index.html" />
+    <link rel="prev" title="Overview" href="overview.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core/index.html" title="IceProd Core"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Overview"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quickstart">
+<span id="index-0"></span><span id="id1"></span><h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tl-dr">
+<h2>tl;dr<a class="headerlink" href="#tl-dr" title="Permalink to this headline">¶</a></h2>
+<p>For the impatient:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>Welcome!  This guide will assume that you want to set up IceProd locally on a new machine.</p>
+<div class="section" id="download-the-project">
+<h3>Download the Project<a class="headerlink" href="#download-the-project" title="Permalink to this headline">¶</a></h3>
+<p>To download the project, check it out from svn:</p>
+<div class="highlight-default"><div class="highlight"><pre>$ svn co http://code.icecube.wisc.edu/svn/sandbox/dschultz/iceprod2 iceprod
+</pre></div>
+</div>
+<p>If you do not need to stay up to date, you may also get an exported version:</p>
+<div class="highlight-default"><div class="highlight"><pre>$ svn export http://code.icecube.wisc.edu/svn/sandbox/dschultz/iceprod2 iceprod
+</pre></div>
+</div>
+</div>
+<div class="section" id="build-the-project">
+<h3>Build the Project<a class="headerlink" href="#build-the-project" title="Permalink to this headline">¶</a></h3>
+<p>The main requirement of IceProd is Python 2.7 or greater.  Python 3 is supported.</p>
+<p>IceProd acts like a normal python project, and with the help of <cite>setuptools</cite>
+can download and install all required dependencies. If you do not have <cite>setuptools</cite>
+installed, you will need to install the dependencies yourself.</p>
+<div class="section" id="required-dependencies">
+<h4>Required Dependencies<a class="headerlink" href="#required-dependencies" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>tornado &gt;= 4.2</li>
+<li>pyzmq</li>
+<li>jsonschema</li>
+</ul>
+<p>If using python &lt; 3.2, the following is also required:</p>
+<ul class="simple">
+<li>futures</li>
+<li>backports.ssl_match_hostname</li>
+</ul>
+</div>
+<div class="section" id="recommended-dependencies">
+<h4>Recommended Dependencies<a class="headerlink" href="#recommended-dependencies" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>setproctitle</li>
+<li>pycurl</li>
+<li>openssl</li>
+<li>pyasn1</li>
+</ul>
+</div>
+<div class="section" id="installation-example">
+<h4>Installation Example<a class="headerlink" href="#installation-example" title="Permalink to this headline">¶</a></h4>
+<p>The easy way to install dependencies is with pip.  Then install IceProd:</p>
+<div class="highlight-default"><div class="highlight"><pre>$ pip install --user tornado pyzmq setproctitle pycurl openssl pyasn1
+$ python setup.py install --user
+</pre></div>
+</div>
+<p>This will install IceProd and all dependencies into your home directory, under <code class="docutils literal"><span class="pre">~/.local</span></code>.</p>
+</div>
+<div class="section" id="how-to-run-the-server">
+<h4>How to Run the Server<a class="headerlink" href="#how-to-run-the-server" title="Permalink to this headline">¶</a></h4>
+<p>To run the server:</p>
+<div class="highlight-default"><div class="highlight"><pre>$ python bin/iceprod_server.py
+</pre></div>
+</div>
+</div>
+<div class="section" id="disabling-ssl">
+<h4>Disabling SSL<a class="headerlink" href="#disabling-ssl" title="Permalink to this headline">¶</a></h4>
+<p>To disable SSL support (if you don&#8217;t have <cite>nginx</cite> installed),
+modify <cite>iceprod_config.json</cite> with the following option:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;system&quot;</span><span class="p">:{</span><span class="s">&quot;ssl&quot;</span><span class="p">:</span><span class="n">false</span><span class="p">}}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setting-the-website-password">
+<h4>Setting the website password<a class="headerlink" href="#setting-the-website-password" title="Permalink to this headline">¶</a></h4>
+<p>To edit the website password for admin pages,
+modify <cite>iceprod_config.json</cite> with the following option:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;webserver&quot;</span><span class="p">:{</span><span class="s">&quot;password&quot;</span><span class="p">:</span><span class="s">&quot;my-secret-password-here&quot;</span><span class="p">}}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quickstart</a><ul>
+<li><a class="reference internal" href="#tl-dr">tl;dr</a></li>
+<li><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li><a class="reference internal" href="#download-the-project">Download the Project</a></li>
+<li><a class="reference internal" href="#build-the-project">Build the Project</a><ul>
+<li><a class="reference internal" href="#required-dependencies">Required Dependencies</a></li>
+<li><a class="reference internal" href="#recommended-dependencies">Recommended Dependencies</a></li>
+<li><a class="reference internal" href="#installation-example">Installation Example</a></li>
+<li><a class="reference internal" href="#how-to-run-the-server">How to Run the Server</a></li>
+<li><a class="reference internal" href="#disabling-ssl">Disabling SSL</a></li>
+<li><a class="reference internal" href="#setting-the-website-password">Setting the website password</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="overview.html"
+                        title="previous chapter">Overview</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="core/index.html"
+                        title="next chapter">IceProd Core</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/quickstart.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="core/index.html" title="IceProd Core"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="overview.html" title="Overview"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

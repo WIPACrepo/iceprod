@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Overview &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="index.html" />
+    <link rel="next" title="Quickstart" href="quickstart.html" />
+    <link rel="prev" title="IceProd Metaproject" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Metaproject"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="overview">
+<span id="index-0"></span><span id="id1"></span><h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>IceProd is broken up into three main parts:</p>
+<ol class="arabic simple">
+<li>Core</li>
+<li>Server</li>
+<li>Modules</li>
+</ol>
+<div class="section" id="core">
+<h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
+<p>The core of IceProd is what actually runs on compute nodes.  It is capable of running in two different modes:</p>
+<div class="section" id="single-task-mode">
+<h3>Single Task Mode<a class="headerlink" href="#single-task-mode" title="Permalink to this headline">¶</a></h3>
+<p>In this mode, IceProd is given a config file at startup.  It will only run that task, then exit.  This is the standard mode.</p>
+</div>
+<div class="section" id="many-task-mode">
+<h3>Many Task Mode<a class="headerlink" href="#many-task-mode" title="Permalink to this headline">¶</a></h3>
+<p>In this mode, IceProd downloads task config files from the server.  It will download a task, process it, then download another until the server tells it to stop.  This is a good mode for groups of tasks that have the same large dependencies; the dependency can be downloaded once and used multiple times.</p>
+<p>This mode can also be called &#8220;Pilot Mode&#8221; since it calls back to the server with the resources available, only matching those jobs that can likely run there.</p>
+</div>
+</div>
+<div class="section" id="server">
+<h2>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h2>
+<p>The server of IceProd has many responsibilities:</p>
+<ul class="simple">
+<li>Queue tasks onto grids</li>
+<li>Store all info in local DB</li>
+<li>Host website for DB info</li>
+<li>Communicate securely with running tasks</li>
+<li>Communicate securely with other IceProd sites</li>
+<li>(master only) Queue multi-site datasets to individual sites at task level</li>
+<li>(master only) Store all DB info for connected sites</li>
+</ul>
+</div>
+<div class="section" id="modules">
+<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
+<p>The modules part of IceProd contains a library of standard modules that can be run by tasks.  They are more fully featured than a simple script because they obtain the full working environment of the IceProd core, containing module parameters and general settings.  These are designed to be base classes which can be subclassed by other scripts, though some can be used standalone.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Overview</a><ul>
+<li><a class="reference internal" href="#core">Core</a><ul>
+<li><a class="reference internal" href="#single-task-mode">Single Task Mode</a></li>
+<li><a class="reference internal" href="#many-task-mode">Many Task Mode</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#server">Server</a></li>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">IceProd Metaproject</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="quickstart.html"
+                        title="next chapter">Quickstart</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/overview.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="quickstart.html" title="Quickstart"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="IceProd Metaproject"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">IceProd 2.0.4 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

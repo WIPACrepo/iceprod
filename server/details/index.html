@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>IceProd Server Details &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="Technical Details" href="../../details.html" />
+    <link rel="next" title="From Submission to Queue" href="submit_to_queue.html" />
+    <link rel="prev" title="IceProd Core" href="../../core/details/index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="submit_to_queue.html" title="From Submission to Queue"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../core/details/index.html" title="IceProd Core"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" accesskey="U">Technical Details</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iceprod-server-details">
+<span id="technical-server"></span><span id="index-0"></span><h1>IceProd Server Details<a class="headerlink" href="#iceprod-server-details" title="Permalink to this headline">¶</a></h1>
+<p>The server handles many different tasks and has several independent modules to take care of them.  It uses <a class="reference external" href="http://docs.python.org/2/library/multiprocessing.html">Python Multiprocessing</a> to prevent anything in one module from inadvertently affecting another module.  The main process handles startup of each module.  It can also reload, restart, stop, or kill the modules.</p>
+<p>IceProd can be reloaded to update a configuration variable.  This will only reload the affected parts of IceProd, while letting the rest continue running.</p>
+<div class="section" id="why-multprocessing">
+<h2>Why Multprocessing?<a class="headerlink" href="#why-multprocessing" title="Permalink to this headline">¶</a></h2>
+<p>For small sites, everything could be handled in a single process. The problem
+comes when attempting to scale up. Fairly quickly, the backend work for queries
+or submission will block for longer than you want to wait. In python, threads
+will only get you so far. The <a class="reference external" href="https://wiki.python.org/moin/GlobalInterpreterLock">GIL</a>
+will eventually block you somewhere. As seen in
+<a class="reference external" href="https://youtu.be/MCs5OvhV9S4">this video</a> by David Beazley, CPU-heavy work
+will slow down other python threads in the same process. The solution is obvious:
+get another python process so the GIL is not blocking. This is particularly
+important for the web front-end, since it needs to be responsive.</p>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="../basic_config.html#basicconfig"><span class="std std-ref">Basic Configuration</span></a> handles basic startup of IceProd, and has only the necessary things for that task.
+Mostly, this is which modules to start by default, the address of the internal RPC messaging server, and logging information.</p>
+<p>The rest of the configuration is in <a class="reference internal" href="../config.html#config"><span class="std std-ref">Detailed Configuration</span></a>, which are stored as a dictionary and dumped to a json file on every modification.  These can be accessed individually via internal RPC, but are usually locally cached in bulk during module startup.
+Updates are pushed out to all modules when changes occur.</p>
+</div>
+<div class="section" id="queueing">
+<h2>Queueing<a class="headerlink" href="#queueing" title="Permalink to this headline">¶</a></h2>
+<p>This is where IceProd actually submits tasks to a grid.  Various grid architectures are supported through plugins:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a> (primary)</li>
+<li><a class="reference external" href="http://en.wikipedia.org/wiki/Portable_Batch_System">PBS</a> / <a class="reference external" href="http://www.adaptivecomputing.com/products/open-source/torque/">Torque</a></li>
+<li><a class="reference external" href="http://www.eu-emi.eu/products/-/asset_publisher/1gkD/content/cream-2">Cream</a></li>
+</ul>
+<p>The queueing module can submit to multiple grids at once since multiple plugins can be active at the same time.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="submit_to_queue.html">From Submission to Queue</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="submit_to_queue.html#dataset-submission">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="submit_to_queue.html#buffering">Buffering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="submit_to_queue.html#algorithm">Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="submit_to_queue.html#queueing">Queueing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="task_relationships.html">Task Relationships</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="task_relationships.html#submission">Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_relationships.html#within-task-rel">Within task_rel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="task_relationships.html#within-task">Within task</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="lifecycles.html">Lifecycles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lifecycles.html#datasets">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifecycles.html#jobs">Jobs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lifecycles.html#tasks">Tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="global_queueing.html">Global Queueing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="global_queueing.html#protocol">Protocol</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="database">
+<h2>Database<a class="headerlink" href="#database" title="Permalink to this headline">¶</a></h2>
+<p>IceProd stores most of its information in a database.  By default, it uses SQLite and a few local database files.  For a master site that must handle the information of a large number of sites, MySQL can be used as a database (though this will take some external setup).</p>
+<p>There is a primary database and an archive database, so as to keep current information small and fast while still providing access to older information.</p>
+<p>The database structure is given in <a class="reference internal" href="dbtables.html#dbtables"><span class="std std-ref">Tables</span></a>.</p>
+</div>
+<div class="section" id="website">
+<h2>Website<a class="headerlink" href="#website" title="Permalink to this headline">¶</a></h2>
+<p>The website is the main way to communicate with IceProd, both from jobs and as a user.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="async.html">Asynchronous Programming</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="async.html#some-background">Some Background</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="async.html#brief-summary">Brief Summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="async.html#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="async.html#practical-usage">Practical Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="async.html#callbacks">Callbacks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="async.html#callback-details">Callback Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="async.html#futures">Futures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="async.html#id3">AsyncIO</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="website.html">Website</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="website.html#task-communication">Task Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="website.html#site-to-site-communication">Site-to-Site Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="website.html#human-interaction">Human Interaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="website.html#nginx">Nginx</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="internal-rpc">
+<h2>Internal RPC<a class="headerlink" href="#internal-rpc" title="Permalink to this headline">¶</a></h2>
+<p>RPC that is internal to the server is handled by an RPC service created on top of ZeroMQ sockets.  This is the primary link between different components of the server.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="zeromq.html">ZeroMQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rpcinternal.html">RPC Internal Details</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rpcinternal.html#low-level-message-protocol">Low-Level Message Protocol</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rpcinternal.html#header">Header</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rpcinternal.html#body">Body</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rpcinternal.html#rpc-message-protocol">RPC Message Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcinternal.html#examples">Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rpcinternal.html#client-to-server">Client to Server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rpcinternal.html#client-to-service">Client to Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rpcinternal.html#client-to-broadcast">Client to Broadcast</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rpcinternal.html#class-documentation">Class Documentation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="proxying">
+<h2>Proxying<a class="headerlink" href="#proxying" title="Permalink to this headline">¶</a></h2>
+<p>Proxying is taken care of by Squid Cache, if configured.  IceProd can start its own squid or use an external caching server.</p>
+</div>
+<div class="section" id="other-utilities">
+<h2>Other Utilities<a class="headerlink" href="#other-utilities" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="openssl">
+<h3>OpenSSL<a class="headerlink" href="#openssl" title="Permalink to this headline">¶</a></h3>
+<p>OpenSSL can be used to make a local CA certificate, make a regular certificate signed by a CA certificate, or verify a certificate.  This is mostly used by the master to let other IceProd instances into the trusted pool, and by the server to give tasks the appropriate CA cert.</p>
+</div>
+<div class="section" id="scheduler">
+<h3>Scheduler<a class="headerlink" href="#scheduler" title="Permalink to this headline">¶</a></h3>
+<p>The scheduler can be used like cron, to run assigned tasks at specific intervals.  It will mostly be used to update graphs and run other timed interactions.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">IceProd Server Details</a><ul>
+<li><a class="reference internal" href="#why-multprocessing">Why Multprocessing?</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#queueing">Queueing</a></li>
+<li><a class="reference internal" href="#database">Database</a></li>
+<li><a class="reference internal" href="#website">Website</a></li>
+<li><a class="reference internal" href="#internal-rpc">Internal RPC</a></li>
+<li><a class="reference internal" href="#proxying">Proxying</a></li>
+<li><a class="reference internal" href="#other-utilities">Other Utilities</a><ul>
+<li><a class="reference internal" href="#openssl">OpenSSL</a></li>
+<li><a class="reference internal" href="#scheduler">Scheduler</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../../core/details/index.html"
+                        title="previous chapter">IceProd Core</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="submit_to_queue.html"
+                        title="next chapter">From Submission to Queue</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/details/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="submit_to_queue.html" title="From Submission to Queue"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../core/details/index.html" title="IceProd Core"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

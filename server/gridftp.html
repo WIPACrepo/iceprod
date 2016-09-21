@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Asynchronous GridFTP &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Server" href="index.html" />
+    <link rel="next" title="Server Init" href="init.html" />
+    <link rel="prev" title="Grid Queueing" href="grid.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="init.html" title="Server Init"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Grid Queueing"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.gridftp">
+<span id="asynchronous-gridftp"></span><span id="grdiftp-async"></span><span id="index-0"></span><h1>Asynchronous GridFTP<a class="headerlink" href="#module-iceprod.server.gridftp" title="Permalink to this headline">¶</a></h1>
+<p>gridftp interface with tornado IOLoop hooks</p>
+<p>copyright (c) 2012 the icecube collaboration</p>
+<dl class="class">
+<dt id="iceprod.server.gridftp.GridFTPTornado">
+<em class="property">class </em><code class="descclassname">iceprod.server.gridftp.</code><code class="descname">GridFTPTornado</code><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#GridFTPTornado"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.GridFTPTornado" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.gridftp.SiteGlobusProxy">
+<em class="property">class </em><code class="descclassname">iceprod.server.gridftp.</code><code class="descname">SiteGlobusProxy</code><span class="sig-paren">(</span><em>cfgfile=None</em>, <em>duration=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#SiteGlobusProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.SiteGlobusProxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manage site-wide globus proxy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfgfile</strong> &#8211; cfgfile location (optional)</li>
+<li><strong>duration</strong> &#8211; proxy duration (optional, default 72 hours)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iceprod.server.gridftp.SiteGlobusProxy.set_passphrase">
+<code class="descname">set_passphrase</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#SiteGlobusProxy.set_passphrase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.SiteGlobusProxy.set_passphrase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the passphrase</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.gridftp.SiteGlobusProxy.set_duration">
+<code class="descname">set_duration</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#SiteGlobusProxy.set_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.SiteGlobusProxy.set_duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the duration</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.gridftp.SiteGlobusProxy.update_proxy">
+<code class="descname">update_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#SiteGlobusProxy.update_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.SiteGlobusProxy.update_proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the proxy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.gridftp.SiteGlobusProxy.get_proxy">
+<code class="descname">get_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/gridftp.html#SiteGlobusProxy.get_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.gridftp.SiteGlobusProxy.get_proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the proxy location</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>Inherits all members of</p>
+<dl class="class">
+<dt id="iceprod.core.gridftp.GridFTP">
+<em class="property">class </em><code class="descclassname">iceprod.core.gridftp.</code><code class="descname">GridFTP</code><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asyncronous GridFTP interface to command line client.
+Designed to hide the complex stuff and mimic tornado http downloads.</p>
+<p class="rubric">Example</p>
+<dl class="docutils">
+<dt>GridFTP.get(&#8216;gsiftp://data.icecube.wisc.edu/file&#8217;,</dt>
+<dd>callback=endfunc,
+streaming_callback=streamfunc)</dd>
+</dl>
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.get">
+<em class="property">classmethod </em><code class="descname">get</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>streaming_callback=None</em>, <em>filename=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a GridFTP get request, asyncronously if a callback is defined.
+streaming_callback or filename may be defined.</p>
+<dl class="docutils">
+<dt>streaming_callback should be of type streaming_callback(data)</dt>
+<dd>where data is a bytestring</dd>
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is a bytestring or True/False</dd>
+<dt>If no callback is defined, the function blocks and either False</dt>
+<dd>or the data is returned, or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.put">
+<em class="property">classmethod </em><code class="descname">put</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>streaming_callback=None</em>, <em>data=None</em>, <em>filename=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a GridFTP put request, asyncronously if a callback is defined.
+Either streaming_callback, data, or filename must be defined.</p>
+<dl class="docutils">
+<dt>streaming_callback should be of type streaming_callback()</dt>
+<dd>where a block of data is returned by the function each
+time it is called</dd>
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.list">
+<em class="property">classmethod </em><code class="descname">list</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em>, <em>details=False</em>, <em>dotfiles=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do a GridFTP list request, asyncronously if a callback is defined.</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is a list or False</dd>
+</dl>
+<p>Result is a list of NamedTuples if details=True.
+Result includes &#8216;.&#8217;, &#8216;..&#8217;, and other &#8216;.&#8217; files if dotfiles=True.</p>
+<dl class="docutils">
+<dt>If no callback is defined, the function blocks and either False</dt>
+<dd>or a list is returned, or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.popen">
+<em class="property">classmethod </em><code class="descname">popen</code><span class="sig-paren">(</span><em>address</em>, <em>cmd</em>, <em>args</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.popen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.popen" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Call popen on the ftp server</dt>
+<dd>cmd should be the program to execute
+args should be a list of arguments</dd>
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and returns either</dt>
+<dd>the cmd output or True/False, or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.mkdir">
+<em class="property">classmethod </em><code class="descname">mkdir</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em>, <em>parents=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.mkdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.mkdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a directory on the ftp server</p>
+<p>parents - no error if existing, make parent directories as needed</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.rmdir">
+<em class="property">classmethod </em><code class="descname">rmdir</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.rmdir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.rmdir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a directory on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.delete">
+<em class="property">classmethod </em><code class="descname">delete</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a file on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.rmtree">
+<em class="property">classmethod </em><code class="descname">rmtree</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.rmtree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.rmtree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a file or directory on the ftp server (like rm -rf)</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.move">
+<em class="property">classmethod </em><code class="descname">move</code><span class="sig-paren">(</span><em>src</em>, <em>dest</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.move"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.move" title="Permalink to this definition">¶</a></dt>
+<dd><p>Move a file on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.exists">
+<em class="property">classmethod </em><code class="descname">exists</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if a file exists on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.chmod">
+<em class="property">classmethod </em><code class="descname">chmod</code><span class="sig-paren">(</span><em>address</em>, <em>mode</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.chmod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.chmod" title="Permalink to this definition">¶</a></dt>
+<dd><p>Chmod a file on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is True/False</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns True/False or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.gridftp.GridFTP.size">
+<em class="property">classmethod </em><code class="descname">size</code><span class="sig-paren">(</span><em>address</em>, <em>callback=None</em>, <em>request_timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/gridftp.html#GridFTP.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.gridftp.GridFTP.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size of a file on the ftp server</p>
+<dl class="docutils">
+<dt>callback should be of type callback(result)</dt>
+<dd>where result is the size or None</dd>
+<dt>If no callback is defined, the function blocks and</dt>
+<dd>returns the size or None or an exception is raised.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="grid.html"
+                        title="previous chapter">Grid Queueing</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="init.html"
+                        title="next chapter">Server Init</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/server/gridftp.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="init.html" title="Server Init"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="grid.html" title="Grid Queueing"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Config File Meta-Language Parser &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="Serialization" href="serialization.html" />
+    <link rel="prev" title="JSON Utilities" href="jsonUtil.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="serialization.html" title="Serialization"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="jsonUtil.html" title="JSON Utilities"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.core.parser">
+<span id="config-file-meta-language-parser"></span><span id="parser"></span><span id="index-0"></span><h1>Config File Meta-Language Parser<a class="headerlink" href="#module-iceprod.core.parser" title="Permalink to this headline">¶</a></h1>
+<p>A <a class="reference external" href="http://en.wikipedia.org/wiki/Recursive_descent_parser">recursive descent parser</a> for the IceProd meta
+language. Most commonly used in IceProd dataset configurations to refer to
+other parts of the same configuration.</p>
+<dl class="class">
+<dt id="iceprod.core.parser.ExpParser">
+<em class="property">class </em><code class="descclassname">iceprod.core.parser.</code><code class="descname">ExpParser</code><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expression parsing class for parameter values.</p>
+<p>Grammar Definition:</p>
+<div class="highlight-default"><div class="highlight"><pre>char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~[]{}
+word     := char | char + word
+starter  := $
+scopeL   := (
+scopeR   := )
+symbol   := starter | starter + word
+phrase   := symbol + scopeL + sentence + scopeR
+sentence := phrase | word | phrase + sentence | word + sentence
+</pre></div>
+</div>
+<p>Keywords:</p>
+<ul class="simple">
+<li>steering : A parameter from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></li>
+<li>system : A system value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Steering" title="iceprod.core.dataclasses.Steering"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Steering</span></code></a></li>
+<li>args, options : An option value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Job</span></code></a></li>
+<li>metadata : A value from <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Dif" title="iceprod.core.dataclasses.Dif"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Dif</span></code></a> or
+<a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Plus" title="iceprod.core.dataclasses.Plus"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Plus</span></code></a></li>
+<li>eval : An arithmatic expression</li>
+<li>choice : A random choice from a list of possibilites</li>
+<li>sprintf : The sprintf string syntax</li>
+</ul>
+<p>Examples:</p>
+<div class="highlight-default"><div class="highlight"><pre>$steering(my_parameter)
+$system(gpu_opts)
+$args(option1)
+$options(option1)
+$metadata(sensor_name)
+$eval(1+2)
+$choice(1,2,3,4)
+$sprintf(&quot;%04d&quot;,4)
+</pre></div>
+</div>
+<dl class="method">
+<dt id="iceprod.core.parser.ExpParser.parse">
+<code class="descname">parse</code><span class="sig-paren">(</span><em>input</em>, <em>job=None</em>, <em>env=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#ExpParser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.ExpParser.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the input, expanding where possible.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>input</strong> &#8211; input string</li>
+<li><strong>job</strong> &#8211; <a class="reference internal" href="dataclasses.html#iceprod.core.dataclasses.Job" title="iceprod.core.dataclasses.Job"><code class="xref py py-class docutils literal"><span class="pre">iceprod.core.dataclasses.Job</span></code></a>, optional</li>
+<li><strong>env</strong> &#8211; env dictionary, optional</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">expanded string</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.core.parser.safe_eval.eval">
+<em class="property">classmethod </em><code class="descclassname">safe_eval.</code><code class="descname">eval</code><span class="sig-paren">(</span><em>expr</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/parser.html#safe_eval.eval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.parser.safe_eval.eval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe evaluation of arithmatic operations using
+<a class="reference external" href="http://python.readthedocs.io/en/latest/library/ast.html#module-ast" title="(in Python v3.6)"><code class="xref py py-mod docutils literal"><span class="pre">Abstract</span> <span class="pre">Syntax</span> <span class="pre">Trees</span></code></a>.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="jsonUtil.html"
+                        title="previous chapter">JSON Utilities</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="serialization.html"
+                        title="next chapter">Serialization</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/parser.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="serialization.html" title="Serialization"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="jsonUtil.html" title="JSON Utilities"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

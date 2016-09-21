@@ -1,0 +1,625 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.pool &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.pool</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">  Simple Thread Pools</span>
+<span class="sd">  </span>
+<span class="sd">  copyright (c) 2012 the icecube collaboration</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">Queue</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">deque</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">RLock</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;pool&#39;</span><span class="p">)</span>
+
+<span class="c"># make a deque class with Queue semantics</span>
+<div class="viewcode-block" id="deque2"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.deque2">[docs]</a><span class="k">class</span> <span class="nc">deque2</span><span class="p">(</span><span class="n">deque</span><span class="p">):</span>
+    <span class="n">put</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">append</span>
+    <span class="n">put_nowait</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">append</span>
+    <span class="n">get</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">popleft</span>
+    <span class="n">get_nowait</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">popleft</span>
+    <span class="n">qsize</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">__len__</span>
+    <span class="n">unfinished_tasks</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">__len__</span>
+    <span class="n">mutex</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="n">empty</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">clear</span>
+    <span class="n">_sleep_wait_time</span> <span class="o">=</span> <span class="mf">0.006</span> <span class="c"># anything in the range of 0.25 - 0.002 will do</span>
+<div class="viewcode-block" id="deque2.full"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.deque2.full">[docs]</a>    <span class="k">def</span> <span class="nf">full</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span></div>
+<div class="viewcode-block" id="deque2.task_done"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.deque2.task_done">[docs]</a>    <span class="k">def</span> <span class="nf">task_done</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+<div class="viewcode-block" id="deque2.join"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.deque2.join">[docs]</a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="n">deque2</span><span class="o">.</span><span class="n">_sleep_wait_time</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;maxsize&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">maxlen</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;maxsize&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">maxlen</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">maxlen</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="n">maxlen</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">deque2</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="n">maxlen</span><span class="o">=</span><span class="n">maxlen</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">deque2</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maxsize</span> <span class="o">=</span> <span class="n">deque</span><span class="o">.</span><span class="n">maxlen</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maxsize</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="ThreadPool"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool">[docs]</a><span class="k">class</span> <span class="nc">ThreadPool</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Pool of threads consuming tasks from a queue&quot;&quot;&quot;</span>
+    
+    <span class="k">class</span> <span class="nc">_Worker</span><span class="p">(</span><span class="n">Thread</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Thread executing tasks from a given tasks queue&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">exit</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span>
+            <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span> <span class="c"># get initial values to pass to worker task</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">if</span> <span class="n">exit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="n">exit</span> <span class="c"># get exit function</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="k">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+                <span class="c"># get next task</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span> <span class="ow">is</span> <span class="k">False</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># pause worker</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+                    <span class="k">break</span> <span class="c"># error in input queue</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">sleep</span><span class="p">(</span><span class="n">deque2</span><span class="o">.</span><span class="n">_sleep_wait_time</span><span class="p">)</span> <span class="c"># for deque, wait for a bit before trying again</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># sentinel found, so end worker</span>
+                <span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">task</span>
+                <span class="n">callback</span> <span class="o">=</span> <span class="k">None</span>
+                <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">callback</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="s">&#39;init&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+                
+                <span class="c"># actually do task</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s">&quot;unexpected keyword argument &#39;callback&#39;&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                            <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                            <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span>
+                    <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in pool task&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">exit</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_queues</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_threads</span> <span class="o">=</span> <span class="n">num_threads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="n">exit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="p">[</span><span class="n">Event</span><span class="p">(),</span><span class="n">RLock</span><span class="p">(),</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="ThreadPool.pause"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.pause">[docs]</a>    <span class="k">def</span> <span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_help_stuff_finish</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ThreadPool.start"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">num_threads</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">init</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">exit</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">num_threads</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">num_threads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_threads</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_threads</span> <span class="o">=</span> <span class="n">num_threads</span>
+        <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span>
+        <span class="k">if</span> <span class="n">exit</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">exit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exit</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="n">exit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threads</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_Worker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">,</span><span class="n">init</span><span class="p">,</span><span class="n">exit</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">num_threads</span><span class="p">)]</span></div>
+    
+<div class="viewcode-block" id="ThreadPool.finish"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">blocking</span><span class="o">=</span><span class="k">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Wait for completion of all the tasks in the queue&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_help_stuff_finish</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">blocking</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">threads</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">join</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ThreadPool.disable_output_queue"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.disable_output_queue">[docs]</a>    <span class="k">def</span> <span class="nf">disable_output_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">class</span> <span class="nc">dis</span><span class="p">(</span><span class="n">deque2</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="k">pass</span>
+            <span class="n">put_nowait</span> <span class="o">=</span> <span class="n">put</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">dis</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="ThreadPool.enable_output_queue"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.enable_output_queue">[docs]</a>    <span class="k">def</span> <span class="nf">enable_output_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_bak</span> <span class="o">=</span> <span class="k">None</span></div>
+
+<div class="viewcode-block" id="ThreadPool.add_task"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.add_task">[docs]</a>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a task to the queue&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_task</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="ThreadPool.map"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPool.map">[docs]</a>    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">iterargs</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">iterkwargs</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map a function to iterables containing any arguments&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">iterargs</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">and</span> <span class="n">iterkwargs</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Must specify at least one regular or keyword argument iterator&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="c"># wait for anything else that is running to finish</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="c"># empty output queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>        
+        
+        <span class="c"># add tasks</span>
+        <span class="k">if</span> <span class="n">iterargs</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># if only kwargs are available, queue them</span>
+            <span class="k">for</span> <span class="n">kwargs</span> <span class="ow">in</span> <span class="n">iterkwargs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;iterkwargs contains an entry that is not a dict&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_task</span><span class="p">(</span><span class="n">func</span><span class="p">,[],</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">iterkwargs</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># if only args are available, queue them</span>
+            <span class="k">for</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">iterargs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_task</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="p">,{})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># if both args and kwargs are available, queue both</span>
+            <span class="k">for</span> <span class="n">args</span><span class="p">,</span><span class="n">kwargs</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">iterargs</span><span class="p">,</span><span class="n">iterkwargs</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;iterkwargs contains an entry that is not a dict&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_task</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        
+        <span class="c"># wait for completion</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">queue</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        
+        <span class="c"># restart</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="c"># return result</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+    <span class="k">def</span> <span class="nf">_init_queues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">Queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">Queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_help_stuff_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># put sentinels at head of inqueue to make workers finish</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_threads</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># internal add task which can be overridden by subclasses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThreadPoolDeque"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.ThreadPoolDeque">[docs]</a><span class="k">class</span> <span class="nc">ThreadPoolDeque</span><span class="p">(</span><span class="n">ThreadPool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Thread Pool with deque as base.  Good for single-process work.  Do not use with multiprocessing.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_init_queues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># use a raw deque without locking for increased speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">deque2</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">deque2</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="PriorityThreadPool"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.PriorityThreadPool">[docs]</a><span class="k">class</span> <span class="nc">PriorityThreadPool</span><span class="p">(</span><span class="n">ThreadPool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A priority queue backed ThreadPool&quot;&quot;&quot;</span>
+    
+    <span class="kn">from</span> <span class="nn">sys</span> <span class="k">import</span> <span class="n">maxint</span>
+    <span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+    
+    <span class="k">class</span> <span class="nc">_Worker</span><span class="p">(</span><span class="n">Thread</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Thread executing tasks from a given tasks queue&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">exit</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="nb">input</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span> <span class="o">=</span> <span class="n">event</span>
+            <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="n">init</span><span class="p">()</span> <span class="c"># get initial values to pass to worker task</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">if</span> <span class="n">exit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="n">exit</span> <span class="c"># get exit function</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="k">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+                <span class="c"># get next task</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span> <span class="ow">is</span> <span class="k">False</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># pause worker</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+                    <span class="k">break</span> <span class="c"># error in input queue</span>
+                
+                <span class="n">weight</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">task</span>
+                <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># sentinel found, so end worker</span>
+                <span class="n">callback</span> <span class="o">=</span> <span class="k">None</span>
+                <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">callback</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="s">&#39;init&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+                
+                <span class="c"># actually do task</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s">&quot;unexpected keyword argument &#39;callback&#39;&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+                            <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                            <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span>
+                    <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in pool task&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_init_queues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">Queue</span><span class="o">.</span><span class="n">PriorityQueue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">Queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">_help_stuff_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># put sentinels at head of inqueue to make workers finish</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_threads</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">maxint</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">_add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># internal add task which can be overridden by subclasses</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># try getting a weight as a keyword argument</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;weight&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c"># set standard weight as current time</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c"># add to input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">weight</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="GroupingThreadPool"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.GroupingThreadPool">[docs]</a><span class="k">class</span> <span class="nc">GroupingThreadPool</span><span class="p">(</span><span class="n">ThreadPool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Thread Pool that groups multiple tasks into a single task.  Good for combining db transactions.&quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">_Worker</span><span class="p">(</span><span class="n">ThreadPool</span><span class="o">.</span><span class="n">_Worker</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Thread executing tasks from a given tasks queue&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+            <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+                <span class="c"># get next task</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span> <span class="ow">is</span> <span class="k">False</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># pause worker</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+                    <span class="k">break</span> <span class="c"># error in input queue</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="n">sleep</span><span class="p">(</span><span class="n">deque2</span><span class="o">.</span><span class="n">_sleep_wait_time</span><span class="p">)</span> <span class="c"># for deque, wait for a bit before trying again</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="k">break</span> <span class="c"># sentinel found, so end worker</span>
+                <span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">task</span>
+                <span class="n">callbacks</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">])</span>
+                    <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+                <span class="n">tasks</span> <span class="o">=</span> <span class="p">[(</span><span class="n">args</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)]</span>
+                <span class="n">flag</span> <span class="o">=</span> <span class="k">None</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span> <span class="c"># do groupings of 1000</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="ne">EOFError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">):</span>
+                        <span class="n">flag</span> <span class="o">=</span> <span class="s">&#39;end&#39;</span>
+                        <span class="k">break</span> <span class="c"># error in input queue</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="n">Queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+                        <span class="k">break</span> <span class="c"># queue is now empty</span>
+                    <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">flag</span> <span class="o">=</span> <span class="s">&#39;end&#39;</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">func2</span><span class="p">,</span> <span class="n">args2</span><span class="p">,</span> <span class="n">kwargs2</span> <span class="o">=</span> <span class="n">task</span>
+                        <span class="k">if</span> <span class="n">func</span> <span class="o">==</span> <span class="n">func2</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs2</span><span class="p">:</span>
+                                <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs2</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">])</span>
+                                <span class="k">del</span> <span class="n">kwargs2</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+                            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">args2</span><span class="p">,</span><span class="n">kwargs2</span><span class="p">))</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">flag</span> <span class="o">=</span> <span class="s">&#39;diff&#39;</span>
+                            <span class="k">break</span>
+                
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="s">&#39;init&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+                <span class="c"># actually do task</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="c"># do callback function</span>
+                    <span class="k">if</span> <span class="s">&#39;tasks&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">callbacks</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                    <span class="n">c</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">callbacks</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                    <span class="n">c</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">callbacks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">callbacks</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">ret</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in pool task&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="c"># do callback function</span>
+                    <span class="k">if</span> <span class="s">&#39;tasks&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">callbacks</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                <span class="n">c</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">callbacks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">callbacks</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;end&#39;</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">elif</span> <span class="n">flag</span> <span class="o">==</span> <span class="s">&#39;diff&#39;</span><span class="p">:</span>
+                        <span class="c"># there was another function to run, which we took off the queue early</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="s">&#39;init&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs2</span><span class="p">:</span>
+                            <span class="n">kwargs2</span><span class="p">[</span><span class="s">&#39;init&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+                        <span class="c"># actually do task</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs2</span><span class="p">:</span>
+                                <span class="n">callback</span> <span class="o">=</span> <span class="n">kwargs2</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                                <span class="k">del</span> <span class="n">kwargs2</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">callback</span> <span class="o">=</span> <span class="k">None</span>
+                            <span class="n">ret</span> <span class="o">=</span> <span class="n">func2</span><span class="p">(</span><span class="o">*</span><span class="n">args2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs2</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in pool task&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                        <span class="k">finally</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">task_done</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SingleGrouping"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.SingleGrouping">[docs]</a><span class="k">class</span> <span class="nc">SingleGrouping</span><span class="p">(</span><span class="n">GroupingThreadPool</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Single Threaded Grouping Thread Pool.  Good for DB writes, since only one can happen at a time.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">exit</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">GroupingThreadPool</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">init</span><span class="p">,</span><span class="n">exit</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_init_queues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># use a raw deque without locking for increased speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input</span> <span class="o">=</span> <span class="n">deque2</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">deque2</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NamedThreadPool"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool">[docs]</a><span class="k">class</span> <span class="nc">NamedThreadPool</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Thread Pool that groups tasks by name, running only one &quot;name&quot; at once.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span> <span class="o">=</span> <span class="n">ThreadPoolDeque</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_names</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># {name:deque2(func,args,kwargs)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_lock</span> <span class="o">=</span> <span class="n">RLock</span><span class="p">()</span>
+    
+<div class="viewcode-block" id="NamedThreadPool.pause"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.pause">[docs]</a>    <span class="k">def</span> <span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="NamedThreadPool.start"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="NamedThreadPool.finish"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="NamedThreadPool.disable_output_queue"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.disable_output_queue">[docs]</a>    <span class="k">def</span> <span class="nf">disable_output_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">disable_output_queue</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="NamedThreadPool.enable_output_queue"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.enable_output_queue">[docs]</a>    <span class="k">def</span> <span class="nf">enable_output_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">enable_output_queue</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="NamedThreadPool.add_task"><a class="viewcode-back" href="../../../server/pool.html#iceprod.server.pool.NamedThreadPool.add_task">[docs]</a>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a task to the queue&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">deque2</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">,</span><span class="n">name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">kwargs</span><span class="p">))</span></div>
+    
+    <span class="k">def</span> <span class="nf">_runner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+            <span class="n">latest</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_lock</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_names</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">latest</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">f</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">k</span> <span class="o">=</span> <span class="n">latest</span>
+                <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">a</span><span class="p">,</span><span class="o">**</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in NamedThreadPool runner&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

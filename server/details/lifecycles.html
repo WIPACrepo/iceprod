@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Lifecycles &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="IceProd Server Details" href="index.html" />
+    <link rel="next" title="Global Queueing" href="global_queueing.html" />
+    <link rel="prev" title="Task Relationships" href="task_relationships.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="global_queueing.html" title="Global Queueing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="task_relationships.html" title="Task Relationships"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="lifecycles">
+<span id="index-0"></span><span id="id1"></span><h1>Lifecycles<a class="headerlink" href="#lifecycles" title="Permalink to this headline">¶</a></h1>
+<p>There are several lifecycles in the server, and here we shall
+focus on datasets, jobs, and tasks.</p>
+<p><strong>Color Key</strong></p>
+<ul class="simple">
+<li>blue - standard flow</li>
+<li>cyan - standard flow that can be overridden</li>
+<li>green - debug flag override</li>
+<li>red - manual intervention</li>
+</ul>
+<div class="section" id="datasets">
+<h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/lifecycle_dataset.png" src="../../_images/lifecycle_dataset.png" />
+</div>
+<div class="section" id="jobs">
+<h2>Jobs<a class="headerlink" href="#jobs" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/lifecycle_job.png" src="../../_images/lifecycle_job.png" />
+</div>
+<div class="section" id="tasks">
+<h2>Tasks<a class="headerlink" href="#tasks" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/lifecycle_task.png" src="../../_images/lifecycle_task.png" />
+<ul class="simple">
+<li>idle: tasks in global queue</li>
+<li>waiting: tasks in local queue</li>
+<li>queued: tasks queued to a batch system</li>
+<li>processing: tasks are running</li>
+<li>suspended: if <code class="docutils literal"><span class="pre">debug</span> <span class="pre">=</span> <span class="pre">True</span></code> <cite>suspend</cite> instead of <cite>reset</cite> or <cite>fail</cite></li>
+<li>reset: shallow reset<ul>
+<li>by default goes back to <cite>waiting</cite></li>
+<li>if reset &gt;= 3, back to <cite>idle</cite></li>
+</ul>
+</li>
+<li>resume: hard reset</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Lifecycles</a><ul>
+<li><a class="reference internal" href="#datasets">Datasets</a></li>
+<li><a class="reference internal" href="#jobs">Jobs</a></li>
+<li><a class="reference internal" href="#tasks">Tasks</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="task_relationships.html"
+                        title="previous chapter">Task Relationships</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="global_queueing.html"
+                        title="next chapter">Global Queueing</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/details/lifecycles.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="global_queueing.html" title="Global Queueing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="task_relationships.html" title="Task Relationships"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

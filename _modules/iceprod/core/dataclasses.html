@@ -1,0 +1,1051 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.core.dataclasses &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.core" href="../core.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" accesskey="U">iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.core.dataclasses</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A set of classes that holds dataset configuration data.</span>
+
+<span class="sd">Each class is based on a dictionary and only contains simple elements for</span>
+<span class="sd">easy serialization to json (or other formats). A full dataset configuration</span>
+<span class="sd">can be had by serializing the :class:`Job` class.</span>
+
+<span class="sd">The `convert` method of each class will turn any regular dictionary objects</span>
+<span class="sd">into special `dataclasses` objects.</span>
+
+<span class="sd">The `valid` method of each class will test the validity of the data to be</span>
+<span class="sd">an actual dataset config.</span>
+
+<span class="sd">The `output` method of each class will create json with info on each</span>
+<span class="sd">dataclass, to be used in javascript.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="k">import</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Integral</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">String</span> <span class="o">=</span> <span class="n">basestring</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="n">String</span> <span class="o">=</span> <span class="nb">str</span>
+
+<span class="c"># pluralizations for keys that are not classes here</span>
+<span class="n">_plurals</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;Option&#39;</span><span class="p">:</span> <span class="s">&#39;Options&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Category&#39;</span><span class="p">:</span> <span class="s">&#39;Categories&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Parameter&#39;</span><span class="p">:</span> <span class="s">&#39;Parameters&#39;</span><span class="p">,</span>
+    <span class="s">&#39;System&#39;</span><span class="p">:</span> <span class="s">&#39;System&#39;</span><span class="p">,</span>
+    <span class="s">&#39;Dependence&#39;</span><span class="p">:</span> <span class="s">&#39;Depends&#39;</span>
+<span class="p">}</span>
+
+<div class="viewcode-block" id="Job"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Job">[docs]</a><span class="k">class</span> <span class="nc">Job</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds all information about a running job.</span>
+
+<span class="sd">    If the `options` are empty, this is the same as a dataset</span>
+<span class="sd">    configuration.</span>
+
+<span class="sd">    :ivar dataset: 0</span>
+<span class="sd">    :ivar parent_id: 0</span>
+<span class="sd">    :ivar version: 3</span>
+<span class="sd">    :ivar options: {} -- a dict of parameters to pass to the task runner</span>
+<span class="sd">    :ivar steering: None</span>
+<span class="sd">    :ivar tasks: []</span>
+<span class="sd">    :ivar difplus: None</span>
+<span class="sd">    :ivar description: &quot;&quot;</span>
+<span class="sd">    :ivar categories: []</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Jobs&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;parent_id&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;categories&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Job</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Job.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Job.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;tasks&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Task&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;difplus&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;DifPlus&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;steering&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Steering&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;categories&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Job.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Job.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">],</span><span class="n">Steering</span><span class="p">)):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">Steering</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Task</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">],</span><span class="n">DifPlus</span><span class="p">)):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">DifPlus</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="Job.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Job.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;parent_id&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">],</span><span class="n">Number</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">],</span><span class="n">Steering</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Task</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">],</span><span class="n">DifPlus</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;difplus&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;categories&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Steering"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Steering">[docs]</a><span class="k">class</span> <span class="nc">Steering</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds all information that goes in the steering section of a configuration.</span>
+
+<span class="sd">    :ivar parameters: {}</span>
+<span class="sd">    :ivar batchsys: None</span>
+<span class="sd">    :ivar system: {} -- just specialized parameters</span>
+<span class="sd">    :ivar resources: []</span>
+<span class="sd">    :ivar data: []</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Steering&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Steering</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Steering.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Steering.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;resources&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Resource&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;data&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Data&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;batchsys&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Batchsys&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Steering.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Steering.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">],</span><span class="n">Batchsys</span><span class="p">)):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">Batchsys</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">Resource</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">Data</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="Steering.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Steering.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">],</span><span class="n">Batchsys</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">Resource</span><span class="p">)</span> <span class="ow">and</span> <span class="n">r</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">Data</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<span class="k">class</span> <span class="nc">Batchsys</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds information for running on grid/cluster types.</span>
+<span class="sd">    Designed as a dict of dicts, one for each grid/cluster type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&quot;Batchsys&quot;</span>
+
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s">&#39;*&#39;</span><span class="p">:{}}</span>
+
+    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span>
+
+<div class="viewcode-block" id="_TaskCommon"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._TaskCommon">[docs]</a><span class="k">class</span> <span class="nc">_TaskCommon</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds common attributes used by task, tray, module.</span>
+
+<span class="sd">    :ivar name: &#39;&#39;</span>
+<span class="sd">    :ivar resources: []</span>
+<span class="sd">    :ivar data: []</span>
+<span class="sd">    :ivar classes: []</span>
+<span class="sd">    :ivar parameters: {}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_TaskCommon</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="_TaskCommon.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">Resource</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">Data</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">Class</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Class</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="_TaskCommon.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._TaskCommon.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">Resource</span><span class="p">)</span> <span class="ow">and</span> <span class="n">r</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">Data</span><span class="p">)</span> <span class="ow">and</span> <span class="n">d</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">Class</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<span class="k">class</span> <span class="nc">Requirement</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Requirements&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;disk&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Requirement</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">],(</span><span class="n">String</span><span class="p">,</span><span class="n">Number</span><span class="p">))</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">],(</span><span class="n">String</span><span class="p">,</span><span class="n">Number</span><span class="p">))</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;memory&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;memory&#39;</span><span class="p">],(</span><span class="n">String</span><span class="p">,</span><span class="n">Number</span><span class="p">))</span> <span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;disk&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;disk&#39;</span><span class="p">],(</span><span class="n">String</span><span class="p">,</span><span class="n">Number</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="n">_TaskCommon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds all information about a task.</span>
+
+<span class="sd">    :ivar depends: [] -- a list of task names</span>
+<span class="sd">    :ivar batchsys: None</span>
+<span class="sd">    :ivar trays: []</span>
+<span class="sd">    :ivar requirements: {} -- a dict of requirements</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Tasks&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;depends&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Task.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Task.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;resources&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Resource&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;data&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Data&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;classes&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Class&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;depends&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;batchsys&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Batchsys&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;trays&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Tray&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Task.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Task.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">],</span><span class="n">Batchsys</span><span class="p">)):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">Batchsys</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tray</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Tray</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="Task.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Task.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Task</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;depends&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,(</span><span class="n">String</span><span class="p">,</span><span class="n">Number</span><span class="p">))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;depends&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span>
+                        <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">],</span><span class="n">Batchsys</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;batchsys&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">Tray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">],</span><span class="n">Requirement</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Tray"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Tray">[docs]</a><span class="k">class</span> <span class="nc">Tray</span><span class="p">(</span><span class="n">_TaskCommon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds all information about a tray.</span>
+
+<span class="sd">    :ivar iterations: 1</span>
+<span class="sd">    :ivar modules: []</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Trays&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;iterations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Tray</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Tray.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Tray.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;resources&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Resource&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;data&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Data&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;classes&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Class&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;modules&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Module&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Tray.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Tray.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Tray</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">Module</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Module</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="Tray.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Tray.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Tray</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;iterations&#39;</span><span class="p">],</span><span class="n">Integral</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">],</span><span class="nb">list</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">Module</span><span class="p">)</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">])</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Module"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Module">[docs]</a><span class="k">class</span> <span class="nc">Module</span><span class="p">(</span><span class="n">_TaskCommon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds all information about a module.</span>
+
+<span class="sd">    :ivar running_class: None -- the python class or function to call</span>
+<span class="sd">    :ivar src: None -- src of class or script</span>
+<span class="sd">    :ivar args: None -- args to give to class or src if not an iceprod module</span>
+<span class="sd">    :ivar env_shell: None -- src of script which sets env and calls arg</span>
+<span class="sd">    :ivar env_clear: False -- clear the env before calling the module</span>
+<span class="sd">                              (calls env_shell after clearing, if defined)</span>
+
+<span class="sd">    Note that `env_clear` should be used carefully, as it wipes out</span>
+<span class="sd">    any loaded classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Modules&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span>           <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_clear&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">False</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Module</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Module.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Module.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;resources&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Resource&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;data&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Data&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;classes&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Class&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Module.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Module.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Module</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Module.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Module.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Module</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_clear&#39;</span><span class="p">],</span><span class="nb">bool</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Class"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Class">[docs]</a><span class="k">class</span> <span class="nc">Class</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class object, downloaded from a url.</span>
+
+<span class="sd">    :ivar name: None -- required</span>
+<span class="sd">    :ivar src: None -- if downloaded from url</span>
+<span class="sd">    :ivar resource_name: None -- if present in resource object</span>
+<span class="sd">    :ivar recursive: False</span>
+<span class="sd">    :ivar libs: None -- if more than default lib directory</span>
+<span class="sd">    :ivar env_vars: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Classes&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span>           <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;recursive&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">False</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;libs&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_vars&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Class</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Class.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Class.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Class.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Class.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Class.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Class.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;recursive&#39;</span><span class="p">],</span><span class="nb">bool</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;libs&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;env_vars&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="_ResourceCommon"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon">[docs]</a><span class="k">class</span> <span class="nc">_ResourceCommon</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds common attributes used by Resource and Data.</span>
+
+<span class="sd">    :ivar remote: &#39;&#39;</span>
+<span class="sd">    :ivar local: &#39;&#39;</span>
+<span class="sd">    :ivar compression: False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">compression_options</span> <span class="o">=</span> <span class="p">[</span><span class="k">False</span><span class="p">,</span><span class="k">True</span><span class="p">,</span><span class="s">&#39;none&#39;</span><span class="p">,</span><span class="s">&#39;gzip&#39;</span><span class="p">,</span><span class="s">&#39;gz&#39;</span><span class="p">,</span><span class="s">&#39;bzip&#39;</span><span class="p">,</span><span class="s">&#39;bz2&#39;</span><span class="p">,</span><span class="s">&#39;lzma&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;compression&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">False</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_ResourceCommon</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="_ResourceCommon.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="_ResourceCommon.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses._ResourceCommon.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s">&#39;compression&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compression_options</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Resource"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Resource">[docs]</a><span class="k">class</span> <span class="nc">Resource</span><span class="p">(</span><span class="n">_ResourceCommon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A resource object, representing a file to download.</span>
+
+<span class="sd">    :ivar arch: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Resources&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;arch&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Resource</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Resource.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Resource.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;compression&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">compression_options</span><span class="p">]</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Resource.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Resource.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Resource.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Resource.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Resource</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;arch&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Data"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data">[docs]</a><span class="k">class</span> <span class="nc">Data</span><span class="p">(</span><span class="n">_ResourceCommon</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A data object, representing input and/or output of data.</span>
+
+<span class="sd">    :ivar type: &#39;permanent&#39; -- required</span>
+<span class="sd">    :ivar movement: &#39;both&#39; -- required</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Data&#39;</span>
+    <span class="n">type_options</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;permanent&#39;</span><span class="p">,</span><span class="s">&#39;tray_temp&#39;</span><span class="p">,</span><span class="s">&#39;task_temp&#39;</span><span class="p">,</span><span class="s">&#39;job_temp&#39;</span><span class="p">,</span><span class="s">&#39;dataset_temp&#39;</span><span class="p">,</span><span class="s">&#39;site_temp&#39;</span><span class="p">]</span>
+    <span class="n">movement_options</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;input&#39;</span><span class="p">,</span><span class="s">&#39;output&#39;</span><span class="p">,</span><span class="s">&#39;both&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="s">&#39;permanent&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;movement&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;both&#39;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Data</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Data.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;compression&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">compression_options</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;type&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">type_options</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;movement&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">movement_options</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Data.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Data.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">Data</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type_options</span> <span class="ow">and</span>
+                    <span class="bp">self</span><span class="p">[</span><span class="s">&#39;movement&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">movement_options</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div>
+
+<div class="viewcode-block" id="Data.storage_location"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data.storage_location">[docs]</a>    <span class="k">def</span> <span class="nf">storage_location</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">env</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get storage location from the environment.</span>
+
+<span class="sd">        :param env: environment</span>
+<span class="sd">        :returns: storage location as a string, or raises Exception</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">type</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Data</span><span class="o">.</span><span class="n">type_options</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Data.type is undefined&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="nb">type</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="nb">type</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span> <span class="s">&#39;permanent&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;data_url&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;data_url&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;data_url not defined in env[</span><span class="se">\&#39;</span><span class="s">options</span><span class="se">\&#39;</span><span class="s">]&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;%s not defined in env&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="DifPlus"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DifPlus">[docs]</a><span class="k">class</span> <span class="nc">DifPlus</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A DifPlus object.</span>
+
+<span class="sd">    :ivar dif: None</span>
+<span class="sd">    :ivar plus: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;DifPlus&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DifPlus</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DifPlus.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DifPlus.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;dif&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Dif&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;plus&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Plus&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="DifPlus.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DifPlus.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">],</span><span class="n">Dif</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">Dif</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Plus</span><span class="p">):</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">Plus</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">])</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="DifPlus.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DifPlus.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">],</span><span class="n">Dif</span><span class="p">)</span> <span class="ow">and</span>
+                     <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">],</span><span class="n">Plus</span><span class="p">)</span> <span class="ow">and</span>
+                     <span class="bp">self</span><span class="p">[</span><span class="s">&#39;plus&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Dif"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Dif">[docs]</a><span class="k">class</span> <span class="nc">Dif</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Dif object.</span>
+
+<span class="sd">   :ivar entry_id: None</span>
+<span class="sd">   :ivar entry_title: None</span>
+<span class="sd">   :ivar parameters: &#39; &#39;</span>
+<span class="sd">   :ivar iso_topic_category: &#39;geoscientificinformation&#39;</span>
+<span class="sd">   :ivar data_ceter: None</span>
+<span class="sd">   :ivar summary: &#39; &#39;</span>
+<span class="sd">   :ivar metadata_name: &#39;[CEOS IDN DIF]&#39;</span>
+<span class="sd">   :ivar metadata_version: &#39;9.4&#39;</span>
+<span class="sd">   :ivar personnel: []</span>
+<span class="sd">   :ivar sensor_name: &#39;ICECUBE&#39;</span>
+<span class="sd">   :ivar source_name: &#39;SIMULATION&#39;</span>
+<span class="sd">   :ivar dif_creation_date: time.strftime(&quot;%Y-%m-%d&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Dif&#39;</span>
+    <span class="c"># TODO: move these to the DB, or somewhere IceCube-specific</span>
+    <span class="n">valid_parameters</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Atmospheric&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Extraterrestrial Point Source&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Gamma Ray Burst&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; WIMPS&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Diffuse Source&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Extreme High Energy&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Super Nova&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Cosmic Ray Muon Component&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Tau&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Cascades&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Neutrinos &gt; Galactic Plane&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Composition&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Air Shower&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Cosmic Ray Muons&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Astrophysics &gt; Cosmic Rays &gt; Moon Shadow&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics &gt; Photomultiplier Tubes&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPACE SCIENCE &gt; Engineering &gt; Sensor Characteristics &gt; Digital Optical Modules&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling &gt; Hole Drilling&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EARTH SCIENCE &gt; Cryosphere &gt; Glaciers/Ice Sheets &gt; Hot Water Drilling &gt; Hole Refreeze&quot;</span>
+    <span class="p">]</span>
+    <span class="n">valid_source_name</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;SIMULATION&quot;</span><span class="p">:</span><span class="s">&quot;Data which are numerically generated&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EXPERIMENTAL&quot;</span><span class="p">:</span><span class="s">&quot;Data with an instrumentation based source&quot;</span>
+    <span class="p">}</span>
+    <span class="n">valid_sensor_name</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;AMANDA-A&quot;</span><span class="p">:</span><span class="s">&quot;Prototype Antarctic Muon and Neutrino Detector Array&quot;</span><span class="p">,</span>
+        <span class="s">&quot;AMANDA&quot;</span><span class="p">:</span><span class="s">&quot;Antarctic Muon and Neutrino Detector Array&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPASE-1&quot;</span><span class="p">:</span><span class="s">&quot;South Pole Air Shower Experiment 1&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPASE-2&quot;</span><span class="p">:</span><span class="s">&quot;South Pole Air Shower Experiment 2&quot;</span><span class="p">,</span>
+        <span class="s">&quot;VULCAN&quot;</span><span class="p">:</span><span class="s">&quot;South Pole Air-Cherenkov Telescope&quot;</span><span class="p">,</span>
+        <span class="s">&quot;RICE&quot;</span><span class="p">:</span><span class="s">&quot;Radio Ice Cherenkov Experiment&quot;</span><span class="p">,</span>
+        <span class="s">&quot;GASP&quot;</span><span class="p">:</span><span class="s">&quot;Gamma Astronomy-South Pole&quot;</span><span class="p">,</span>
+        <span class="s">&quot;ICECUBE&quot;</span><span class="p">:</span><span class="s">&quot;IceCube&quot;</span><span class="p">,</span>
+        <span class="s">&quot;ICETOP&quot;</span><span class="p">:</span><span class="s">&quot;IceTop&quot;</span><span class="p">,</span>
+        <span class="s">&quot;EHWD&quot;</span><span class="p">:</span><span class="s">&quot;Enhanced Hot Water Drill&quot;</span><span class="p">,</span>
+        <span class="s">&quot;SPTR&quot;</span><span class="p">:</span><span class="s">&quot;South Pole TDRSS Relay&quot;</span><span class="p">,</span>
+        <span class="s">&quot;RPSC-MET&quot;</span><span class="p">:</span><span class="s">&quot;Raytheon Polar Services Corporation Meteorology&quot;</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_id&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_title&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;iso_topic_category&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;geoscientificinformation&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data_ceter&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;summary&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;metadata_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;[CEOS IDN DIF]&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;metadata_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;9.4&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;sensor_name&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="s">&#39;ICECUBE&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;source_name&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="s">&#39;SIMULATION&#39;</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif_creation_date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&quot;%Y-%m-%d&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Dif</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Dif.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Dif.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;personnel&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Personnel&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Dif.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Dif.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">Personnel</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Personnel</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="Dif.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Dif.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_id&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_id&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_title&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;entry_title&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;iso_topic_category&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data_ceter&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;data_ceter&#39;</span><span class="p">],</span><span class="n">DataCenter</span><span class="p">)</span> <span class="ow">and</span>
+                      <span class="bp">self</span><span class="p">[</span><span class="s">&#39;data_center&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">valid</span><span class="p">()))</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;summary&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;metadata_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;metadata_version&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">Personnel</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;sensor_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;source_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;dif_creation_date&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="Plus"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Plus">[docs]</a><span class="k">class</span> <span class="nc">Plus</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Plus object.</span>
+
+<span class="sd">   :ivar start: None</span>
+<span class="sd">   :ivar end: None</span>
+<span class="sd">   :ivar category: None</span>
+<span class="sd">   :ivar subcategory: None</span>
+<span class="sd">   :ivar run_number: None</span>
+<span class="sd">   :ivar i3db_key: None</span>
+<span class="sd">   :ivar simdb_key: None</span>
+<span class="sd">   :ivar project: [] -- [{name: version}]</span>
+<span class="sd">   :ivar steering_file: None</span>
+<span class="sd">   :ivar log_file: None</span>
+<span class="sd">   :ivar command_line: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Plus&#39;</span>
+
+    <span class="n">valid_category</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s">&quot;unclassified&quot;</span><span class="p">,</span>
+        <span class="s">&quot;generated&quot;</span><span class="p">,</span>
+        <span class="s">&quot;propagated&quot;</span><span class="p">,</span>
+        <span class="s">&quot;unbiased&quot;</span><span class="p">,</span>
+        <span class="s">&quot;filtered&quot;</span><span class="p">,</span>
+        <span class="s">&quot;calibration&quot;</span><span class="p">,</span>
+        <span class="s">&quot;monitoring&quot;</span><span class="p">,</span>
+        <span class="s">&quot;webcam&quot;</span><span class="p">,</span>
+        <span class="s">&quot;hole&quot;</span><span class="p">,</span>
+        <span class="s">&quot;TestDAQ&quot;</span><span class="p">,</span>
+        <span class="s">&quot;FAT&quot;</span><span class="p">,</span>
+        <span class="s">&quot;log&quot;</span><span class="p">,</span>
+        <span class="s">&quot;upmu&quot;</span><span class="p">,</span>
+        <span class="s">&quot;minbias&quot;</span><span class="p">,</span>
+        <span class="s">&quot;cascades&quot;</span><span class="p">,</span>
+        <span class="s">&quot;high-energy&quot;</span><span class="p">,</span>
+        <span class="s">&quot;wimp&quot;</span><span class="p">,</span>
+        <span class="s">&quot;GRB&quot;</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span>        <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span>          <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;category&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;subcategory&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;run_number&#39;</span><span class="p">]</span>   <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;i3db_key&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;simdb_key&#39;</span><span class="p">]</span>    <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;project&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering_file&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;log_file&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;command_line&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Plus</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Plus.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Plus.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;project&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],{}]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Plus.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Plus.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Plus.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Plus.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;category&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;category&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;subcategory&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;subcategory&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;run_number&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;run_number&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;i3db_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;i3db_key&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;simdb_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;simdb_key&#39;</span><span class="p">],(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">)))</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
+                         <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">String</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span>
+                         <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,(</span><span class="n">Number</span><span class="p">,</span><span class="n">String</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">p</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                        <span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;project&#39;</span><span class="p">])</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering_file&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;steering_file&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;log_file&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;log_file&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;command_line&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;command_line&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+
+<div class="viewcode-block" id="Personnel"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Personnel">[docs]</a><span class="k">class</span> <span class="nc">Personnel</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Personnel object.</span>
+
+<span class="sd">   :ivar role: None</span>
+<span class="sd">   :ivar first_name: None</span>
+<span class="sd">   :ivar last_name: None</span>
+<span class="sd">   :ivar email: None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;Personnel&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span>       <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;first_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;last_name&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;email&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="k">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Personnel</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Personnel.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Personnel.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="Personnel.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Personnel.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Personnel.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Personnel.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;role&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;first_name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;first_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;last_name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;last_name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;email&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;email&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+
+<div class="viewcode-block" id="DataCenter"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DataCenter">[docs]</a><span class="k">class</span> <span class="nc">DataCenter</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Data Center object.</span>
+
+<span class="sd">   :ivar name: None</span>
+<span class="sd">   :ivar personnel: []</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plural</span> <span class="o">=</span> <span class="s">&#39;DataCenter&#39;</span>
+    <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;UWI-MAD/A3RI &gt; Antarctic Astronomy and Astrophysics Research Institute, University of Wisconsin, Madison&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>      <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataCenter</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataCenter.output"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DataCenter.output">[docs]</a>    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Output dict with values and (optionally) the object name for</span>
+<span class="sd">        new objects.&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="s">&#39;personnel&#39;</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">],</span><span class="s">&#39;Personnel&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<div class="viewcode-block" id="DataCenter.convert"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DataCenter.convert">[docs]</a>    <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">Personnel</span><span class="p">):</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">Personnel</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+                <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span></div>
+
+<div class="viewcode-block" id="DataCenter.valid"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DataCenter.valid">[docs]</a>    <span class="k">def</span> <span class="nf">valid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span>
+                     <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">String</span><span class="p">))</span> <span class="ow">and</span>
+                    <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">Personnel</span><span class="p">)</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;personnel&#39;</span><span class="p">])</span>
+                   <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">False</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" >iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.modules.proxy &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.modules.proxy</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The proxy module is a convenience module for starting and stopping a </span>
+<span class="sd">proxy server with IceProd. It currently uses </span>
+<span class="sd">`Squid &lt;http://www.squid-cache.org/&gt;`_, which requires installation before</span>
+<span class="sd">use. The module will auto-configure `Squid`, so a default install suffices.</span>
+
+<span class="sd">Note that large grids should probably configure and use their own proxy</span>
+<span class="sd">infrastructure instead of running this module.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">Condition</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">iceprod.server</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.squid</span> <span class="k">import</span> <span class="n">Squid</span>
+
+<div class="viewcode-block" id="proxy"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy">[docs]</a><span class="k">class</span> <span class="nc">proxy</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the proxy module, which runs a squid proxy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span> <span class="o">=</span> <span class="n">ProxyService</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">_getargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s">&#39;proxy&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;proxy&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s">&#39;http_username&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;http_username&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&#39;http_password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;http_password&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">kwargs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="proxy.start"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start proxy if not already running&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># after module is started, start squid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="n">Squid</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="proxy.stop"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop proxy&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="proxy.kill"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Kill proxy&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="proxy.update_cfg"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.update_cfg">[docs]</a>    <span class="k">def</span> <span class="nf">update_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newcfg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the cfg, making any necessary changes&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">newcfg</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">restart</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="ProxyService"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.ProxyService">[docs]</a><span class="k">class</span> <span class="nc">ProxyService</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">Service</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Override the basic :class:`Service` handler to provide a more</span>
+<span class="sd">    effecient reload method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ProxyService.reload"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.ProxyService.reload">[docs]</a>    <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cfg</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">update_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

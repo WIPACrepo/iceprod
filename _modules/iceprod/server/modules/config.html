@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.modules.config &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.modules.config</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The config module stores and shares configuration settings with the rest of</span>
+<span class="sd">iceprod server. Other modules may request an updated config or make a change</span>
+<span class="sd">to the current config. If a change is made, the new config is BROADCAST to</span>
+<span class="sd">all modules.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">iceprod.server</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.config</span> <span class="k">import</span> <span class="n">IceProdConfig</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.RPCinternal</span> <span class="k">import</span> <span class="n">RPCService</span>
+
+<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.config">[docs]</a><span class="k">class</span> <span class="nc">config</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the config module, which handles iceprod configuration settings.</span>
+
+<span class="sd">    This is a module wrapper around</span>
+<span class="sd">    :class:`iceprod.server.config.IceProdConfig`.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filename (string): filename for config file (optional)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># pull out config filename, if available</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="s">&#39;filename&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">)</span>
+        <span class="c"># run default init</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span> <span class="o">=</span> <span class="n">ConfigService</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">IceProdConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<div class="viewcode-block" id="config.start"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.config.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">blocking</span><span class="o">=</span><span class="k">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start the messaging service&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">IceProdConfig</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">daemon</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">return</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;address&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging_url</span><span class="p">,</span>
+                  <span class="s">&#39;block&#39;</span><span class="p">:</span><span class="n">blocking</span><span class="p">,</span>
+                 <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_name</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;service_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_name</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;service_class&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span> <span class="o">=</span> <span class="n">RPCService</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+        <span class="c"># if blocking is True, messaging will block the thread until closed</span>
+
+<div class="viewcode-block" id="config.stop"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.config.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop schedule&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="config.kill"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.config.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Kill thread&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="ConfigService"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService">[docs]</a><span class="k">class</span> <span class="nc">ConfigService</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">Service</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Override the basic :class:`Service` handler to handle config messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ConfigService.get_config_string"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.get_config_string">[docs]</a>    <span class="k">def</span> <span class="nf">get_config_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">save_to_string</span><span class="p">())</span></div>
+<div class="viewcode-block" id="ConfigService.set_config_string"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.set_config_string">[docs]</a>    <span class="k">def</span> <span class="nf">set_config_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_text</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">load_string</span><span class="p">(</span><span class="n">config_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="s">&#39;Failed to parse config&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">BROADCAST</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ConfigService.reload"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.reload">[docs]</a>    <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cfg</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="c"># do nothing - we are the config source</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ConfigService.get"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="ne">KeyError</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConfigService.set"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">update</span><span class="o">=</span><span class="k">True</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">BROADCAST</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ConfigService.delete"><a class="viewcode-back" href="../../../../server/modules/config.html#iceprod.server.modules.config.ConfigService.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">BROADCAST</span><span class="o">.</span><span class="n">reload</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">config</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.core.serialization &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.core" href="../core.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" accesskey="U">iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.core.serialization</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Classes supporting dataset serialization.</span>
+
+<span class="sd">The interface is as follows::</span>
+
+<span class="sd">    class Serialization:</span>
+<span class="sd">        def dump(config, filename, **kwargs):</span>
+<span class="sd">            return None</span>
+<span class="sd">        def dumps(config, **kwargs):</span>
+<span class="sd">            return string</span>
+<span class="sd">        def load(filename, **kwargs):</span>
+<span class="sd">            return config</span>
+<span class="sd">        def loads(string, **kwargs):</span>
+<span class="sd">            return config</span>
+
+<span class="sd">The kwargs for each function are optional keyword arguments to pass</span>
+<span class="sd">to the underlying serialization library. Each function is a static method</span>
+<span class="sd">and can be called like::</span>
+
+<span class="sd">    Serialization.dump(config,filename)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;serialization&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SerializationError"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.SerializationError">[docs]</a><span class="k">class</span> <span class="nc">SerializationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An exception that occurs during serialization.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__repr__</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;SerializationError(%r)&#39;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&#39;SerializationError()&#39;</span>
+    <span class="k">def</span> <span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">SerializationError</span><span class="p">,(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,))</span></div>
+
+<div class="viewcode-block" id="dict_to_dataclasses"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.dict_to_dataclasses">[docs]</a><span class="k">def</span> <span class="nf">dict_to_dataclasses</span><span class="p">(</span><span class="n">input_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a dictionary to dataclasses objects.</span>
+<span class="sd">    </span>
+<span class="sd">    :param input_dict: input dictionary</span>
+<span class="sd">    :returns: :class:`iceprod.core.dataclasses.Job`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">(</span><span class="n">input_dict</span><span class="p">)</span>
+    <span class="n">ret</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">json</span> <span class="k">as</span> <span class="nn">_json</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json serializer is unavailable&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="serialize_json"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json">[docs]</a>    <span class="k">class</span> <span class="nc">serialize_json</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Serialize a dataset config to json.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.dump"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dump">[docs]</a>        <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.dumps"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dumps">[docs]</a>        <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.load"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.load">[docs]</a>        <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+        <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.loads"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.loads">[docs]</a>        <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div></div>
+            
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" >iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.zeromq &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.zeromq</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">ZeroMQ communication base classes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">errno</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">from</span> <span class="nn">zmq.eventloop</span> <span class="k">import</span> <span class="n">ioloop</span><span class="p">,</span> <span class="n">zmqstream</span>
+<span class="kn">import</span> <span class="nn">zmq</span>
+<span class="n">ioloop</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;zeromq&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ZmqProcess"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess">[docs]</a><span class="k">class</span> <span class="nc">ZmqProcess</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is the base for all processes and offers utility functions</span>
+<span class="sd">    for setup and creating new streams.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">io_loop</span> <span class="o">=</span> <span class="k">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ZmqProcess</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="sd">&quot;&quot;&quot;The ZeroMQ :class:`~zmq.Context` instance.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">io_loop</span>
+        <span class="sd">&quot;&quot;&quot;PyZMQ&#39;s event loop (:class:`~zmq.eventloop.ioloop.IOLoop`).&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">False</span>
+
+<div class="viewcode-block" id="ZmqProcess.setup"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a :attr:`context` and an event :attr:`loop` for the process.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ZmqProcess.run"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">False</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">zmq</span><span class="o">.</span><span class="n">ZMQError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EINTR</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ZMQError: EINTR&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ZMQError&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ioloop error&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ZmqProcess.restart"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess.restart">[docs]</a>    <span class="k">def</span> <span class="nf">restart</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_restart</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ZmqProcess.stop"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ZmqProcess.make_stream"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.ZmqProcess.make_stream">[docs]</a>    <span class="k">def</span> <span class="nf">make_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sock_type</span><span class="p">,</span> <span class="n">addr</span><span class="p">,</span> <span class="n">bind</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">subscribe</span><span class="o">=</span><span class="n">b</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                    <span class="n">identity</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a :class:`~zmq.eventloop.zmqstream.ZMQStream`.</span>
+
+<span class="sd">        :param sock_type: The ZeroMQ socket type (e.g. ``zmq.REQ``)</span>
+<span class="sd">        :param addr: Address to bind or connect to formatted as *host:port*,</span>
+<span class="sd">                *(host, port)* or *host* (bind to random port), or a list of</span>
+<span class="sd">                such entries if connecting.</span>
+<span class="sd">                If *bind* is ``True``, *host* may be:</span>
+
+<span class="sd">                - the wild-card ``*``, meaning all available interfaces,</span>
+<span class="sd">                - the primary IPv4 address assigned to the interface, in its</span>
+<span class="sd">                  numeric representation or</span>
+<span class="sd">                - the interface name as defined by the operating system.</span>
+
+<span class="sd">                If *bind* is ``False``, *host* may be:</span>
+
+<span class="sd">                - the DNS name of the peer or</span>
+<span class="sd">                - the IPv4 address of the peer, in its numeric representation.</span>
+
+<span class="sd">                If *addr* is just a host name without a port and *bind* is</span>
+<span class="sd">                ``True``, the socket will be bound to a random port.</span>
+<span class="sd">        :param bind: Binds to *addr* if ``True`` or tries to connect to it</span>
+<span class="sd">                otherwise.</span>
+<span class="sd">        :param callback: A callback for</span>
+<span class="sd">                :meth:`~zmq.eventloop.zmqstream.ZMQStream.on_recv`, optional</span>
+<span class="sd">        :param subscribe: Subscription pattern for *SUB* sockets, optional,</span>
+<span class="sd">                defaults to ``b&#39;&#39;``.</span>
+<span class="sd">        :param identity: Identity for *DEALER* sockets, optional,</span>
+<span class="sd">                defaults to random string.</span>
+<span class="sd">        :returns: A tuple containg the stream and the port number.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">sock_type</span><span class="p">)</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="k">None</span>
+
+        <span class="k">if</span> <span class="n">bind</span><span class="p">:</span>
+            <span class="c"># addr may be &#39;host:port&#39; or (&#39;host&#39;, port)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;binding to address %s&#39;</span><span class="p">,</span><span class="n">addr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">addr</span> <span class="o">=</span> <span class="n">addr</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;after transformation: %s&#39;</span><span class="p">,</span><span class="n">addr</span><span class="p">)</span>
+            <span class="n">host</span><span class="p">,</span> <span class="n">port</span> <span class="o">=</span> <span class="n">addr</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">(</span><span class="n">addr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="k">None</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;final check: %s:%s&#39;</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">port</span><span class="p">)</span>
+            <span class="c"># Bind/connect the socket</span>
+            <span class="k">if</span> <span class="n">port</span><span class="p">:</span>
+                <span class="n">sock</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s">&#39;%s:%s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">port</span> <span class="o">=</span> <span class="n">sock</span><span class="o">.</span><span class="n">bind_to_random_port</span><span class="p">(</span><span class="n">host</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;socket bound to %s:%s&#39;</span><span class="p">,</span><span class="n">host</span><span class="p">,</span><span class="n">port</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">addr</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">addr</span> <span class="o">=</span> <span class="p">[</span><span class="n">addr</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">addr</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">a</span> <span class="o">=</span> <span class="s">&#39;%s:%s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">a</span> <span class="o">=</span> <span class="s">&#39;%s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;attempting to connect to %s&#39;</span><span class="p">,</span><span class="n">a</span><span class="p">)</span>
+                <span class="n">sock</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;socket connected to %s&#39;</span><span class="p">,</span><span class="n">a</span><span class="p">)</span>
+
+        <span class="c"># Add a default subscription for SUB sockets</span>
+        <span class="k">if</span> <span class="n">sock_type</span> <span class="o">==</span> <span class="n">zmq</span><span class="o">.</span><span class="n">SUB</span><span class="p">:</span>
+            <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">SUBSCRIBE</span><span class="p">,</span> <span class="n">subscribe</span><span class="p">)</span>
+
+        <span class="c"># Add an identity for DEALER sockets</span>
+        <span class="k">if</span> <span class="n">sock_type</span> <span class="o">==</span> <span class="n">zmq</span><span class="o">.</span><span class="n">DEALER</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">identity</span><span class="p">:</span>
+                <span class="n">identity</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">letters</span><span class="o">+</span><span class="n">string</span><span class="o">.</span><span class="n">digits</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+            <span class="n">sock</span><span class="o">.</span><span class="n">setsockopt</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">IDENTITY</span><span class="p">,</span> <span class="n">identity</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;DEALER identity = %s&#39;</span><span class="p">,</span><span class="n">identity</span><span class="p">)</span>
+
+        <span class="c"># Create the stream and add the callback</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">zmqstream</span><span class="o">.</span><span class="n">ZMQStream</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">on_recv</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">stream</span><span class="p">,</span><span class="n">port</span></div></div>
+
+<div class="viewcode-block" id="AsyncSendReceive"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.AsyncSendReceive">[docs]</a><span class="k">class</span> <span class="nc">AsyncSendReceive</span><span class="p">(</span><span class="n">ZmqProcess</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create an asyncronous send or receive socket.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">identity</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">bind</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
+                 <span class="n">recv_handler</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AsyncSendReceive</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">address</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">identity</span> <span class="o">=</span> <span class="n">identity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bind</span> <span class="o">=</span> <span class="n">bind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recv_handler</span> <span class="o">=</span> <span class="n">recv_handler</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="k">None</span>
+
+<div class="viewcode-block" id="AsyncSendReceive.setup"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.AsyncSendReceive.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets up PyZMQ and creates all streams.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AsyncSendReceive</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+
+        <span class="c"># Create the stream and add the message handler</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bind</span><span class="p">:</span>
+            <span class="n">socket</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">ROUTER</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">socket</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">DEALER</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_stream</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                                                     <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bind</span><span class="p">,</span>
+                                                     <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recv_handler</span><span class="p">,</span>
+                                                     <span class="n">identity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">identity</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;make_stream error&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="AsyncSendReceive.send"><a class="viewcode-back" href="../../../server/details/zeromq.html#iceprod.server.zeromq.AsyncSendReceive.send">[docs]</a>    <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sends a message on the stream.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;sending message %r&#39;</span><span class="p">,</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">send_multipart</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">zmq</span><span class="o">.</span><span class="n">ZMQError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EINTR</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ZMQError in send: EINTR&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;ZMQError in send:&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="k">raise</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Exception in send:&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;zmq stream not available&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

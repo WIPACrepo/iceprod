@@ -1,0 +1,535 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RPC Internal Details &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="IceProd Server Details" href="index.html" />
+    <link rel="next" title="Extras" href="../../extra_details.html" />
+    <link rel="prev" title="ZeroMQ" href="zeromq.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../extra_details.html" title="Extras"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="zeromq.html" title="ZeroMQ"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="rpc-internal-details">
+<span id="rpcinternal-details"></span><span id="index-0"></span><h1>RPC Internal Details<a class="headerlink" href="#rpc-internal-details" title="Permalink to this headline">¶</a></h1>
+<p>Internal RPC relies on <a class="reference internal" href="zeromq.html#zeromq"><span class="std std-ref">ZeroMQ</span></a> sockets with a binary message protocol
+to give speed, strong data integrity, and reliability.</p>
+<p>A hub and spoke model is used, such that every client/service maintains a
+connection to the server and can send and receive requests over that
+connection.</p>
+<p>All message passing is asynchronous, allowing requests to proceed in parallel
+and out-of-order.</p>
+<div class="section" id="low-level-message-protocol">
+<span id="id1"></span><h2>Low-Level Message Protocol<a class="headerlink" href="#low-level-message-protocol" title="Permalink to this headline">¶</a></h2>
+<p>Each message uses ZeroMQ framing to send the header and body. The server
+additionally receives the client_id that is connecting as the first element
+of the frame.</p>
+<div class="section" id="header">
+<h3>Header<a class="headerlink" href="#header" title="Permalink to this headline">¶</a></h3>
+<p>The message header is a binary packed string:</p>
+<ul>
+<li><p class="first">id tag (4 bytes - &#8216;IRPC&#8217;): Denotes that this message uses the IceProd RPC
+protocol</p>
+</li>
+<li><p class="first">version (1 byte - uint): The protocol version, currently 1.</p>
+</li>
+<li><p class="first">sequence number (4 bytes - uint): The sequence number, to help prevent
+duplicates. The same number is expected in the response.</p>
+</li>
+<li><p class="first">body length (4 bytes - uint): The length of the message body.</p>
+</li>
+<li><p class="first">body checksum (4 bytes - uint): A CRC32 checksum of the body.</p>
+</li>
+<li><p class="first">message type (1 byte - uint): The <a class="reference internal" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE" title="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE"><code class="xref py py-class docutils literal"><span class="pre">MessageFactory.MESSAGE_TYPE</span></code></a>.</p>
+<p>If the message type == SERVICE:</p>
+<blockquote>
+<div><ul class="simple">
+<li>service length (4 bytes - uint): The length of the service name.</li>
+<li>service name (string): The name of the service being offered.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">header checksum (4 bytes - uint): A CRC32 checksum of the rest of the header.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="body">
+<h3>Body<a class="headerlink" href="#body" title="Permalink to this headline">¶</a></h3>
+<p>The body is a serialized python object.</p>
+<p>The current serialization is pickle (highest protocol). This may cause
+conflicts if different versions of python are used for the sender and
+the receiver.</p>
+</div>
+</div>
+<div class="section" id="rpc-message-protocol">
+<h2>RPC Message Protocol<a class="headerlink" href="#rpc-message-protocol" title="Permalink to this headline">¶</a></h2>
+<p>The RPC protocol is built on top of the <a class="reference internal" href="#low-level-message-protocol"><span class="std std-ref">Low-Level Message Protocol</span></a>.
+It controls what is actually in the body of each message.</p>
+<p>Request Object:</p>
+<ul class="simple">
+<li>method (string) - Name of the method to be invoked.</li>
+<li>params (dict) - Keyword arguments to the method.</li>
+</ul>
+<p>Response Object:</p>
+<ul class="simple">
+<li>result (object) - The returned result from the method. This is REQUIRED on
+success, and MUST NOT exist if there was an error.</li>
+<li>error (object) - A description of the error, likely an Exception object.
+This is REQUIRED on error and MUST NOT exist on success.</li>
+</ul>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Here are some worked examples, showing complete headers and bodies.</p>
+<div class="section" id="client-to-server">
+<h3>Client to Server<a class="headerlink" href="#client-to-server" title="Permalink to this headline">¶</a></h3>
+<p>This message is sent from a client to the server, intended for the server.</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">Client</span>       <span class="n">Server</span>
+<span class="p">[</span><span class="n">REQ</span><span class="p">]</span> <span class="o">---</span><span class="mi">1</span><span class="o">--&gt;</span> <span class="p">[</span><span class="n">REP</span><span class="p">]</span>
+      <span class="o">&lt;--</span><span class="mi">2</span><span class="o">---</span>
+
+<span class="mi">1</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVER</span><span class="p">,</span><span class="mh">0x8372E49D</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+<span class="mi">1</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVER</span><span class="p">,</span><span class="mh">0x8372E49D</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+
+<span class="mi">2</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xC83DF236</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+<span class="mi">2</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xC83DF236</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="client-to-service">
+<h3>Client to Service<a class="headerlink" href="#client-to-service" title="Permalink to this headline">¶</a></h3>
+<p>This message is sent from a client to the service, routed through the server.</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">Client</span>       <span class="n">Server</span>        <span class="n">serVice</span>
+<span class="p">[</span><span class="n">REQ</span><span class="p">]</span> <span class="o">---</span><span class="mi">1</span><span class="o">--&gt;</span> <span class="p">[</span><span class="n">FWD</span><span class="p">]</span> <span class="o">---</span><span class="mi">2</span><span class="o">--&gt;</span> <span class="p">[</span><span class="n">REP</span><span class="p">]</span>
+      <span class="o">&lt;--</span><span class="mi">4</span><span class="o">---</span> <span class="p">[</span><span class="n">FWD</span><span class="p">]</span> <span class="o">&lt;--</span><span class="mi">3</span><span class="o">---</span>
+
+<span class="mi">1</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVICE</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;Test&#39;</span><span class="p">,</span><span class="mh">0x8372E49D</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+<span class="mi">1</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVICE</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;Test&#39;</span><span class="p">,</span><span class="mh">0x8372E49D</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+
+<span class="mi">2</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVICE</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;Test&#39;</span><span class="p">,</span><span class="mh">0x928437BD</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+<span class="mi">2</span> <span class="n">V</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">SERVICE</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;Test&#39;</span><span class="p">,</span><span class="mh">0x928437BD</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+
+<span class="mi">3</span> <span class="n">V</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xB83D2018</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+<span class="mi">3</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xB83D2018</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+
+<span class="mi">4</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xC83DF236</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+<span class="mi">4</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x38294575</span><span class="p">,</span><span class="n">RESPONSE</span><span class="p">,</span><span class="mh">0xC83DF236</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;pong&#39;</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="client-to-broadcast">
+<h3>Client to Broadcast<a class="headerlink" href="#client-to-broadcast" title="Permalink to this headline">¶</a></h3>
+<p>This message is sent from a client to all services, routed through the server.
+It expects an ACK from the server, but not from the services.</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">Client</span>       <span class="n">Server</span>        <span class="n">serVice</span>
+<span class="p">[</span><span class="n">REQ</span><span class="p">]</span> <span class="o">---</span><span class="mi">1</span><span class="o">--&gt;</span> <span class="p">[</span><span class="n">REP</span><span class="p">]</span>
+      <span class="o">&lt;--</span><span class="mi">2</span><span class="o">---</span>
+              <span class="p">[</span><span class="n">FWD</span><span class="p">]</span> <span class="o">---</span><span class="mi">3</span><span class="o">--&gt;</span> <span class="p">[</span><span class="n">REP</span><span class="p">]</span>
+                    <span class="o">&lt;--</span><span class="mi">4</span><span class="o">---</span>
+
+<span class="mi">1</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">BROADCAST</span><span class="p">,</span><span class="mh">0x19456DA2</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+<span class="mi">1</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">BROADCAST</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="s">&#39;Test&#39;</span><span class="p">,</span><span class="mh">0x19456DA2</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+
+<span class="mi">2</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x6592DE72</span><span class="p">,</span><span class="n">BROADCAST_ACK</span><span class="p">,</span><span class="mh">0x493837F3</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;ack&#39;</span><span class="p">}]</span>
+<span class="mi">2</span> <span class="n">C</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mh">0x6592DE72</span><span class="p">,</span><span class="n">BROADCAST_ACK</span><span class="p">,</span><span class="mh">0x493837F3</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="s">&#39;ack&#39;</span><span class="p">}]</span>
+
+<span class="mi">3</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">BROADCAST</span><span class="p">,</span><span class="mh">0x5635FA95</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+<span class="mi">3</span> <span class="n">V</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0xAC34B281</span><span class="p">,</span><span class="n">BROADCAST</span><span class="p">,</span><span class="mh">0x5635FA95</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="s">&#39;ping&#39;</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:{</span><span class="s">&#39;test&#39;</span><span class="p">:</span><span class="s">&#39;a test arg&#39;</span><span class="p">}}]</span>
+
+<span class="mi">4</span> <span class="n">V</span> <span class="p">:</span> <span class="p">[(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0x33948CD1</span><span class="p">,</span><span class="n">BROADCAST_ACK</span><span class="p">,</span><span class="mh">0x01B75024</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">}]</span>
+<span class="mi">4</span> <span class="n">S</span> <span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span>
+       <span class="p">(</span><span class="s">&#39;IRPC&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">23</span><span class="p">,</span><span class="mh">0x33948CD1</span><span class="p">,</span><span class="n">BROADCAST_ACK</span><span class="p">,</span><span class="mh">0x01B75024</span><span class="p">),</span>
+       <span class="p">{</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="class-documentation">
+<h2>Class Documentation<a class="headerlink" href="#class-documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="iceprod.server.RPCinternal.Serializer">
+<em class="property">class </em><code class="descclassname">iceprod.server.RPCinternal.</code><code class="descname">Serializer</code><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#Serializer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.Serializer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A (de)serializer that wraps a certain serialization protocol.</p>
+<p>Currently it only supports the standard pickle protocol.</p>
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.Serializer.serialize">
+<em class="property">classmethod </em><code class="descname">serialize</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#Serializer.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.Serializer.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize the given data object.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.Serializer.deserialize">
+<em class="property">classmethod </em><code class="descname">deserialize</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#Serializer.deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.Serializer.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserializes the given data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.Serializer.pickle">
+<code class="descname">pickle</code><em class="property"> = &lt;module 'cPickle' (built-in)&gt;</em><a class="headerlink" href="#iceprod.server.RPCinternal.Serializer.pickle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.RPCinternal.MessageFactory">
+<em class="property">class </em><code class="descclassname">iceprod.server.RPCinternal.</code><code class="descname">MessageFactory</code><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory" title="Permalink to this definition">¶</a></dt>
+<dd><p>A message factory for creating and parsing binary messages.</p>
+<p>See the Python library <a class="reference external" href="https://docs.python.org/2/library/struct.html#format-characters">struct</a> module for info about struct packing.</p>
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.HEADERFMT">
+<code class="descname">HEADERFMT</code><em class="property"> = '!4sBLLLBL'</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.HEADERFMT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.HEADERSIZE">
+<code class="descname">HEADERSIZE</code><em class="property"> = 22</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.HEADERSIZE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.HEADERFMT_SERVICE">
+<code class="descname">HEADERFMT_SERVICE</code><em class="property"> = '!4sBLLLBB%dsL'</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.HEADERFMT_SERVICE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.ID_TAG">
+<code class="descname">ID_TAG</code><em class="property"> = 'IRPC'</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.ID_TAG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.PROTOCOL_VERSION">
+<code class="descname">PROTOCOL_VERSION</code><em class="property"> = 1</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.PROTOCOL_VERSION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MAX_SEQ">
+<code class="descname">MAX_SEQ</code><em class="property"> = 4294967295</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MAX_SEQ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MAX_SERVICE">
+<code class="descname">MAX_SERVICE</code><em class="property"> = 255</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MAX_SERVICE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE">
+<em class="property">class </em><code class="descname">MESSAGE_TYPE</code><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.MESSAGE_TYPE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enum:</p>
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.BROADCAST">
+<code class="descname">BROADCAST</code><em class="property"> = 1</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.BROADCAST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.BROADCAST_ACK">
+<code class="descname">BROADCAST_ACK</code><em class="property"> = 2</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.BROADCAST_ACK" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.RESPONSE">
+<code class="descname">RESPONSE</code><em class="property"> = 4</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.RESPONSE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.SERVER">
+<code class="descname">SERVER</code><em class="property"> = 0</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.SERVER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.SERVICE">
+<code class="descname">SERVICE</code><em class="property"> = 3</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.MESSAGE_TYPE.SERVICE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.MessageFactory.getChecksum">
+<em class="property">classmethod </em><code class="descclassname">MessageFactory.</code><code class="descname">getChecksum</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.getChecksum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.getChecksum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get 4 byte checksum</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.MessageFactory.verifyChecksum">
+<em class="property">classmethod </em><code class="descclassname">MessageFactory.</code><code class="descname">verifyChecksum</code><span class="sig-paren">(</span><em>data</em>, <em>checksum</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.verifyChecksum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.verifyChecksum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify a checksum</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.MessageFactory.createMessage">
+<em class="property">classmethod </em><code class="descclassname">MessageFactory.</code><code class="descname">createMessage</code><span class="sig-paren">(</span><em>data</em>, <em>seq</em>, <em>msg_type</em>, <em>service_name=None</em>, <em>serialized=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.createMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.createMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert data to binary (creating header in the process).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> &#8211; the data to convert</li>
+<li><strong>seq</strong> &#8211; the sequence number</li>
+<li><strong>msg_type</strong> &#8211; the message type</li>
+<li><strong>service_name</strong> &#8211; the service name, optional</li>
+<li><strong>serialized</strong> &#8211; Is the data already serialized? optional,
+defaults to False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">binary string</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.MessageFactory.parseMessageHeader">
+<em class="property">classmethod </em><code class="descclassname">MessageFactory.</code><code class="descname">parseMessageHeader</code><span class="sig-paren">(</span><em>header</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.parseMessageHeader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.parseMessageHeader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the header</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>header</strong> &#8211; the binary header to parse</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">{sequence_number, body_length, body_checksum, message_type,
+service_name}</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="iceprod.server.RPCinternal.MessageFactory.getMessage">
+<em class="property">classmethod </em><code class="descclassname">MessageFactory.</code><code class="descname">getMessage</code><span class="sig-paren">(</span><em>body</em>, <em>header</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#MessageFactory.getMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.getMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the body.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>body</strong> &#8211; raw message body</li>
+<li><strong>header</strong> &#8211; decoded message header</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">decoded data</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.binascii">
+<code class="descclassname">MessageFactory.</code><code class="descname">binascii</code><em class="property"> = &lt;module 'binascii' (built-in)&gt;</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.binascii" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.ctypes">
+<code class="descclassname">MessageFactory.</code><code class="descname">ctypes</code><em class="property"> = &lt;module 'ctypes' from '/usr/lib/python2.7/ctypes/__init__.pyc'&gt;</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.ctypes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="iceprod.server.RPCinternal.MessageFactory.struct">
+<code class="descclassname">MessageFactory.</code><code class="descname">struct</code><em class="property"> = &lt;module 'struct' from '/usr/lib/python2.7/struct.pyc'&gt;</em><a class="headerlink" href="#iceprod.server.RPCinternal.MessageFactory.struct" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.RPCinternal.Base">
+<em class="property">class </em><code class="descclassname">iceprod.server.RPCinternal.</code><code class="descname">Base</code><span class="sig-paren">(</span><em>history_length=10000</em>, <em>immediate_setup=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#Base"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.Base" title="Permalink to this definition">¶</a></dt>
+<dd><p>ZMQ messaging base.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>history_length</strong> &#8211; Amount of history to keep track of, optional</li>
+<li><strong>immediate_setup</strong> &#8211; Setup socket immediately</li>
+<li><strong>address</strong> &#8211; Address to connect to</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="iceprod.server.RPCinternal.Base.send">
+<code class="descname">send</code><span class="sig-paren">(</span><em>data</em>, <em>serialized=False</em>, <em>seq=None</em>, <em>timeout=60.0</em>, <em>client_id=None</em>, <em>type=3</em>, <em>service=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/RPCinternal.html#Base.send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.RPCinternal.Base.send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a message.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>data</strong> &#8211; The actual data to send</li>
+<li><strong>serialzed</strong> &#8211; Is the data already serialized?, optional</li>
+<li><strong>seq</strong> &#8211; The sequence number to respond to, optional</li>
+<li><strong>timeout</strong> &#8211; The timeout for retrying, optional</li>
+<li><strong>client_id</strong> &#8211; The client id to send to, optional</li>
+<li><strong>type</strong> &#8211; The type of message to send, optional</li>
+<li><strong>service</strong> &#8211; The service name, optional</li>
+<li><strong>callback</strong> &#8211; The callback function, optional</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<p>For other class documentation, see <a class="reference internal" href="../RPCinternal.html#rpcinternal"><span class="std std-ref">RPC Internal</span></a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">RPC Internal Details</a><ul>
+<li><a class="reference internal" href="#low-level-message-protocol">Low-Level Message Protocol</a><ul>
+<li><a class="reference internal" href="#header">Header</a></li>
+<li><a class="reference internal" href="#body">Body</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rpc-message-protocol">RPC Message Protocol</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#client-to-server">Client to Server</a></li>
+<li><a class="reference internal" href="#client-to-service">Client to Service</a></li>
+<li><a class="reference internal" href="#client-to-broadcast">Client to Broadcast</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#class-documentation">Class Documentation</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="zeromq.html"
+                        title="previous chapter">ZeroMQ</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../../extra_details.html"
+                        title="next chapter">Extras</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/details/rpcinternal.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../extra_details.html" title="Extras"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="zeromq.html" title="ZeroMQ"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >IceProd Server Details</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

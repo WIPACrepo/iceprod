@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Queueing Module &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="IceProd Server" href="../index.html" />
+    <link rel="next" title="Schedule Module" href="schedule.html" />
+    <link rel="prev" title="Proxy Module" href="proxy.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="schedule.html" title="Schedule Module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="proxy.html" title="Proxy Module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.server.modules.queue">
+<span id="id1"></span><span id="queueing-module"></span><span id="index-0"></span><h1>Queueing Module<a class="headerlink" href="#module-iceprod.server.modules.queue" title="Permalink to this headline">¶</a></h1>
+<p>The queue module is responsible for interacting with the local batch or
+queueing system, putting tasks on the queue and removing them as necessary.</p>
+<dl class="exception">
+<dt id="iceprod.server.modules.queue.StopException">
+<em class="property">exception </em><code class="descclassname">iceprod.server.modules.queue.</code><code class="descname">StopException</code><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#StopException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.StopException" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.queue.queue">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.queue.</code><code class="descname">queue</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the queue module, which queues jobs onto the local grid system(s).</p>
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.start">
+<code class="descname">start</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start thread if not already running</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop queue loop</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.kill">
+<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kill queue loop</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.check_run">
+<code class="descname">check_run</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.check_run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.check_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>A context manager which keeps track of # of running threads</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.queue_loop">
+<code class="descname">queue_loop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.queue_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.queue_loop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the queueing loop</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.check_proxy">
+<code class="descname">check_proxy</code><span class="sig-paren">(</span><em>duration=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.check_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.check_proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the x509 proxy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.global_queueing">
+<code class="descname">global_queueing</code><span class="sig-paren">(</span><em>queueing_factor_priority=1.0</em>, <em>queueing_factor_dataset=1.0</em>, <em>queueing_factor_tasks=1.0</em>, <em>num=100</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.global_queueing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.global_queueing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do global queueing.</p>
+<p>Fetch tasks from the global server that match the local resources
+and add them to the local DB. This is non-blocking, but only
+one at a time can run.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>queueing_factor_priority</strong> &#8211; queueing factor for priority</li>
+<li><strong>queueing_factor_dataset</strong> &#8211; queueing factor for dataset id</li>
+<li><strong>queueing_factor_tasks</strong> &#8211; queueing factor for number of tasks</li>
+<li><strong>num</strong> &#8211; number of tasks to queue</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.queue.queue.buffer_jobs_tasks">
+<code class="descname">buffer_jobs_tasks</code><span class="sig-paren">(</span><em>gridspecs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/queue.html#queue.buffer_jobs_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.queue.queue.buffer_jobs_tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make sure active datasets have jobs and tasks defined</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="proxy.html"
+                        title="previous chapter">Proxy Module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="schedule.html"
+                        title="next chapter">Schedule Module</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/server/modules/queue.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="schedule.html" title="Schedule Module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="proxy.html" title="Proxy Module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >IceProd Server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

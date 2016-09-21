@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>IceProd Core &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html" />
+    <link rel="up" title="Technical Details" href="../../details.html" />
+    <link rel="next" title="IceProd Server Details" href="../../server/details/index.html" />
+    <link rel="prev" title="Technical Details" href="../../details.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../server/details/index.html" title="IceProd Server Details"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../../details.html" title="Technical Details"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" accesskey="U">Technical Details</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iceprod-core">
+<span id="technical-core"></span><span id="index-0"></span><h1>IceProd Core<a class="headerlink" href="#iceprod-core" title="Permalink to this headline">¶</a></h1>
+<p>The fundamental design of the core is to run a task composed of trays and modules.  The general heirarchy looks like:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">task</span>
+<span class="o">|</span>
+<span class="o">|-</span> <span class="n">tray1</span>
+   <span class="o">|</span>
+   <span class="o">|-</span> <span class="n">module1</span>
+   <span class="o">|</span>
+   <span class="o">|-</span> <span class="n">module2</span>
+<span class="o">|</span>
+<span class="o">|-</span> <span class="n">tray2</span>
+   <span class="o">|</span>
+   <span class="o">|-</span> <span class="n">module3</span>
+   <span class="o">|</span>
+   <span class="o">|-</span> <span class="n">module4</span>
+</pre></div>
+</div>
+<p>Parameters can be defined at every level, and each level is treated as a scope (such that inner scopes inherit from outer scopes).  This is accomplished via an internal environment for each scope.</p>
+<div class="section" id="internal-environment">
+<h2>Internal Environment<a class="headerlink" href="#internal-environment" title="Permalink to this headline">¶</a></h2>
+<p>The internal envoronment (env) is a dictionary composed of several objects:</p>
+<ul class="simple">
+<li>shell environment</li>
+<li>parameters</li>
+<li>resources</li>
+<li>data</li>
+<li>classes</li>
+<li>deletions</li>
+<li>uploads</li>
+</ul>
+<p>To keep the scope correct a new dictionary is created for every level, then the inheritable objects are shallow copied (to 1 level) into the new env.  The deletions are not inheritable (start empty for each scope), and the shell environment is set at whatever the previous scope currently has.</p>
+<div class="section" id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<p>Parameters are defined directly as an object, or as a string pointing to another object.  They can use the IceProd meta-language to be defined in relation to other parameters specified in inherited scopes, or as eval or sprinf functions.</p>
+</div>
+<div class="section" id="resources-and-data">
+<h3>Resources and Data<a class="headerlink" href="#resources-and-data" title="Permalink to this headline">¶</a></h3>
+<p>Resources and Data are similar in that they handle extra files that modules may create or use.  The difference is that resources are only for use, such as pre-built lookup tables, while data can be input and/or output.  Compression can be automatically handled by IceProd.  Both resources and data are defined in the environment as strings to their file location.</p>
+</div>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<p>This is where external software gets added.  The software can be an already downloaded resource or just a url to download.  All python files get added to the python path and binary libraries get symlinked into a directory on the LD_LIBRARY_PATH.  Note that if there is more than one copy of the same shared library file, only the most recent one is in scope.  Classes are defined in the environment as strings to their file location.</p>
+</div>
+<div class="section" id="deletions">
+<h3>Deletions<a class="headerlink" href="#deletions" title="Permalink to this headline">¶</a></h3>
+<p>These are files that should be deleted when the scope ends.</p>
+</div>
+<div class="section" id="uploads">
+<h3>Uploads<a class="headerlink" href="#uploads" title="Permalink to this headline">¶</a></h3>
+<p>These are files that should be uploaded when the scope ends.  Mostly Data objects that are used as output.</p>
+</div>
+</div>
+<div class="section" id="running-a-module">
+<h2>Running a Module<a class="headerlink" href="#running-a-module" title="Permalink to this headline">¶</a></h2>
+<p>Modules are run in a forked process to prevent segfaults from killing IceProd.  Their stdout and stderr is dumped into the log file with prefixes on each line to designate its source.  Any error or the return value is returned to the main process via a Queue.</p>
+<p>If a module defines a src, that is assumed to be a Class which should be added to the env.  The running_class is where the exact script or binary is chosen.  It can match several things:</p>
+<ul class="simple">
+<li>A fully defined python module.class import (also takes module.function)</li>
+<li>A python class defined in the src provided</li>
+<li>A regular python script</li>
+<li>An executable of some type (this is run in a subprocess with shell execution disabled)</li>
+</ul>
+</div>
+<div class="section" id="task-execution">
+<h2>Task Execution<a class="headerlink" href="#task-execution" title="Permalink to this headline">¶</a></h2>
+<p>The main work unit is a task, so the core itself can be thought of as a task executor.  The main executable i3exec.py has a <code class="docutils literal"><span class="pre">runner()</span></code> function which does exactly that.  The general outline is:</p>
+<ol class="arabic">
+<li><p class="first">Load dataset configuration</p>
+</li>
+<li><p class="first">Set log level</p>
+</li>
+<li><p class="first">Set some default options if not set in dataset configuration</p>
+</li>
+<li><p class="first">Set up global env based on the dataset configuration</p>
+</li>
+<li><dl class="first docutils">
+<dt>Run tasks</dt>
+<dd><ul class="first last">
+<li><p class="first">If a task option is specified in the dataset configuration, follow that:</p>
+<blockquote>
+<div><p>If the task is specified by name or number, run only that task.  If there is a problem finding the task specified, raise a critical error.</p>
+</div></blockquote>
+</li>
+<li><p class="first">Otherwise, run all tasks in the dataset configuration in the order they were written</p>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Destroy the global env, uploading and deleting files as needed</p>
+</li>
+<li><p class="first">Upload the log, error, and output files if specified in options</p>
+</li>
+</ol>
+</div>
+<div class="section" id="many-task-mode">
+<h2>Many Task Mode<a class="headerlink" href="#many-task-mode" title="Permalink to this headline">¶</a></h2>
+<p>The main executable i3.exec.py has the option to run directly on a dataset configuration file or to query the server for dataset configuration files to run on.  If a dataset configuration file is not given as a argument, it will assume many task mode and query the server.  Whichever mode is used, they both run the same task execution detailed above.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">IceProd Core</a><ul>
+<li><a class="reference internal" href="#internal-environment">Internal Environment</a><ul>
+<li><a class="reference internal" href="#parameters">Parameters</a></li>
+<li><a class="reference internal" href="#resources-and-data">Resources and Data</a></li>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#deletions">Deletions</a></li>
+<li><a class="reference internal" href="#uploads">Uploads</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-a-module">Running a Module</a></li>
+<li><a class="reference internal" href="#task-execution">Task Execution</a></li>
+<li><a class="reference internal" href="#many-task-mode">Many Task Mode</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../../details.html"
+                        title="previous chapter">Technical Details</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../../server/details/index.html"
+                        title="next chapter">IceProd Server Details</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/core/details/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../../server/details/index.html" title="IceProd Server Details"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../../details.html" title="Technical Details"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../details.html" >Technical Details</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.dbmethods.web &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server.dbmethods" href="../dbmethods.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" accesskey="U">iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.dbmethods.web</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Website database methods</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span><span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span><span class="p">,</span><span class="n">reduce</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="k">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">import</span> <span class="nn">iceprod.core.functions</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.util</span> <span class="k">import</span> <span class="n">Node_Resources</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.dataclasses</span> <span class="k">import</span> <span class="n">Number</span><span class="p">,</span><span class="n">String</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">serialization</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span><span class="p">,</span><span class="n">json_compressor</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">dbmethod</span><span class="p">,</span><span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span> <span class="n">filtered_input</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods.web&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="web"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web">[docs]</a><span class="k">class</span> <span class="nc">web</span><span class="p">(</span><span class="n">_Methods_Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The website DB methods.</span>
+
+<span class="sd">    Takes a handle to a subclass of iceprod.server.modules.db.DBAPI</span>
+<span class="sd">    as an argument.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_tasks_by_status"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_tasks_by_status">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_tasks_by_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">gridspec</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of tasks in each state on this site and plugin,</span>
+<span class="sd">           returning {status:num}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.task_status, count(*) as num from search &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where search.dataset_id = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; search.gridspec like ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; group by search.task_status &#39;</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_tasks_by_status_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_get_tasks_by_status_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">task_groups</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">ret</span> <span class="ow">and</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">status</span><span class="p">,</span><span class="n">num</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="n">task_groups</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="n">num</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">task_groups</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_datasets"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_datasets">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">gridspec</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">groups</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="o">**</span><span class="n">filters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of datasets in each state on this site and plugin,</span>
+<span class="sd">           returning {status:num}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select &#39;</span>
+        <span class="k">if</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="n">groups</span> <span class="o">=</span> <span class="n">filtered_input</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;, count(*) as num &#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; * &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from dataset &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">gridspec</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+        <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; gridspec like &quot;%?%&quot; &#39;</span>
+            <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gridspec</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">filters</span><span class="p">[</span><span class="n">f</span><span class="p">]:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">filtered_input</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; in (&#39;</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="n">f</span><span class="p">])))</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;) &#39;</span>
+                <span class="n">bindings</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">filters</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; group by &#39;</span> <span class="o">+</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_datasets_callback</span><span class="p">,</span><span class="n">groups</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_web_get_datasets_grouper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_web_get_datasets_grouper</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">groups</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span><span class="n">groups</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span><span class="n">val</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_web_get_datasets_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">groups</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">groups</span><span class="p">:</span>
+                <span class="n">dataset_groups</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">ret</span> <span class="ow">and</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_web_get_datasets_grouper</span><span class="p">(</span><span class="n">dataset_groups</span><span class="p">,</span><span class="n">row</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">row</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">dataset_groups</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">])</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_datasets_details"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_datasets_details">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_datasets_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">gridspec</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                          <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of datasets in each state on this site and plugin,</span>
+<span class="sd">           returning {status:num}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset.* from dataset &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset.dataset_id = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; dataset.status = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">status</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; dataset.gridspec like ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_datasets_details_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_get_datasets_details_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">datasets</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                        <span class="n">datasets</span><span class="p">[</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmp</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_tasks_details"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_tasks_details">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_tasks_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task_id</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">gridspec</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                          <span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the number of tasks in each state on this site and plugin,</span>
+<span class="sd">           returning {status:num}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.*,task.* from search &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; join task on search.task_id = task.task_id &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">task_id</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where search.task_id = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; search.task_status = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">status</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; search.dataset_id = ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;where&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sql</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; search.gridspec like ? &#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_tasks_details_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_get_tasks_details_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tasks</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="s">&#39;task&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span>
+                        <span class="n">tasks</span><span class="p">[</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmp</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_logs"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_logs">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_logs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">lines</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the logs for a task, returns {log_name:text}&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task_log where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_logs_callback</span><span class="p">,</span><span class="n">lines</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_get_logs_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">lines</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;task_log&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">tmp</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">tmp</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">json_compressor</span><span class="o">.</span><span class="n">uncompress</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">lines</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span><span class="nb">int</span><span class="p">):</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span><span class="n">lines</span><span class="o">+</span><span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">lines</span><span class="p">:])</span>
+                    <span class="n">logs</span><span class="p">[</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="k">def</span> <span class="nf">sort_key</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+                <span class="n">log_order</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span><span class="s">&#39;stderr&#39;</span><span class="p">,</span><span class="s">&#39;stdlog&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">log_order</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="s">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">log_order</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">k</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span><span class="n">logs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">logs</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">sort_key</span><span class="p">)))</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_gridspec"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_gridspec">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_gridspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the possible gridspecs that we know about&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select site_id,queues from site&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_gridspec_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_get_gridspec_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gridspecs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">site_id</span><span class="p">,</span><span class="n">queues</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">gridspecs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">json_decode</span><span class="p">(</span><span class="n">queues</span><span class="p">))</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">gridspecs</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_sites"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_sites">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_sites</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get sites matching kwargs&quot;&quot;&quot;</span>
+        <span class="c"># TODO: finish this</span>
+        <span class="k">raise</span> <span class="n">NotImplementedException</span><span class="p">()</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="web.web_get_dataset_by_name"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_dataset_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_dataset_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a dataset by its name&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id from dataset where name = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_dataset_by_name_callback</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_web_dataset_by_name_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ret</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;name not found&#39;</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" >iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>
