@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JSONRPC Calls &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="Functions" href="functions.html" />
+    <link rel="prev" title="Execution Helpers" href="exe_helper.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="exe_helper.html" title="Execution Helpers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-iceprod.core.exe_json">
+<span id="jsonrpc-calls"></span><span id="exejson"></span><span id="index-0"></span><h1>JSONRPC Calls<a class="headerlink" href="#module-iceprod.core.exe_json" title="Permalink to this headline">¶</a></h1>
+<p>Functions to communicate with the server using JSONRPC</p>
+<dl class="function">
+<dt id="iceprod.core.exe_json.setupjsonRPC">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">setupjsonRPC</code><span class="sig-paren">(</span><em>url</em>, <em>passkey</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#setupjsonRPC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.setupjsonRPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup the JSONRPC communications</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.downloadtask">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">downloadtask</code><span class="sig-paren">(</span><em>gridspec</em>, <em>resources=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#downloadtask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.downloadtask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download a new task from the server</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.processing">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">processing</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#processing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.processing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tell the server that we are processing this task</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.finishtask">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">finishtask</code><span class="sig-paren">(</span><em>cfg</em>, <em>stats={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#finishtask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.finishtask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finish a task</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.stillrunning">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">stillrunning</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#stillrunning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.stillrunning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the task should still be running according to the DB</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.taskerror">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">taskerror</code><span class="sig-paren">(</span><em>cfg</em>, <em>start_time=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#taskerror"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.taskerror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tell the server about the error experienced</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.task_kill">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">task_kill</code><span class="sig-paren">(</span><em>task_id</em>, <em>resources=None</em>, <em>reason=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#task_kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.task_kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tell the server that we killed a task</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.uploadLogging">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">uploadLogging</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#uploadLogging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.uploadLogging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload all logging files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.uploadLog">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">uploadLog</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#uploadLog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.uploadLog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload log files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.uploadErr">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">uploadErr</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#uploadErr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.uploadErr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload error files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.uploadOut">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">uploadOut</code><span class="sig-paren">(</span><em>cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#uploadOut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.uploadOut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload out files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe_json.update_pilot">
+<code class="descclassname">iceprod.core.exe_json.</code><code class="descname">update_pilot</code><span class="sig-paren">(</span><em>pilot_id</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#update_pilot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe_json.update_pilot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the pilot table</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="exe_helper.html"
+                        title="previous chapter">Execution Helpers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="functions.html"
+                        title="next chapter">Functions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/exe_json.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="exe_helper.html" title="Execution Helpers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>
