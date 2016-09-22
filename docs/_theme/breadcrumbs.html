@@ -1,0 +1,12 @@
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    {% block breadcrumbs_aside %}
+      <li class="wy-breadcrumbs-aside">
+        {% if pagename != "search" %}
+          <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
+        {% endif %}
+      </li>
+    {% endblock %}
+  </ul>
+  <hr/>
+</div>

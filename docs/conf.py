@@ -13,7 +13,7 @@ iceprod.server.dbmethods.dbmethod = nodecorate
 master_doc = "index"
 
 project = 'IceProd'
-copyright = '2014, IceCube Collaboration'
+copyright = '2016, IceCube Collaboration'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -98,32 +98,8 @@ coverage_ignore_functions = [
 
 # -- Options for HTML output ---------------------------------------------------
 
-html_static_path = ['static/iceprod.css']
-html_theme = 'default'
-html_style = 'iceprod.css'
-#highlight_language = 'none'
-html_theme_options = dict(
-    footerbgcolor="#fff",
-    footertextcolor="#000",
-    sidebarbgcolor="#fff",
-    #sidebarbtncolor
-    sidebartextcolor="#4d8cbf",
-    sidebarlinkcolor="#216093",
-    relbarbgcolor="#fff",
-    relbartextcolor="#000",
-    relbarlinkcolor="#216093",
-    bgcolor="#fff",
-    textcolor="#000",
-    linkcolor="#216093",
-    visitedlinkcolor="#216093",
-    headbgcolor="#fff",
-    headtextcolor="#4d8cbf",
-    codebgcolor="#fff",
-    codetextcolor="#060",
-    bodyfont="Georgia, serif",
-    headfont="Calibri, sans-serif",
-    stickysidebar=True,
-    )
+html_theme = '_theme'
+html_theme_path = ['.']
 
 #html_favicon = None
 
