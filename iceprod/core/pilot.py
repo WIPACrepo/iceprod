@@ -16,7 +16,8 @@ from glob import glob
 
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
-from iceprod.core.util import Task_Resources, get_task_resources
+from iceprod.core.util import (Task_Resources, Task_Resource_Overusage,
+                               get_task_resources)
 from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
 
@@ -103,7 +104,7 @@ class Pilot(object):
                                  constants['stdlog']):
                     if os.path.exists(os.path.join(dirs,filename)):
                         with open(filename,'a') as f:
-                            print('')
+                            print('', file=f)
                             print('----',dirs,'----', file=f)
                             with open(os.path.join(dirs,filename)) as f2:
                                 print(f2.read(), file=f)
@@ -139,7 +140,17 @@ class Pilot(object):
                     kill = False
                     reason = ''
                     for r in used_resources:
-                        if used_resources[r] > task.resources[r]:
+                        overusage = used_resources[r]-task.resources[r]
+                        if overusage > 0:
+                            overusage_percent = used_resources[r]*1.0/task.resources[r]
+                            if (r in Task_Resource_Overusage and
+                                (overusage_percent < Task_Resource_Overusage[r]['ignore'] or
+                                 (overusage < self.resources[r] and
+                                  overusage_percent < Task_Resource_Overusage[r]['allowed']
+                                ))):
+                                logger.info('managable overusage of %s for %r',
+                                            r, task_id)
+                                continue
                             kill = True
                             reason = 'Resource overuse for {}: {}'.format(r,used_resources[r])
                             break

@@ -14,7 +14,7 @@ from datetime import datetime
 logger = logging.getLogger('gridftp')
 
 class _gridftp_common(object):
-    _timeout = 60 # 1 min default timeout
+    _timeout = 300 # 5 min default timeout
 
     @classmethod
     def supported_address(cls,address):
@@ -167,7 +167,7 @@ except ImportError:
             e.set()
         cb.ret = None
         if not timeout:
-            timeout = 10
+            timeout = 300
         _cmd_async(cmd,callback=cb,timeout=timeout-0.1)
         e.wait(timeout)
         if not cb.ret:
@@ -209,7 +209,7 @@ except ImportError:
             e.set()
         cb.ret = None
         if not timeout:
-            timeout = 10
+            timeout = 300
         _cmd_output_async(cmd,type=type,callback=cb,timeout=timeout-0.1)
         e.wait(timeout)
         if not cb.ret:

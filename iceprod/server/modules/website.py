@@ -294,10 +294,8 @@ class website(module.module):
             else:
                 tornado_port = self.cfg['webserver']['tornado_port']
                 tornado_address = 'localhost' # bind locally
-            numcpus = self.cfg['webserver']['numcpus']
-            logger.warn('tornado bound to port %d with %d cpus',tornado_port,numcpus)
-            self.http_server.bind(tornado_port,address=tornado_address)
-            self.http_server.start(numcpus)
+            logger.warn('tornado bound to port %d', tornado_port)
+            self.http_server.listen(tornado_port, address=tornado_address)
             logger.warn('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)

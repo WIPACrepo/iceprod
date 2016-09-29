@@ -642,7 +642,7 @@ class queue(_Methods_Base):
                      dataset_prios, gridspec, num, resources,
                      gridspec_assignment, global_queueing=global_queueing,
                      callback=callback)
-        self.db.non_blocking_task(cb)
+        self.db.blocking_task('queue',cb)
     def _queue_get_queueing_tasks_blocking(self, dataset_prios, gridspec,
                                            num, resources,
                                            gridspec_assignment,

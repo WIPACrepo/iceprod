@@ -580,10 +580,11 @@ def download(url,local,cache=False,proxy=False,options={}):
         if success_checksum:
             # check checksum
             logger.info('checking checksum for %s against %s',success_file,success_checksum)
-            success = not check_cksm(success_file,checksum_type,success_checksum)
+            success = check_cksm(success_file,checksum_type,success_checksum)
         else:
             success = True
     if not success:
+        logger.warn('failed to download %s to %s',url,local)
         raise Exception('download failed')
 
 def upload(local,remote,proxy=False,options={}):
