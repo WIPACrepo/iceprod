@@ -37,5 +37,28 @@
 </div>
 {% end %}
 </div>
+<div class="task_completion">
+    <h2>Task Completions by Task Name</h2>
+    <table>
+        <tr>
+            <th>Task Name</th>
+            <th>Task Type</th>
+            <th># Q</th>
+            <th># R</th>
+            <th># Completions</th>
+            <th>Avg</th>
+            <th><sup>max</sup>/<sub>min</sub></th>
+            <th>Hours</th>
+            <th>Efficiency</th>
+        </tr>
+        {% for t in task_info %}
+        <tr>
+            {% for d in t %}
+            <td>{{ d }}</td>
+            {% end %}
+        </tr>
+        {% end %}
+    </table>
+</div>
 
 {% end %}
