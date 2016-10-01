@@ -734,10 +734,19 @@ class Dataset(PublicHandler):
                 else:
                     dataset = None
                 tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
+                task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
+                task_info2 = []
+                for t in task_info:
+                    requirements = tornado.escape.json_decode(t[1])
+                    type = 'CPU'
+                    if 'gpu' in requirements and requirements['gpu']: type = 'GPU'
+                    q = 0
+                    r = 0
+                    task_info2.append([t[0], type, q, r])
                 if isinstance(tasks,Exception):
                     raise tasks
                 self.render_handle('dataset_detail.html',dataset_id=dataset_id,
-                                   dataset=dataset,tasks=tasks)
+                                   dataset=dataset,tasks=tasks,task_info=task_info2)
             else:
                 datasets = yield self.db_call('web_get_datasets',**filter_results)
                 if isinstance(datasets,Exception):
