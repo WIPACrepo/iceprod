@@ -384,16 +384,7 @@
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;name not found&#39;</span><span class="p">))</span>
-
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="web.web_get_task_completion_stats"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_task_completion_stats">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_task_completion_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select name, requirements from task_rel where dataset_id = ?&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_web_get_task_completion_stats_callback</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_web_get_task_completion_stats_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ret</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;name not found&#39;</span><span class="p">))</span></div>
 </pre></div>
 
            </div>
