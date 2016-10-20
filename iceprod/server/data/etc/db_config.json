@@ -175,7 +175,7 @@
             ["hash", "str"],
             ["email", "str"],
             ["admin", "bool"],
-            ["groups", "Text", "csv list of group_ids"],
+            ["roles", "Text", "csv list of role_ids"],
             ["last_login_time", "str", "datetime"]
         ],
         "groups": [
@@ -183,6 +183,11 @@
             ["name", "str"],
             ["description", "Text"],
             ["priority", "float", "value between 0 and 1"]
+        ],
+        "roles": [
+            ["roles_id", "str"],
+            ["role_name", "str"],
+            ["groups_prefix", "str"]
         ],
         "session": [
             ["session_id", "str"],
@@ -236,6 +241,7 @@
             ["pilot_last", "str"],
             ["user_offset", "str"],
             ["groups_offset", "str"],
+            ["roles_offset", "str"],
             ["session_last", "str"],
             ["webstat_last", "str"],
             ["webnote_last", "str"],

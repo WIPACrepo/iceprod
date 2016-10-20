@@ -881,9 +881,9 @@ class rpc(_Methods_Base):
             callback(True)
 
     @dbmethod
-    def rpc_get_user_groups(self, username, callback=None):
+    def rpc_get_user_roles(self, username, callback=None):
         """
-        Get the groups a username belongs to.
+        Get the roles a username belongs to.
         """
         if username is None:
             raise Exception('no username')
@@ -891,10 +891,10 @@ class rpc(_Methods_Base):
             if isinstance(ret,Exception):
                 callback(ret)
             else:
-                groups = {}
+                roles = {}
                 for row in ret:
-                    r = self._list_to_dict('groups',row)
-                    groups[r['groups_id']] = r
+                    r = self._list_to_dict('roles',row)
+                    roles[r['roles_id']] = r
                 callback(groups)
         def cb(ret):
             if isinstance(ret,Exception):
@@ -902,40 +902,40 @@ class rpc(_Methods_Base):
             elif (not ret) or (not ret[0]):
                 callback(Exception('cannot find username %s'%username))
             elif not ret[0][0]:
-                callback({}) # no groups
+                callback({}) # no roles
             else:
-                groups = ret[0][0].split(',')
-                sql = 'select * from groups where groups_id in ('
-                sql += ','.join('?' for _ in groups)+')'
-                self.db.sql_read_task(sql, tuple(groups), callback=cb2)
-        sql = 'select groups from user where username=?'
+                roles = ret[0][0].split(',')
+                sql = 'select * from roles where roles_id in ('
+                sql += ','.join('?' for _ in roles)+')'
+                self.db.sql_read_task(sql, tuple(roles), callback=cb2)
+        sql = 'select roles from user where username=?'
         self.db.sql_read_task(sql, (username,), callback=cb)
 
     @dbmethod
-    def rpc_set_user_groups(self, user=None, username=None,
+    def rpc_set_user_roles(self, user=None, username=None,
                             groups=None, callback=None):
         """
-        Set the groups of a username.
+        Set the roles of a username.
         """
         cb = partial(self._rpc_set_user_groups_blocking, user,
                      username, groups, callback)
         self.db.blocking_task('groups',cb)
-    def _rpc_set_user_groups_blocking(self, user, username, groups, callback=None):
+    def _rpc_set_user_groups_blocking(self, user, username, roles, callback=None):
         try:
             conn,archive_conn = self.db._dbsetup()
 
-            # check user authorization to set groups
+            # check user authorization to set roles
 
-            # set groups
-            sql = 'update user set groups = ? where username = ?'
-            bindings = (','.join(groups), username)
+            # set roles
+            sql = 'update user set roles = ? where username = ?'
+            bindings = (','.join(roles), username)
 
             ret = self.db._db_write(conn,sql,bindings,None,None,None)
             if isinstance(ret,Exception):
                 raise ret
 
         except Exception as e:
-            logger.warn('failed to set groups for username %s', username,
+            logger.warn('failed to set roles for username %s', username,
                         exc_info=True)
             callback(e)
         else:
