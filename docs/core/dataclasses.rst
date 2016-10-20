@@ -32,8 +32,6 @@ The building blocks of how datasets, jobs, and tasks are configured.
 
 .. autoclass:: Class
 
-.. autoclass:: Project
-
 .. autoclass:: _ResourceCommon
 
 .. autoclass:: Resource
@@ -41,7 +39,6 @@ The building blocks of how datasets, jobs, and tasks are configured.
 
 .. autoclass:: Data
    :show-inheritance:
-
 
 Metadata Objects
 ----------------

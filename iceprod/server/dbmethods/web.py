@@ -261,3 +261,12 @@ class web(_Methods_Base):
             callback(ret[0][0])
         else:
             callback(Exception('name not found'))
+
+    @dbmethod
+    def web_get_task_completion_stats(self, dataset_id, callback=None):
+        sql = 'select name, requirements from task_rel where dataset_id = ?'
+        bindings = (dataset_id,)
+        cb = partial(self._web_get_task_completion_stats_callback, callback=callback)
+        self.db.sql_read_task(sql,bindings,callback=cb)
+    def _web_get_task_completion_stats_callback(self, ret, callback=None):
+        callback(ret)

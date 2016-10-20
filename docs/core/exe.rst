@@ -16,8 +16,6 @@ The internal IceProd environment, designed to be nested and clean up after itsel
 
 .. autofunction:: setupenv
 
-.. autofunction:: destroyenv
-
 
 Object Setup
 ------------
@@ -43,23 +41,3 @@ The main execution flow goes through here.
 .. autofunction:: runmodule
 
 .. autofunction:: run_module
-
-
-Functions for JSONRPC
----------------------
-
-.. autofunction:: setupjsonRPC
-
-.. autofunction:: downloadtask
-
-.. autofunction:: finishtask
-
-.. autofunction:: taskerror
-
-.. autofunction:: uploadLogging
-
-.. autofunction:: uploadLog
-
-.. autofunction:: uploadErr
-
-.. autofunction:: uploadOut
