@@ -69,6 +69,72 @@ def dbmethod(*args,**kwargs):
     else:
         return make_wrapper(*args)
 
+def authorization(auth_role=None, match_user=False, site_valid=False):
+    """Authorization decorator.
+
+    Args:
+        auth_role (str, list): The role name(s) to match against
+        match_user (bool): Match logged in user with kwargs `user_id`
+        site_valid (bool): Valid for site queries
+    """
+    def make_wrapper(obj):
+        def wrapper(self, *args, **kwargs):
+            auth = kwargs.pop('_auth')
+            auth_role = auth['auth_role']
+            match_user = auth['match_user']
+            site_valid = auth['site_valid']
+
+            # get user and role
+            user = None
+            role = None
+            site_auth = site_valid
+            if 'passkey' in kwargs:
+                passkey = kwargs.pop('passkey')
+                
+                if 'site_id' in kwargs:
+                    # authorize site
+                    site_id = kwargs.pop('site_id')
+                    if site_valid:
+                        site_auth = self.db.('auth_authorize_site',
+                                                       site=site_id, key=passkey)
+                else:
+                    # authorize task
+                    user_auth = yield self.db_call('auth_authorize_task', key=passkey)
+                    
+            elif 'cookie_id' in kwargs:
+                user_id = kwargs.pop('cookie_id')
+
+            # check authorization
+            if auth_role:
+                if not role:
+                    logger.debug('no role to match')
+                    raise Exception('authorization failure')
+                if not isinstance(auth_role,list):
+                    auth_role = [auth_role]
+                if all(role != r for r in auth_role):
+                    logger.debug('role match failure: %r!=%r', role, auth_role)
+                    raise Exception('authorization failure')
+            if match_user:
+                if not user:
+                    logger.debug('no user to match')
+                    raise Exception('authorization failure')
+                kwargs_user = kwargs.pop('user', False)
+                if user != kwargs_user:
+                    logger.debug('user match failure: %r!=%r', user, kwargs_user)
+                    raise Exception('authorization failure')
+
+            # run function
+            return obj(self, *args,**kwargs)
+
+        if (obj.func_code.co_argcount > 0 and
+            obj.func_code.co_varnames[0] == 'self'):
+            obj2 = partialmethod(wrapper,_auth=kwargs)
+        else:
+            obj2 = update_wrapper(partial(wrapper,_auth=kwargs),obj,
+                    ('__name__','__module__','__doc__'),('__dict__',))
+        return obj2
+    return make_wrapper
+
 class DBMethods():
     """The actual methods to be called on the database.
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
