@@ -218,12 +218,7 @@ def downloadResource(env, resource, remote_base=None,
             download_options['password'] = env['options']['password']
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
-
-        try:
-            functions.download(url,local,options=download_options)
-        except Exception:
-            logger.error('cannot download file', exc_info=True)
-            raise
+        functions.download(url, local, options=download_options)
 
     # check compression
     if (resource['compression'] and
@@ -280,7 +275,6 @@ def uploadData(env, data):
                 raise
 
     # upload file
-    proxy = False
     upload_options = {}
     if 'options' in env and 'username' in env['options']:
         upload_options['username'] = env['options']['username']
@@ -288,13 +282,7 @@ def uploadData(env, data):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
-    if 'options' in env and 'proxy' in env['options']:
-        proxy = env['options']['proxy']
-    try:
-        functions.upload(local, url, proxy=proxy, options=upload_options)
-    except Exception:
-        logger.error('cannot upload file', exc_info=True)
-        raise
+    functions.upload(local, url, options=upload_options)
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
@@ -365,7 +353,7 @@ def setupClass(env, class_obj):
             logger.warn('attempting to download class %s to %s',url,local)
             try:
                 if not os.path.exists(download_local):
-                    functions.download(url,download_local,options=download_options)
+                    functions.download(url, download_local, options=download_options)
             except Exception:
                 logger.info('failed to download', exc_info=True)
                 if i < 10:

@@ -53,7 +53,8 @@ if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = ['certifi','tornado>=4.2', 'pyzmq', 'setproctitle',
                         'pycurl', 'pyOpenSSL', 'pyasn1', 'jsonschema',
-                        'psutil==2.2.1', 'cryptography']
+                        'psutil==2.2.1', 'cryptography', 'requests',
+                        'requests_toolbelt']
     extras_require = {
         'docs': ['sphinx'],
         'tests': ['coverage', 'flexmock']

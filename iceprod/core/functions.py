@@ -23,6 +23,9 @@ try:
 except:
     import pickle
 
+import requests
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
 from iceprod.core import util
 from iceprod.core.gridftp import GridFTP
 from iceprod.core.jsonUtil import json_encode,json_decode
@@ -142,6 +145,13 @@ def sha512sum(filename,buffersize=16384):
     """Return sha512 digest of file"""
     return cksm(filename,'sha512',buffersize)
 
+def load_cksm(sumfile, base_filename):
+    """Load the checksum from a file"""
+    for l in open(sumfile,'r'):
+        if os.path.basename(base_filename) in l:
+            sum_cksm, name = l.strip('\n').split()
+            return sum_cksm
+    raise Exception('could not find checksum in file')
 
 def check_cksm(file,type,sum):
     """Check a checksum of a file"""
@@ -151,14 +161,12 @@ def check_cksm(file,type,sum):
     file_cksm = cksm(file,type)
     # load sum
     if os.path.isfile(sum):
-        sum_cksm = ''
-        for l in open(sum,'r'):
-            if os.path.basename(file) in l:
-                sum_cksm, name = l.strip('\n').split()
-                break
+        sum_cksm = load_cksm(sum, file)
     else:
         sum_cksm = sum
     # check sum
+    logger.debug('file_cksm: %r', file_cksm)
+    logger.debug('sum_cksm:  %r', sum_cksm)
     return (file_cksm == sum_cksm)
 
 def check_md5sum(file,sum):
@@ -469,578 +477,178 @@ def gethostname():
     else:
         return hostnames
 
-def download(url,local,cache=False,proxy=False,options={}):
+def download(url, local, cache=False, options={}):
     """Download a file, checksumming if possible"""
-    trials = 5  # repeat wget 5 times if failed
-    success = False
-    while (not success) and trials > 0:
-        trials -= 1
-        # get file
-        success_file = wget(url,local,cache,proxy,options)
-        if not success_file:
-            logger.warn('error from wget, %d trials left',trials)
-            continue
-        # get checksum
-        try:
-            success_checksum,checksum_type = wget_checksum(checksum_url,cache=cache,proxy=proxy,options=options)
-        except Exception:
-            success_checksum = False
-        if success_checksum:
-            # check checksum
-            logger.info('checking checksum for %s against %s',success_file,success_checksum)
-            success = check_cksm(success_file,checksum_type,success_checksum)
-        else:
-            success = True
-    if not success:
-        logger.warn('failed to download %s to %s',url,local)
-        raise Exception('download failed')
-
-def upload(local,remote,proxy=False,options={}):
-    """Upload a file, checksumming if possible"""
-    if not os.path.exists(local):
-        logger.warn('upload: local path, %s, does not exist' % local)
-        return False
-    trials = 5  # repeat wput 5 times if failed
-    success = False
-    while (not success) and trials > 0:
-        trials -= 1
-        # put file
-        try:
-            success = wput(local,remote,proxy,options)
-        except Exception as e:
-            logger.error('error uploading file %s to %s \n%r',
-                         local,remote,e,exc_info=True)
-            success = 1
-        if success: # expect unix return code 0==OK
-            logger.warn('error from wput, %d trials left',trials)
-            success = False
-        else:
-            success = True
-    if not success:
-        raise Exception('upload failed')
-
-pycurl_handle = util.PycURL()
-def wget(url,dest='./',cache=False,proxy=False,options={}):
-    """wrapper for downloading from multiple protocols"""
-    dest = os.path.expandvars(dest)
+    local = os.path.expandvars(local)
     url  = os.path.expandvars(url)
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
         else:
             raise Exception("unsupported protocol %s" % url)
-    dest_path = dest
-    if dest_path[:5] == 'file:':
-        dest_path = dest_path[5:]
-    if os.path.isdir(dest_path):
-        dest_path = os.path.join(dest_path, os.path.basename(url))
-        dest = "file:"+dest_path
-    if not dest[:5] == "file:":
-        dest = "file:" + dest
+    if local.startswith('file:'):
+        local = local[5:]
+    if os.path.isdir(local):
+        local = os.path.join(local, os.path.basename(url))
 
-    logger.warn('wget(): src: %s, dest: %s',url,dest)
+    logger.warn('wget(): src: %s, local: %s', url, local)
 
-    if cache:
-        # test for cache hit
-        cache_match = incache(url,options)
-        if cache_match:
-            # file is cached, so get from cache
-            logger.info('cache hit for %s',url)
-            copy(cache_match,dest_path)
-            return dest_path
+    # get checksum
+    for checksum_type in ('sha512', 'sha256', 'sha1', 'md5'):
+        ending = '.'+checksum_type+'sum'
+        try:
+            _wget(url+ending, local+ending, options)
+            break
+        except:
+            logger.debug('failed to get checksum for %s', url+ending,
+                         exc_info=True)
+    else:
+        checksum_type = None
 
-    if proxy:
-        # is this a full proxy?
-        if proxy == 'match':
-            # test url to see if it matches the proxy options
-            proxy_expr = '/svn|code.icecube.wisc.edu|.py$'
-            if 'proxy_expr' in options and options['proxy_expr']:
-                proxy_expr = options['proxy_expr']
-            if re.search(proxy_expr,url):
-                proxy = True
+    if cache and checksum_type:
+        try:
+            # test for cache hit
+            cache_match = incache(url, options=options)
+            if cache_match:
+                logger.info('checking checksum for %s', cache_match)
+                s = load_cksm(local+ending, local)
+                if not check_cksm(cache_match, checksum_type, s):
+                    raise Exception('checksum failed')
+                logger.info('cache hit for %s', url)
+                copy(cache_match, local)
+                return
             else:
-                proxy = False
-        if (proxy is True or (isinstance(proxy,str) and
-            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and
-            reduce(lambda a,b:a or url.startswith(b),proxy,False))):
-            # test for proxy hit
-            try:
-                ret = inproxy(url,dest_path,options)
-            except Exception as e:
-                logger.error('error in proxy: %r',e)
-            else:
-                if ret and cache:
-                    # insert in cache
-                    insertincache(url,ret,options)
-                return ret
+                logger.info('cache miss for %s', url)
+        except:
+            logger.warn('cache failed, try direct download', exc_info=True)
 
     # actually download the file locally
-    ret = None
-    if url[:5] in ('http:','https','ftp:/','ftps:'):
-        # use pycurl
-        logger.info('curl from %s to %s', url, dest_path)
-        global pycurl_handle
-        for i in xrange(0,2):
-            try:
-                kwargs = {}
-                if 'username' in options:
-                    kwargs['username'] = options['username']
-                if 'password' in options:
-                    kwargs['password'] = options['password']
-                if 'sslcert' in options:
-                    kwargs['ssl_cert'] = options['sslcert']
-                if 'sslkey' in options:
-                    kwargs['ssl_key'] = options['sslkey']
-                if 'cacert' in options:
-                    kwargs['cacert'] = options['cacert']
-                # do regular get
-                pycurl_handle.fetch(url,dest_path,**kwargs)
-            except util.NoncriticalError as e:
-                ee = e.value
-                try:
-                    if 'HTTP error code' in ee:
-                        if int(ee.split(':')[-1]) == 405 and post == 1:
-                            # need to use get
-                            post = 0
-                            continue
-                except:
-                    pass
-                raise e
-            except Exception as e:
-                if i == 0:
-                    # try regenerating the pycurl handle
-                    logger.info('regenerating pycurl handle because of error')
-                    pycurl_handle = util.PycURL()
-                else:
-                    logger.error('error fetching url %s : %s',url,e)
-                    ret = None
-            else:
-                if os.path.exists(dest_path):
-                    ret = dest_path
-                break
-    elif url[:5] == 'file:':
-        # use copy command
-        logger.info('copy from %s to %s', url[5:], dest_path)
-        if os.path.exists(url[5:]):
-            copy(url[5:],dest_path)
-            ret = dest_path
-    elif url[:7] == 'gsiftp:':
-        logger.info('gsiftp from %s to %s', url, dest_path)
-        try:
-            ret = GridFTP.get(url,filename=dest_path)
-        except Exception as e:
-            logger.error('error fetching url %s', url, exc_info=True)
-            ret = None
-        else:
-            if ret is not True or not os.path.exists(dest_path):
-                logger.error('error fetching url %s',url)
-                ret = None
-            else:
-                ret = dest_path
-    else:
-        # command line programs
-        if url.startswith("lfn:"):
-            cmd = "lcg-cp --vo icecube -v %s %s" % (url,dest)
-        else:
-            raise Exception("unsupported protocol %s" % url)
-        # add options
-        if 'cmd_line_opts' in options:
-            cmd += options['cmd_line_opts']
-        cmd += ' >/dev/null 2>&1'
-        logging.info(cmd)
-        if not subprocess.call(cmd,shell=True):
-            ret = dest_path
+    _wget(url, local, options)
 
-    if ret is None:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
-        raise Exception('download failed - ret is None')
-    elif cache:
-        # insert in cache
-        insertincache(url,ret,options)
-    return ret
+    if checksum_type:
+        logger.info('checking checksum with type %s for %s', checksum_type,
+                    local)
+        if not check_cksm(local, checksum_type, local+ending):
+            raise Exception('checksum failed')
 
-def wget_checksum(url,cache=False,proxy=False,options={}):
-    """wrapper for getting checksum from multiple protocols"""
+    if cache:
+        insertincache(url, local, options=options)
+
+def upload(local, url, options={}):
+    """Upload a file, checksumming if possible"""
+    local = os.path.expandvars(local)
     url  = os.path.expandvars(url)
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
         else:
             raise Exception("unsupported protocol %s" % url)
+    if local.startswith('file:'):
+        local = local[5:]
+    if os.path.isdir(local):
+        compress(local, 'tar')
+        local += '.tar'
 
-    if cache:
-        # test for cache hit
-        cache_match = incache_checksum(url,options)
-        if cache_match:
-            # file is cached
-            logger.info('cache checksum hit for %s',url)
-            return cache_match
+    logger.warn('wput(): local: %s, url: %s', local, url)
 
-    if proxy:
-        # is this a full proxy?
-        if proxy == 'match':
-            # test url to see if it matches the proxy options
-            proxy_expr = '/svn|code.icecube.wisc.edu|.py$|.py.md5sum$'
-            if 'proxy_expr' in options and options['proxy_expr']:
-                proxy_expr = options['proxy_expr']
-            if re.search(proxy_expr,url):
-                proxy = True
-            else:
-                proxy = False
-        if (proxy is True or (isinstance(proxy,str) and
-            url.startswith(proxy)) or (isinstance(proxy,(list,tuple)) and
-            reduce(lambda a,b:a or url.startswith(b),proxy,False))):
-            # test for proxy hit
-            try:
-                ret = inproxy_ckechsum(url,options)
-            except Exception as e:
-                logger.error('error in proxy: %r',e)
-            else:
-                if ret and cache:
-                    # insert in cache
-                    insertincache_checksum(url,ret[0],ret[1],options)
-                return ret
+    if not os.path.exists(local):
+        logger.warn('upload: local path, %s, does not exist', local)
+        raise Exception('local file does not exist')
 
-    # actually get the checksum directly
-    ret = None
-    if url[:5] in ('http:','https','ftp:/','ftps:'):
-        # use pycurl
-        global pycurl_handle
-        for i in xrange(0,2):
-            try:
-                kwargs = {}
-                if 'username' in options:
-                    kwargs['username'] = options['username']
-                if 'password' in options:
-                    kwargs['password'] = options['password']
-                if 'sslcert' in options:
-                    kwargs['ssl_cert'] = options['sslcert']
-                if 'sslkey' in options:
-                    kwargs['ssl_key'] = options['sslkey']
-                if 'cacert' in options:
-                    kwargs['cacert'] = options['cacert']
-                def cb(data):
-                    cb.data += data
-                cb.data = ''
-                # do regular get
-                # try every extension type for checksums
-                for type in ('sha512','sha256','sha1','md5'):
-                    try:
-                        url2 = url+type+'sum'
-                        pycurl_handle.post(url2,cb,**kwargs)
-                    except util.NoncriticalError:
-                        continue
-                    else:
-                        break
-                if cb.data:
-                    ret = (cb.data,type)
-            except util.NoncriticalError as e:
-                ee = e.value
-                try:
-                    if 'HTTP error code' in ee:
-                        if int(ee.split(':')[-1]) == 405 and post == 1:
-                            # need to use get
-                            post = 0
-                            continue
-                except:
-                    pass
-                raise e
-            except Exception as e:
-                if i == 0:
-                    # try regenerating the pycurl handle
-                    logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = util.PycURL()
-                else:
-                    logger.error('error fetching url %s : %s',url,e)
-                    ret = None
-            else:
-                break
-    elif url[:5] == 'file:':
-        # generate md5sum right now
-        try:
-            ret = (sha512sum(url[5:]),'sha512')
-        except:
-            ret = None
-    elif url[:7] == 'gsiftp:':
-        try:
-            ret = GridFTP.sha512sum(url)
-        except Exception as e:
-            logger.error('error checksumming url %s : %r',url,e)
-            ret = None
-        else:
-            if ret:
-                ret = (ret,'sha512')
-            else:
-                logger.error('error checksumming url %s',url)
-                ret = None
-    else:
-        # command line programs
-        for type in ('sha512','sha256','sha1','md5'):
-            try:
-                url2 = url+type+'sum'
-                (f,dest) = tempfile.mkstemp()
-                dest2 = 'file:'+dest
-                f.close()
-                if url2.startswith("lfn:"):
-                    cmd = "lcg-cp --vo icecube -v %s %s" % (url2,dest2)
-                else:
-                    raise Exception("unsupported protocol %s" % url)
-                # add options
-                if 'cmd_line_opts' in options:
-                    cmd += options['cmd_line_opts']
-                cmd += ' >/dev/null 2>&1'
-                logging.info(cmd)
-                if not subprocess.call(cmd,shell=True):
-                    for l in open(dest,'r'):
-                        if os.path.basename(url) in l:
-                            ret, name = l.strip('\n').split()
-                            break
-                if os.path.exists(dest):
-                    os.remove(dest)
-            except:
-                pass
-            if ret:
-                ret = (ret,type)
-                break
-
-    if ret and cache:
-        # insert in cache
-        insertincache_checksum(url,ret[0],ret[1],options)
-    return ret
-
-def wput(source,url,proxy=False,options={}):
-    """wrapper for uploading using multiple protocols
-
-       options
-         :proxy_addr: main address of an iceprod server
-         :key: proxy key
-         :http_username: for http basic auth, the username
-         :http_password: for http basic auth, the password
-         :ssl_cert: for https, the cert
-         :ssl_key: for https, the key
-         :ssl_cacert: for https, the CA cert
-
-       If using the command line, options should be name,value pairs
-       that can be mapped to --name=value arguments.
-    """
-    global pycurl_handle
-    source = os.path.expandvars(source)
-    url  = os.path.expandvars(url)
-    if not isurl(url):
-        if os.path.exists(os.path.dirname(url)):
-            url = 'file:'+url
-        else:
-            raise Exception("unsupported protocol %s" % url)
-
-    source_path = source
-    if source_path[:5] == 'file:':
-        source_path = source_path[5:]
-    if os.path.exists(source_path):
-        source_path = os.path.abspath(source_path)
-    if os.path.isdir(source_path):
-        compress(source_path,'tar')
-        source_path += '.tar'
-        source = "file:"+source_path
-    if not source[:5] == "file:":
-        source = "file:" + source
-
-    logger.warn('wput(): src: %s, dest: %s',source,url)
-
-    chksum = sha512sum(source_path)
+    chksum = sha512sum(local)
     chksum_type = 'sha512'
 
-    if (proxy is True or (isinstance(proxy,str) and url.startswith(proxy)) or
-        (isinstance(proxy,(list,tuple)) and
-        reduce(lambda a,b:a or url.startswith(b),proxy,False))):
-        # upload to proxy first
-        if 'proxy_addr' not in options:
-            raise Exception('proxy_addr not in options, so cannot locate proxy')
-        if 'key' not in options:
-            raise Exception('auth key not in options, so cannot communicate with server')
-        proxy_addr = options['proxy_addr']
-
-        try:
-            kwargs = {}
-            if 'username' in options:
-                kwargs['username'] = options['username']
-            if 'password' in options:
-                kwargs['password'] = options['password']
-            if 'sslcert' in options:
-                kwargs['ssl_cert'] = options['sslcert']
-            if 'sslkey' in options:
-                kwargs['ssl_key'] = options['sslkey']
-            if 'cacert' in options:
-                kwargs['cacert'] = options['cacert']
-
-            # initial json request request
-            def reply(data):
-                reply.data += data
-            reply.data = ''
-            for i in range(0,2):
-                try:
-                    body = json_encode({'type':'upload',
-                                        'url':url,
-                                        'size':os.path.getsize(source_path),
-                                        'checksum':chksum,
-                                        'checksum_type':chksum_type,
-                                        'key':options['key']
-                                       })
-                    pycurl_handle.post(proxy_addr+'/upload',reply,
-                                       postbody=body,**kwargs)
-                except Exception as e:
-                    if i == 0:
-                        # try regenerating the pycurl handle
-                        logger.warn('regenerating pycurl handle because of error')
-                        pycurl_handle = util.PycURL()
-                    else:
-                        logger.error('error uploading to url %s : %r',url,e)
-                        raise
-                else:
-                    break
-            if not reply.data:
-                raise Exception('Unknown error contacting proxy server')
-            data = json_decode(reply.data)
-            if data['type'] != 'upload' or data['url'] != url:
-                raise Exception('Received bad response from proxy')
-            upload_url = data['upload']
-
-            if upload_url:
-                # actual upload
-                for i in xrange(0,2):
-                    try:
-                        pycurl_handle.put(proxy_addr+upload_url,
-                                          source_path, **kwargs)
-                    except Exception as e:
-                        if i == 0:
-                            # try regenerating the pycurl handle
-                            logger.warn('regenerating pycurl handle because of error')
-                            pycurl_handle = util.PycURL()
-                        else:
-                            logger.error('error uploading to url %s : %r',url,e)
-                            raise
-                    else:
-                        break
-            # else: we've already uploaded this file, so just check the status
-
-            # check that upload was successful
-            for _ in xrange(100):
-                reply.data = ''
-                for i in xrange(0,2):
-                    try:
-                        body = json_encode({'type':'check',
-                                            'url':url,
-                                            'key':options['key']
-                                           })
-                        pycurl_handle.post(proxy_addr+'/upload',reply,
-                                           postbody=body,**kwargs)
-                    except Exception as e:
-                        if i == 0:
-                            # try regenerating the pycurl handle
-                            logger.warn('regenerating pycurl handle because of error')
-                            pycurl_handle = util.PycURL()
-                        else:
-                            logger.error('error uploading to url %s : %r',url,e)
-                            raise
-                    else:
-                        break
-                if not reply.data:
-                    raise Exception('Unknown error contacting proxy server')
-                data = json_decode(reply.data)
-                if data['type'] != 'check' or data['url'] != url:
-                    raise Exception('Received bad response from proxy')
-                if data['result'] == 'still uploading':
-                    time.sleep(10)
-                    continue
-                elif not data['result']:
-                    raise Exception('Recieved an error when checking the upload')
-                else:
-                    # success
-                    break
-
-        except Exception as e:
-            logger.error('error uploading using proxy to url %s : %r',url,e)
-            return 1
-
-        return 0
-
     # actually upload the file
-    ret = None
-    urlprefix = url[:5]
-    if urlprefix in ('http:','https','ftp:/','ftps:'):
-        # use pycurl
-        for i in range(0,2):
-            try:
-                kwargs = {}
-                if 'http_username' in options:
-                    kwargs['username'] = options['http_username']
-                if 'http_password' in options:
-                    kwargs['password'] = options['http_password']
-                if 'ssl_cert' in options:
-                    kwargs['sslcert'] = options['ssl_cert']
-                if 'ssl_key' in options:
-                    kwargs['sslkey'] = options['ssl_key']
-                if 'ssl_cacert' in options:
-                    kwargs['cacert'] = options['ssl_cacert']
-                pycurl_handle.put(url,source_path,**kwargs)
-            except Exception as e:
-                if i == 0:
-                    # try regenerating the pycurl handle
-                    logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = util.PycURL()
+    if url.startswith('http'):
+        logger.info('http from %s to %s', local, url)
+        with requests.Session() as s:
+            if 'username' in options and 'password' in options:
+                s.auth = (options['username'], options['password'])
+            if 'sslcert' in options:
+                if 'sslkey' in options:
+                    s.cert = (options['sslcert'], options['sslkey'])
                 else:
-                    logger.error('error uploading to url %s', url, exc_info=True)
-                    raise
-            else:
-                break
-    elif urlprefix == 'file:':
+                    s.cert = options['sslcert']
+            if 'cacert' in options:
+                s.verify = options['cacert']
+            for i in range(5, 0, -1):
+                try:
+                    with open(local, 'rb') as f:
+                        m = MultipartEncoder(
+                            fields={'field0': ('filename', f, 'text/plain')}
+                            )
+                        r = s.post(url, timeout=60, data=m,
+                                   headers={'Content-Type': m.content_type})
+                        r.raise_for_status()
+                    break
+                except Exception:
+                    if i <= 0:
+                        logger.error('error uploading to url %s', url,
+                                     exc_info=True)
+                        raise
+    elif url.startswith('file:'):
         # use copy command
         url = url[5:]
         if os.path.exists(url):
-            logger.warn('url already exists. overwriting!')
-            os.remove(url)
-        copy(source_path,url)
-    elif url[:7] == 'gsiftp:':
-        try:
-            ret = GridFTP.put(url,filename=source_path)
-        except Exception as e:
-            logger.error('error putting url %s : %r',url,e)
-            ret = 1
-        else:
-            if ret is not True:
-                logger.error('error putting url %s',url)
-                ret = 1
-            else:
-                try:
-                    ret = GridFTP.sha512sum(url)
-                except Exception as e:
-                    logger.error('error checksumming url %s', url, exc_info=True)
-                    ret = 1
-                else:
-                    if ret and ret == chksum:
-                        ret = 0
-                    else:
-                        logger.error('error checksumming url %s',url)
-                        ret = 1
+            logger.warn('put: file already exists. overwriting!')
+            removedirs(url)
+        copy(local, url)
+        if sha512sum(url) != chksum:
+            raise Exception('file checksum error')
+    elif url.startswith('gsiftp:') or url.startswith('ftp:'):
+        if not GridFTP.put(url, filename=local):
+            raise Exception('gridftp error')
+        ret = GridFTP.sha512sum(url)
+        if ret != chksum:
+            raise Exception('gridftp checksum error')
     else:
-        # command line programs
-        if url.startswith("lfn:"):
-            cmd = "lcg-cp --vo icecube -v %s %s" % (source,url)
-        else:
-            raise Exception("unsupported protocol %s" % url)
-        # add options
-        if 'cmd_line_opts' in options:
-            cmd += options['cmd_line_opts']
-        cmd += ' >/dev/null 2>&1'
-        logging.info(cmd)
-        if not subprocess.call(cmd,shell=True):
-            raise('failed to run cmd: %s'%cmd)
+        raise Exception("unsupported protocol %s" % url)
 
-    return ret
+def _wget(url, local, options):
+    """wrapper for downloading from multiple protocols"""
+    if url.startswith('http'):
+        logger.info('http from %s to %s', url, local)
+        with requests.Session() as s:
+            if 'username' in options and 'password' in options:
+                s.auth = (options['username'], options['password'])
+            if 'sslcert' in options:
+                if 'sslkey' in options:
+                    s.cert = (options['sslcert'], options['sslkey'])
+                else:
+                    s.cert = options['sslcert']
+            if 'cacert' in options:
+                s.verify = options['cacert']
+            for i in range(5, 0, -1):
+                try:
+                    r = s.get(url, stream=True, timeout=60)
+                    with open(local, 'wb') as f:
+                        for chunk in r.iter_content(65536):
+                            f.write(chunk)
+                    r.raise_for_status()
+                    break
+                except Exception:
+                    if i <= 0:
+                        logger.error('error fetching url %s', url,
+                                     exc_info=True)
+                        raise
+    elif url.startswith('file:'):
+        url = url[5:]
+        logger.info('copy from %s to %s', url, local)
+        if os.path.exists(url):
+            copy(url, local)
+    elif url.startswith('gsiftp:') or url.startswith('ftp:'):
+        logger.info('gsiftp from %s to %s', url, local)
+        if not GridFTP.get(url, filename=local):
+            raise Exception('gridftp generic failure')
+    else:
+        raise Exception("unsupported protocol %s" % url)
+
+    if not os.path.exists(local):
+        raise Exception('download failed - file does not exist')
 
 def isurl(url):
     """Determine if this is a supported protocol"""
-    prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:','srm:','lfn:')
+    prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:')
     try:
         return url.startswith(prefixes)
     except:
@@ -1065,17 +673,6 @@ def insertincache(url,file,options={}):
     if 'debug' in options:
         return None
 
-    # check url type
-    search_expr = '/svn|code.icecube.wisc.edu|.py$'
-    if 'cache_script_expr' in options and options['cache_script_expr']:
-        search_expr = options['cache_script_expr']
-    if re.search(search_expr,url):
-        # this is a script
-        # check if this is a release / candidate / tag
-        if not re.search('release|candidate|tag',url):
-            # don't cache svn files under active development
-            return
-
     # get cache directory
     cache_dir = _getcachedir(options)
 
@@ -1086,33 +683,6 @@ def insertincache(url,file,options={}):
     logger.info('insertincache(%s) = %s',url,hash)
     match = os.path.join(cache_dir,hash)
     copy(file,match)
-
-def insertincache_checksum(url,checksum,type='sha512',options={}):
-    """Copy checksum to cache"""
-    if 'debug' in options:
-        return None
-
-    # check url type
-    search_expr = '/svn|code.icecube.wisc.edu|.py$'
-    if 'cache_script_expr' in options and options['cache_script_expr']:
-        search_expr = options['cache_script_expr']
-    if re.search(search_expr,url):
-        # this is a script
-        # check if this is a release / candidate / tag
-        if not re.search('release|candidate|tag',url):
-            # don't cache svn files under active development
-            return
-
-    # get cache directory
-    cache_dir = _getcachedir(options)
-
-    # get hash of url
-    hash = cksm(url,'sha512',file=False)
-
-    # copy file
-    logger.info('insertincache(%s) = %s',url,hash)
-    match = os.path.join(cache_dir,hash)+'_cksm'
-    pickle.dump({'cksm':checksum,'type':type},open(match,'w'))
 
 def incache(url,options={}):
     """Test if the url is in the cache, and return it if available"""
@@ -1130,202 +700,7 @@ def incache(url,options={}):
     # check cache dir for url
     match = os.path.join(cache_dir,hash)
     if os.path.exists(match):
-        # check url type
-        search_expr = '/svn|code.icecube.wisc.edu|.py$'
-        if 'cache_script_expr' in options and options['cache_script_expr']:
-            search_expr = options['cache_script_expr']
-        if re.search(search_expr,url):
-            # this is a script
-            # check if this is a release / candidate / tag
-            if re.search('release|candidate|tag',url):
-                # use cached value
-                return match
-        else:
-            # this is not a script
-            # check date
-            cache_age = '100800' # 4 weeks default
-            if 'cache_age' in options and options['cache_age']:
-                cache_age = options['cache_age']
-            try:
-                cache_age = float(cache_age)
-            except:
-                cache_age = 100800.0
-                logger.error('error converting cache_age to float: %s',str(cache_age))
-            if os.path.getmtime(match) >= (time.time()-cache_age):
-                return match
+        return match
 
     # no matches in cache
     return None
-
-def incache_checksum(url,options={}):
-    """Test if the checksum is in the cache, and return it if available"""
-    # test for debug variable, skipping cache if debug is enabled
-    if 'debug' in options:
-        return None
-    logger.info('incache(%s)',url)
-
-    # get cache directory
-    cache_dir = _getcachedir(options)
-
-    # get hash of url
-    hash = cksm(url,'sha512',file=False)
-
-    # check cache dir for url
-    match = os.path.join(cache_dir,hash)+'_cksm'
-    if os.path.exists(match):
-        # check url type
-        search_expr = '/svn|code.icecube.wisc.edu|.py$'
-        if 'cache_script_expr' in options and options['cache_script_expr']:
-            search_expr = options['cache_script_expr']
-        if re.search(search_expr,url):
-            # this is a script
-            # check if this is a release / candidate / tag
-            if re.search('release|candidate|tag',url):
-                # use cached value
-                cache = pickle.load(open(match))
-                return (cache['cksm'],cache['type'])
-        else:
-            # this is not a script
-            # check date
-            cache_age = '100800' # 4 weeks default
-            if 'cache_age' in options and options['cache_age']:
-                cache_age = options['cache_age']
-            try:
-                cache_age = float(cache_age)
-            except:
-                cache_age = 100800.0
-                logger.error('error converting cache_age to float: %s',str(cache_age))
-            if os.path.getmtime(match) >= (time.time()-cache_age):
-                cache = pickle.load(open(match))
-                return (cache['cksm'],cache['type'])
-
-    # no matches in cache
-    return None
-
-def inproxy(url,dest_path,options):
-    """Ask the proxy to download the file"""
-    if 'proxy_addr' not in options:
-        raise Exception('proxy_addr not in options, so cannot locate proxy')
-    proxy_addr = options['proxy_addr']
-    if 'key' not in options:
-        raise Exception('auth key not in options, so cannot communicate with server')
-
-    # make request body
-    body = {'url':url,'key':options['key']}
-
-    # use pycurl
-    global pycurl_handle
-    with open(dest_path,'w') as f:
-        for i in xrange(0,2):
-            try:
-                kwargs = {}
-                if 'http_username' in options:
-                    kwargs['username'] = options['http_username']
-                if 'http_password' in options:
-                    kwargs['password'] = options['http_password']
-                if 'ssl_cert' in options:
-                    kwargs['sslcert'] = options['ssl_cert']
-                if 'ssl_key' in options:
-                    kwargs['sslkey'] = options['ssl_key']
-                if 'ssl_cacert' in options:
-                    kwargs['cacert'] = options['ssl_cacert']
-                kwargs['postbody'] = json_encode(body)
-                pycurl_handle.post(proxy_addr,f.write,**kwargs)
-            except Exception as e:
-                if i == 0:
-                    # try regenerating the pycurl handle
-                    logger.warn('regenerating pycurl handle because of error')
-                    pycurl_handle = util.PycURL()
-                else:
-                    logger.error('error fetching url %s : %s',url,e)
-                    ret = None
-            else:
-                if os.path.exists(dest_path):
-                    ret = dest_path
-                break
-    return ret
-
-def inproxy_checksum(url,dest_path,options):
-    """Ask the proxy to download the checksum"""
-    if 'proxy_addr' not in options:
-        raise Exception('proxy_addr not in options, so cannot locate proxy')
-    proxy_addr = options['proxy_addr']
-    if 'key' not in options:
-        raise Exception('auth key not in options, so cannot communicate with server')
-
-    # make request body
-    body = {'url':url,'key':options['key'],'type':'checksum'}
-
-    ret = None
-
-    def cb(data):
-        cb.data += data
-    cb.data = ''
-
-    # use pycurl
-    global pycurl_handle
-    for i in xrange(0,2):
-        try:
-            kwargs = {}
-            if 'http_username' in options:
-                kwargs['username'] = options['http_username']
-            if 'http_password' in options:
-                kwargs['password'] = options['http_password']
-            if 'ssl_cert' in options:
-                kwargs['sslcert'] = options['ssl_cert']
-            if 'ssl_key' in options:
-                kwargs['sslkey'] = options['ssl_key']
-            if 'ssl_cacert' in options:
-                kwargs['cacert'] = options['ssl_cacert']
-            kwargs['postbody'] = json_encode(body)
-            pycurl_handle.post(proxy_addr,cb,**kwargs)
-        except Exception as e:
-            if i == 0:
-                # try regenerating the pycurl handle
-                logger.warn('regenerating pycurl handle because of error')
-                pycurl_handle = util.PycURL()
-            else:
-                logger.error('error fetching url %s : %s',url,e)
-                ret = None
-        else:
-            if cb.data:
-                ret = cb.data
-            break
-
-    return ret
-
-def sendMail(cfg,subject,msg):
-    """Send email"""
-    smtpuser = "%s@%s" % (os.getlogin(),os.uname()[1].split(".")[0])
-    proto = 'sendmail'
-    if cfg.has_option('monitoring','smtphost'):
-       try:
-          import smtplib
-       except ImportError, e:
-          logger.error(e)
-       else:
-          proto = 'smtp'
-
-    if proto == 'stmp':
-       smtphost  = cfg.get('monitoring','smtphost')
-       smtpuser  = cfg.get('monitoring','smtpuser')
-
-       from_addr = "From: " + smtpuser
-       to_addrs  = cfg.get('monitoring','smtpnotify').split(',')
-       subject   = "Subject: %s\n" % subject
-
-       server = smtplib.SMTP(smtphost)
-       server.sendmail(from_addr, to_addrs, subject + msg)
-       server.quit()
-
-    else:
-       sendmail_location = "/usr/sbin/sendmail" # sendmail location
-       p = os.popen("%s -t" % sendmail_location, "w")
-       p.write("From: %s\n" % smtpuser)
-       p.write("To: %s\n" % smtpuser)
-       p.write("Subject: %s\n" % subject)
-       p.write("\n")
-       p.write(msg)
-       status = p.close()
-       if status != 0:
-          raise Exception("Sendmail exited with status %u" % status)

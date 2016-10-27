@@ -24,7 +24,13 @@ except:
     import pickle
 
 import unittest
-from flexmock import flexmock
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
+import requests_mock
+
+import flexmock
 
 from iceprod.core import to_log
 import iceprod.core.dataclasses
@@ -47,55 +53,6 @@ class functions_test(unittest.TestCase):
             os.chdir(curdir)
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
-
-        # mock the PycURL interface
-        self.put_error = None
-        self.put_called = False
-        self.put_args = ([],{})
-        flexmock(iceprod.core.util.PycURL).should_receive('put').replace_with(self.put)
-        self.fetch_error = None
-        self.fetch_body = ''
-        self.fetch_called = False
-        self.fetch_args = ([],{})
-        flexmock(iceprod.core.util.PycURL).should_receive('fetch').replace_with(self.fetch)
-        self.post_error = None
-        self.post_headers = []
-        self.post_body = ''
-        self.post_called = False
-        self.post_args = ([],{})
-        self.post_response = None
-        flexmock(iceprod.core.util.PycURL).should_receive('post').replace_with(self.post)
-
-    # the mocked functions of PycURL
-    def put(self,*args,**kwargs):
-        self.put_called = True
-        self.put_args = (args,kwargs)
-        if self.put_error is not None:
-            raise self.put_error
-    def fetch(self, *args,**kwargs):
-        if self.fetch_error is not None:
-            raise self.fetch_error
-        self.fetch_args = (args,kwargs)
-        with open(args[1],'w') as f:
-            if callable(self.fetch_body):
-                f.write(self.fetch_body())
-            else:
-                f.write(self.fetch_body)
-        self.fetch_called = True
-    def post(self, *args,**kwargs):
-        self.post_called = True
-        self.post_args = (args,kwargs)
-        if self.post_error is not None:
-            raise self.post_error
-        url = args[0]
-        writefunc = args[1]
-        if 'headerfunc' in kwargs:
-            headerfunc = kwargs['headerfunc']
-            for h in self.post_headers:
-                headerfunc(h)
-        if 'postbody' in kwargs:
-            self.post_body = kwargs['postbody']
-        writefunc(self.post_response())
 
     @unittest_reporter
     def test_001_uncompress(self):
@@ -703,690 +660,367 @@ class functions_test(unittest.TestCase):
         """Test the isurl function"""
         good_urls = ['http://www.google.com',
                      'https://skua.icecube.wisc.edu:9080',
-                     'gsiftp://gridftp-rr.icecube.wisc.edu',
+                     'gsiftp://gridftp.icecube.wisc.edu',
                      'ftp://x2100.icecube.wisc.edu',
-                     'file:/data/exp',
-                     'lfn://test',
-                     'srm://test2']
+                     'file:/data/exp']
         bad_urls = ['slkdjf:/sldfjlksd',
                     'rpc://test']
         for i in range(0,10):
             for url in good_urls:
                 if not iceprod.core.functions.isurl(url):
-                    raise Exception, 'isurl thought %s was not a valid url'%url
+                    raise Exception('isurl thought %s was not a valid url'%url)
             for url in bad_urls:
                 if iceprod.core.functions.isurl(url):
-                    raise Exception, 'isurl thought %s was a valid url'%url
+                    raise Exception('isurl thought %s was a valid url'%url)
 
-    @unittest_reporter
-    def test_303_wget(self):
-        """Test the wget function"""
-        download_options = {'http_username':'user',
-                            'http_password':'pass',
-                            'key':'key'}
-
-        data = 'the data'
-
-        def response():
-            return data
-        self.fetch_body = data
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
-
-        # download file from resources
-        if not iceprod.core.functions.wget('http://x2100.icecube.wisc.edu/downloads/globus.tar.gz',self.test_dir,options=download_options):
-            raise Exception('simple http: wget failed')
-        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception('simple http: downloaded file does not exist')
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        if data2 != data:
-            raise Exception('simple http: data not equal.  expected %r and got %r'%(data,data2))
-
-        # try download from iceprod server (POST only)
-        #self.fetch_error = iceprod.core.util.NoncriticalError('HTTP error code: %d'%405)
-        download_options = {'key':'abcd'}
-
-        # download file from resources
-        if not iceprod.core.functions.wget('http://x2100.icecube.wisc.edu/downloads/globus.tar.gz',self.test_dir,options=download_options):
-            raise Exception('iceprod http: wget failed')
-        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception('iceprod http: downloaded file does not exist')
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        if data2 != data:
-            raise Exception('iceprod http: data not equal.  expected %r and got %r'%(data,data2))
-
-        self.fetch_error = None
-
-        # download file from svn
-        if not iceprod.core.functions.wget('http://code.icecube.wisc.edu/svn/projects/simprod-scripts/trunk/simulation/generators.py',self.test_dir,options=download_options):
-            raise Exception('svn http: wget failed')
-        if not os.path.isfile(os.path.join(self.test_dir,'generators.py')):
-            raise Exception('svn http: downloaded file does not exist')
-        data2 = open(os.path.join(self.test_dir,'generators.py')).read()
-        if data2 != data:
-            raise Exception('svn http: data not equal.  expected %r and got %r'%(data,data2))
-
-        # download file from local file system
-        if not iceprod.core.functions.wget(os.path.join(self.test_dir,'generators.py'),os.path.join(self.test_dir,'generators2.py'),options=download_options):
-            raise Exception('local cp: wget failed')
-        if not os.path.isfile(os.path.join(self.test_dir,'generators2.py')):
-            raise Exception('local cp: copied file does not exist')
-        data2 = open(os.path.join(self.test_dir,'generators2.py')).read()
-        if data2 != data:
-            raise Exception('local cp: data not equal.  expected %r and got %r'%(data,data2))
-
-        # download file from gsiftp
-        def get(url,filename=None):
-            with open(filename,'w') as f:
-                f.write(data)
-            get.url = url
-            return True
-        get.url = None
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('get').replace_with(get)
-
-        if not iceprod.core.functions.wget('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',self.test_dir,options=download_options):
-            raise Exception('gsiftp: wget failed')
-        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception('gsiftp: downloaded file does not exist')
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        if get.url != 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz':
-            raise Exception('gsiftp: url is incorrect: %r'%get.url)
-        if data2 != data:
-            raise Exception('gsiftp: data not equal.  expected %r and got %r'%(data,data2))
-
-    @unittest_reporter
-    def test_304_download(self):
+    @requests_mock.mock()
+    @unittest_reporter(name='download() http')
+    def test_303_download(self, http_mock):
         """Test the download function"""
-        download_options = {'http_username':'user',
-                            'http_password':'pass',
-                            'key':'key'}
+        download_options = {'username': 'user',
+                            'password': 'pass',}
 
         data = 'the data'
         md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-        def response():
-            return data
-        def fetcher():
-            if self.fetch_args[0][0].endswith('md5sum'):
-                return (md5sum,'md5sum')
-            else:
-                return data
-        self.fetch_body = fetcher
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
 
         # download file from resources
+        http_mock.get('/globus.tar.gz', content=data)
+        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
         iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                 self.test_dir,options=download_options)
         if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception, 'simple http: downloaded file does not exist'
+            raise Exception('downloaded file does not exist')
+        self.assertTrue(http_mock.called)
         data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        if data2 != data:
-            raise Exception('simple http: data not equal.  expected %r and got %r'%(data,data2))
+        self.assertEqual(data2, data, msg='data not equal')
 
-        # download file from svn
-        iceprod.core.functions.download('http://code.icecube.wisc.edu/svn/projects/simprod-scripts/trunk/simulation/generators.py',
-                self.test_dir,options=download_options)
-        if not os.path.isfile(os.path.join(self.test_dir,'generators.py')):
-            raise Exception, 'svn http: downloaded file does not exist'
-        data2 = open(os.path.join(self.test_dir,'generators.py')).read()
-        if data2 != data:
-            raise Exception('svn http: data not equal.  expected %r and got %r'%(data,data2))
+    @unittest_reporter(name='download() file')
+    def test_304_download(self):
+        """Test the download function"""
+        data = 'the data'
+        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
 
         # download file from local file system
-        iceprod.core.functions.download(os.path.join(self.test_dir,'generators.py'),
-                os.path.join(self.test_dir,'generators2.py'),
-                options=download_options)
+        filename = os.path.join(self.test_dir,'generators.py')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.download(filename,
+                os.path.join(self.test_dir,'generators2.py'))
         if not os.path.isfile(os.path.join(self.test_dir,'generators2.py')):
             raise Exception, 'local cp: copied file does not exist'
         data2 = open(os.path.join(self.test_dir,'generators2.py')).read()
-        if data2 != data:
-            raise Exception('local cp: data not equal.  expected %r and got %r'%(data,data2))
+        self.assertEqual(data2, data, msg='data not equal')
 
+    @patch('iceprod.core.functions.GridFTP')
+    @unittest_reporter(name='download() gridftp')
+    def test_305_download(self, gridftp):
+        """Test the download function"""
         # download file from gsiftp
+        data = 'the data'
         def get(url,filename=None):
-            with open(filename,'w') as f:
-                f.write(data)
-            get.url = url
-            return True
+            logger.info('fake get: url=%r, filename=%r', url, filename)
+            if url.endswith('globus.tar.gz'):
+                with open(filename,'w') as f:
+                    f.write(data)
+                get.url = url
+                return True
+            else:
+                raise Exception()
         get.url = None
-        def sha512sum(url):
-            return '8580e83fc859a2786430406fd41c7c6a0d3ac77b7eff07bc94c880f5b6e86b87320ea25cb3f3c5a3881236cf8bda92cb8f61c2a813881fee1d8f8331565ce98a'
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('get').replace_with(get)
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('sha512sum').replace_with(sha512sum)
+        gridftp.get = get
 
         iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
-                self.test_dir,options=download_options)
+                self.test_dir)
         if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
             raise Exception('gsiftp: downloaded file does not exist')
         data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        if get.url != 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz':
-            raise Exception('gsiftp: url is incorrect: %r'%get.url)
-        if data2 != data:
-            raise Exception('gsiftp: data not equal.  expected %r and got %r'%(data,data2))
+        self.assertEqual(get.url, 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
+        self.assertEqual(data2, data, msg='data not equal')
 
-    @unittest_reporter
-    def test_305_download_cached(self):
-        """Test the download function with caching"""
-        # download file from resources
-        download_options = {'http_username':'user',
-                            'http_password':'pass',
-                            'cache_dir':os.path.join(self.test_dir,'cache_test'),
-                            'key':'key'}
+    @requests_mock.mock()
+    @unittest_reporter(name='download() http, cached')
+    def test_313_download(self, http_mock):
+        """Test the download function"""
+        download_options = {'username': 'user',
+                            'password': 'pass',
+                            'cache_dir': os.path.join(self.test_dir,'cache_test')}
 
         data = 'the data'
         md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-        def response():
-            return data
-        def fetcher():
-            if self.fetch_args[0][0].endswith('md5sum'):
-                return (md5sum,'md5sum')
-            else:
-                return data
-        self.fetch_body = fetcher
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
 
+        # download file from resources
+        http_mock.get('/globus.tar.gz', content=data)
+        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
+        iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                self.test_dir, cache=True, options=download_options)
+        call_count = http_mock.call_count
+        iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                self.test_dir, cache=True, options=download_options)
+        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
+            raise Exception('downloaded file does not exist')
+        logger.debug('call_count %d, new_count: %d', call_count, http_mock.call_count)
+        self.assertLess(http_mock.call_count, call_count*2, msg='cache not used')
+        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
+        self.assertEqual(data2, data, msg='data not equal')
+
+    @unittest_reporter(name='download() file, cached')
+    def test_314_download(self):
+        """Test the download function"""
+        data = 'the data'
+        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
+
+        # download file from local file system
+        filename = os.path.join(self.test_dir, 'generators.py')
+        out_dir = os.path.join(self.test_dir, 'output')
+        os.makedirs(out_dir)
+        output_file = os.path.join(out_dir, 'generators.py')
+        with open(filename, 'w') as f:
+            f.write(data)
+        with open(filename+'.md5sum', 'w') as f:
+            f.write(md5sum+' '+'generators.py')
+        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
+                cache=True, options=download_options)
+        os.remove(filename)
+        os.remove(output_file)
+        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
+                cache=True, options=download_options)
+        if not os.path.isfile(output_file):
+            raise Exception('copied file does not exist')
+        data2 = open(output_file).read()
+        self.assertEqual(data2, data, msg='data not equal')
+
+    @patch('iceprod.core.functions.GridFTP')
+    @unittest_reporter(name='download() gridftp, cached')
+    def test_315_download(self, gridftp):
+        """Test the download function"""
+        data = 'the data'
+        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
+        
+        # download file from gsiftp
         def get(url,filename=None):
-            with open(filename,'w') as f:
-                f.write(data)
-            get.url = url
-            return True
+            logger.info('fake get: url=%r, filename=%r', url, filename)
+            if url.endswith('globus.tar.gz'):
+                with open(filename,'w') as f:
+                    f.write(data)
+                get.url = url
+                return True
+            elif url.endswith('.md5sum'):
+                with open(filename,'w') as f:
+                    f.write(md5sum+' '+'globus.tar.gz')
+                return True
+            else:
+                raise Exception()
         get.url = None
-        def sha512sum(url):
-            return '8580e83fc859a2786430406fd41c7c6a0d3ac77b7eff07bc94c880f5b6e86b87320ea25cb3f3c5a3881236cf8bda92cb8f61c2a813881fee1d8f8331565ce98a'
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('get').replace_with(get)
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('sha512sum').replace_with(sha512sum)
+        gridftp.get = get
 
-        for i in range(0,5):
-            # download file from resources
-            iceprod.core.functions.download('http://x2100.icecube.wisc.edu/downloads/globus.tar.gz',
-                    self.test_dir,cache=True,options=download_options)
-            if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-                raise Exception, 'simple http: downloaded file does not exist'
-            data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-            if data2 != data:
-                raise Exception('simple http: data not equal.  expected %r and got %r'%(data,data2))
+        iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
+                self.test_dir, cache=True, options=download_options)
+        get.url = None
+        iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
+                self.test_dir, cache=True, options=download_options)
+        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
+            raise Exception('gsiftp: downloaded file does not exist')
+        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
+        self.assertIsNone(get.url, msg='cache not used')
+        self.assertEqual(data2, data, msg='data not equal')
 
-            # download file from svn
-            iceprod.core.functions.download('http://code.icecube.wisc.edu/svn/projects/simprod-scripts/trunk/simulation/generators.py',
-                    self.test_dir,cache=True,options=download_options)
-            if not os.path.isfile(os.path.join(self.test_dir,'generators.py')):
-                raise Exception, 'svn http: downloaded file does not exist'
-            data2 = open(os.path.join(self.test_dir,'generators.py')).read()
-            if data2 != data:
-                raise Exception('svn http: data not equal.  expected %r and got %r'%(data,data2))
+    @unittest_reporter(name='download() errors')
+    def test_320_download(self):
+        """Test the download function"""
+        data = 'the data'
+        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
 
-            # download file from local file system
-            iceprod.core.functions.download(os.path.join(self.test_dir,'generators.py'),os.path.join(self.test_dir,'generators2.py'),
-                    cache=True,options=download_options)
-            if not os.path.isfile(os.path.join(self.test_dir,'generators2.py')):
-                raise Exception, 'local cp: copied file does not exist'
-            data2 = open(os.path.join(self.test_dir,'generators2.py')).read()
-            if data2 != data:
-                raise Exception('local cp: data not equal.  expected %r and got %r'%(data,data2))
+        filename = os.path.join(self.test_dir, 'generators.py')
+        out_dir = os.path.join(self.test_dir, 'output')
+        os.makedirs(out_dir)
+        output_file = os.path.join(out_dir, 'generators.py')
+        with open(filename, 'w') as f:
+            f.write(data)
+        with open(filename+'.md5sum', 'w') as f:
+            f.write(md5sum+' '+'generators.py')
 
-            # download file from gsiftp
-            iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
-                    self.test_dir,cache=True,options=download_options)
-            if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-                raise Exception('gsiftp: downloaded file does not exist')
-            data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-            if get.url != 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz':
-                raise Exception('gsiftp: url is incorrect: %r'%get.url)
-            if data2 != data:
-                raise Exception('gsiftp: data not equal.  expected %r and got %r'%(data,data2))
-
-    @unittest_reporter
-    def test_400_wput(self):
-        """Test the wput function"""
-        upload_options = {'http_username':'user',
-                          'http_password':'pass',
-                          'key':'key'}
-
-        data = os.urandom(1024) # 1KB upload
-        def response():
-            return ''
-        self.fetch_error = Exception('GET invalid')
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
-
-        # upload file using http
-        self.put_called = False
-        up_file = os.path.join(self.test_dir,str(random.randint(100,1000)))
-        with open(up_file,'w') as f:
-            f.write(str(random.randint(1000,1000000)))
-        upload_addr = 'http://test/upload'
-        ret = iceprod.core.functions.wput(up_file,
-                                          upload_addr,
-                                          options=upload_options)
-        if ret:
-            raise Exception('simple http: returned error %r'%ret)
-        if not self.put_called:
-            raise Exception('simple http: put not called')
-        if self.put_args[0][0] != upload_addr and (
-           'url' not in self.put_args[1] or
-           self.put_args[1]['url'] != upload_addr):
-           raise Exception('simple http: put address incorrect')
-        if self.put_args[0][1] != up_file and (
-           'filename' not in self.put_args[1] or
-           self.put_args[1]['filename'] != up_file):
-           raise Exception('simple http: put filename incorrect')
-
-        # test upload error
-        self.put_called = False
-        self.put_error = Exception('upload error')
+        # bad url
         try:
-            ret= iceprod.core.functions.wput(up_file,
-                                             upload_addr,
-                                             options=upload_options)
+            iceprod.core.functions.download(filename+'blah', out_dir)
         except:
             pass
         else:
-            raise Exception('simple http: succeeded when supposed to fail')
+            raise Exception('did not raise Exception')
 
-        # upload file to local file system
-        ret = iceprod.core.functions.wput(up_file,up_file+'.bak',
-                                           options=upload_options)
-        if ret:
-            raise Exception('local cp: wput failed %r'%ret)
-        if not os.path.isfile(up_file+'.bak'):
-            raise Exception('local cp: copied file does not exist')
-        if not filecmp.cmp(up_file,up_file+'.bak',shallow=False):
-            raise Exception('local cp: data not equal')
-
-        # upload file to gsiftp
-        def put(url,filename=None):
-            put.url = url
-            return True
-        put.url = None
-        def put_chksum(url):
-            put_chksum.url = url
-            return iceprod.core.functions.sha512sum(up_file)
-        put_chksum.url = None
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('put').replace_with(put)
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('sha512sum').replace_with(put_chksum)
-
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        ret = iceprod.core.functions.wput(up_file,
-                                          upload_addr,
-                                          options=upload_options)
-        if ret:
-            raise Exception('gsiftp: wput failed %r'%ret)
-        if put.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%put.url)
-
-    @unittest_reporter(name='wput(proxy=True)')
-    def test_401_wput(self):
-        """Test the wput proxy function"""
-        upload_options = {'http_username':'user',
-                          'http_password':'pass',
-                          'proxy_addr':'localhost',
-                          'key':'key'}
-
-        data = os.urandom(1024) # 1KB upload
-        def response():
-            try:
-                url = self.post_args[0][0]
-            except:
-                raise Exception('error with url formatting')
-
-            if url.endswith('/upload'):
-                try:
-                    body = json_decode(self.post_args[1]['postbody'])
-                except:
-                    raise Exception('error with body formatting')
-                if body['type'] == 'upload':
-                    response.url = body['url']
-                    return json_encode({'type':'upload',
-                                        'url':body['url'],
-                                        'upload':'http://localhost/upload/testing'
-                                       })
-                elif body['type'] == 'check':
-                    return json_encode({'type':'check',
-                                        'url':body['url'],
-                                        'result':response.result
-                                       })
-                else:
-                    raise Exception('bad type')
-            else:
-                logger.error('url is %s',url)
-                raise Exception('got something other than upload address')
-
-        self.fetch_error = Exception('GET invalid')
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
-
-        # upload file using http
-        self.put_called = False
-        response.url = None
-        response.result = True
-        up_file = os.path.join(self.test_dir,str(random.randint(100,1000)))
-        with open(up_file,'w') as f:
-            f.write(str(random.randint(1000,1000000)))
-        upload_addr = 'http://test/upload'
-        ret = iceprod.core.functions.wput(up_file,
-                                          upload_addr,
-                                          proxy=True,
-                                          options=upload_options)
-        if ret:
-            raise Exception('simple http: returned error %r'%ret)
-        if not self.put_called:
-            raise Exception('simple http: put not called')
-        if response.url != upload_addr:
-           raise Exception('simple http: put address incorrect')
-        if self.put_args[0][1] != up_file and (
-           'filename' not in self.put_args[1] or
-           self.put_args[1]['filename'] != up_file):
-           raise Exception('simple http: put filename incorrect')
-
-        # test upload error
-        self.put_called = False
-        response.url = None
-        response.result = True
-        self.put_error = Exception('upload error')
+        # bad checksum
+        with open(filename+'.md5sum', 'w') as f:
+            f.write('badcksm'+' '+'generators.py')
         try:
-            ret= iceprod.core.functions.wput(up_file,
-                                             upload_addr,
-                                             proxy=True,
-                                             options=upload_options)
+            iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
+                    cache=True, options=download_options)
         except:
             pass
         else:
-            if not ret:
-                raise Exception('simple http: succeeded when supposed to fail')
+            raise Exception('did not raise Exception')
 
+        # bad cache checksum
+        with open(filename+'.md5sum', 'w') as f:
+            f.write(md5sum+' '+'generators.py')
+        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
+                cache=True, options=download_options)
+        os.remove(filename)
+        os.remove(output_file)
+        with open(filename+'.md5sum', 'w') as f:
+            f.write('badcksm'+' '+'generators.py')
+        try:
+            iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
+                    cache=True, options=download_options)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
-        # upload file to gsiftp
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        response.url = None
-        response.result = True
-        self.put_called = False
-        self.put_error = None
-        ret = iceprod.core.functions.wput(up_file,
-                                          upload_addr,
-                                          proxy=True,
-                                          options=upload_options)
-        if ret:
-            raise Exception('gsiftp: wput failed %r'%ret)
-        if not self.put_called:
-            raise Exception('gsiftp: put not called')
-        if response.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%response.url)
-
-    @unittest_reporter
-    def test_402_upload(self):
+    @requests_mock.mock()
+    @unittest_reporter(name='upload() http')
+    def test_403_upload(self, http_mock):
         """Test the upload function"""
-        upload_options = {'http_username':'user',
-                          'http_password':'pass',
-                          'key':'key'}
+        download_options = {'username': 'user',
+                            'password': 'pass',}
+        data = 'the data'
 
-        data = os.urandom(1024) # 1KB upload
-        def response():
-            return ''
-        self.fetch_error = Exception('GET invalid')
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
+        # upload file to http
+        http_mock.post('/globus.tar.gz', content='')
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.upload(filename,
+                'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                options=download_options)
+        self.assertTrue(http_mock.called)
+        req = http_mock.request_history[0]
+        self.assertEqual(req.method, 'POST', msg='not a POST request')
+        self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
 
-        # upload file using http
-        self.put_called = False
-        up_file = os.path.join(self.test_dir,str(random.randint(100,1000)))
-        with open(up_file,'w') as f:
-            f.write(str(random.randint(1000,1000000)))
-        upload_addr = 'http://test/upload'
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      options=upload_options)
-        if not self.put_called:
-            raise Exception('simple http: put not called')
-        if (len(self.put_args[0]) < 1 or
-            self.put_args[0][0] != upload_addr) and (
-           'url' not in self.put_args[1] or
-           self.put_args[1]['url'] != upload_addr):
-           raise Exception('simple http: put address incorrect')
-        if (len(self.put_args[0]) < 2 or
-            self.put_args[0][1] != up_file) and (
-           'filename' not in self.put_args[1] or
-           self.put_args[1]['filename'] != up_file):
-           raise Exception('simple http: put filename incorrect')
-
-        # test upload error
-        self.put_called = False
-        self.put_error = Exception('upload error')
-        try:
-            iceprod.core.functions.upload(up_file,
-                                          upload_addr,
-                                          options=upload_options)
-        except:
-            pass
-        else:
-            raise Exception('simple http: succeeded when supposed to fail')
+    @unittest_reporter(name='upload() file')
+    def test_404_upload(self):
+        """Test the upload function"""
+        data = 'the data'
 
         # upload file to local file system
-        iceprod.core.functions.upload(up_file,up_file+'.bak',
-                                      options=upload_options)
-        if not os.path.isfile(up_file+'.bak'):
-            raise Exception('local cp: copied file does not exist')
-        if not filecmp.cmp(up_file,up_file+'.bak',shallow=False):
-            raise Exception('local cp: data not equal')
+        filename = os.path.join(self.test_dir, 'generators.py')
+        out_dir = os.path.join(self.test_dir, 'output')
+        os.makedirs(out_dir)
+        output_file = os.path.join(out_dir, 'generators.py')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
+        if not os.path.isfile(output_file):
+            raise Exception('copied file does not exist')
+        data2 = open(output_file).read()
+        self.assertEqual(data2, data, msg='data not equal')
 
-        # upload file to gsiftp
+        # test overwriting dest
+        with open(output_file, 'w') as f:
+            f.write('other data')
+        iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
+        if not os.path.isfile(output_file):
+            raise Exception('copied file does not exist')
+        data2 = open(output_file).read()
+        self.assertEqual(data2, data, msg='data not equal')
+
+    @patch('iceprod.core.functions.GridFTP')
+    @unittest_reporter(name='upload() gridftp')
+    def test_405_upload(self, gridftp):
+        """Test the upload function"""
+        data = 'the data'
+        sha512sum = '8580e83fc859a2786430406fd41c7c6a0d3ac77b7eff07bc94c880f5b6e86b87320ea25cb3f3c5a3881236cf8bda92cb8f61c2a813881fee1d8f8331565ce98a'
+        
         def put(url,filename=None):
-            put.url = url
-            return True
-        put.url = None
-        def put_chksum(url):
-            put_chksum.url = url
-            return iceprod.core.functions.sha512sum(up_file)
-        put_chksum.url = None
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('put').replace_with(put)
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('sha512sum').replace_with(put_chksum)
-
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      options=upload_options)
-        if put.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%put.url)
-
-    @unittest_reporter(name='upload(proxy=True)')
-    def test_403_upload(self):
-        """Test the upload proxy function"""
-        upload_options = {'http_username':'user',
-                          'http_password':'pass',
-                          'proxy_addr':'localhost',
-                          'key':'key'}
-
-        data = os.urandom(1024) # 1KB upload
-        def response():
-            try:
-                url = self.post_args[0][0]
-            except:
-                raise Exception('error with url formatting')
-
-            if url.endswith('/upload'):
-                try:
-                    body = json_decode(self.post_args[1]['postbody'])
-                except:
-                    raise Exception('error with body formatting')
-                if body['type'] == 'upload':
-                    response.url = body['url']
-                    return json_encode({'type':'upload',
-                                        'url':body['url'],
-                                        'upload':'http://localhost/upload/testing'
-                                       })
-                elif body['type'] == 'check':
-                    return json_encode({'type':'check',
-                                        'url':body['url'],
-                                        'result':response.result
-                                       })
-                else:
-                    raise Exception('bad type')
+            logger.info('fake get: url=%r, filename=%r', url, filename)
+            if url.endswith('globus.tar.gz'):
+                put.url = url
+                put.filename = filename
+                return True
+            elif url.endswith('globus2.tar.gz'):
+                return False
             else:
-                logger.error('url is %s',url)
-                raise Exception('got something other than upload address')
+                raise Exception()
+        put.url = None
+        put.filename = None
+        gridftp.put = put
+        gridftp.sha512sum.return_value = sha512sum
 
-        self.fetch_error = Exception('GET invalid')
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.upload(filename,
+                'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
+        self.assertEqual(put.url, 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
+        self.assertEqual(put.filename, filename)
 
-        # upload file using http
-        self.put_called = False
-        response.url = None
-        response.result = True
-        up_file = os.path.join(self.test_dir,str(random.randint(100,1000)))
-        with open(up_file,'w') as f:
-            f.write(str(random.randint(1000,1000000)))
-        upload_addr = 'http://test/upload'
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      proxy=True,
-                                      options=upload_options)
-        if not self.put_called:
-            raise Exception('simple http: put not called')
-        if response.url != upload_addr:
-           raise Exception('simple http: put address incorrect')
-        if self.put_args[0][1] != up_file and (
-           'filename' not in self.put_args[1] or
-           self.put_args[1]['filename'] != up_file):
-           raise Exception('simple http: put filename incorrect')
-
-        # test upload error
-        self.put_called = False
-        response.url = None
-        response.result = True
-        self.put_error = Exception('upload error')
+        # test gridftp error
         try:
-            iceprod.core.functions.upload(up_file,
-                                          upload_addr,
-                                          proxy=True,
-                                          options=upload_options)
+            iceprod.core.functions.upload(filename,
+                    'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
         except:
             pass
         else:
-            raise Exception('upload did not fail')
-       
-        # upload file to gsiftp
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        response.url = None
-        response.result = True
-        self.put_called = False
-        self.put_error = None
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      proxy=True,
-                                      options=upload_options)
-        if not self.put_called:
-            raise Exception('gsiftp: put not called')
-        if response.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%response.url)
+            raise Exception('did not raise Exception')
 
-    @unittest_reporter(name='upload(proxy=prefix)')
-    def test_404_upload(self):
-        """Test the upload proxy selection"""
-        upload_options = {'http_username':'user',
-                          'http_password':'pass',
-                          'proxy_addr':'localhost',
-                          'key':'key'}
+        # test checksum error
+        gridftp.sha512sum.return_value = 'blah'
+        try:
+            iceprod.core.functions.upload(filename,
+                    'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
-        data = os.urandom(1024) # 1KB upload
-        def response():
-            try:
-                url = self.post_args[0][0]
-            except:
-                raise Exception('error with url formatting')
+    @unittest_reporter(name='upload() dir')
+    def test_410_upload(self):
+        """Test the upload function"""
+        data = 'the data'
 
-            if url.endswith('/upload'):
-                try:
-                    body = json_decode(self.post_args[1]['postbody'])
-                except:
-                    raise Exception('error with body formatting')
-                if body['type'] == 'upload':
-                    response.url = body['url']
-                    return json_encode({'type':'upload',
-                                        'url':body['url'],
-                                        'upload':'http://localhost/upload/testing'
-                                       })
-                elif body['type'] == 'check':
-                    return json_encode({'type':'check',
-                                        'url':body['url'],
-                                        'result':response.result
-                                       })
-                else:
-                    raise Exception('bad type')
-            else:
-                logger.error('url is %s',url)
-                raise Exception('got something other than upload address')
+        # upload file to local file system
+        in_dir = os.path.join(self.test_dir, 'input')
+        filename = os.path.join(in_dir, 'generators.py')
+        out_dir = os.path.join(self.test_dir, 'output')
+        os.makedirs(in_dir)
+        os.makedirs(out_dir)
+        output_file = os.path.join(out_dir, 'generators')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.upload(in_dir, 'file:'+output_file)
+        if not os.path.isfile(output_file):
+            raise Exception('tar file does not exist')
+        os.chdir(out_dir)
+        subprocess.check_call(['tar','-axf',output_file])
+        final_out = os.path.join('input','generators.py')
+        if not os.path.isfile(final_out):
+            raise Exception('copied file does not exist')
+        data2 = open(final_out).read()
+        self.assertEqual(data2, data, msg='data not equal')
 
-        self.fetch_error = Exception('GET invalid')
-        self.post_response = response
-        self.post_headers = ['http/1.1 200']
-        proxy = ('http','gsiftp')
+    @unittest_reporter(name='upload() errors')
+    def test_420_upload(self):
+        # bad request type
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        try:
+            iceprod.core.functions.upload(filename,
+                    'foobar://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
-        # upload file using http
-        self.put_called = False
-        response.url = None
-        response.result = True
-        up_file = os.path.join(self.test_dir,str(random.randint(100,1000)))
-        with open(up_file,'w') as f:
-            f.write(str(random.randint(1000,1000000)))
-        upload_addr = 'http://test/upload'
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      proxy=proxy,
-                                      options=upload_options)
-        if not self.put_called:
-            raise Exception('simple http: put not called')
-        if response.url != upload_addr:
-           raise Exception('simple http: put address incorrect')
-        if self.put_args[0][1] != up_file and (
-           'filename' not in self.put_args[1] or
-           self.put_args[1]['filename'] != up_file):
-           raise Exception('simple http: put filename incorrect')
-
-        # upload file to gsiftp
-        def put(url,filename=None):
-            put.url = url
-            return True
-        put.url = None
-        def put_chksum(url):
-            put_chksum.url = url
-            return iceprod.core.functions.sha512sum(up_file)
-        put_chksum.url = None
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('put').replace_with(put)
-        flexmock(iceprod.core.gridftp.GridFTP).should_receive('sha512sum').replace_with(put_chksum)
-
-
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        response.url = None
-        response.result = True
-        self.put_called = False
-        self.put_error = None
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      proxy=proxy,
-                                      options=upload_options)
-        if not self.put_called:
-            raise Exception('gsiftp: put not called')
-        if response.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%response.url)
-
-        # upload file to gsiftp without proxy
-        upload_addr = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/testing'
-        response.url = None
-        response.result = True
-        self.put_called = False
-        self.put_error = None
-        proxy = 'http'
-        iceprod.core.functions.upload(up_file,
-                                      upload_addr,
-                                      proxy=proxy,
-                                      options=upload_options)
-        if self.put_called:
-            raise Exception('gsiftp: proxy was used')
-        if response.url:
-            raise Exception('gsiftp: proxy was used for url')
-        if put.url != upload_addr:
-            raise Exception('gsiftp: url is incorrect: %r'%put.url)
+        # src doesn't exist
+        filename = os.path.join(self.test_dir, 'globus.tar.gz')
+        try:
+            iceprod.core.functions.upload(filename,
+                    'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
 
 def load_tests(loader, tests, pattern):
