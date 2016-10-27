@@ -407,9 +407,11 @@ class grid(object):
         Resource = namedtuple('Resource', Node_Resources)
         default_resource = Resource(**Node_Resources)
         for t in tasks:
-            if not t['reqs']:
-                t['reqs'] = {}
-            yield default_resource._replace(**t['reqs'])
+            values = {}
+            for k in t['reqs']:
+                if t['reqs'][k]:
+                    values[k] = t['reqs']
+            yield default_resource._replace(**values)
 
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {}
