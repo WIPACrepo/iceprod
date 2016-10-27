@@ -410,7 +410,7 @@ class grid(object):
             values = {}
             for k in t['reqs']:
                 if t['reqs'][k]:
-                    values[k] = t['reqs']
+                    values[k] = t['reqs'][k]
             yield default_resource._replace(**values)
 
     def add_tasks_to_pilot_lookup(self, tasks):
