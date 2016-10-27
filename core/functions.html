@@ -237,50 +237,6 @@ The compression argument is used as the new file extension</p>
 <dd></dd></dl>
 
 <dl class="function">
-<dt id="iceprod.core.functions.find_glob">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">find_glob</code><span class="sig-paren">(</span><em>pathlist</em>, <em>pattern</em>, <em>filetype=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#find_glob"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.find_glob" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a list of files that match a given glob pattern
-&#64;param pathlist: base directory to start search from
-&#64;param pattern: glob pattern to match</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.find_unix">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">find_unix</code><span class="sig-paren">(</span><em>pathlist</em>, <em>pattern</em>, <em>filetype=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#find_unix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.find_unix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a list of files that match a given unix-style pattern
-&#64;param pathlist: base directory to start search from
-&#64;param pattern: unix-style pattern to match</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.find_regex">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">find_regex</code><span class="sig-paren">(</span><em>pathlist</em>, <em>pattern</em>, <em>filetype=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#find_regex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.find_regex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a list of files that match a given regex pattern
-&#64;param pathlist: base directory to start search from
-&#64;param pattern: pattern to match</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.find">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">find</code><span class="sig-paren">(</span><em>pathlist</em>, <em>pattern</em>, <em>filetype=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#find"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.find" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.tail">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">tail</code><span class="sig-paren">(</span><em>logpath</em>, <em>chars=75</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#tail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.tail" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the end of a file.  Good for grabbing tail of logging.
-&#64;param logpath: path to logfile
-&#64;param chars: number of characters end of file
-&#64;return: last n characters in file</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.freespace">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">freespace</code><span class="sig-paren">(</span><em>path='$PWD'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#freespace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.freespace" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the free space in bytes for the specified path</p>
-</dd></dl>
-
-<dl class="function">
 <dt id="iceprod.core.functions.getInterfaces">
 <code class="descclassname">iceprod.core.functions.</code><code class="descname">getInterfaces</code><span class="sig-paren">(</span><em>legacy=False</em>, <em>newkernel=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#getInterfaces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.getInterfaces" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a list of available interfaces</p>
@@ -399,50 +355,6 @@ that can be mapped to &#8211;name=value arguments.</p>
 <dt id="iceprod.core.functions.sendMail">
 <code class="descclassname">iceprod.core.functions.</code><code class="descname">sendMail</code><span class="sig-paren">(</span><em>cfg</em>, <em>subject</em>, <em>msg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#sendMail"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.sendMail" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send email</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.getuser">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">getuser</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#getuser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.getuser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get user name of current process owner</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.platform">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">platform</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#platform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.platform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the platform</p>
-<p>same as $PLATFORM from loader.sh
-returns $ARCH.$OSTYPE.$VER.$PYTHONUNICODE</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.findjava">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">findjava</code><span class="sig-paren">(</span><em>searchpath='/usr/java:/usr/local/java'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#findjava"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.findjava" title="Permalink to this definition">¶</a></dt>
-<dd><p>find the java home and library path</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.myputenv">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">myputenv</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#myputenv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.myputenv" title="Permalink to this definition">¶</a></dt>
-<dd><p>function to set environment variables</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.getmemusage">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">getmemusage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#getmemusage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.getmemusage" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.hoerandel_fluxsum">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">hoerandel_fluxsum</code><span class="sig-paren">(</span><em>emin</em>, <em>dslope</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#hoerandel_fluxsum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.hoerandel_fluxsum" title="Permalink to this definition">¶</a></dt>
-<dd><p>function to caculate CORSIKA fluxsum
-FLUXSUM is the integral in energy of the primary cosmic ray between
-the minimum and the maximum set energy.</p>
-<p>The cosmic ray energy spectrum is from Hoerandel polygonato model [Astrop.
-Phys. Vol 19, Issue 2, Pages 193-312 (2003)]. The maximum energy is assumed
-to be much higher than the minimum energy (the maximum energy actually is not explicitly
-used in this calculation). Note : DSLOPE = 0 for unweighted CORSIKA sample and = -1 for weighted
-CORSIKA sample.</p>
 </dd></dl>
 
 </div>
