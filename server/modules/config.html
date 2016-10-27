@@ -136,82 +136,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.modules.config">
-<span id="id1"></span><span id="config-module"></span><span id="index-0"></span><h1>Config Module<a class="headerlink" href="#module-iceprod.server.modules.config" title="Permalink to this headline">¶</a></h1>
-<p>The config module stores and shares configuration settings with the rest of
-iceprod server. Other modules may request an updated config or make a change
-to the current config. If a change is made, the new config is BROADCAST to
-all modules.</p>
-<dl class="class">
-<dt id="iceprod.server.modules.config.config">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.config.</code><code class="descname">config</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the config module, which handles iceprod configuration settings.</p>
-<p>This is a module wrapper around
-<a class="reference internal" href="../config.html#iceprod.server.config.IceProdConfig" title="iceprod.server.config.IceProdConfig"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.config.IceProdConfig</span></code></a>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference internal" href="../init.html#iceprod.server.GlobalID.string" title="iceprod.server.GlobalID.string"><em>string</em></a>) &#8211; filename for config file (optional)</td>
-</tr>
-</tbody>
-</table>
-<dl class="method">
-<dt id="iceprod.server.modules.config.config.start">
-<code class="descname">start</code><span class="sig-paren">(</span><em>blocking=True</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#config.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.config.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start the messaging service</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.config.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#config.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.config.stop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stop schedule</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.config.kill">
-<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#config.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.config.kill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kill thread</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.modules.config.ConfigService">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.config.</code><code class="descname">ConfigService</code><span class="sig-paren">(</span><em>mod</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService" title="Permalink to this definition">¶</a></dt>
-<dd><p>Override the basic <code class="xref py py-class docutils literal"><span class="pre">Service</span></code> handler to handle config messages.</p>
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.get_config_string">
-<code class="descname">get_config_string</code><span class="sig-paren">(</span><em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.get_config_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.get_config_string" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.set_config_string">
-<code class="descname">set_config_string</code><span class="sig-paren">(</span><em>config_text</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.set_config_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.set_config_string" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.reload">
-<code class="descname">reload</code><span class="sig-paren">(</span><em>cfg</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.reload" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.get">
-<code class="descname">get</code><span class="sig-paren">(</span><em>key=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.get" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.set">
-<code class="descname">set</code><span class="sig-paren">(</span><em>key</em>, <em>value</em>, <em>update=True</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.set" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.config.ConfigService.delete">
-<code class="descname">delete</code><span class="sig-paren">(</span><em>key</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/config.html#ConfigService.delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.config.ConfigService.delete" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="config-module">
+<span id="index-0"></span><span id="id1"></span><h1>Config Module<a class="headerlink" href="#config-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
