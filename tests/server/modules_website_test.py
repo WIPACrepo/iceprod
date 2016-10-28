@@ -21,10 +21,9 @@ import unittest
 
 from flexmock import flexmock
 import tornado.ioloop
+import requests
 
 import iceprod.core.logger
-from iceprod.core import functions
-from iceprod.core import util
 from iceprod.core import to_log
 import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
@@ -191,21 +190,15 @@ class modules_website_test(unittest.TestCase):
         t = threading.Thread(target=ioloop.start)
         t.start()
 
-        ssl_opts = {'username': self.cfg['download']['http_username'],
-                    'password': self.cfg['download']['http_password'],
-                   }
+        auth = (self.cfg['download']['http_username'],
+                self.cfg['download']['http_password'])
 
-        pycurl_handle = util.PycURL()
         try:
-            address = 'localhost:%d'%(self.cfg['webserver']['port'])
+            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
             logger.info('try connecting directly to tornado at %s',address)
 
-            outfile = os.path.join(self.test_dir,
-                                   str(random.randint(0,10000)))
-            pycurl_handle.fetch(address,outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('file not fetched')
-
+            r = requests.get(address, auth=auth)
+            r.raise_for_status()
         finally:
             ioloop.stop()
             web.stop()
@@ -246,22 +239,16 @@ class modules_website_test(unittest.TestCase):
         t = threading.Thread(target=ioloop.start)
         t.start()
 
-        ssl_opts = {'cacert': self.cfg['system']['ssl']['cert'],
-                    'username': self.cfg['download']['http_username'],
-                    'password': self.cfg['download']['http_password'],
-                   }
+        auth = (self.cfg['download']['http_username'],
+                self.cfg['download']['http_password'])
 
-        pycurl_handle = util.PycURL()
         try:
-            address = 'localhost:%d'%self.cfg['webserver']['port']
+            address = 'https://localhost:%d'%self.cfg['webserver']['port']
             logger.info('try connecting directly to tornado at %s',address)
 
-            outfile = os.path.join(self.test_dir,
-                                   str(random.randint(0,10000)))
-            pycurl_handle.fetch(address,outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('file not fetched')
-
+            r = requests.get(address, auth=auth,
+                             verify=self.cfg['system']['ssl']['cert'])
+            r.raise_for_status()
         finally:
             ioloop.stop()
             web.stop()
@@ -303,22 +290,15 @@ class modules_website_test(unittest.TestCase):
         t = threading.Thread(target=ioloop.start)
         t.start()
 
-        ssl_opts = {'cacert': self.ca_cert,
-                    'username': self.cfg['download']['http_username'],
-                    'password': self.cfg['download']['http_password'],
-                   }
+        auth = (self.cfg['download']['http_username'],
+                self.cfg['download']['http_password'])
 
-        pycurl_handle = util.PycURL()
         try:
-            address = 'localhost:%d'%(self.cfg['webserver']['port'])
+            address = 'https://localhost:%d'%(self.cfg['webserver']['port'])
             logger.info('try connecting directly to tornado at %s',address)
 
-            outfile = os.path.join(self.test_dir,
-                                   str(random.randint(0,10000)))
-            pycurl_handle.fetch(address,outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('file not fetched')
-
+            r = requests.get(address, auth=auth, verify=self.ca_cert)
+            r.raise_for_status()
         finally:
             ioloop.stop()
             web.stop()
@@ -351,7 +331,7 @@ class modules_website_test(unittest.TestCase):
         t.start()
         try:
 
-            address = 'localhost:%d/jsonrpc'%(
+            address = 'http://localhost:%d/jsonrpc'%(
                       self.cfg['webserver']['port'])
             logger.info('try connecting directly to tornado at %s',address)
 
@@ -377,79 +357,6 @@ class modules_website_test(unittest.TestCase):
                     raise Exception('JSONRPC.test() did not raise Exception')
             finally:
                 iceprod.core.jsonRPCclient.JSONRPC.stop()
-
-            time.sleep(0.1)
-
-        finally:
-            ioloop.stop()
-            web.stop()
-
-    @unittest_reporter
-    def test_20_LibHandler(self):
-        """Test LibHandler"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
-
-        passkey = 'key'
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
-
-
-        pycurl_handle = util.PycURL()
-        try:
-
-            address = 'localhost:%d/lib/'%(
-                      self.cfg['webserver']['port'])
-            logger.info('try connecting directly to tornado at %s',address)
-
-            ssl_opts = {}
-
-            # run normally
-            extras = 'extras_%d.tar.gz'%(random.randint(0,10000))
-            extras_path = os.path.join(self.cfg['webserver']['lib_dir'],
-                                       extras)
-            extras_data = os.urandom(10**7)
-            with open(extras_path,'w') as f:
-                f.write(extras_data)
-            outfile = os.path.join(self.test_dir,
-                                   str(random.randint(0,10000)))
-            pycurl_handle.fetch(address+extras,outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('file not fetched')
-            if open(outfile).read() != extras_data:
-                raise Exception('fetched file data incorrect')
-            os.unlink(outfile)
-
-            # test for browsability
-            try:
-                pycurl_handle.fetch(address,outfile,**ssl_opts)
-            except:
-                pass
-            else:
-                raise Exception('did not raise exception when testing browsability')
-
-            # test for bad file
-            extras = 'extras_%d.tar.gz'%(random.randint(0,10000))
-            try:
-                pycurl_handle.fetch(address+extras,outfile,**ssl_opts)
-            except:
-                pass
-            else:
-                raise Exception('did not raise exception when testing bad file')
 
             time.sleep(0.1)
 
@@ -497,11 +404,9 @@ class modules_website_test(unittest.TestCase):
         t = threading.Thread(target=ioloop.start)
         t.start()
 
-
-        pycurl_handle = util.PycURL()
         try:
 
-            address = 'localhost:%d/'%(
+            address = 'http://localhost:%d/'%(
                       self.cfg['webserver']['port'])
             logger.info('try connecting directly to tornado at %s',address)
 
@@ -511,108 +416,16 @@ class modules_website_test(unittest.TestCase):
 
             # main site
             logger.info('url: /')
-            pycurl_handle.fetch(address,outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('main: file not fetched')
-            data = open(outfile).read()
-            if any(k not in data for k in datasets_status):
+            r = requests.get(address)
+            r.raise_for_status()
+            if any(k not in r.content for k in datasets_status):
                 raise Exception('main: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # submit
-            # TODO: this test requires getting around the login page
-            #logger.info('url: /submit')
-            #pycurl_handle.fetch(address+'submit',outfile,**ssl_opts)
-            #if not os.path.exists(outfile):
-            #    raise Exception('submit: file not fetched')
-            #data = open(outfile).read()
-            #if gridspec not in data:
-            #    raise Exception('submit: fetched file data incorrect')
-            #os.unlink(outfile)
-
-            # dataset
-            web.messaging.ret['db']['web_get_datasets'] = datasets_full
-            # TODO: simulate web_get_datasets (no-groupings)
-            logger.info('url: /dataset')
-            pycurl_handle.fetch(address+'dataset',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('dataset: file not fetched')
-            data = open(outfile).read()
-            if any(k['dataset_id'] not in data for k in datasets_full):
-                raise Exception('dataset: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # dataset by status
-            logger.info('url: /dataset?status=processing')
-            dataset_browse = {'waiting':{'d1':1,'d2':2}}
-            web.messaging.ret['db']['web_get_datasets_details'] = dataset_browse
-            pycurl_handle.fetch(address+'dataset?status=waiting',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('dataset by status: file not fetched')
-            data = open(outfile).read()
-            if any(k['dataset_id'] not in data for k in datasets_full):
-                raise Exception('dataset by status: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # dataset by dataset_id
-            logger.info('url: /dataset/1234')
-            dataset_details = {'waiting':{'d1':1,'d2':2}}
-            web.messaging.ret['db']['web_get_datasets_details'] = dataset_details
-            pycurl_handle.fetch(address+'dataset/1234',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('dataset by id: file not fetched')
-            data = open(outfile).read()
-            if any(k not in data for k in dataset_details['waiting']):
-                raise Exception('dataset by id: fetched file data incorrect')
-            if any(k not in data for k in tasks_status):
-                logger.info(data)
-                raise Exception('dataset by id: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # task
-            logger.info('url: %s','/task')
-            pycurl_handle.fetch(address+'task',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('task: file not fetched')
-            data = open(outfile).read()
-            if any(k not in data for k in tasks_status):
-                raise Exception('task: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # task by status
-            logger.info('url: /task?status=waiting')
-            task_browse = {'waiting':{'d1':1,'d2':2}}
-            web.messaging.ret['db']['web_get_tasks_details'] = task_browse
-            pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('task by status: file not fetched')
-            data = open(outfile).read()
-            if any(k not in data for k in task_browse['waiting']):
-                logger.info(data)
-                raise Exception('task by status: fetched file data incorrect')
-            os.unlink(outfile)
-
-            # task by task_id
-            logger.info('url: /task/1234')
-            task_details = {'waiting':{'d1':1,'d2':2}}
-            logs = {'err':'this is a log','out':'output'}
-            web.messaging.ret['db']['web_get_tasks_details'] = task_details
-            web.messaging.ret['db']['web_get_logs'] = logs
-            pycurl_handle.fetch(address+'task/1234',outfile,**ssl_opts)
-            if not os.path.exists(outfile):
-                raise Exception('task by id: file not fetched')
-            data = open(outfile).read()
-            if any(k not in data for k in task_details['waiting']):
-                logger.info(data)
-                raise Exception('task by id: fetched task_details')
-            if any(logs[k] not in data for k in logs):
-                raise Exception('task by id: no log in file data')
-            os.unlink(outfile)
 
             # test for bad page
             logger.info('url: %s','/bad_page')
             try:
-                pycurl_handle.fetch(address+'bad_page',outfile,**ssl_opts)
+                r = requests.get(address+'bad_page')
+                r.raise_for_status()
             except:
                 pass
             else:
@@ -623,7 +436,8 @@ class modules_website_test(unittest.TestCase):
             task_browse = None
             web.messaging.ret['db']['web_get_tasks_details'] = task_browse
             try:
-                pycurl_handle.fetch(address+'task?status=waiting',outfile,**ssl_opts)
+                r = requests.get(address+'task?status=waiting')
+                r.raise_for_status()
             except:
                 pass
             else:

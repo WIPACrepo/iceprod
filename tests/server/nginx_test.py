@@ -20,6 +20,8 @@ import unittest
 
 from threading import Thread
 
+import requests
+
 from iceprod.core import to_log
 from iceprod.core import functions
 from iceprod.core import util
@@ -389,11 +391,10 @@ class nginx_test(unittest.TestCase):
             'password': 'pass',
             }
 
-        pycurl_handle = util.PycURL()
         dest_path = os.path.join(self.test_dir,'download')
         url = 'http://'+self.hostname+':58080/static'
         logger.info('url:%r',url)
-        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout),requests.Session() as s:
             for desc in instances:
                 kwargs = common.copy()
                 kwargs.update(instances[desc])
@@ -413,25 +414,15 @@ class nginx_test(unittest.TestCase):
                         with open(os.path.join(static_dir,filename),'w') as f:
                             f.write(filecontents)
 
-                        try:
-                            # static dir should not require username or password, so leave them blank
-                            pycurl_handle.fetch(os.path.join(url,filename),dest_path,
-                                                cacert=self.ssl_cert)
-                        except Exception:
-                            logger.warn('pycurl failed to download file',exc_info=True)
-                            raise
+                        # static dir should not require username or password, so leave them blank
+                        r = s.get(os.path.join(url,filename),
+                                  verify=self.ssl_cert)
+                        r.raise_for_status()
 
-                        if not os.path.exists(dest_path):
-                            raise Exception('downloaded file not found')
-                        newcontents = ''
-                        with open(dest_path) as f:
-                            newcontents = f.read(1000)
-                        if newcontents != filecontents:
+                        if r.content != filecontents:
                             logger.info('correct contents: %r',filecontents)
-                            logger.info('downloaded contents: %r',newcontents)
+                            logger.info('downloaded contents: %r',r.content)
                             raise Exception('contents not equal')
-
-                        os.remove(dest_path)
                 finally:
                     try:
                         n.stop()
@@ -489,7 +480,7 @@ class nginx_test(unittest.TestCase):
             else:
                 return ('',404)
 
-        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout),requests.Session() as s:
             try:
                 http = server(common['proxy_port'],proxy)
             except Exception:
@@ -497,7 +488,6 @@ class nginx_test(unittest.TestCase):
                 raise Exception('failed to start proxy server')
 
             try:
-                pycurl_handle = util.PycURL()
                 dest_path = os.path.join(self.test_dir,'download')
                 url = 'http://'+self.hostname+':58080/'
                 for desc in instances:
@@ -514,35 +504,20 @@ class nginx_test(unittest.TestCase):
                         for _ in range(10):
                             # try to open main page
                             proxy.success = True
-                            try:
-                                # static dir should not require username or password, so leave them blank
-                                pycurl_handle.fetch(url,dest_path,
-                                                    cacert=self.ssl_cert)
-                            except Exception :
-                                logger.warn('pycurl failed to download file',exc_info=True)
-                                raise
+                            r = s.get(url, verify=self.ssl_cert)
+                            r.raise_for_status()
 
-                            if not os.path.exists(dest_path):
-                                raise Exception('downloaded file not found')
-                            newcontents = ''
-                            with open(dest_path) as f:
-                                newcontents = f.read(1000)
-                            if newcontents != filecontents:
-                                logger.info('correct contents: %r',filecontents)
-                                logger.info('downloaded contents: %r',newcontents)
-                                raise Exception('contents not equal')
-                            os.remove(dest_path)
+                            self.assertEqual(r.content, filecontents)
 
                             # see what happens when it errors
                             proxy.success = False
                             try:
-                                # static dir should not require username or password, so leave them blank
-                                pycurl_handle.fetch(url,dest_path,
-                                                    cacert=self.ssl_cert)
+                                r = s.get(url, verify=self.ssl_cert)
+                                r.raise_for_status()
                             except Exception:
                                 pass
                             else:
-                                raise Exception('pycurl succeeds when it should fail')
+                                raise Exception('did not raise Exception')
 
                     finally:
                         try:

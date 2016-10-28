@@ -30,8 +30,6 @@ except ImportError:
     from mock import patch
 import requests_mock
 
-import flexmock
-
 from iceprod.core import to_log
 import iceprod.core.dataclasses
 import iceprod.core.util

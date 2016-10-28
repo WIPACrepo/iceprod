@@ -1,11 +1,12 @@
 """
-A simple jsonrpc client using pycurl for the http connection
+A simple jsonrpc client using `requests` for the http connection
 """
 import logging
 from threading import RLock
 
+import requests
+
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.core.util import PycURL
 
 
 class Client(object):
@@ -16,17 +17,24 @@ class Client(object):
     def __init__(self,timeout=60.0,address=None,**kwargs):
         if address is None:
             raise Exception('need a valid address')
-        # establish pycurl connection
-        self.__pycurl = PycURL()
+        # establish http session
+        self.__session = requests.Session()
+        if 'username' in kwargs and 'password' in kwargs:
+            s.auth = (kwargs['username'], kwargs['password'])
+        if 'sslcert' in kwargs:
+            if 'sslkey' in kwargs:
+                s.cert = (kwargs['sslcert'], kwargs['sslkey'])
+            else:
+                s.cert = kwargs['sslcert']
+        if 'cacert' in kwargs:
+            s.verify = kwargs['cacert']
         # save timeout
         self.__timeout = timeout
         # save address
         self.__address = address
-        # save connection options
-        self.__opts = kwargs
 
     def close(self):
-        self.__pycurl = None
+        self.__session.close()
 
     @classmethod
     def newid(cls):
@@ -43,43 +51,27 @@ class Client(object):
             logging.warning('cannot use RPC for private methods')
             raise Exception('Cannot use RPC for private methods')
 
-        def cb(data):
-            if data:
-                cb.data += data
-        cb.data = ''
-
         # translate request to json
         body = json_encode({'jsonrpc':'2.0','method':methodname,'params':kwargs,'id':Client.newid()})
 
         # make request to server
-        kwargs = {'postbody':body,'timeout':self.__timeout}
-        if self.__opts:
-            # convert from ssl.wrap_socket to curl notation
-            if 'sslkey' in self.__opts:
-                kwargs['sslkey'] = self.__opts['sslkey']
-            if 'sslcert' in self.__opts:
-                kwargs['sslcert'] = self.__opts['sslcert']
-            if 'cacert' in self.__opts:
-                kwargs['cacert'] = self.__opts['cacert']
-            # add options for basic_auth username and password
-            if 'username' in self.__opts:
-                kwargs['username'] = self.__opts['username']
-            if 'password' in self.__opts:
-                kwargs['password'] = self.__opts['password']
+        data = None
         try:
-            logging.info('RPC pycurl options: %r',kwargs)
-            self.__pycurl.post(self.__address,cb,**kwargs)
+            r = self.__session.post(self.__address, timeout=self.__timeout,
+                    data=body, headers={'Content-Type': 'application/json-rpc'})
+            r.raise_for_status()
+            data = r.content
         except Exception as e:
             logging.warn('error making jsonrpc request: %r',e)
             raise
 
         # translate response from json
-        if not cb.data:
+        if not data:
             return None
         try:
-            data = json_decode(cb.data)
+            data = json_decode(data)
         except:
-            logging.info('json data: %r',cb.data)
+            logging.info('json data: %r',data)
             raise
 
         if 'error' in data:
