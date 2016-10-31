@@ -449,10 +449,10 @@ class rpc(_Methods_Base):
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, failures = ?, status_changed = ? '
             bindings2 = [status,failures,now]
-            if error_info and 'requirements' in error_info:
+            if error_info and 'resources' in error_info:
                 # update requirements
-                for req in error_info['requirements']:
-                    req_value = error_info['requirements'][req]
+                for req in error_info['resources']:
+                    req_value = error_info['resources'][req]
                     if isinstance(req_value, dataclasses.Number):
                         req_value *= 1.5
                         if req not in task_reqs or task_reqs[req] < req_value:
