@@ -314,46 +314,6 @@
         <span class="s">&#39;disk&#39;</span><span class="p">:</span><span class="n">get_disk</span><span class="p">(),</span>
         <span class="s">&#39;time&#39;</span><span class="p">:</span><span class="n">get_time</span><span class="p">(),</span>
     <span class="p">}</span></div>
-
-<div class="viewcode-block" id="IFace"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.IFace">[docs]</a><span class="k">class</span> <span class="nc">IFace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;A network interface object</span>
-<span class="sd">    </span>
-<span class="sd">       :ivar name: &#39; &#39;</span>
-<span class="sd">       :ivar encap: &#39; &#39;</span>
-<span class="sd">       :ivar mac: &#39; &#39;</span>
-<span class="sd">       :ivar link: []</span>
-<span class="sd">       :ivar rx_packets: 0</span>
-<span class="sd">       :ivar tx_packets: 0</span>
-<span class="sd">       :ivar rx_bytes: 0</span>
-<span class="sd">       :ivar tx_bytes: 0</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encap</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mac</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">link</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># list of dicts</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rx_packets</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tx_packets</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rx_bytes</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tx_bytes</span> <span class="o">=</span> <span class="mi">0</span>
-    
-    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">encap</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">encap</span> <span class="ow">and</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mac</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">mac</span> <span class="ow">and</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">link</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">link</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
-        
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="s">&#39;Interface name=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; encap=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">encap</span><span class="o">+</span><span class="s">&#39; mac=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">mac</span>
-        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">link</span><span class="p">:</span>
-            <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s"> &#39;</span>
-            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="n">l</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-        <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">  RX packets=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rx_packets</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; TX packets=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tx_packets</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">  RX bytes=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rx_bytes</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; TX bytes=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tx_bytes</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
 </pre></div>
 
            </div>
