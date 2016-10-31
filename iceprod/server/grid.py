@@ -612,8 +612,6 @@ class grid(object):
             web_address = self.queue_cfg['monitor_address']
         else:
             host = functions.gethostname()
-            if isinstance(host,set):
-                host = host.pop()
             if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
                 web_address = 'https://'+host
             else:

@@ -23,6 +23,11 @@ try:
 except:
     import pickle
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 import unittest
 try:
     from unittest.mock import patch
@@ -543,7 +548,7 @@ class functions_test(unittest.TestCase):
                 if file_contents != results:
                     raise Exception, 'contents not the same'
 
-    @unittest_reporter
+    @unittest_reporter(skip=not psutil)
     def test_300_getInterfaces(self):
         """Test the getInterfaces function"""
         # get interfaces
@@ -553,20 +558,15 @@ class functions_test(unittest.TestCase):
 
         loop = None
         eth = []
-        for iface in ifaces:
-            for link in iface.link:
-                if link['type'] == 'ipv4' and link['ip'] == '127.0.0.1':
-                    loop = iface
-            if iface.encap.lower() in ('ether','ethernet'):
-                eth.append(iface)
+        for name in ifaces:
+            if name == 'lo':
+                loop = ifaces[name]
+            else:
+                eth.append(ifaces[name])
 
         # check that we can see the loopback interface
         if not loop:
             raise Exception('No loop interface')
-        if loop.name != 'lo':
-            raise Exception('loop interface name error: expected \'lo\' but got \'%s\''%loop.name)
-        if loop.encap.lower() not in ('local','loopback'):
-            raise Exception('loop interface type error: expected \'local\' or \'loopback\' but got \'%s\''%loop.type)
 
         # check that we can see an ethernet interface
         if len(eth) < 1:
@@ -574,84 +574,21 @@ class functions_test(unittest.TestCase):
         for e in eth:
             logging.info('%s',e)
 
-        # get interfaces (newkernel=True)
-        ifaces = iceprod.core.functions.getInterfaces(newkernel=True)
-        if not ifaces:
-            raise Exception('getInterfaces(newkernel=True) returned None')
-
-        loop = None
-        eth = []
-        for iface in ifaces:
-            for link in iface.link:
-                if link['type'] == 'ipv4' and link['ip'] == '127.0.0.1':
-                    loop = iface
-            if iface.encap.lower() in ('ether','ethernet'):
-                eth.append(iface)
-
-        # check that we can see the loopback interface
-        if not loop:
-            raise Exception('newkernel - No loop interface')
-        if loop.name != 'lo':
-            raise Exception('newkernel - loop interface name error: expected \'lo\' but got \'%s\''%loop.name)
-        if loop.encap.lower() not in ('local','loopback'):
-            raise Exception('newkernel - loop interface type error: expected \'local\' or \'loopback\' but got \'%s\''%loop.type)
-
-        # check that we can see an ethernet interface
-        if len(eth) < 1:
-            raise Exception('newkernel - No ethernet interfaces')
-        for e in eth:
-            logging.info('%s',e)
-
-        # get interfaces (legacy)
-        ifaces = iceprod.core.functions.getInterfaces(legacy=True)
-        if not ifaces:
-            raise Exception('getInterfaces(legacy=True) returned None')
-
-        loop = None
-        eth = []
-        for iface in ifaces:
-            for link in iface.link:
-                if link['type'] == 'ipv4' and link['ip'] == '127.0.0.1':
-                    loop = iface
-            if iface.encap.lower() in ('ether','ethernet'):
-                eth.append(iface)
-
-        # check that we can see the loopback interface
-        if not loop:
-            raise Exception('Legacy - No loop interface')
-        if loop.name != 'lo':
-            raise Exception('Legacy - loop interface name error: expected \'lo\' but got \'%s\''%loop.name)
-        if loop.encap.lower() not in ('local','loopback'):
-            raise Exception('Legacy - loop interface type error: expected \'local\' or \'loopback\' but got \'%s\''%loop.type)
-
-        # check that we can see an ethernet interface
-        if len(eth) < 1:
-            raise Exception('Legacy - No ethernet interfaces')
-        for e in eth:
-            logging.info('Legacy - %s',e)
-
     @unittest_reporter
     def test_301_gethostname(self):
         """Test the gethostname function"""
-        # get hostnames
+        # get hostname
         host = iceprod.core.functions.gethostname()
-        logging.info('hostname = %s',str(host))
+        logging.info('hostname = %r', host)
 
         # get external hostname
-        ext_host = socket.getfqdn()
+        ext_host = socket.getfqdn().strip()
 
-        if not host and len(ext_host) > 1:
-            raise Exception('no hostname returned. host is %s'%str(ext_host))
-        if isinstance(host,str):
-            if host not in ext_host.strip() and ext_host.strip() not in host:
-                raise Exception('hostnames not equal.  expected %s and got %s'%(ext_host.strip(),host))
-        elif isinstance(host,list):
-            present = False
-            for h in host:
-                if host == ext_host.strip():
-                    present = True
-            if not present:
-                raise Exception('multiple hostnames, but correct one not present.  expected %s and got %r'%(ext_host.strip(),host))
+        if (not host) and ext_host:
+            raise Exception('no hostname returned. host is %r'%ext_host)
+        if host not in ext_host and ext_host not in host:
+            raise Exception('hostnames not equal. expected %s and got %s'%
+                            (ext_host, host))
 
     @unittest_reporter
     def test_302_isurl(self):
