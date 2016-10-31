@@ -8,6 +8,7 @@ import requests
 
 from iceprod.core.jsonUtil import json_encode,json_decode
 
+logger = logging.getLogger('jsonrpc')
 
 class Client(object):
     """Raw JSONRPC client object"""
@@ -17,21 +18,23 @@ class Client(object):
     def __init__(self,timeout=60.0,address=None,**kwargs):
         if address is None:
             raise Exception('need a valid address')
-        # establish http session
-        self.__session = requests.Session()
-        if 'username' in kwargs and 'password' in kwargs:
-            self.__session.auth = (kwargs['username'], kwargs['password'])
-        if 'sslcert' in kwargs:
-            if 'sslkey' in kwargs:
-                self.__session.cert = (kwargs['sslcert'], kwargs['sslkey'])
-            else:
-                self.__session.cert = kwargs['sslcert']
-        if 'cacert' in kwargs:
-            self.__session.verify = kwargs['cacert']
-        # save timeout
         self.__timeout = timeout
-        # save address
         self.__address = address
+        self.__kwargs = kwargs
+        self.open() # start session
+
+    def open(self):
+        logger.warn('establish http session for jsonrpc')
+        self.__session = requests.Session()
+        if 'username' in self.__kwargs and 'password' in self.__kwargs:
+            self.__session.auth = (self.__kwargs['username'], self.__kwargs['password'])
+        if 'sslcert' in self.__kwargs:
+            if 'sslkey' in self.__kwargs:
+                self.__session.cert = (self.__kwargs['sslcert'], self.__kwargs['sslkey'])
+            else:
+                self.__session.cert = self.__kwargs['sslcert']
+        if 'cacert' in self.__kwargs:
+            self.__session.verify = self.__kwargs['cacert']
 
     def close(self):
         self.__session.close()
@@ -56,15 +59,21 @@ class Client(object):
 
         # make request to server
         data = None
-        try:
-            r = self.__session.post(self.__address, timeout=self.__timeout,
-                    data=body, headers={'Content-Type': 'application/json-rpc'})
-            r.raise_for_status()
-            data = r.content
-        except:
-            logging.warn('error making jsonrpc request for %s', methodname,
-                         exc_info=True)
-            raise
+        for i in range(2):
+            try:
+                r = self.__session.post(self.__address, timeout=self.__timeout,
+                        data=body, headers={'Content-Type': 'application/json-rpc'})
+                r.raise_for_status()
+                data = r.content
+            except:
+                logging.warn('error making jsonrpc request for %s', methodname,
+                             exc_info=True)
+                if i == 0:
+                    # try restarting connection
+                    self.close()
+                    self.open()
+                else:
+                    raise
 
         # translate response from json
         if not data:

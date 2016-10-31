@@ -27,7 +27,7 @@ try:
 except ImportError:
     from mock import patch
 import requests_mock
-from requests.exceptions import Timeout
+from requests.exceptions import Timeout, SSLError
 
 import iceprod.core.util
 import iceprod.core.jsonUtil
@@ -164,6 +164,43 @@ class jsonRPCclient_test(unittest.TestCase):
             pass
         else:
             raise Exception('timeout not raised')
+
+    @requests_mock.mock()
+    @unittest_reporter(name='SSL error')
+    def test_22_ssl_error(self, mock):
+        """Test rpc timeout"""
+        address = 'http://test/jsonrpc'
+        passkey = 'passkey'
+        result = 'the result'
+        iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
+
+        def response(req, ctx):
+            raise SSLError()
+        response.called = False
+        mock.post('/jsonrpc', content=response)
+
+        try:
+            iceprod.core.jsonRPCclient.JSONRPC.test()
+        except:
+            pass
+        else:
+            raise Exception('SSLError not raised')
+
+        def response(req, ctx):
+            if response.called:
+                body = iceprod.core.jsonUtil.json_decode(req.body)
+                ret = {}
+                ret['id'] = body['id']
+                ret['jsonrpc'] = body['jsonrpc']
+                ret['result'] = result
+                return iceprod.core.jsonUtil.json_encode(ret)
+            else:
+                response.called = True
+                raise SSLError()
+        response.called = False
+        mock.post('/jsonrpc', content=response)
+
+        iceprod.core.jsonRPCclient.JSONRPC.test()
 
 
 def load_tests(loader, tests, pattern):
