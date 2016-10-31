@@ -185,8 +185,9 @@
                     <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s">&#39;application/json-rpc&#39;</span><span class="p">})</span>
             <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request for %s&#39;</span><span class="p">,</span> <span class="n">methodname</span><span class="p">,</span>
+                         <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
             <span class="k">raise</span>
 
         <span class="c"># translate response from json</span>
