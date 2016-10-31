@@ -442,7 +442,10 @@ def getInterfaces(legacy=False,newkernel=False):
     return interfaces
 
 def get_local_ip_address():
-    return socket.gethostbyname( socket.getfqdn() )
+    try:
+        return socket.gethostbyname('localhost')
+    except:
+        return socket.gethostbyname( socket.getfqdn() )
 
 def gethostname():
     """Get host names of this computer as a set"""
