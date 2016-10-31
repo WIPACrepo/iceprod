@@ -77,8 +77,8 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
                                  "keyCertSign, cRLSign"),
             crypto.X509Extension("subjectKeyIdentifier", False, hash,
                                  subject=cert),
-            ])
             crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)
+            ])
         cert.sign(k, 'sha1')
 
         open(cert_filename, "w").write(
@@ -140,7 +140,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                     #crypto.X509Extension("subjectKeyIdentifier", False, hash,
                     #                     subject=cert),
                     ])
-            cert2.add_extensions(exts)
+            cert.add_extensions(exts)
             cert.sign(k, 'sha1')
 
         else:
