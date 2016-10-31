@@ -407,11 +407,13 @@ def _wget(url, local, options):
                             f.write(chunk)
                     r.raise_for_status()
                     break
-                except Exception:
+                except:
                     if i <= 0:
                         logger.error('error fetching url %s', url,
                                      exc_info=True)
                         raise
+                    else:
+                        logger.info('retrying download')
     elif url.startswith('file:'):
         url = url[5:]
         logger.info('copy from %s to %s', url, local)
@@ -426,6 +428,13 @@ def _wget(url, local, options):
 
     if not os.path.exists(local):
         raise Exception('download failed - file does not exist')
+    fail = False
+    with open(local) as f:
+        if not f.read(10):
+            fail = True
+    if fail:
+        os.remove(local)
+        raise Exception('download failed - file is empty')
 
 def isurl(url):
     """Determine if this is a supported protocol"""
