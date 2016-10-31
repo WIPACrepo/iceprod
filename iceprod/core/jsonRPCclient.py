@@ -61,8 +61,9 @@ class Client(object):
                     data=body, headers={'Content-Type': 'application/json-rpc'})
             r.raise_for_status()
             data = r.content
-        except Exception as e:
-            logging.warn('error making jsonrpc request: %r',e)
+        except:
+            logging.warn('error making jsonrpc request for %s', methodname,
+                         exc_info=True)
             raise
 
         # translate response from json
