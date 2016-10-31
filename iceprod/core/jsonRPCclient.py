@@ -20,14 +20,14 @@ class Client(object):
         # establish http session
         self.__session = requests.Session()
         if 'username' in kwargs and 'password' in kwargs:
-            s.auth = (kwargs['username'], kwargs['password'])
+            self.__session.auth = (kwargs['username'], kwargs['password'])
         if 'sslcert' in kwargs:
             if 'sslkey' in kwargs:
-                s.cert = (kwargs['sslcert'], kwargs['sslkey'])
+                self.__session.cert = (kwargs['sslcert'], kwargs['sslkey'])
             else:
-                s.cert = kwargs['sslcert']
+                self.__session.cert = kwargs['sslcert']
         if 'cacert' in kwargs:
-            s.verify = kwargs['cacert']
+            self.__session.verify = kwargs['cacert']
         # save timeout
         self.__timeout = timeout
         # save address
