@@ -457,7 +457,8 @@ class rpc(_Methods_Base):
                     req_value = error_info['resources'][req]
                     if isinstance(req_value, dataclasses.Number):
                         req_value *= 1.5
-                        if req not in task_reqs or task_reqs[req] < req_value:
+                        if (req not in task_reqs or task_reqs[req] < req_value
+                            or not isinstance(task_reqs[req], Number)):
                             task_reqs[req] = req_value
                     elif req not in task_reqs:
                         task_reqs[req] = req_value
