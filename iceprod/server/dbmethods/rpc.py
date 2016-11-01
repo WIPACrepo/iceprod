@@ -63,6 +63,7 @@ class rpc(_Methods_Base):
                 reqs[k] = args[k]
             else:
                 reqs[k] = Node_Resources[k]
+        logger.info('new task for resources: %r', reqs)
         conn,archive_conn = self.db._dbsetup()
         
         while True:
