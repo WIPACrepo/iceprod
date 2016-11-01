@@ -458,7 +458,7 @@ class rpc(_Methods_Base):
                     if isinstance(req_value, dataclasses.Number):
                         req_value *= 1.5
                         if (req not in task_reqs or task_reqs[req] < req_value
-                            or not isinstance(task_reqs[req], Number)):
+                            or not isinstance(task_reqs[req], dataclasses.Number)):
                             task_reqs[req] = req_value
                     elif req not in task_reqs:
                         task_reqs[req] = req_value
