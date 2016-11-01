@@ -222,8 +222,13 @@ class queue(module.module):
                         logger.error('error checking proxy',exc_info=True)
 
                 with self.check_run():
-                    # make sure active datasets have jobs and tasks defined
-                    gridspecs = [p.gridspec for p in plugins]
+                    # buffer jobs and tasks for active datasets
+                    if ('master' in self.cfg and 'url' in self.cfg['master']
+                        and self.cfg['master']['url']):
+                        gridspecs = [p.gridspec for p in plugins]
+                    else:
+                        # queue for all gridspecs, since we don't have a master
+                        gridspecs = None
                     try:
                         self.buffer_jobs_tasks(gridspecs)
                     except Exception:
