@@ -14,6 +14,8 @@ from datetime import datetime,timedelta
 from collections import namedtuple, Counter
 import itertools
 
+from statsd import StatsClient
+
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
@@ -60,6 +62,15 @@ class grid(object):
         self.tasks_processing = 0
         self.grid_idle = 0
 
+        self.statsd = None
+        if 'statsd' in self.cfg and self.cfg['statsd']:
+            try:
+                self.statsd = StatsClient(self.cfg['statsd'],
+                                          prefix=self.gridspec+'.grid')
+            except:
+                logger.warn('failed to connect to statsd: %r',
+                            self.cfg['statsd'], exc_info=True)
+
     ### Public Functions ###
 
     def check_and_clean(self):
@@ -97,6 +108,8 @@ class grid(object):
                                    min_tasks - self.tasks_queued)
                 change = min(change,num_to_queue)
             logger.info('can queue up to %d tasks', change)
+            if self.statsd:
+                self.statsd.gauge('can_queue', change)
 
             # get queueing datasets from database
             datasets = self.db.queue_get_queueing_datasets(async=False)
@@ -130,6 +143,9 @@ class grid(object):
                         raise tasks
                     elif not isinstance(tasks,dict):
                         raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
+
+        if self.statsd:
+            self.statsd.gauge('did_queue', len(tasks))
 
         if tasks:
             if pilots:
@@ -234,6 +250,13 @@ class grid(object):
         logger.info('%d ->idle',len(idle_tasks))
         logger.info('%d ->waiting',len(waiting_tasks))
         logger.info('%d ->reset',len(reset_tasks))
+        if self.statsd:
+            self.statsd.gauge('processing_tasks', self.tasks_processing)
+            self.statsd.gauge('queued_tasks', self.tasks_queued)
+            self.statsd.gauge('waiting_tasks', tasks_waiting)
+            self.statsd.incr('_idle_tasks', len(idle_tasks))
+            self.statsd.incr('waiting_tasks', len(waiting_tasks))
+            self.statsd.incr('reset_tasks', len(reset_tasks))
 
         if idle_tasks:
             # change status to idle
@@ -373,6 +396,12 @@ class grid(object):
             logger.info('%d ->reset', len(reset_tasks))
             logger.info('%d ->grid remove', len(remove_grid_tasks))
             logger.info('%d ->submit clean', len(delete_dirs))
+            if self.statsd:
+                self.statsd.gauge('processing_pilots', self.grid_processing)
+                self.statsd.gauge('queued_pilots', self.grid_idle)
+                self.statsd.incr('reset_pilots', len(reset_tasks))
+                self.statsd.incr('grid_remove', len(remove_grid_tasks))
+                self.statsd.incr('clean_dirs', len(delete_dirs))
 
         # reset tasks
         if reset_tasks:
@@ -446,6 +475,8 @@ class grid(object):
         queue_num = min(len(tasks) - self.grid_idle, queue_tot_max,
                         queue_idle_max, queue_interval_max)
         logger.info('queueing %d pilots', queue_num)
+        if self.statsd:
+            self.statsd.incr('queueing_pilots', queue_num)
 
         # select at least one from each resource group
         groups2 = Counter()
@@ -456,14 +487,18 @@ class grid(object):
                     queue_num -= 1
                     if queue_num < 1:
                         break
-        
+
         for resources in groups2:
             logger.info('submitting %d pilots for resource %r',
                         groups[resources], resources)
+            r = resources._asdict()
+            if self.statsd:
+                for name in r:
+                    self.statsd.incr('pilot_resources.'+name, r[name])
             pilot = {'task_id': 'pilot',
                      'name': 'pilot',
                      'debug': debug,
-                     'reqs': resources._asdict(),
+                     'reqs': r,
                      'num': groups[resources],
             }
             pilot_ids = self.db.queue_new_pilot_ids(num=pilot['num'],async=False)

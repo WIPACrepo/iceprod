@@ -44,6 +44,8 @@ import tornado.web
 import tornado.httpserver
 import tornado.gen
 
+from statsd import StatsClient
+
 import iceprod
 from iceprod.server import get_pkgdata_filename
 from iceprod.server import module
@@ -71,6 +73,7 @@ class website(module.module):
         # set up local variables
         self.nginx = None
         self.http_server = None
+        self.statsd = None
 
         # start website
         self.start()
@@ -128,6 +131,14 @@ class website(module.module):
 
     def _start(self):
         """Run the website"""
+        if 'statsd' in self.cfg and self.cfg['statsd']:
+            try:
+                self.statsd = StatsClient(self.cfg['statsd'],
+                                          prefix=self.cfg['site_id']+'.website')
+            except:
+                logger.warn('failed to connect to statsd: %r',
+                            self.cfg['statsd'], exc_info=True)
+
         try:
             # make sure directories are set up properly
             for d in self.cfg['webserver']:
@@ -247,6 +258,7 @@ class website(module.module):
                 'cfg':self.cfg,
                 'messaging':self.messaging,
                 'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
+                'statsd':self.statsd,
             }
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
@@ -327,7 +339,7 @@ class WebsiteService(module.Service):
 
 class MyHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, messaging, fileio, debug=False):
+    def initialize(self, cfg, messaging, fileio, debug=False, statsd=None):
         """
         Get some params from the website module
 
@@ -340,6 +352,7 @@ class MyHandler(tornado.web.RequestHandler):
         self.messaging = messaging
         self.fileio = fileio
         self.debug = debug
+        self.statsd = statsd
 
     @tornado.concurrent.return_future
     def db_call(self,func_name,**kwargs):
@@ -366,7 +379,6 @@ class MyHandler(tornado.web.RequestHandler):
         except Exception:
             logger.warn('config_call error for %s',func_name,exc_info=True)
             raise
-
 
     def get(self):
         """GET is invalid and returns an error"""
@@ -410,6 +422,9 @@ class JSONRPCHandler(MyHandler):
             self.json_error({'code':-32600,'message':'Invalid Request',
                              'data':'method name cannot start with underscore'})
             return
+
+        if self.statsd:
+            self.statsd.incr('jsonrpc.'+request['method'])
 
         # add rpc_ to method name to prevent calling other DB methods
         method = 'rpc_'+request['method']
@@ -469,6 +484,8 @@ class JSONRPCHandler(MyHandler):
 
     def json_error(self,error,status=400,id=None):
         """Create a proper jsonrpc error message"""
+        if self.statsd:
+            self.statsd.incr('jsonrpc_error')
         self.set_status(status)
         if isinstance(error,Exception):
             error = str(error)
@@ -498,6 +515,8 @@ class LibHandler(MyHandler):
     @tornado.gen.coroutine
     def get(self):
         """Look up a library"""
+        if self.statsd:
+            self.statsd.incr('lib')
         try:
             url = self.request.uri[len(self.prefix):]
         except:
@@ -567,6 +586,8 @@ class PublicHandler(MyHandler):
             yield
         except Exception as e:
             logger.warn('Error in public website',exc_info=True)
+            if self.statsd:
+                self.statsd.incr('public_error')
             if self.debug:
                 message = message + '\n' + str(e)
             self.write_error(500,message=message)
@@ -575,6 +596,8 @@ class Default(PublicHandler):
     """Handle / urls"""
     @tornado.gen.coroutine
     def get(self):
+        if self.statsd:
+            self.statsd.incr('default')
         with self.catch_error():
             datasets = yield self.db_call('web_get_datasets',groups=['status'])
             if isinstance(datasets,Exception):
@@ -589,6 +612,8 @@ class Submit(PublicHandler):
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
+        if self.statsd:
+            self.statsd.incr('submit')
         with self.catch_error(message='error generating submit page'):
             url = self.request.uri[1:]
             passkey = yield self.db_call('auth_new_passkey')
@@ -611,6 +636,8 @@ class Config(PublicHandler):
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
+        if self.statsd:
+            self.statsd.incr('config')
         with self.catch_error(message='error generating config page'):
             dataset_id = self.get_argument('dataset_id',default=None)
             if not dataset_id:
@@ -646,6 +673,8 @@ class Site(PublicHandler):
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self,url):
+        if self.statsd:
+            self.statsd.incr('site')
         #self.write_error(404,message='Not yet implemented')
         #return
         with self.catch_error(message='error generating site page'):
@@ -710,6 +739,8 @@ class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @tornado.gen.coroutine
     def get(self,url):
+        if self.statsd:
+            self.statsd.incr('dataset')
         with self.catch_error(message='error generating dataset page'):
             if url:
                 url_parts = [x for x in url.split('/') if x]
@@ -759,6 +790,8 @@ class Task(PublicHandler):
     """Handle /task urls"""
     @tornado.gen.coroutine
     def get(self,url):
+        if self.statsd:
+            self.statsd.incr('task')
         with self.catch_error(message='error generating dataset page'):
             if url:
                 url_parts = [x for x in url.split('/') if x]
@@ -807,6 +840,8 @@ class Task(PublicHandler):
 
 class Documentation(PublicHandler):
     def get(self, url):
+        if self.statsd:
+            self.statsd.incr('documentation')
         doc_path = get_pkgdata_filename('iceprod.server','data/docs')
         self.write(documentation.load_doc(doc_path+'/' + url))
         self.flush()
@@ -814,6 +849,8 @@ class Documentation(PublicHandler):
 class Log(PublicHandler):
     @tornado.gen.coroutine
     def get(self, url, log):
+        if self.statsd:
+            self.statsd.incr('log')
         logs = yield self.db_call('web_get_logs',task_id=url)
         log_text = logs[log]
         html = '<html><body>'
@@ -826,6 +863,8 @@ class Log(PublicHandler):
 class Help(PublicHandler):
     """Help Page"""
     def get(self):
+        if self.statsd:
+            self.statsd.incr('help')
         with self.catch_error(message='error generating site page'):
             self.render_handle('help.html')
 
@@ -834,6 +873,8 @@ class Help(PublicHandler):
 class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""
     def get(self):
+        if self.statsd:
+            self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
         self.render_handle('404.html',path=path)
@@ -841,6 +882,8 @@ class Other(PublicHandler):
 class Login(PublicHandler):
     """Handle the login url"""
     def get(self):
+        if self.statsd:
+            self.statsd.incr('login')
         n = self.get_argument('next', default='/')
         if 'password' in self.cfg['webserver']:
             self.render_handle('login.html', status=None, next=n)
@@ -859,6 +902,8 @@ class Login(PublicHandler):
 
 class Logout(PublicHandler):
     def get(self):
+        if self.statsd:
+            self.statsd.incr('logout')
         self.clear_cookie("user")
         self.current_user = None
         self.render_handle('logout.html', status=None)
