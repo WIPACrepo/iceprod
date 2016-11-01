@@ -450,6 +450,8 @@ class rpc(_Methods_Base):
             sql2 += ' status = ?, failures = ?, status_changed = ? '
             bindings2 = [status,failures,now]
             if error_info and 'resources' in error_info:
+                logger.info('error_resources: %r', error_info['resources'])
+                logger.info('old task_reqs: %r', task_reqs)
                 # update requirements
                 for req in error_info['resources']:
                     req_value = error_info['resources'][req]
@@ -459,6 +461,7 @@ class rpc(_Methods_Base):
                             task_reqs[req] = req_value
                     elif req not in task_reqs:
                         task_reqs[req] = req_value
+                logger.info('new task_reqs: %r', task_reqs)
                 sql2 += ', requirements = ? '
                 bindings2.append(json_encode(task_reqs))
             sql2 += ' where task_id = ?'
