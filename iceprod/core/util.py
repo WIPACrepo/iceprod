@@ -31,7 +31,7 @@ Node_Resources = {
     'cpu': 1,
     'gpu': 0,
     'memory': 1, # in GB
-    'disk': 1, # in GB
+    'disk': 10, # in GB
 }
 
 #: The types of task resources, with defaults
