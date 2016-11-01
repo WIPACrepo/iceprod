@@ -75,7 +75,8 @@ class rpc(_Methods_Base):
                 bindings = tuple(reqs.values())
             else:
                 bindings = tuple()
-            logger.info(sql.replace('?','%s'),bindings)
+            logger.info('%r',sql)
+            logger.info('%r',bindings)
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
