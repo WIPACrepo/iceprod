@@ -472,8 +472,8 @@ class grid(object):
         queue_tot_max = tasks_on_queue[1] - self.grid_processing - self.grid_idle
         queue_idle_max = tasks_on_queue[0] - self.grid_idle
         queue_interval_max = tasks_on_queue[2] if len(tasks_on_queue) > 2 else tasks_on_queue[0]
-        queue_num = min(len(tasks) - self.grid_idle, queue_tot_max,
-                        queue_idle_max, queue_interval_max)
+        queue_num = max(0,min(len(tasks) - self.grid_idle, queue_tot_max,
+                              queue_idle_max, queue_interval_max))
         logger.info('queueing %d pilots', queue_num)
         if self.statsd:
             self.statsd.incr('queueing_pilots', queue_num)
