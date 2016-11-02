@@ -117,6 +117,16 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     if 'tasks' in config and config['tasks']:
         logger.info('default configuration - a single task')
+        if not offline:
+            # tell the server that we are processing this task
+            try:
+                if 'task_id' not in config['options']:
+                    raise Exception('config["options"]["task_id"] not specified, '
+                                    'so cannot update status')
+                iceprod.core.exe_json.processing(config['options']['task_id'])
+            except:
+                logging.error('json error', exc_info=True)
+
         # set up stdout and stderr
         stdout = partial(to_file,sys.stdout,constants['stdout'])
         stderr = partial(to_file,sys.stderr,constants['stderr'])
@@ -189,13 +199,6 @@ def runner(config,url,debug=False,offline=False):
     try:
         with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
             logger.warn("config options: %r",config['options'])
-
-            if not offline:
-                # tell the server that we are processing this task
-                try:
-                    iceprod.core.exe_json.processing(cfg)
-                except Exception as e:
-                    logging.error(e)
 
             # keep track of the start time
             start_time = time.time()

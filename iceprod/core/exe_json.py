@@ -33,6 +33,17 @@ def setupjsonRPC(url, passkey, **kwargs):
                             'echo failed (%r).  url=%s and passkey=%s'
                             %(ret,url,passkey))
 
+def processing(task_id):
+    """
+    Tell the server that we are processing this task.
+
+    Only used for single task config, not for pilots.
+    """
+    ret = JSONRPC.set_processing(task=task_id)
+    if isinstance(ret,Exception):
+        # an error occurred
+        raise ret
+
 def downloadtask(gridspec, resources=None):
     """Download a new task from the server"""
     try:
@@ -58,16 +69,6 @@ def downloadtask(gridspec, resources=None):
             logger.warn('not a Job: %r',task)
             raise
     return task
-
-def processing(cfg):
-    """Tell the server that we are processing this task"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot update status')
-    ret = JSONRPC.set_processing(task=cfg.config['options']['task_id'])
-    if isinstance(ret,Exception):
-        # an error occurred
-        raise ret
 
 def finishtask(cfg, stats={}):
     """Finish a task"""

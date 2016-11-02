@@ -94,7 +94,7 @@ class rpc(_Methods_Base):
                 for k in row:
                     resources[k.replace('req_','')] = row[k]
             if not task_id:
-                logging.info('error, not task_id')
+                logging.info('no tasks found matching resources available')
                 callback(None)
                 return
             sql = 'select * from search where task_id = ? and task_status = ?'
@@ -235,6 +235,7 @@ class rpc(_Methods_Base):
     @dbmethod
     def rpc_set_processing(self,task,callback=None):
         """Set a task to the processing status"""
+        logger.info('rpc_set_processing for %r', task)
         return self.parent.queue_set_task_status(task,'processing',
                                                  callback=callback)
 

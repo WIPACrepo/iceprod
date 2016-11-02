@@ -363,6 +363,8 @@ class Pilot(object):
             r = config['options']['resources']
             self.tasks[task_id] = Task(p=p, process=ps, resources=r,
                                        tmpdir=tmpdir)
+        except:
+            logger.error('error creating task', exc_info=True)
         finally:
             os.chdir(main_dir)
 
