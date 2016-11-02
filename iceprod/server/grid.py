@@ -490,7 +490,7 @@ class grid(object):
 
         for resources in groups2:
             logger.info('submitting %d pilots for resource %r',
-                        groups[resources], resources)
+                        groups2[resources], resources)
             r = resources._asdict()
             if self.statsd:
                 for name in r:
@@ -499,7 +499,7 @@ class grid(object):
                      'name': 'pilot',
                      'debug': debug,
                      'reqs': r,
-                     'num': groups[resources],
+                     'num': groups2[resources],
             }
             pilot_ids = self.db.queue_new_pilot_ids(num=pilot['num'],async=False)
             pilot['pilot_ids'] = pilot_ids
