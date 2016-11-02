@@ -80,8 +80,10 @@ class rpc(_Methods_Base):
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
+                logging.info('error in new_task_blocking', exc_info=True)
                 ret = e
             if isinstance(ret,Exception):
+                logging.info('error in new_task_blocking: %r', ret)
                 callback(ret)
                 return
             task_id = None
@@ -92,6 +94,7 @@ class rpc(_Methods_Base):
                 for k in row:
                     resources[k.replace('req_','')] = row[k]
             if not task_id:
+                logging.info('error, not task_id')
                 callback(None)
                 return
             sql = 'select * from search where task_id = ? and task_status = ?'
@@ -99,8 +102,10 @@ class rpc(_Methods_Base):
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
+                logging.info('error in new_task_blocking', exc_info=True)
                 ret = e
             if isinstance(ret,Exception):
+                logging.info('error in new_task_blocking: %r', ret)
                 callback(ret)
                 return
             elif not ret:
@@ -111,8 +116,10 @@ class rpc(_Methods_Base):
                 try:
                     ret = self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception as e:
+                    logging.info('error in new_task_blocking', exc_info=True)
                     ret = e
                 if isinstance(ret,Exception):
+                    logging.info('error in new_task_blocking: %r', ret)
                     callback(ret)
                     return
             else:
@@ -126,6 +133,7 @@ class rpc(_Methods_Base):
             logger.warn('error converting search results',exc_info=True)
             pass
         if not newtask:
+            logging.info('error: no task to allocate')
             callback(newtask)
             return
         sql = 'select job_index from job where job_id = ?'
@@ -135,7 +143,9 @@ class rpc(_Methods_Base):
         except Exception as e:
             ret = e
         if isinstance(ret,Exception):
+            logging.info('error in new_task_blocking: %r', ret)
             callback(ret)
+            return
         elif not ret or ret[0] is None:
             logger.warn('failed to find job with known job_id %r',
                         newtask['job_id'])
@@ -147,8 +157,10 @@ class rpc(_Methods_Base):
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
+            logging.info('error in new_task_blocking', exc_info=True)
             ret = e
         if isinstance(ret,Exception):
+            logging.info('error in new_task_blocking: %r', ret)
             callback(ret)
             return
         elif not ret or not ret[0]:
@@ -173,8 +185,10 @@ class rpc(_Methods_Base):
         try:
             ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
         except Exception as e:
+            logging.info('error in new_task_blocking', exc_info=True)
             ret = e
         if isinstance(ret,Exception):
+            logging.info('error in new_task_blocking: %r', task)
             callback(ret)
         else:
             if self._is_master():
@@ -192,8 +206,10 @@ class rpc(_Methods_Base):
             callback(newtask)
     def _rpc_new_task_callback(self,args,task,callback=None):
         if isinstance(task,Exception):
+            logging.info('error in new_task_callback: %r', task)
             callback(task)
         elif not task:
+            logging.info('None in new_task_callback: %r', task)
             callback(None)
         else:
             cb = partial(self._rpc_new_task_callback2,task,callback=callback)
@@ -201,6 +217,7 @@ class rpc(_Methods_Base):
                                                   callback=cb)
     def _rpc_new_task_callback2(self,task,ret,callback=None):
         if isinstance(ret,Exception):
+            logging.info('error in new_task_callback2: %r', ret)
             callback(ret)
         else:
             config = json_decode(ret)
