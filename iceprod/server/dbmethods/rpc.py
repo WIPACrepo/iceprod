@@ -188,7 +188,7 @@ class rpc(_Methods_Base):
             logging.info('error in new_task_blocking', exc_info=True)
             ret = e
         if isinstance(ret,Exception):
-            logging.info('error in new_task_blocking: %r', task)
+            logging.info('error in new_task_blocking: %r', ret)
             callback(ret)
         else:
             if self._is_master():
@@ -477,7 +477,10 @@ class rpc(_Methods_Base):
                 for req in error_info['resources']:
                     req_value = error_info['resources'][req]
                     if isinstance(req_value, dataclasses.Number):
-                        req_value = round(req_value*1.5, 1)
+                        if isinstance(Node_Resources[req], int):
+                            req_value = int(req_value)
+                        elif isinstance(Node_Resources[req], float):
+                            req_value = round(req_value*1.5, 1)
                         if req_value <= Node_Resources[req]:
                             continue
                         if (req not in task_reqs or task_reqs[req] < req_value
