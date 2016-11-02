@@ -128,13 +128,16 @@ class Pilot(object):
                 if not task.p.is_alive():
                     logger.info('%r not alive', task_id)
                 else:
-                    processes = [task.process]+task.process.children()
-                    for p in processes:
-                        used_resources['cpu'] += p.cpu_percent()/100.0
-                        used_resources['memory'] += p.memory_info().rss/1000000000.0
-                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
-                    used_resources['disk'] = du(task.tmpdir)/1000000000.0
-                    logger.debug('task %r used %r',task_id,used_resources)
+                    try:
+                        processes = [task.process]+task.process.children()
+                        for p in processes:
+                            used_resources['cpu'] += p.cpu_percent()/100.0
+                            used_resources['memory'] += p.memory_info().rss/1000000000.0
+                        used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                        used_resources['disk'] = du(task.tmpdir)/1000000000.0
+                        logger.debug('task %r used %r',task_id,used_resources)
+                    except:
+                        logger.warn('error getting resources', exc_info=True)
 
                     for r in used_resources:
                         if used_resources[r]-task.resources[r] > 0:
@@ -143,15 +146,23 @@ class Pilot(object):
                     logger.warn('kill %r for %s', task_id, reason)
                     processes.reverse() # kill children first
                     for p in processes:
-                        p.terminate()
+                        try:
+                            p.terminate()
+                        except:
+                            logger.warn('error terminating process for %r',
+                                        task_id, exc_info=True)
 
                     def on_terminate(proc):
                         logger.info("process %r terminated with exit code %r",
                                     proc, proc.returncode)
-                    gone, alive = psutil.wait_procs(processes, timeout=0.1,
-                                                    callback=on_terminate)
-                    for p in alive:
-                        p.kill()
+                    try:
+                        gone, alive = psutil.wait_procs(processes, timeout=0.1,
+                                                        callback=on_terminate)
+                        for p in alive:
+                            p.kill()
+                    except:
+                        logger.warn('failed to kill processes for %r', task_id,
+                                    exc_info=True)
 
             # clean up task
             self.clean_task(task)
@@ -181,15 +192,19 @@ class Pilot(object):
                         continue
 
                     used_resources = {r:0 for r in task.resources}
-                    processes = [task.process]+task.process.children()
-                    for p in processes:
-                        used_resources['cpu'] += p.cpu_percent()/100.0
-                        used_resources['memory'] += p.memory_info().rss/1000000000.0
-                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
-                    if start_time - disk_start_time > disk_sleep_time:
-                        disk_start_time = start_time
-                        used_resources['disk'] = du(task.tmpdir)/1000000000.0
-                    logger.debug('task %r used %r',task_id,used_resources)
+                    try:
+                        processes = [task.process]+task.process.children()
+                        for p in processes:
+                            used_resources['cpu'] += p.cpu_percent()/100.0
+                            used_resources['memory'] += p.memory_info().rss/1000000000.0
+                        used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                        if start_time - disk_start_time > disk_sleep_time:
+                            disk_start_time = start_time
+                            used_resources['disk'] = du(task.tmpdir)/1000000000.0
+                        logger.debug('task %r used %r',task_id,used_resources)
+                    except:
+                        logger.warn('error getting resources', exc_info=True)
+                        continue
 
                     kill = False
                     reason = ''
@@ -213,15 +228,23 @@ class Pilot(object):
                                     task_id, used_resources)
                         processes.reverse() # kill children first
                         for p in processes:
-                            p.terminate()
+                            try:
+                                p.terminate()
+                            except:
+                                logger.warn('error terminating process for %r',
+                                            task_id, exc_info=True)
 
                         def on_terminate(proc):
                             logger.info("process %r terminated with exit code %r",
                                         proc, proc.returncode)
-                        gone, alive = psutil.wait_procs(processes, timeout=0.1,
-                                                        callback=on_terminate)
-                        for p in alive:
-                            p.kill()
+                        try:
+                            gone, alive = psutil.wait_procs(processes, timeout=0.1,
+                                                            callback=on_terminate)
+                            for p in alive:
+                                p.kill()
+                        except:
+                            logger.warn('failed to kill processes for %r', task_id,
+                                        exc_info=True)
                         self.clean_task(task)
                         del self.tasks[task_id]
                         exe_json.task_kill(task_id, resources=used_resources,
