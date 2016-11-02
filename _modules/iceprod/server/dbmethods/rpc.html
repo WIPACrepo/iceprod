@@ -218,7 +218,7 @@
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
                     <span class="n">resources</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;req_&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">task_id</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error, not task_id&#39;</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;no tasks found matching resources available&#39;</span><span class="p">)</span>
                 <span class="n">callback</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
                 <span class="k">return</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id = ? and task_status = ?&#39;</span>
@@ -359,6 +359,7 @@
     <span class="nd">@dbmethod</span>
 <div class="viewcode-block" id="rpc.rpc_set_processing"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_processing">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_set_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set a task to the processing status&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;rpc_set_processing for %r&#39;</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_set_task_status</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span>
                                                  <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
 
