@@ -494,3 +494,20 @@ def incache(url,options={}):
 
     # no matches in cache
     return None
+
+def platform():
+    """Get the platform
+
+    same as $PLATFORM from loader.sh
+    returns $ARCH.$OSTYPE.$VER.$PYTHONUNICODE
+    """
+    uname = os.uname()
+    arch = uname[4].replace('i686','i386')
+    ostype = uname[0]
+    if ostype.lower() == 'linux':
+        ver = subprocess.check_output(['/usr/bin/ldd','--version'])
+        ver = ver.split('\n')[0].split()[-1]
+    else:
+        ver = uname[2]
+    python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
+    return '%s.%s.%s.%s'%(arch,ostype,ver,python_unicode)
