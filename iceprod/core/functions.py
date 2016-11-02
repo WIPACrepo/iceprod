@@ -399,7 +399,7 @@ def _wget(url, local, options):
                     s.cert = options['sslcert']
             if 'cacert' in options:
                 s.verify = options['cacert']
-            for i in range(5, 0, -1):
+            for i in range(4, -1, -1):
                 try:
                     r = s.get(url, stream=True, timeout=60)
                     with open(local, 'wb') as f:
