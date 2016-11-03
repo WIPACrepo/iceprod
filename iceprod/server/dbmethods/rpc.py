@@ -498,33 +498,25 @@ class rpc(_Methods_Base):
             task_stat_id = self.db._increment_id_helper('task_stat',conn)
             stat = {'error_'+now: error_info}
             bindings3 = (task_stat_id, task_id, json_encode(stat))
-            try:
-                ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
+            ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
+            if self._is_master():
+                msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                mbindings1 = ('search',task_id,now)
+                mbindings2 = ('task',task_id,now)
+                mbindings3 = ('task_stat',task_stat_id,now)
+                try:
+                    self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
             else:
-                if self._is_master():
-                    msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    mbindings1 = ('search',task_id,now)
-                    mbindings2 = ('task',task_id,now)
-                    mbindings3 = ('task_stat',task_stat_id,now)
-                    try:
-                        self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    self._send_to_master(('search',task_id,now,sql,bindings))
-                    self._send_to_master(('task',task_id,now,sql2,bindings2))
-                    self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
-                callback(True)
+                self._send_to_master(('search',task_id,now,sql,bindings))
+                self._send_to_master(('task',task_id,now,sql2,bindings2))
+                self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
+            callback(True)
         except Exception as e:
-            logger.info('error in task_error', exc_info=True)
-            ret = e
-        callback(ret)
-
+            logger.warn('error in task_error', exc_info=True)
+            callback(e)
 
     @dbmethod
     def rpc_upload_logfile(self,task,name,data,callback=None):
