@@ -439,7 +439,13 @@ class grid(object):
             values = {}
             for k in t['reqs']:
                 if t['reqs'][k]:
-                    values[k] = t['reqs'][k]
+                    if (isinstance(Node_Resources[k], int) and
+                        isinstance(t['reqs'][k], int)) or (
+                        isinstance(Node_Resources[k], float) and
+                        isinstance(t['reqs'][k], float)):
+                        values[k] = t['reqs'][k]
+                    else:
+                        logger.warn('bad reqs value for task %r', t)
             yield default_resource._replace(**values)
 
     def add_tasks_to_pilot_lookup(self, tasks):
