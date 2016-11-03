@@ -439,12 +439,14 @@ class grid(object):
             values = {}
             for k in t['reqs']:
                 if t['reqs'][k]:
-                    if (isinstance(Node_Resources[k], int) and
-                        isinstance(t['reqs'][k], int)) or (
-                        isinstance(Node_Resources[k], float) and
-                        isinstance(t['reqs'][k], float)):
-                        values[k] = t['reqs'][k]
-                    else:
+                    try:
+                        if isinstance(Node_Resources[k], int):
+                            values[k] = int(t['reqs'][k])
+                        elif isinstance(Node_Resources[k], float):
+                            values[k] = float(t['reqs'][k])
+                        else:
+                            values[k] = t['reqs'][k]
+                    except:
                         logger.warn('bad reqs value for task %r', t)
             yield default_resource._replace(**values)
 
