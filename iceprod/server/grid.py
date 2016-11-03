@@ -452,7 +452,7 @@ class grid(object):
             yield default_resource._replace(**values)
 
     def add_tasks_to_pilot_lookup(self, tasks):
-        task_reqs = {t:self._get_resources(tasks[t]) for t in tasks}
+        task_reqs = {t:self._get_resources(tasks[t])._asdict() for t in tasks}
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         if self.statsd:
             self.statsd.incr('add_to_task_lookup', len(task_reqs))
