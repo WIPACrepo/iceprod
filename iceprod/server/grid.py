@@ -453,6 +453,9 @@ class grid(object):
 
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {t:self._get_resources(tasks[t]) for t in tasks}
+        logger.info('adding %d tasks to pilot lookup', len(task_reqs))
+        if self.statsd:
+            self.statsd.incr('add_to_task_lookup', len(task_reqs))
         ret = self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
         if isinstance(ret,Exception):
             logger.error('error add_task_lookup')
