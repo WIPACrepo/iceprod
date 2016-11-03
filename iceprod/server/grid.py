@@ -60,6 +60,7 @@ class grid(object):
 
         self.tasks_queued = 0
         self.tasks_processing = 0
+        self.grid_processing = 0
         self.grid_idle = 0
 
         self.statsd = None
@@ -451,11 +452,7 @@ class grid(object):
             yield default_resource._replace(**values)
 
     def add_tasks_to_pilot_lookup(self, tasks):
-        task_reqs = {}
-        task_iter = itertools.izip(tasks.keys(),
-                                   self._get_resources(tasks.values()))
-        for task_id, resources in task_iter:
-            task_reqs[task_id] = resources._asdict()
+        task_reqs = {t:self._get_resources(tasks[t]) for t in tasks}
         ret = self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
         if isinstance(ret,Exception):
             logger.error('error add_task_lookup')

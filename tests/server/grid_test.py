@@ -25,7 +25,10 @@ except:
     import pickle
 
 import unittest
-from flexmock import flexmock
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 import iceprod.server
 from iceprod.server import module
@@ -109,16 +112,11 @@ class grid_test(unittest.TestCase):
         else:
             raise Exception('bad check_run did not raise exception')
 
+    @patch('iceprod.server.grid.grid.check_iceprod')
+    @patch('iceprod.server.grid.grid.check_grid')
     @unittest_reporter
-    def test_010_check_and_clean(self):
+    def test_010_check_and_clean(self, check_grid, check_iceprod):
         """Test check_and_clean"""
-        def check_iceprod():
-            check_iceprod.called = True
-        def check_grid():
-            check_grid.called = True
-        flexmock(grid).should_receive('check_iceprod').replace_with(check_iceprod)
-        flexmock(grid).should_receive('check_grid').replace_with(check_grid)
-
         site = 'thesite'
         self.check_run_stop = False
         name = 'grid1'
@@ -137,8 +135,6 @@ class grid_test(unittest.TestCase):
             raise Exception('init did not return grid object')
 
         # call normally
-        check_iceprod.called = False
-        check_grid.called = False
         g.check_and_clean()
 
         if not check_iceprod.called:
@@ -155,26 +151,19 @@ class grid_test(unittest.TestCase):
         else:
             raise Exception('check_run did not throw exception')
 
+    @patch('iceprod.server.calc_dataset_prio')
+    @patch('iceprod.server.grid.grid.setup_submit_directory')
+    @patch('iceprod.server.grid.grid.submit')
     @unittest_reporter
-    def test_011_queue(self):
+    def test_011_queue(self, submit, setup_submit_directory, calc_dataset_prio):
         """Test queue"""
-        def calc_dataset_prio(d,*args,**kwargs):
+        def c(d,*args,**kwargs):
             calc_dataset_prio.called = True
             if 'dataset_id' in d and d['dataset_id'] in calc_dataset_prio.ret:
                 return calc_dataset_prio.ret[d['dataset_id']]
             else:
                 raise Exception('bad dataset prio')
-        def setup_submit_directory(task):
-            setup_submit_directory.called = True
-            if setup_submit_directory.error:
-                raise Exception('bad io')
-        def submit(task):
-            submit.called = True
-            if submit.error:
-                raise Exception('bad submit')
-        flexmock(iceprod.server).should_receive('calc_dataset_prio').replace_with(calc_dataset_prio)
-        flexmock(grid).should_receive('setup_submit_directory').replace_with(setup_submit_directory)
-        flexmock(grid).should_receive('submit').replace_with(submit)
+        calc_dataset_prio.side_effect = c
 
         site = 'thesite'
         datasets = {1:{'dataset_id':1},
@@ -207,12 +196,7 @@ class grid_test(unittest.TestCase):
 
         # call normally
         self.check_run_stop = False
-        calc_dataset_prio.called = False
         calc_dataset_prio.ret = {1:1.0, 2:3.0, 3:2.0}
-        setup_submit_directory.called = False
-        setup_submit_directory.error = False
-        submit.called = False
-        submit.error = False
         g.tasks_queued = 0
 
         g.queue()
@@ -226,12 +210,9 @@ class grid_test(unittest.TestCase):
 
         # submit multi
         self.check_run_stop = False
-        calc_dataset_prio.called = False
-        calc_dataset_prio.ret = {1:1.0, 2:3.0, 3:2.0}
-        setup_submit_directory.called = False
-        setup_submit_directory.error = False
-        submit.called = False
-        submit.error = False
+        submit.reset_mock()
+        setup_submit_directory.reset_mock()
+        calc_dataset_prio.reset_mock()
         g.tasks_queued = 0
         g.submit_multi = True
 
@@ -295,7 +276,7 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_queueing_datasets':datasets,
                                     'queue_get_queueing_tasks':tasks,
                                     'queue_set_task_status':True}}
-        setup_submit_directory.error = True
+        setup_submit_directory.side_effect = Exception()
         try:
             g.queue()
         except:
@@ -307,7 +288,7 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_queueing_datasets':datasets,
                                     'queue_get_queueing_tasks':tasks,
                                     'queue_set_task_status':True}}
-        submit.error = True
+        submit.side_effect = Exception()
         try:
             g.queue()
         except:
@@ -443,26 +424,11 @@ class grid_test(unittest.TestCase):
         if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
             raise Exception('resume task reset: did not call set_task_status')
 
+    @patch('iceprod.server.grid.grid.remove')
+    @patch('iceprod.server.grid.grid.get_grid_status')
     @unittest_reporter
-    def test_021_check_grid(self):
+    def test_021_check_grid(self, get_grid_status, remove):
         """Test check_grid"""
-        def get_grid_status(t=None):
-            get_grid_status.called = True
-            get_grid_status.args = t
-            if get_grid_status.ret:
-                return get_grid_status.ret
-            else:
-                raise Exception('bad grid status')
-        flexmock(grid).should_receive('get_grid_status').replace_with(get_grid_status)
-        def remove(t=None):
-            remove.called = True
-            remove.args = t
-            if remove.ret:
-                return remove.ret
-            else:
-                raise Exception()
-        flexmock(grid).should_receive('remove').replace_with(remove)
-
         site = 'thesite'
         self.check_run_stop = False
         name = 'grid1'
@@ -499,10 +465,9 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = None
+        get_grid_status.reset_mock()
+        get_grid_status.return_value = grid_tasks
+        remove.return_value = None
 
         g.check_grid()
 
@@ -524,8 +489,8 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         g.check_grid()
 
@@ -547,8 +512,8 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_grid_tasks':active_tasks,
                                     'queue_set_task_status':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         g.check_grid()
 
@@ -566,8 +531,8 @@ class grid_test(unittest.TestCase):
                                     'queue_set_task_status':True}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         try:
             g.check_grid()
@@ -589,8 +554,8 @@ class grid_test(unittest.TestCase):
                                     'queue_set_task_status':Exception()}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         try:
             g.check_grid()
@@ -607,26 +572,11 @@ class grid_test(unittest.TestCase):
         if not any('queue_set_task_status' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_set_task_status')
 
+    @patch('iceprod.server.grid.grid.remove')
+    @patch('iceprod.server.grid.grid.get_grid_status')
     @unittest_reporter
-    def test_022_check_grid_pilots(self):
+    def test_022_check_grid_pilots(self, get_grid_status, remove):
         """Test check_grid with pilots"""
-        def get_grid_status(t=None):
-            get_grid_status.called = True
-            get_grid_status.args = t
-            if get_grid_status.ret:
-                return get_grid_status.ret
-            else:
-                raise Exception('bad grid status')
-        flexmock(grid).should_receive('get_grid_status').replace_with(get_grid_status)
-        def remove(t=None):
-            remove.called = True
-            remove.args = t
-            if remove.ret:
-                return remove.ret
-            else:
-                raise Exception()
-        flexmock(grid).should_receive('remove').replace_with(remove)
-
         site = 'thesite'
         self.check_run_stop = False
         name = 'grid1'
@@ -665,17 +615,14 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = None
+        get_grid_status.return_value = grid_tasks
+        remove.return_value = None
 
         g.check_grid()
 
         if not get_grid_status.called:
             raise Exception('did not call get_grid_status')
-        if remove.called:
-            raise Exception('called remove')
+        remove.assert_not_called()
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -690,15 +637,14 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         g.check_grid()
 
         if not get_grid_status.called:
             raise Exception('did not call get_grid_status')
-        if remove.called:
-            raise Exception('called remove')
+        remove.assert_not_called()
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -713,15 +659,14 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         g.check_grid()
 
         if not get_grid_status.called:
             raise Exception('did not call get_grid_status')
-        if remove.called:
-            raise Exception('called remove')
+        remove.assert_not_called()
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -732,8 +677,8 @@ class grid_test(unittest.TestCase):
                                     'queue_del_pilots':True}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         try:
             g.check_grid()
@@ -743,8 +688,7 @@ class grid_test(unittest.TestCase):
             raise Exception('did not raise Exception')
         if get_grid_status.called:
             raise Exception('called get_grid_status')
-        if remove.called:
-            raise Exception('called remove')
+        remove.assert_not_called()
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -755,8 +699,8 @@ class grid_test(unittest.TestCase):
                                     'queue_del_pilots':Exception()}}
         self.messaging.called = []
         g.tasks_queued = 0
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
+        get_grid_status.reset_mock()
+        remove.reset_mock()
 
         try:
             g.check_grid()
@@ -784,10 +728,10 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.reset_mock()
+        get_grid_status.return_value = grid_tasks
+        remove.reset_mock()
+        remove.return_value = True
 
         g.check_grid()
 
@@ -795,10 +739,7 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call get_grid_status')
         if not remove.called:
             raise Exception('did not call remove')
-        if remove.args != set([0]):
-            logger.debug('expected: set([0])')
-            logger.debug('actual: %r',remove.args)
-            raise Exception('did not remove grid_queue_id 0')
+        remove.assert_called_once_with(set([0]))
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if not any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -813,10 +754,9 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.reset_mock()
+        get_grid_status.return_value = grid_tasks
+        remove.reset_mock()
 
         g.check_grid()
 
@@ -824,10 +764,7 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call get_grid_status')
         if not remove.called:
             raise Exception('did not call remove')
-        if remove.args != set([0]):
-            logger.debug('expected: set([0])')
-            logger.debug('actual: %r',remove.args)
-            raise Exception('did not remove grid_queue_id 0')
+        remove.assert_called_once_with(set([0]))
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -846,10 +783,9 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
-        remove.ret = True
+        get_grid_status.reset_mock()
+        get_grid_status.return_value = grid_tasks
+        remove.reset_mock()
 
         g.check_grid()
 
@@ -857,10 +793,7 @@ class grid_test(unittest.TestCase):
             raise Exception('did not call get_grid_status')
         if not remove.called:
             raise Exception('did not call remove')
-        if remove.args != set([0]):
-            logger.debug('expected: set([0])')
-            logger.debug('actual: %r',remove.args)
-            raise Exception('did not remove grid_queue_id 0')
+        remove.assert_called_once_with(set([0]))
         if not any('queue_get_pilots' == x[1] for x in self.messaging.called):
             raise Exception('did not call queue_get_pilots')
         if any('queue_del_pilots' == x[1] for x in self.messaging.called):
@@ -876,16 +809,15 @@ class grid_test(unittest.TestCase):
         self.messaging.ret = {'db':{'queue_get_pilots':active_tasks,
                                     'queue_del_pilots':True}}
         self.messaging.called = []
-        get_grid_status.called = False
-        get_grid_status.ret = grid_tasks
-        remove.called = False
+        get_grid_status.reset_mock()
+        get_grid_status.return_value = grid_tasks
+        remove.reset_mock()
 
         g.check_grid()
 
         if not get_grid_status.called:
             raise Exception('did not call get_grid_status')
-        if remove.called:
-            raise Exception('called remove')
+        remove.assert_not_called()
         if os.path.exists(os.path.join(submit_dir,'s_0')):
             raise Exception('did not clean old submit dir')
         if not os.path.exists(os.path.join(submit_dir,'s_1')):
@@ -897,18 +829,10 @@ class grid_test(unittest.TestCase):
         if any('queue_del_pilots' == x[1] for x in self.messaging.called):
             raise Exception('called queue_del_pilots when nothing to reset')
 
+    @patch('iceprod.server.grid.grid.generate_submit_file')
     @unittest_reporter
-    def test_023_setup_submit_directory(self):
+    def test_023_setup_submit_directory(self, generate_submit_file):
         """Test setup_submit_directory"""
-        def generate_submit_file(t,cfg=None,passkey=None,filelist=None):
-            generate_submit_file.called = True
-            generate_submit_file.args = (t,cfg,passkey,filelist)
-            if generate_submit_file.ret:
-                return generate_submit_file.ret
-            else:
-                raise Exception('bad submit file generation')
-        flexmock(grid).should_receive('generate_submit_file').replace_with(generate_submit_file)
-
         site = 'thesite'
         self.check_run_stop = False
         name = 'grid1'
@@ -953,8 +877,8 @@ class grid_test(unittest.TestCase):
                                     'auth_new_passkey':'passkey'}}
         self.messaging.called = []
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = True
+        generate_submit_file.reset_mock()
+        generate_submit_file.return_value = True
 
         task = {'task_id':'1','name':'0','debug':0,'dataset_id':'d1',
                 'job':0,'jobs_submitted':1}
@@ -995,8 +919,8 @@ class grid_test(unittest.TestCase):
         # generate_submit_file error
         self.messaging.called = []
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = False
+        generate_submit_file.reset_mock()
+        generate_submit_file.return_value = False
 
         task = {'task_id':'1','name':'0','debug':0}
         try:
@@ -1013,8 +937,8 @@ class grid_test(unittest.TestCase):
                                     'auth_new_passkey':'passkey'}}
         self.messaging.called = []
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = True
+        generate_submit_file.reset_mock()
+        generate_submit_file.return_value = True
 
         task = {'task_id':'1','name':'0','debug':0}
         try:
@@ -1031,8 +955,7 @@ class grid_test(unittest.TestCase):
                                     'auth_new_passkey':Exception()}}
         self.messaging.called = []
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = True
+        generate_submit_file.reset_mock()
 
         task = {'task_id':'1','name':'0','debug':0}
         try:
@@ -1049,8 +972,7 @@ class grid_test(unittest.TestCase):
                                     'auth_new_passkey':'passkey'}}
         self.messaging.called = []
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = True
+        generate_submit_file.reset_mock()
 
         task = {'task_id':'1','name':'0','debug':0}
         try:
@@ -1061,25 +983,17 @@ class grid_test(unittest.TestCase):
             raise Exception('get_cfg_for_task error: did not raise Exception')
         shutil.rmtree(submit_dir)
 
+    @patch('iceprod.server.grid.grid.submit')
+    @patch('iceprod.server.grid.grid.generate_submit_file')
     @unittest_reporter
-    def test_024_setup_pilots(self):
+    def test_024_setup_pilots(self, generate_submit_file, submit):
         """Test setup_pilots"""
-        def generate_submit_file(t,cfg=None,passkey=None,filelist=None):
-            generate_submit_file.called = True
-            generate_submit_file.args = (t,cfg,passkey,filelist)
-            if generate_submit_file.ret:
-                return generate_submit_file.ret
-            else:
-                raise Exception('bad submit file generation')
-        flexmock(grid).should_receive('generate_submit_file').replace_with(generate_submit_file)
-        def submit(t):
-            submit.called = True
-            submit.args = t
+        def s(t):
             if submit.ret:
                 t['grid_queue_id'] = submit.ret
             else:
                 raise Exception('bad submit')
-        flexmock(grid).should_receive('submit').replace_with(submit)
+        submit.side_effect = s
 
         site = 'thesite'
         self.check_run_stop = False
@@ -1112,8 +1026,7 @@ class grid_test(unittest.TestCase):
 
         # call normally
         g.tasks_queued = 0
-        generate_submit_file.called = False
-        generate_submit_file.ret = True
+        generate_submit_file.return_value = True
         submit.ret = '12345'
 
         tasks = {'thetaskid':{}}
@@ -1134,7 +1047,7 @@ class grid_test(unittest.TestCase):
             raise Exception('bad pilot dict')
 
         # test error
-        generate_submit_file = None
+        generate_submit_file.side_effect = Exception()
         try:
             g.setup_pilots(tasks)
         except:
@@ -1142,7 +1055,7 @@ class grid_test(unittest.TestCase):
         else:
             raise Exception('did not raise an Exception')
 
-        generate_submit_file = True
+        generate_submit_file.side_effect = True
         submit.ret = None
         try:
             g.setup_pilots(tasks)
@@ -1151,7 +1064,7 @@ class grid_test(unittest.TestCase):
         else:
             raise Exception('did not raise an Exception')
 
-        generate_submit_file = True
+        generate_submit_file.return_value = True
         submit.ret = '12345'
         self.messaging.ret = {'db':{'queue_add_pilot':Exception()}}
         try:
