@@ -275,10 +275,14 @@ def download(url, local, cache=False, options={}):
     logger.warn('wget(): src: %s, local: %s', url, local)
 
     # get checksum
+    if url.startswith('http') and '?' in url:
+        cksm_url = url[:url.find('?')]
+    else:
+        cksm_url = url
     for checksum_type in ('sha512', 'sha256', 'sha1', 'md5'):
         ending = '.'+checksum_type+'sum'
         try:
-            _wget(url+ending, local+ending, options)
+            _wget(cksm_url+ending, local+ending, options)
             break
         except:
             logger.debug('failed to get checksum for %s', url+ending,
