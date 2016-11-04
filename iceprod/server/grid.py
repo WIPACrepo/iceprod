@@ -146,7 +146,7 @@ class grid(object):
                         raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
 
         if self.statsd:
-            self.statsd.gauge('did_queue', len(tasks))
+            self.statsd.gauge('did_queue', len(tasks) if tasks else 0)
 
         if tasks:
             if pilots:
