@@ -583,14 +583,20 @@ def run_module(cfg, env, module):
     if module['env_shell']:
         env_shell = module['env_shell'].split()
         if not os.path.exists(env_shell[0]):
-            # get script to run
-            c = dataclasses.Class()
-            c['src'] = env_shell[0]
-            c['name'] = os.path.basename(c['src'])
-            setupClass(env,c)
-            if c['name'] not in env['classes']:
-                raise Exception('Failed to install class %s'%c['name'])
-            env_shell[0] = [env['classes'][c['name']]]
+            # search in local_temp as well
+            local_env_shell = os.path.join(cfg.config['options']['local_temp'],
+                                           env_shell[0])
+            if os.path.exists(local_env_shell):
+                env_shell[0] = local_env_shell
+            else:
+                # get script to run
+                c = dataclasses.Class()
+                c['src'] = env_shell[0]
+                c['name'] = os.path.basename(c['src'])
+                setupClass(env,c)
+                if c['name'] not in env['classes']:
+                    raise Exception('Failed to install class %s'%c['name'])
+                env_shell[0] = [env['classes'][c['name']]]
         module['env_shell'] = env_shell
 
     logger.warn('running module \'%s\' with class %s',module['name'],
