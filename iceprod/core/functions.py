@@ -412,6 +412,8 @@ def _wget(url, local, options):
                     r.raise_for_status()
                     break
                 except:
+                    if os.path.exists(local):
+                        os.remove(local)
                     if i <= 0:
                         logger.error('error fetching url %s', url,
                                      exc_info=True)
