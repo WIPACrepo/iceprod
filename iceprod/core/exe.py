@@ -360,7 +360,7 @@ def setupClass(env, class_obj):
                     i += 1
                     continue # retry with different url
                 raise
-            if not os.path.exists(download_local)
+            if not os.path.exists(download_local):
                 raise Exception('download failed')
             if functions.iscompressed(download_local) or functions.istarred(download_local):
                 files = functions.uncompress(download_local)
