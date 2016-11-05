@@ -368,10 +368,17 @@ def setupClass(env, class_obj):
                 if isinstance(files,dataclasses.String):
                     local = files
                 elif isinstance(files,list):
-                    dirname = os.path.join(local_temp,os.path.commonprefix(files))
+                    dirname = os.path.commonprefix(files)
+                    if dirname:
+                        dirname = os.path.join(local_temp, dirname.split(os.path.sep)[0])
+                    else:
+                        dirname = local_temp
+                    logger.debug('looking up tarball at %r', dirname)
                     if os.path.isdir(dirname):
+                        logger.info('rename %r to %r', local, dirname)
                         local = dirname
             elif local != download_local:
+                logger.info('rename %r to %r', download_local, local)
                 os.rename(download_local, local)
             loaded = True
             break
