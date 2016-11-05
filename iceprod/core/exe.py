@@ -360,6 +360,8 @@ def setupClass(env, class_obj):
                     i += 1
                     continue # retry with different url
                 raise
+            if not os.path.exists(download_local)
+                raise Exception('download failed')
             if functions.iscompressed(download_local) or functions.istarred(download_local):
                 files = functions.uncompress(download_local)
                 # check if we extracted a tarfile
@@ -582,21 +584,23 @@ def run_module(cfg, env, module):
         module['src'] = env['classes'][c['name']]
     if module['env_shell']:
         env_shell = module['env_shell'].split()
+        logger.info('searching for env_shell at %r', local_env_shell)
         if not os.path.exists(env_shell[0]):
-            # search in local_temp as well
-            local_env_shell = os.path.join(cfg.config['options']['local_temp'],
-                                           env_shell[0])
-            if os.path.exists(local_env_shell):
-                env_shell[0] = local_env_shell
+            env_class = env_shell[0].split('/')[0]
+            logger.info('searching for env_shell as %r class', env_class)
+            if env_class in env['classes']:
+                env_tmp = env_shell[0].split('/')
+                env_tmp[0] = env['classes'][env_class]
+                env_shell[0] = '/'.join(env_tmp)
             else:
-                # get script to run
+                logger.info('attempting to download env_shell')
                 c = dataclasses.Class()
                 c['src'] = env_shell[0]
                 c['name'] = os.path.basename(c['src'])
                 setupClass(env,c)
                 if c['name'] not in env['classes']:
                     raise Exception('Failed to install class %s'%c['name'])
-                env_shell[0] = [env['classes'][c['name']]]
+                env_shell[0] = env['classes'][c['name']]
         module['env_shell'] = env_shell
 
     logger.warn('running module \'%s\' with class %s',module['name'],
