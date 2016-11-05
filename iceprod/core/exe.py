@@ -584,7 +584,7 @@ def run_module(cfg, env, module):
         module['src'] = env['classes'][c['name']]
     if module['env_shell']:
         env_shell = module['env_shell'].split()
-        logger.info('searching for env_shell at %r', local_env_shell)
+        logger.info('searching for env_shell at %r', env_shell[0])
         if not os.path.exists(env_shell[0]):
             env_class = env_shell[0].split('/')[0]
             logger.info('searching for env_shell as %r class', env_class)
