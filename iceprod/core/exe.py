@@ -373,10 +373,13 @@ def setupClass(env, class_obj):
                         dirname = os.path.join(local_temp, dirname.split(os.path.sep)[0])
                     else:
                         dirname = local_temp
-                    logger.debug('looking up tarball at %r', dirname)
+                    logger.info('looking up tarball at %r', dirname)
                     if os.path.isdir(dirname):
                         logger.info('rename %r to %r', local, dirname)
                         local = dirname
+                else:
+                    logger.warn('files is strange datatype: %r',
+                                type(files))
             elif local != download_local:
                 logger.info('rename %r to %r', download_local, local)
                 os.rename(download_local, local)
