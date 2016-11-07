@@ -273,22 +273,28 @@ def download(url, local, cache=False, options={}):
             url = 'file:'+url
         else:
             raise Exception("unsupported protocol %s" % url)
+
+    # strip off query params
+    if '?' in url:
+        clean_url = url[:url.find('?')]
+    elif '#' in url:
+        clean_url = url[:url.find('#')]
+    else:
+        clean_url = url
+
+    # fix local to be a filename to write to
     if local.startswith('file:'):
         local = local[5:]
     if os.path.isdir(local):
-        local = os.path.join(local, os.path.basename(url))
+        local = os.path.join(local, os.path.basename(clean_url))
 
     logger.warn('wget(): src: %s, local: %s', url, local)
 
     # get checksum
-    if url.startswith('http') and '?' in url:
-        cksm_url = url[:url.find('?')]
-    else:
-        cksm_url = url
     for checksum_type in ('sha512', 'sha256', 'sha1', 'md5'):
         ending = '.'+checksum_type+'sum'
         try:
-            _wget(cksm_url+ending, local+ending, options)
+            _wget(clean_url+ending, local+ending, options)
             break
         except:
             logger.debug('failed to get checksum for %s', url+ending,
@@ -324,6 +330,8 @@ def download(url, local, cache=False, options={}):
 
     if cache:
         insertincache(url, local, options=options)
+
+    return local
 
 def upload(local, url, options={}):
     """Upload a file, checksumming if possible"""

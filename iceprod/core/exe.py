@@ -339,7 +339,6 @@ def setupClass(env, class_obj):
                 os.makedirs(local_temp)
 
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
-            download_local = os.path.join(os.path.dirname(local),os.path.basename(url))
 
             download_options = {}
             if 'options' in env and 'username' in env['options']:
@@ -350,10 +349,10 @@ def setupClass(env, class_obj):
                 download_options.update(env['options']['ssl'])
 
             # download class
-            logger.warn('attempting to download class %s to %s',url,local)
+            logger.warn('attempting to download class %s to %s',url,local_temp)
             try:
-                if not os.path.exists(download_local):
-                    functions.download(url, download_local, options=download_options)
+                download_local = functions.download(url, local_temp,
+                                                    options=download_options)
             except Exception:
                 logger.info('failed to download', exc_info=True)
                 if i < 10:

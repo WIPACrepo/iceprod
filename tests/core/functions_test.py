@@ -651,6 +651,7 @@ class functions_test(unittest.TestCase):
         """Test the isurl function"""
         good_urls = ['http://www.google.com',
                      'https://skua.icecube.wisc.edu:9080',
+                     'http://test.com?blah=1#60',
                      'gsiftp://gridftp.icecube.wisc.edu',
                      'ftp://x2100.icecube.wisc.edu',
                      'file:/data/exp']
@@ -726,6 +727,25 @@ class functions_test(unittest.TestCase):
             raise Exception('gsiftp: downloaded file does not exist')
         data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
         self.assertEqual(get.url, 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
+        self.assertEqual(data2, data, msg='data not equal')
+
+    @requests_mock.mock()
+    @unittest_reporter(name='download() http - query params')
+    def test_306_download(self, http_mock):
+        """Test the download function"""
+        data = 'the data'
+        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+
+        # download file from resources
+        url = 'http://prod-exe.icecube.wisc.edu/globus.tar.gz?a=1'
+        http_mock.get('/globus.tar.gz?a=1', content=data)
+        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
+        out_file = iceprod.core.functions.download(url, self.test_dir)
+        self.assertEqual(out_file, os.path.join(self.test_dir,'globus.tar.gz'))
+        if not os.path.isfile(out_file):
+            raise Exception('downloaded file does not exist')
+        self.assertTrue(http_mock.called)
+        data2 = open(out_file).read()
         self.assertEqual(data2, data, msg='data not equal')
 
     @requests_mock.mock()
