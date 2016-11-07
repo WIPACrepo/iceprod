@@ -363,7 +363,7 @@ def setupClass(env, class_obj):
             if not os.path.exists(download_local):
                 raise Exception('download failed')
             if functions.iscompressed(download_local) or functions.istarred(download_local):
-                files = functions.uncompress(download_local)
+                files = functions.uncompress(download_local, out_dir=local_temp)
                 # check if we extracted a tarfile
                 if isinstance(files,dataclasses.String):
                     local = files

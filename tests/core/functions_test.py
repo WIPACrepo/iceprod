@@ -143,6 +143,62 @@ class functions_test(unittest.TestCase):
                         if infiles[fname] != results:
                             raise Exception('contents not the same')
 
+    @unittest_reporter(name='uncompress() tar - other dir')
+    def test_003_uncompress_tar(self):
+        """Test uncompressing a file with tar"""
+        for ext in ('tar.gz','tgz','tar.bz2','tbz','tar.xz','tar.lzma'):
+            filename = os.path.join(self.test_dir,'test_uncompress'+str(random.randint(0,100000)))
+            os.mkdir(filename)
+            infiles = {}
+            for _ in range(10):
+                # create test file
+                fname = os.path.join(filename,str(random.randint(0,100000)))
+                with open(fname,'w') as f:
+                    file_contents = ''
+                    for x in range(1000):
+                        file_contents += str(random.choice(string.ascii_letters))
+                    f.write(file_contents)
+                infiles[fname] = file_contents
+
+            # compress
+            outfile = iceprod.core.functions.compress(filename, ext)
+            logger.info('compressed file is %s'%outfile)
+            if outfile != filename+'.'+ext:
+                raise Exception('did not create correct filename')
+            if not os.path.isfile(outfile):
+                raise Exception('did not create compressed file')
+
+            # remove original file
+            if os.path.exists(filename):
+                shutil.rmtree(filename)
+
+            local_dir = os.path.join(self.test_dir, 'local')
+            if not os.path.exists(local_dir):
+                os.makedirs(local_dir)
+
+            # uncompress
+            files = iceprod.core.functions.uncompress(outfile, out_dir=local_dir)
+            logger.info('uncompress returned %r',files)
+            if set(files) != set(x.replace(self.test_dir+'/','') for x in infiles):
+                raise Exception('not the same files')
+
+            # check that files are extracted in local dir
+            logger.info('local dir %r: %r', local_dir, os.listdir(local_dir))
+            if files[0].split(os.path.sep)[0] not in os.listdir(local_dir):
+                raise Exception('did not extract in local dir')
+
+            # check files
+            for fname in infiles:
+                common = os.path.commonprefix([local_dir, fname])
+                fname2 = os.path.join(local_dir, fname[len(common):])
+                if not os.path.exists(fname2):
+                    raise Exception('file %r does not exist'%fname2)
+                with open(fname2, 'r') as f:
+                    results = f.read(len(file_contents)*10)
+                    if infiles[fname] != results:
+                        raise Exception('contents not the same')
+
+
     @unittest_reporter
     def test_020_iscompressed(self):
         """Test the iscompressed function with various extensions"""

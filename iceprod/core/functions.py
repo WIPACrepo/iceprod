@@ -44,33 +44,39 @@ _compress_suffixes = ('.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
 _tar_suffixes = ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tbz',
                 '.tar.lzma', '.tar.xz', '.tlz', '.txz')
 
-def uncompress(infile):
+def uncompress(infile, out_dir=None):
     """Uncompress a file, if possible"""
     files = []
-    logger.info('uncompressing %s',infile)
-    if istarred(infile):
-        # handle tarfile
-        output = subprocess.check_output(['tar','-atf',infile])
-        files = [x for x in output.split('\n') if x.strip() and x[-1] != '/']
-        if not files:
-            raise Exception('no files inside tarfile')
-        for f in files:
-            if os.path.exists(f):
-                break
+    cur_dir = os.getcwd()
+    try:
+        if out_dir:
+            os.chdir(out_dir)
+        logger.info('uncompressing %s',infile)
+        if istarred(infile):
+            # handle tarfile
+            output = subprocess.check_output(['tar','-atf',infile])
+            files = [x for x in output.split('\n') if x.strip() and x[-1] != '/']
+            if not files:
+                raise Exception('no files inside tarfile')
+            for f in files:
+                if os.path.exists(f):
+                    break
+            else:
+                subprocess.call(['tar','-axf',infile])
         else:
-            subprocess.call(['tar','-axf',infile])
-    else:
-        if infile.endswith('.gz'):
-            cmd = 'gzip'
-        elif any(infile.endswith(s) for s in ('.bz','.bz2')):
-            cmd = 'bzip2'
-        elif any(infile.endswith(s) for s in ('.xz','.lzma')):
-            cmd = 'xz'
-        else:
-            logger.info('unknown format: %s',infile)
-            raise Exception('unknown format')
-        subprocess.call([cmd,'-kdf',infile])
-        files.append(infile.rsplit('.',1)[0])
+            if infile.endswith('.gz'):
+                cmd = 'gzip'
+            elif any(infile.endswith(s) for s in ('.bz','.bz2')):
+                cmd = 'bzip2'
+            elif any(infile.endswith(s) for s in ('.xz','.lzma')):
+                cmd = 'xz'
+            else:
+                logger.info('unknown format: %s',infile)
+                raise Exception('unknown format')
+            subprocess.call([cmd,'-kdf',infile])
+            files.append(infile.rsplit('.',1)[0])
+    finally:
+        os.chdir(cur_dir)
 
     logger.info('files: %r', files)
     if len(files) == 1:
