@@ -129,10 +129,11 @@ class pilot_test(unittest.TestCase):
             raise Exception('did not update_pilot with both tasks running')
         update.assert_called_with('a',tasks='')
 
+    @mock.patch('iceprod.core.exe_json.task_kill')
     @mock.patch('iceprod.core.exe_json.update_pilot')
     @mock.patch('iceprod.core.exe_json.downloadtask')
     @unittest_reporter(name='Pilot.create() error')
-    def test_10_pilot_create_error(self, download, update):
+    def test_10_pilot_create_error(self, download, update, kill):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':3,'memory':1,'disk':1}}}
         download.side_effect = return_once(task_cfg, end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
@@ -140,6 +141,7 @@ class pilot_test(unittest.TestCase):
         p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.001)
         runner.assert_not_called()
         update.assert_not_called()
+        kill.assert_called()
 
     @unittest_reporter
     def test_30_du(self):

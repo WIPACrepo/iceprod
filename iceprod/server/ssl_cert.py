@@ -33,8 +33,6 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
             hostname = functions.gethostname()
             if hostname is None:
                 raise Exception('Cannot get hostname')
-            elif isinstance(hostname,set):
-                hostname = hostname.pop()
 
         # create a key pair
         k = crypto.PKey()
@@ -79,6 +77,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
                                  "keyCertSign, cRLSign"),
             crypto.X509Extension("subjectKeyIdentifier", False, hash,
                                  subject=cert),
+            crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)
             ])
         cert.sign(k, 'sha1')
 
@@ -108,8 +107,6 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             hostname = functions.gethostname()
             if hostname is None:
                 raise Exception('Cannot get hostname')
-            elif isinstance(hostname,set):
-                hostname = hostname.pop()
 
         # create a key pair
         k = crypto.PKey()
@@ -133,8 +130,9 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert.set_pubkey(k)
 
             # add extensions
+            exts = [crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)]
             if allow_resign:
-                cert.add_extensions([
+                exts.extend([
                     crypto.X509Extension("basicConstraints", True,
                                          "CA:TRUE, pathlen:0"),
                     #crypto.X509Extension("keyUsage", True,
@@ -142,6 +140,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                     #crypto.X509Extension("subjectKeyIdentifier", False, hash,
                     #                     subject=cert),
                     ])
+            cert.add_extensions(exts)
             cert.sign(k, 'sha1')
 
         else:
@@ -172,8 +171,9 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert2.set_pubkey(cert.get_pubkey())
 
             # add extensions
+            exts = [crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)]
             if allow_resign:
-                cert2.add_extensions([
+                exts.extend([
                     crypto.X509Extension("basicConstraints", True,
                                          "CA:TRUE, pathlen:0"),
                     #crypto.X509Extension("keyUsage", True,
@@ -181,6 +181,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
                     #crypto.X509Extension("subjectKeyIdentifier", False, hash,
                     #                     subject=cert),
                     ])
+            cert2.add_extensions(exts)
             cert2.sign(ca_key, 'sha1')
 
             # overwrite cert req with real cert
@@ -219,7 +220,6 @@ def verify_cert(cert_filename,key_filename):
     ctx.use_certificate(cert)
     try:
         ctx.check_privatekey()
-
     except SSL.Error:
         logger.warn('cert and key do not match')
         return False

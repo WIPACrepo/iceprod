@@ -36,10 +36,6 @@ development use).
 
 IceProd runs on python 2.7 and 3.3+
 
-The following are required:
-
-* curl
-
 There are two types of database interface available:
 
 * sqlite:  depends on apsw: https://github.com/rogerbinns/apsw

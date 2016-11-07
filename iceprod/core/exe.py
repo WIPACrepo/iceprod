@@ -218,12 +218,7 @@ def downloadResource(env, resource, remote_base=None,
             download_options['password'] = env['options']['password']
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
-
-        try:
-            functions.download(url,local,options=download_options)
-        except Exception:
-            logger.error('cannot download file', exc_info=True)
-            raise
+        functions.download(url, local, options=download_options)
 
     # check compression
     if (resource['compression'] and
@@ -280,7 +275,6 @@ def uploadData(env, data):
                 raise
 
     # upload file
-    proxy = False
     upload_options = {}
     if 'options' in env and 'username' in env['options']:
         upload_options['username'] = env['options']['username']
@@ -288,13 +282,7 @@ def uploadData(env, data):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
-    if 'options' in env and 'proxy' in env['options']:
-        proxy = env['options']['proxy']
-    try:
-        functions.upload(local, url, proxy=proxy, options=upload_options)
-    except Exception:
-        logger.error('cannot upload file', exc_info=True)
-        raise
+    functions.upload(local, url, options=upload_options)
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
@@ -351,7 +339,6 @@ def setupClass(env, class_obj):
                 os.makedirs(local_temp)
 
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
-            download_local = os.path.join(os.path.dirname(local),os.path.basename(url))
 
             download_options = {}
             if 'options' in env and 'username' in env['options']:
@@ -362,26 +349,38 @@ def setupClass(env, class_obj):
                 download_options.update(env['options']['ssl'])
 
             # download class
-            logger.warn('attempting to download class %s to %s',url,local)
+            logger.warn('attempting to download class %s to %s',url,local_temp)
             try:
-                if not os.path.exists(download_local):
-                    functions.download(url,download_local,options=download_options)
+                download_local = functions.download(url, local_temp,
+                                                    options=download_options)
             except Exception:
                 logger.info('failed to download', exc_info=True)
                 if i < 10:
                     i += 1
                     continue # retry with different url
                 raise
+            if not os.path.exists(download_local):
+                raise Exception('download failed')
             if functions.iscompressed(download_local) or functions.istarred(download_local):
-                files = functions.uncompress(download_local)
+                files = functions.uncompress(download_local, out_dir=local_temp)
                 # check if we extracted a tarfile
                 if isinstance(files,dataclasses.String):
                     local = files
                 elif isinstance(files,list):
-                    dirname = os.path.join(local_temp,os.path.commonprefix(files))
+                    dirname = os.path.commonprefix(files)
+                    if dirname:
+                        dirname = os.path.join(local_temp, dirname.split(os.path.sep)[0])
+                    else:
+                        dirname = local_temp
+                    logger.info('looking up tarball at %r', dirname)
                     if os.path.isdir(dirname):
+                        logger.info('rename %r to %r', local, dirname)
                         local = dirname
+                else:
+                    logger.warn('files is strange datatype: %r',
+                                type(files))
             elif local != download_local:
+                logger.info('rename %r to %r', download_local, local)
                 os.rename(download_local, local)
             loaded = True
             break
@@ -594,15 +593,23 @@ def run_module(cfg, env, module):
         module['src'] = env['classes'][c['name']]
     if module['env_shell']:
         env_shell = module['env_shell'].split()
+        logger.info('searching for env_shell at %r', env_shell[0])
         if not os.path.exists(env_shell[0]):
-            # get script to run
-            c = dataclasses.Class()
-            c['src'] = env_shell[0]
-            c['name'] = os.path.basename(c['src'])
-            setupClass(env,c)
-            if c['name'] not in env['classes']:
-                raise Exception('Failed to install class %s'%c['name'])
-            env_shell[0] = [env['classes'][c['name']]]
+            env_class = env_shell[0].split('/')[0]
+            logger.info('searching for env_shell as %r class', env_class)
+            if env_class in env['classes']:
+                env_tmp = env_shell[0].split('/')
+                env_tmp[0] = env['classes'][env_class]
+                env_shell[0] = '/'.join(env_tmp)
+            else:
+                logger.info('attempting to download env_shell')
+                c = dataclasses.Class()
+                c['src'] = env_shell[0]
+                c['name'] = os.path.basename(c['src'])
+                setupClass(env,c)
+                if c['name'] not in env['classes']:
+                    raise Exception('Failed to install class %s'%c['name'])
+                env_shell[0] = env['classes'][c['name']]
         module['env_shell'] = env_shell
 
     logger.warn('running module \'%s\' with class %s',module['name'],

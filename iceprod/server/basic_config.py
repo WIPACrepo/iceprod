@@ -18,7 +18,7 @@ except ImportError:
 from tornado.netutil import bind_sockets
 
 from iceprod.server import get_pkgdata_filename
-from iceprod.core.functions import getInterfaces, get_local_ip_address
+from iceprod.core.functions import get_local_ip_address
 
 def locateconfig(filename='iceprod.cfg'):
     """Locate a config file"""

@@ -13,6 +13,8 @@ from itertools import izip
 import tornado.httpclient
 import certifi
 
+from statsd import StatsClient
+
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
@@ -40,6 +42,7 @@ class queue(module.module):
         self.thread_running_cv = Condition()
         self.global_queueing_lock = False
         self.proxy = None
+        self.statsd = None
 
         self.start()
 
@@ -82,7 +85,7 @@ class queue(module.module):
             self.queue_thread.start()
 
     @contextmanager
-    def check_run(self):
+    def check_run(self, name=None):
         """A context manager which keeps track of # of running threads"""
         if self.queue_stop.is_set():
             raise StopException('stop requested')
@@ -90,7 +93,11 @@ class queue(module.module):
         self.thread_running += 1
         self.thread_running_cv.release()
         try:
-            yield
+            if name and self.statsd:
+                with self.statsd.timer('queue.'+name):
+                    yield
+            else:
+                yield
         finally:
             self.thread_running_cv.acquire()
             self.thread_running -= 1
@@ -101,6 +108,14 @@ class queue(module.module):
         """Run the queueing loop"""
         # get site_id
         site_id = self.cfg['site_id']
+
+        if 'statsd' in self.cfg and self.cfg['statsd']:
+            try:
+                self.statsd = StatsClient(self.cfg['statsd'],
+                                          prefix=site_id+'.queue')
+            except:
+                logger.warn('failed to connect to statsd: %r',
+                            self.cfg['statsd'], exc_info=True)
 
         # set up x509 proxy
         proxy_kwargs = {}
@@ -205,25 +220,34 @@ class queue(module.module):
             timeout = self.cfg['queue']['init_queue_interval']
         try:
             while not self.queue_stop.wait(timeout):
+                if self.statsd:
+                    timer = self.statsd.timer('queue')
+                    timer.start()
+
                 # check and clean grids
                 for p in plugins:
-                    with self.check_run():
+                    with self.check_run('check_clean_grid'):
                         try:
                             p.check_and_clean()
                         except Exception:
                             logger.error('plugin %s.check_and_clean() raised exception',
                                          p.__class__.__name__,exc_info=True)
 
-                with self.check_run():
+                with self.check_run('check_proxy'):
                     # check proxy cert
                     try:
                         self.check_proxy(max_duration)
                     except Exception:
                         logger.error('error checking proxy',exc_info=True)
 
-                with self.check_run():
-                    # make sure active datasets have jobs and tasks defined
-                    gridspecs = [p.gridspec for p in plugins]
+                with self.check_run('buffer_tasks'):
+                    # buffer jobs and tasks for active datasets
+                    if ('master' in self.cfg and 'url' in self.cfg['master']
+                        and self.cfg['master']['url']):
+                        gridspecs = [p.gridspec for p in plugins]
+                    else:
+                        # queue for all gridspecs, since we don't have a master
+                        gridspecs = None
                     try:
                         self.buffer_jobs_tasks(gridspecs)
                     except Exception:
@@ -233,7 +257,7 @@ class queue(module.module):
                 # queue tasks to grids
                 num_queued = 0
                 for p in plugins:
-                    with self.check_run():
+                    with self.check_run('queue_'+p.name):
                         try:
                             p.queue()
                             num_queued += p.tasks_queued + p.tasks_processing
@@ -241,7 +265,7 @@ class queue(module.module):
                             logger.error('plugin %s.queue() raised exception',
                                          p.__class__.__name__,exc_info=True)
 
-                with self.check_run():
+                with self.check_run('queue_global'):
                     # do global queueing
                     try:
                         # get num tasks to queue
@@ -277,6 +301,9 @@ class queue(module.module):
                     timeout = 300
                 if timeout <= 0:
                     timeout = 300
+
+                if self.statsd:
+                    timer.stop()
         except StopException:
             logger.info('queue_loop stopped normally')
         except Exception as e:

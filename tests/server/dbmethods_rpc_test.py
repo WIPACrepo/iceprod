@@ -42,7 +42,7 @@ def get_tables(test_dir):
                    ],
         'task_lookup':[
                        {'task_id':task_id, 'req_cpu':1, 'req_gpu':0,
-                        'req_memory':1.0, 'req_disk':1000.0}
+                        'req_memory':1.0, 'req_disk':1.0}
                       ],
         'search':[
                   {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
@@ -77,7 +77,8 @@ class dbmethods_rpc_test(dbmethods_base):
         # everything working
         cb.called = False
 
-        self._db.rpc_new_task(gridspec=gridspec, platform='platform', hostname=self.hostname, ifaces=None, callback=cb)
+        self._db.rpc_new_task(gridspec=gridspec, platform='platform',
+                              hostname=self.hostname, ifaces=None, callback=cb)
         if cb.called is False:
             raise Exception('everything working: callback not called')
 
@@ -86,10 +87,11 @@ class dbmethods_rpc_test(dbmethods_base):
                                                    'jobs_submitted': 2,
                                                    'dataset_id': 'd1',
                                                    'debug':True,
-                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1000.0}}}
+                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1.0}}}
         if cb.ret != ret_should_be:
             logger.error('cb.ret = %r',cb.ret)
             logger.error('ret should be = %r',ret_should_be)
+            logger.info('%r',self.mock.get(['task_lookup']))
             raise Exception('everything working: callback ret != task')
 
         # no queued jobs
@@ -241,9 +243,9 @@ class dbmethods_rpc_test(dbmethods_base):
 
         # update requirements
         cb.called = False
-        reqs = {'cpu': 1, 'test': 'blah'}
+        reqs = {'cpu': 2, 'test': 'blah'}
 
-        self._db.rpc_task_error(task_id, error_info={'requirements':reqs}, callback=cb)
+        self._db.rpc_task_error(task_id, error_info={'resources':reqs}, callback=cb)
 
         if cb.called is False:
             raise Exception('everything working: callback not called')
@@ -255,7 +257,8 @@ class dbmethods_rpc_test(dbmethods_base):
         if not taskstat_end:
             raise Exception('no stats')
         stat = json_decode(taskstat_end['stat'])
-        self.assertIn('requirements', stat.values()[0])
+        self.assertIn('resources', stat.values()[0])
+        self.assertIsNotNone(end_tables['task'][0]['requirements'])
         end_taskreq = json_decode(end_tables['task'][0]['requirements'])
         self.assertEqual(end_taskreq.keys(), reqs.keys())
 

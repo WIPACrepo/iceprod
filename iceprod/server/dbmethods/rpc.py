@@ -11,6 +11,7 @@ import math
 from iceprod.core.util import Node_Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
+from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import GlobalID
 from iceprod.server import dataset_prio
@@ -64,6 +65,7 @@ class rpc(_Methods_Base):
                 reqs[k] = args[k]
             else:
                 reqs[k] = Node_Resources[k]
+        logger.info('new task for resources: %r', reqs)
         conn,archive_conn = self.db._dbsetup()
         
         while True:
@@ -75,11 +77,15 @@ class rpc(_Methods_Base):
                 bindings = tuple(reqs.values())
             else:
                 bindings = tuple()
+            logger.info('%r',sql)
+            logger.info('%r',bindings)
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
+                logger.info('error in new_task_blocking', exc_info=True)
                 ret = e
             if isinstance(ret,Exception):
+                logger.info('error in new_task_blocking: %r', ret)
                 callback(ret)
                 return
             task_id = None
@@ -90,6 +96,7 @@ class rpc(_Methods_Base):
                 for k in row:
                     resources[k.replace('req_','')] = row[k]
             if not task_id:
+                logger.info('no tasks found matching resources available')
                 callback(None)
                 return
             sql = 'select * from search where task_id = ? and task_status = ?'
@@ -97,8 +104,10 @@ class rpc(_Methods_Base):
             try:
                 ret = self.db._db_read(conn,sql,bindings,None,None,None)
             except Exception as e:
+                logger.info('error in new_task_blocking', exc_info=True)
                 ret = e
             if isinstance(ret,Exception):
+                logger.info('error in new_task_blocking: %r', ret)
                 callback(ret)
                 return
             elif not ret:
@@ -109,8 +118,10 @@ class rpc(_Methods_Base):
                 try:
                     ret = self.db._db_write(conn,sql,bindings,None,None,None)
                 except Exception as e:
+                    logger.info('error in new_task_blocking', exc_info=True)
                     ret = e
                 if isinstance(ret,Exception):
+                    logger.info('error in new_task_blocking: %r', ret)
                     callback(ret)
                     return
             else:
@@ -124,6 +135,7 @@ class rpc(_Methods_Base):
             logger.warn('error converting search results',exc_info=True)
             pass
         if not newtask:
+            logger.info('error: no task to allocate')
             callback(newtask)
             return
         sql = 'select job_index from job where job_id = ?'
@@ -133,7 +145,9 @@ class rpc(_Methods_Base):
         except Exception as e:
             ret = e
         if isinstance(ret,Exception):
+            logger.info('error in new_task_blocking: %r', ret)
             callback(ret)
+            return
         elif not ret or ret[0] is None:
             logger.warn('failed to find job with known job_id %r',
                         newtask['job_id'])
@@ -145,8 +159,10 @@ class rpc(_Methods_Base):
         try:
             ret = self.db._db_read(conn,sql,bindings,None,None,None)
         except Exception as e:
+            logger.info('error in new_task_blocking', exc_info=True)
             ret = e
         if isinstance(ret,Exception):
+            logger.info('error in new_task_blocking: %r', ret)
             callback(ret)
             return
         elif not ret or not ret[0]:
@@ -171,8 +187,10 @@ class rpc(_Methods_Base):
         try:
             ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
         except Exception as e:
+            logger.info('error in new_task_blocking', exc_info=True)
             ret = e
         if isinstance(ret,Exception):
+            logger.info('error in new_task_blocking: %r', ret)
             callback(ret)
         else:
             if self._is_master():
@@ -190,8 +208,10 @@ class rpc(_Methods_Base):
             callback(newtask)
     def _rpc_new_task_callback(self,args,task,callback=None):
         if isinstance(task,Exception):
+            logger.info('error in new_task_callback: %r', task)
             callback(task)
         elif not task:
+            logger.info('None in new_task_callback: %r', task)
             callback(None)
         else:
             cb = partial(self._rpc_new_task_callback2,task,callback=callback)
@@ -199,6 +219,7 @@ class rpc(_Methods_Base):
                                                   callback=cb)
     def _rpc_new_task_callback2(self,task,ret,callback=None):
         if isinstance(ret,Exception):
+            logger.info('error in new_task_callback2: %r', ret)
             callback(ret)
         else:
             config = json_decode(ret)
@@ -216,6 +237,7 @@ class rpc(_Methods_Base):
     @dbmethod
     def rpc_set_processing(self,task,callback=None):
         """Set a task to the processing status"""
+        logger.info('rpc_set_processing for %r', task)
         return self.parent.queue_set_task_status(task,'processing',
                                                  callback=callback)
 
@@ -380,7 +402,20 @@ class rpc(_Methods_Base):
 
             if job_status == 'complete':
                 # TODO: collate task stats
-                pass
+
+                # clean dagtemp
+                if 'site_temp' in self.cfg['queue']:
+                    temp_dir = self.cfg['queue']['site_temp']
+                    dataset = GlobalID.localID_ret(dataset_id, type='int')
+                    sql = 'select job_index from job where job_id = ?'
+                    bindings = (job_id,)
+                    try:
+                        ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                        job = ret[0][0]
+                        dagtemp = os.path.join(temp_dir, dataset, job)
+                        functions.delete(dagtemp)
+                    except Exception as e:
+                        logger.warn('failed to clean site_temp', exc_info=True)
 
         callback(True)
 
@@ -450,16 +485,25 @@ class rpc(_Methods_Base):
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, failures = ?, status_changed = ? '
             bindings2 = [status,failures,now]
-            if error_info and 'requirements' in error_info:
+            if error_info and 'resources' in error_info:
+                logger.info('error_resources: %r', error_info['resources'])
+                logger.info('old task_reqs: %r', task_reqs)
                 # update requirements
-                for req in error_info['requirements']:
-                    req_value = error_info['requirements'][req]
+                for req in error_info['resources']:
+                    req_value = error_info['resources'][req]
                     if isinstance(req_value, dataclasses.Number):
-                        req_value *= 1.5
-                        if req not in task_reqs or task_reqs[req] < req_value:
+                        if isinstance(Node_Resources[req], int):
+                            req_value = int(req_value)
+                        elif isinstance(Node_Resources[req], float):
+                            req_value = round(req_value*1.5, 1)
+                        if req_value <= Node_Resources[req]:
+                            continue
+                        if (req not in task_reqs or task_reqs[req] < req_value
+                            or not isinstance(task_reqs[req], dataclasses.Number)):
                             task_reqs[req] = req_value
                     elif req not in task_reqs:
                         task_reqs[req] = req_value
+                logger.info('new task_reqs: %r', task_reqs)
                 sql2 += ', requirements = ? '
                 bindings2.append(json_encode(task_reqs))
             sql2 += ' where task_id = ?'
@@ -469,33 +513,25 @@ class rpc(_Methods_Base):
             task_stat_id = self.db._increment_id_helper('task_stat',conn)
             stat = {'error_'+now: error_info}
             bindings3 = (task_stat_id, task_id, json_encode(stat))
-            try:
-                ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
+            ret = self.db._db_write(conn,[sql,sql2,sql3],[bindings,bindings2,bindings3],None,None,None)
+            if self._is_master():
+                msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                mbindings1 = ('search',task_id,now)
+                mbindings2 = ('task',task_id,now)
+                mbindings3 = ('task_stat',task_stat_id,now)
+                try:
+                    self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
             else:
-                if self._is_master():
-                    msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    mbindings1 = ('search',task_id,now)
-                    mbindings2 = ('task',task_id,now)
-                    mbindings3 = ('task_stat',task_stat_id,now)
-                    try:
-                        self.db._db_write(conn,[msql,msql,msql],[mbindings1,mbindings2,mbindings3],None,None,None)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    self._send_to_master(('search',task_id,now,sql,bindings))
-                    self._send_to_master(('task',task_id,now,sql2,bindings2))
-                    self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
-                callback(True)
+                self._send_to_master(('search',task_id,now,sql,bindings))
+                self._send_to_master(('task',task_id,now,sql2,bindings2))
+                self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
+            callback(True)
         except Exception as e:
-            logger.info('error in task_error', exc_info=True)
-            ret = e
-        callback(ret)
-
+            logger.warn('error in task_error', exc_info=True)
+            callback(e)
 
     @dbmethod
     def rpc_upload_logfile(self,task,name,data,callback=None):

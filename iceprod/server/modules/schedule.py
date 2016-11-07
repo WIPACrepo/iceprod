@@ -82,7 +82,7 @@ class schedule(module.module):
         self.scheduler.schedule('every 6 hours',
                 partial(self._db_call, 'cron_remove_old_passkeys'))
 
-        self.scheduler.schedule('every 1 minutes',
+        self.scheduler.schedule('every 10 minutes',
                 partial(self._db_call, 'cron_generate_web_graphs'))
 
         if ('master' in self.cfg and 'status' in self.cfg['master'] and
