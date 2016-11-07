@@ -587,6 +587,10 @@ def run_module(cfg, env, module):
         c = dataclasses.Class()
         c['src'] = module['src']
         c['name'] = os.path.basename(c['src'])
+        if '?' in c['name']:
+            c['name'] = c['name'][:c['name'].find('?')]
+        elif '#' in c['name']:
+            c['name'] = c['name'][:c['name'].find('#')]
         setupClass(env,c)
         if c['name'] not in env['classes']:
             raise Exception('Failed to install class %s'%c['name'])
