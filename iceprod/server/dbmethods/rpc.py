@@ -11,6 +11,7 @@ import math
 from iceprod.core.util import Node_Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
+from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import GlobalID, calc_datasets_prios
 
@@ -400,7 +401,20 @@ class rpc(_Methods_Base):
 
             if job_status == 'complete':
                 # TODO: collate task stats
-                pass
+
+                # clean dagtemp
+                if 'site_temp' in self.cfg['queue']:
+                    temp_dir = self.cfg['queue']['site_temp']
+                    dataset = GlobalID.localID_ret(dataset_id, type='int')
+                    sql = 'select job_index from job where job_id = ?'
+                    bindings = (job_id,)
+                    try:
+                        ret = self.db._db_write(conn,sql,bindings,None,None,None)
+                        job = ret[0][0]
+                        dagtemp = os.path.join(temp_dir, dataset, job)
+                        functions.delete(dagtemp)
+                    except Exception as e:
+                        logger.warn('failed to clean site_temp', exc_info=True)
 
         callback(True)
 
