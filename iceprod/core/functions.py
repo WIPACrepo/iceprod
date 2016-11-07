@@ -456,6 +456,48 @@ def _wget(url, local, options):
         os.remove(local)
         raise Exception('download failed - file is empty')
 
+def delete(url, options={}):
+    """Delete a url or file"""
+    url = os.path.expandvars(url)
+    if (not isurl(url)) and os.path.exists(url):
+        url = 'file:'+url
+
+    if url.startswith('http'):
+        logger.info('delete http: %s', url)
+        with requests.Session() as s:
+            if 'username' in options and 'password' in options:
+                s.auth = (options['username'], options['password'])
+            if 'sslcert' in options:
+                if 'sslkey' in options:
+                    s.cert = (options['sslcert'], options['sslkey'])
+                else:
+                    s.cert = options['sslcert']
+            if 'cacert' in options:
+                s.verify = options['cacert']
+            for i in range(4, -1, -1):
+                try:
+                    r = s.delete(url, timeout=60)
+                    r.raise_for_status()
+                    break
+                except:
+                    if i <= 0:
+                        logger.error('error with url %s', url,
+                                     exc_info=True)
+                        raise
+                    else:
+                        logger.info('retrying delete')
+    elif url.startswith('file:'):
+        url = url[5:]
+        logger.info('delete file: %r', url)
+        if os.path.exists(url):
+            removedirs(url)
+    elif url.startswith('gsiftp:') or url.startswith('ftp:'):
+        logger.info('delete gsiftp: %r', url)
+        if not GridFTP.delete(url):
+            raise Exception('gridftp generic failure')
+    else:
+        raise Exception("unsupported protocol %s" % url)
+
 def isurl(url):
     """Determine if this is a supported protocol"""
     prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:')

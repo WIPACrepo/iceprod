@@ -1033,6 +1033,103 @@ class functions_test(unittest.TestCase):
         else:
             raise Exception('did not raise Exception')
 
+    @requests_mock.mock()
+    @unittest_reporter(name='delete() http')
+    def test_503_delete(self, http_mock):
+        """Test the delete function"""
+        download_options = {'username': 'user',
+                            'password': 'pass',}
+        data = 'the data'
+
+        # delete file from http
+        http_mock.delete('/globus.tar.gz', content='')
+        iceprod.core.functions.delete('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                options=download_options)
+        self.assertTrue(http_mock.called)
+        req = http_mock.request_history[0]
+        self.assertEqual(req.method, 'DELETE', msg='not a DELETE request')
+        self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad delete url')
+
+        # test http error
+        try:
+            iceprod.core.functions.delete('http://prod-exe.icecube.wisc.edu/globus2.tar.gz')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter(name='delete() file')
+    def test_504_delete(self):
+        """Test the delete function"""
+        data = 'the data'
+
+        # delete file from local file system
+        filename = os.path.join(self.test_dir, 'generators.py')
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.delete(filename)
+        if os.path.isfile(filename):
+            raise Exception('delete file exists')
+
+        # test with file: prefix
+        with open(filename, 'w') as f:
+            f.write(data)
+        iceprod.core.functions.delete('file:'+filename)
+        if os.path.isfile(filename):
+            raise Exception('delete file exists')
+
+        # test with non-existent file
+        iceprod.core.functions.delete('file:'+filename)
+        if os.path.isfile(filename):
+            raise Exception('delete file exists')
+
+    @patch('iceprod.core.functions.GridFTP')
+    @unittest_reporter(name='delete() gridftp')
+    def test_505_delete(self, gridftp):
+        """Test the delete function"""
+        data = 'the data'
+        sha512sum = '8580e83fc859a2786430406fd41c7c6a0d3ac77b7eff07bc94c880f5b6e86b87320ea25cb3f3c5a3881236cf8bda92cb8f61c2a813881fee1d8f8331565ce98a'
+        
+        def delete(url):
+            logger.info('fake delete: url=%r', url)
+            if url.endswith('globus.tar.gz'):
+                return True
+            elif url.endswith('globus2.tar.gz'):
+                return False
+            else:
+                raise Exception()
+        gridftp.delete = delete
+
+        url = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz'
+        iceprod.core.functions.delete(url)
+
+        # test gridftp error
+        try:
+            url = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz'
+            iceprod.core.functions.delete(url)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+        # test gridftp error
+        try:
+            url = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/blah.tar.gz'
+            iceprod.core.functions.delete(url)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter(name='delete() errors')
+    def test_510_delete(self):
+        try:
+            url = 'blah://test.test'
+            iceprod.core.functions.delete(url)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
