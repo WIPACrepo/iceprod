@@ -46,7 +46,7 @@ def unicode_to_ascii(obj):
         return obj
 
 def run(classname, filename=None, args=False, debug=False):
-    logging.basicConfig(level=logging.DEBUG if debug else logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG if debug else logging.WARN)
     logging.warn('exe_helper(%s)', classname)
 
     if not classname:
@@ -56,13 +56,13 @@ def run(classname, filename=None, args=False, debug=False):
         class_args = get_args()
         logging.info('args: %r', class_args)
     class_args = unicode_to_ascii(class_args)
+    p,cl = classname.rsplit('.',1)
     if filename:
         logging.info('try loading from source')
-        mod = imp.load_source(classname, filename)
-        class_obj = getattr(mod,classname)
+        mod = imp.load_source(p, filename)
+        class_obj = getattr(mod,cl)
     else:
         logging.info('try regular import')
-        p,cl = classname.rsplit('.',1)
         mod = __import__(p,globals(),locals(),[cl])
         class_obj = getattr(mod,cl)
 
