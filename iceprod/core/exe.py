@@ -335,8 +335,11 @@ def setupClass(env, class_obj):
                 local_temp = env['options']['local_temp']
             else:
                 local_temp = os.path.join(os.getcwd(),'classes')
+                env['options']['local_temp'] = local_temp
             if not os.path.exists(local_temp):
                 os.makedirs(local_temp)
+            if local_temp not in os.environ['PYTHONPATH']:
+                os.environ['PYTHONPATH'] += ':'+local_temp
 
             local = os.path.join(local_temp,class_obj['name'].replace(' ','_'))
 
@@ -682,7 +685,9 @@ def run_module(cfg, env, module):
 
     logger.info('cmd=%r',cmd)
     if module['env_clear']:
-        env = {'PYTHONPATH':os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))}
+        iceprod_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        local_path = env['options']['local_temp'] if 'local_temp' in env['options'] else None
+        env = {'PYTHONPATH':iceprod_path+(':'+local_path if local_path else '')+':'+os.getcwd()}
         for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','http_proxy'):
             if k in os.environ:
                 env[k] = os.environ[k]
