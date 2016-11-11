@@ -13,6 +13,8 @@ import uuid
 import shutil
 from io import BytesIO
 
+import tornado.gen
+
 # load mysql Error
 try:
     import MySQLdb
@@ -30,7 +32,7 @@ from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,filtered_input,datetime2str,str2datetime
+from iceprod.server.dbmethods import _Methods_Base,filtered_input,datetime2str,str2datetime
 
 logger = logging.getLogger('dbmethods.misc')
 
@@ -44,47 +46,36 @@ class misc(_Methods_Base):
 
     ### site to site ###
 
-    @dbmethod
-    def misc_site_to_site_upload(self,src,dest,callback=None):
-        if callback:
-            callback()
+    def misc_site_to_site_upload(self,src,dest):
         # TODO: actually write this method
+        raise NotImplementedError()
 
-    @dbmethod
-    def misc_get_tables_for_task(self,task_ids,callback=None):
+    @tornado.gen.coroutine
+    def misc_get_tables_for_task(self,task_ids):
         """
         Get all tables necessary to run task(s).
 
-        :param task_ids: Either a single, or an iterable of task_ids.
-        :returns: (via callback) dict of table entries.
+        Args:
+            task_ids (iterable): An iterable of task_ids
+
+        Returns:
+            dict: table entries
         """
         if isinstance(task_ids,str):
             task_ids = [task_ids]
         elif not isinstance(task_ids,Iterable):
-            callback(Exception('task_ids not Iterable'))
-        else:
-            cb = partial(self._misc_get_tables_for_task_blocking,task_ids,
-                         callback=callback)
-            self.db.non_blocking_task(cb)
-    def _misc_get_tables_for_task_blocking(self,task_ids,callback=None):
-        conn,archive_conn = self.db._dbsetup()
+            raise Exception('task_ids not Iterable')
+        task_ids = set(task_ids)
+
         tables = {}
 
         sql = 'select depends from task where task_id in ('
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if not ret:
-            callback({})
-            return
-        task_ids = set(task_ids)
+            raise tornado.gen.Return({})
         for row in ret:
             for d in row[0].split(','):
                 d = d.strip()
@@ -95,16 +86,9 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if not ret:
-            callback({})
-            return
+            raise tornado.gen.Return({})
 
         search_table = {}
         keys = []
@@ -118,13 +102,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         task_rel_ids = set()
         if ret:
             keys = []
@@ -140,13 +118,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in job_ids)
         sql += ')'
         bindings = tuple(job_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -160,13 +132,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         categoryvalue_ids = set()
         group_ids = set()
         if ret:
@@ -185,13 +151,7 @@ class misc(_Methods_Base):
         sql = 'select * from groups where group_ids in ('
         sql += ','.join('?' for _ in group_ids) + ')'
         bindings = tuple(group_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -204,13 +164,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -223,13 +177,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        try:
-            ret = self.db._db_read(conn,sql,bindings,None,None,None)
-        except Exception as e:
-            ret = e
-        if isinstance(ret,Exception):
-            callback(ret)
-            return
+        ret = yield self.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -244,13 +192,7 @@ class misc(_Methods_Base):
             sql += ','.join('?' for _ in categoryvalue_ids)
             sql += ')'
             bindings = tuple(categoryvalue_ids)
-            try:
-                ret = self.db._db_read(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
+            ret = yield self.db.query(sql, bindings)
             if ret:
                 keys = []
                 for row in ret:
@@ -265,13 +207,7 @@ class misc(_Methods_Base):
             sql += ','.join('?' for _ in categorydef_ids)
             sql += ')'
             bindings = tuple(categorydef_ids)
-            try:
-                ret = self.db._db_read(conn,sql,bindings,None,None,None)
-            except Exception as e:
-                ret = e
-            if isinstance(ret,Exception):
-                callback(ret)
-                return
+            ret = yield self.db.query(sql, bindings)
             if ret:
                 keys = []
                 for row in ret:
@@ -280,27 +216,23 @@ class misc(_Methods_Base):
                         break
                 tables['categorydef'] = {'keys':keys,'values':ret}
 
-        callback(tables)
+        raise tornado.gen.Return(tables)
 
-    @dbmethod
-    def misc_update_tables(self, tables, callback=None):
+    @tornado.gen.coroutine
+    def misc_update_tables(self, tables):
         """
         Update the DB tables with the incoming information.
 
-        :param tables: A dict of {table_name:{keys:[],values:[[]]}}
-        :returns: (via callback) success or failure
+        Args:
+            tables (dict): {table_name:{keys:[],values:[[]]}}
+
+        Returns:
+            bool: success or failure
         """
         if not tables:
-            callback()
             return
         if not isinstance(tables,dict):
-            callback(Exception('tables not a dict'))
-        else:
-            cb = partial(self._misc_update_tables_blocking,tables,
-                         callback=callback)
-            self.db.non_blocking_task(cb)
-    def _misc_update_tables_blocking(self, tables, callback=None):
-        conn,archive_conn = self.db._dbsetup()
+            raise Exception('tables not a dict')
         try:
             for name in tables:
                 sql = 'replace into %s ('%filtered_input(name)
@@ -310,66 +242,50 @@ class misc(_Methods_Base):
                 sql += ')'
                 for values in tables[name]['values']:
                     bindings = tuple(values)
-                    try:
-                        ret = self.db._db_write(conn,sql,bindings,None,None,None)
-                    except Exception as e:
-                        ret = e
-                    if isinstance(ret,Exception):
-                        callback(ret)
-                        return
-        except Exception as e:
+                    yield self.db.query(sql, bindings)
+        except:
             logger.warn('error updating tables', exc_info=True)
-            callback(e)
-        callback()
+            raise
 
-    @dbmethod
-    def misc_update_master_db(self, table, index, timestamp, sql,
-                       bindings, callback=None):
+    @tornado.gen.coroutine
+    def misc_update_master_db(self, table, index, timestamp, sql, bindings):
         """
         Update the DB with incoming information (query provided).
 
-        :param table: The table affected.
-        :param index: That table's index id.
-        :param timestamp: An ISO 8601 UTC timestamp.
-        :param sql: An sql statement.
-        :param bindings: Bindings for the sql statement.
-        :returns: (via callback) success or failure
+        Args:
+            table (str): The table affected
+            index (str): That table's index id
+            timestamp (str): An ISO 8601 UTC timestamp
+            sql (str): An sql statement
+            bindings (tuple): Bindings for the sql statement
         """
-        cb = partial(self._misc_update_db_blocking, table, index,
-                     timestamp, sql, bindings, callback=callback)
-        self.db.blocking_task('update',cb)
-    def _misc_update_db_blocking(self, table, index, timestamp, sql,
-                                      bindings, callback=None):
-        conn,archive_conn = self.db._dbsetup()
-        try:
-            sql2 = 'select timestamp from master_update_history '
-            sql2 += 'where table_name = ? and update_index = ?'
-            bindings2 = (table,index)
-            ret = self.db._db_read(conn,sql2,bindings2,None,None,None)
-            prev_timestamp = None
-            for row in ret:
-                prev_timestamp = row[0]
-            if prev_timestamp and prev_timestamp >= timestamp:
-                logger.info('newer data already present for %s %s %s',
-                            table, index, timestamp)
-                callback(None)
-                return
-            ret = self.db._db_write(conn,sql,tuple(bindings),None,None,None)
-        except MySQLdb.Error:
-            logger.warn('dropping history for %r', sql, exc_info=True)
-        except Exception as e:
-            logger.warn('error updating master', exc_info=True)
-            ret = e
-        else:
-            sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-            bindings2 = (table,index,timestamp)
+        with (yield self.db.acquire_lock('update_master')):
             try:
-                ret = self.db._db_write(conn,sql2,bindings2,None,None,None)
+                sql2 = 'select timestamp from master_update_history '
+                sql2 += 'where table_name = ? and update_index = ?'
+                bindings2 = (table,index)
+                ret = yield self.db.query(sql2, bindings2)
+                prev_timestamp = None
+                for row in ret:
+                    prev_timestamp = row[0]
+                if prev_timestamp and prev_timestamp >= timestamp:
+                    logger.info('newer data already present for %s %s %s',
+                                table, index, timestamp)
+                    return
+                yield self.db.query(sql, bindings)
             except MySQLdb.Error:
-                logger.warn('mysql error updating update_history',
-                            exc_info=True)
-            except Exception as e:
-                logger.warn('error updating update_history', exc_info=True)
-                ret = e
-        if callback:
-            callback(ret)
+                logger.warn('dropping history for %r', sql, exc_info=True)
+            except:
+                logger.warn('error updating master', exc_info=True)
+                raise
+            else:
+                sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings2 = (table,index,timestamp)
+                try:
+                    yield self.db.query(sql2, bindings2)
+                except MySQLdb.Error:
+                    logger.warn('mysql error updating update_history',
+                                exc_info=True)
+                except:
+                    logger.warn('error updating update_history', exc_info=True)
+                    raise

@@ -12,6 +12,9 @@ from functools import partial
 from contextlib import contextmanager
 from itertools import izip
 
+import tornado.gen
+from tornado.concurrent import run_on_executor
+
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.schedule import Scheduler
@@ -26,16 +29,11 @@ class schedule(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(schedule,self).__init__(*args,**kwargs)
-
         self.scheduler = None
-
-        # start Scheduler
-        self.start()
 
     def start(self):
         """Start schedule"""
-        super(schedule,self).start(callback=self._start)
-    def _start(self):
+        super(schedule,self).start()
         if not self.scheduler:
             # make Scheduler
             self.scheduler = Scheduler()

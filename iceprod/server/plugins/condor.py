@@ -15,6 +15,9 @@ from datetime import datetime,timedelta
 import subprocess
 from functools import partial
 
+import tornado.gen
+from tornado.concurrent import run_on_executor
+
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.server import GlobalID
@@ -22,14 +25,15 @@ from iceprod.server import grid
 
 logger = logging.getLogger('condor')
 
-    
+
 class condor(grid.grid):
 
     ### Plugin Overrides ###
 
     # let the basic plugin be dumb and implement as little as possible
 
-    def generate_submit_file(self,task,cfg=None,passkey=None,
+    @run_on_executor
+    def generate_submit_file(self, task, cfg=None, passkey=None,
                              filelist=None):
         """Generate queueing system submit file for task in dir."""
         args = self.get_submit_args(task,cfg=cfg,passkey=passkey)
@@ -128,6 +132,7 @@ class condor(grid.grid):
                 p('arguments = ',' '.join(args))
                 p('queue')
 
+    @run_on_executor
     def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','condor.submit']
@@ -137,6 +142,7 @@ class condor(grid.grid):
             if 'cluster' in line:
                 task['grid_queue_id'] = line.split()[-1].strip('.')
 
+    @run_on_executor
     def get_grid_status(self):
         """Get all tasks running on the queue system.
            Returns {grid_queue_id:{status,submit_dir}}
@@ -163,6 +169,7 @@ class condor(grid.grid):
             ret[gid] = {'status':status,'submit_dir':os.path.dirname(cmd)}
         return ret
 
+    @run_on_executor
     def remove(self,tasks):
         """Remove tasks from queueing system."""
         if tasks:

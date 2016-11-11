@@ -16,6 +16,9 @@ import itertools
 
 from statsd import StatsClient
 
+import tornado.gen
+from tornado.concurrent import run_on_executor
+
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
@@ -38,17 +41,13 @@ class grid(object):
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
     def __init__(self,args):
-        if not isinstance(args,(list,tuple)) or len(args) < 5:
+        if not isinstance(args,(list,tuple)) or len(args) < 4:
             raise Exception('Bad args - not enough of them')
         self.gridspec = args[0]
-        if self.gridspec:
-            self.grid_id, self.name = self.gridspec.split('.', 1)
+        self.grid_id, self.name = self.gridspec.split('.', 1)
         self.queue_cfg = args[1]
         self.cfg = args[2]
-        self.check_run = args[3]
-        if not callable(self.check_run):
-            raise Exception('Bad args - check_run (args[3]) is not a function')
-        self.db = args[4]
+        self.modules = args[3]
 
         self.submit_dir = os.path.expanduser(os.path.expandvars(
                 self.cfg['queue']['submit_dir']))
@@ -68,20 +67,20 @@ class grid(object):
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
                 self.statsd = StatsClient(self.cfg['statsd'],
-                                          prefix=self.gridspec+'.grid')
+                                          prefix=self.grid_id+'.grid.'+self.name)
             except:
                 logger.warn('failed to connect to statsd: %r',
                             self.cfg['statsd'], exc_info=True)
 
     ### Public Functions ###
 
+    @tornado.gen.coroutine
     def check_and_clean(self):
         """Check and Clean the Grid"""
-        with self.check_run():
-            self.check_iceprod()
-        with self.check_run():
-            self.check_grid()
+        yield self.check_iceprod()
+        yield self.check_grid()
 
+    @tornado.gen.coroutine
     def queue(self):
         """Queue tasks to the grid"""
         tasks = None
@@ -92,105 +91,91 @@ class grid(object):
         else:
             pilots = False
         
-        with self.check_run():
-            # calculate num tasks to queue
-            tasks_on_queue = self.queue_cfg['tasks_on_queue']
-            min_tasks = tasks_on_queue[0]
-            max_tasks = tasks_on_queue[1]
-            change = min_tasks
-            if len(tasks_on_queue) > 2:
-                change = tasks_on_queue[2]
+        # calculate num tasks to queue
+        tasks_on_queue = self.queue_cfg['tasks_on_queue']
+        min_tasks = tasks_on_queue[0]
+        max_tasks = tasks_on_queue[1]
+        change = min_tasks
+        if len(tasks_on_queue) > 2:
+            change = tasks_on_queue[2]
 
-            if max_tasks <= self.tasks_processing + self.tasks_queued:
-                change = 0 # already at max
-            elif self.tasks_queued >= min_tasks:
-                change = 0 # min jobs already queued
-            else:
-                num_to_queue = min(max_tasks - self.tasks_processing,
-                                   min_tasks - self.tasks_queued)
-                change = min(change,num_to_queue)
-            logger.info('can queue up to %d tasks', change)
-            if self.statsd:
-                self.statsd.gauge('can_queue', change)
+        if max_tasks <= self.tasks_processing + self.tasks_queued:
+            change = 0 # already at max
+        elif self.tasks_queued >= min_tasks:
+            change = 0 # min jobs already queued
+        else:
+            num_to_queue = min(max_tasks - self.tasks_processing,
+                               min_tasks - self.tasks_queued)
+            change = min(change,num_to_queue)
+        logger.info('can queue up to %d tasks', change)
+        if self.statsd:
+            self.statsd.gauge('can_queue', change)
 
-            # get queueing datasets from database
-            datasets = self.db.queue_get_queueing_datasets(async=False)
+        # get queueing datasets from database
+        datasets = yield self.modules['db']['queue_get_queueing_datasets']()
+        if not isinstance(datasets,dict):
+            raise Exception('db.queue_get_queueing_datasets(%s) did not return a dict'%self.gridspec)
 
-            if isinstance(datasets,Exception):
-                raise datasets
-            elif not isinstance(datasets,dict):
-                raise Exception('db.queue_get_queueing_datasets(%s) did not return a dict'%self.gridspec)
+        if datasets:
+            groups = yield self.modules['db']['rpc_get_groups']()
 
-            if datasets:
-                with self.check_run():
-                    groups = self.db.rpc_get_groups(async=False)
+            if groups:
+                filters = None
+                if 'group_filters' in self.cfg:
+                    filters = self.cfg['group_filters']
+                datasets = yield dataset_prio.apply_group_prios(datasets,
+                        groups=groups, filters=filters)
 
-                with self.check_run():
-                    if groups:
-                        filters = None
-                        if 'group_filters' in self.cfg:
-                            filters = self.cfg['group_filters']
-                        datasets = dataset_prio.apply_group_prios(datasets,
-                                groups=groups, filters=filters)
+            # get priority factors
+            qf_p = qf_d = qf_t = 1.0
+            if 'queueing_factor_priority' in self.queue_cfg:
+                qf_p = self.queue_cfg['queueing_factor_priority']
+            if 'queueing_factor_dataset' in self.queue_cfg:
+                qf_d = self.queue_cfg['queueing_factor_dataset']
+            if 'queueing_factor_tasks' in self.queue_cfg:
+                qf_t = self.queue_cfg['queueing_factor_tasks']
 
-                with self.check_run():
-                    # get priority factors
-                    qf_p = qf_d = qf_t = 1.0
-                    if 'queueing_factor_priority' in self.queue_cfg:
-                        qf_p = self.queue_cfg['queueing_factor_priority']
-                    if 'queueing_factor_dataset' in self.queue_cfg:
-                        qf_d = self.queue_cfg['queueing_factor_dataset']
-                    if 'queueing_factor_tasks' in self.queue_cfg:
-                        qf_t = self.queue_cfg['queueing_factor_tasks']
+            # assign each dataset a priority
+            dataset_prios = dataset_prio.calc_datasets_prios(datasets,
+                    queueing_factor_priority=qf_p,
+                    queueing_factor_dataset=qf_d,
+                    queueing_factor_tasks=qf_t)
+            logger.debug('dataset prios: %r',dataset_prios)
 
-                    # assign each dataset a priority
-                    dataset_prios = dataset_prio.calc_datasets_prios(datasets,
-                            queueing_factor_priority=qf_p,
-                            queueing_factor_dataset=qf_d,
-                            queueing_factor_tasks=qf_t)
-                    logger.debug('dataset prios: %r',dataset_prios)
-
-                with self.check_run():
-                    # get tasks to queue
-                    tasks = self.db.queue_get_queueing_tasks(dataset_prios=dataset_prios,
-                                                             gridspec_assignment=self.gridspec,
-                                                             num=change,async=False)
-                    if isinstance(tasks,Exception):
-                        raise tasks
-                    elif not isinstance(tasks,dict):
-                        raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
+            # get tasks to queue
+            tasks = yield self.modules['db']['queue_get_queueing_tasks'](
+                    dataset_prios=dataset_prios,
+                    gridspec_assignment=self.gridspec,
+                    num=change)
+            if not isinstance(tasks,dict):
+                raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
 
         if self.statsd:
             self.statsd.gauge('did_queue', len(tasks) if tasks else 0)
 
         if tasks:
             if pilots:
-                with self.check_run():
-                    self.add_tasks_to_pilot_lookup(tasks)
+                yield self.add_tasks_to_pilot_lookup(tasks)
             else:
                 for t in tasks:
-                    with self.check_run():
-                        # set up submit directory
-                        self.setup_submit_directory(tasks[t])
-                        # submit to queueing system
-                        self.submit(tasks[t])
+                    # set up submit directory
+                    yield self.setup_submit_directory(tasks[t])
+                    # submit to queueing system
+                    yield self.submit(tasks[t])
             self.tasks_queued += len(tasks)
 
         if pilots:
             # now try to queue pilots
-            with self.check_run():
-                tasks = self.db.queue_get_task_lookup(async=False)
-                if isinstance(tasks,Exception):
-                    raise tasks
-            with self.check_run():
-                self.setup_pilots(tasks)
+            tasks = yield self.modules['db']['queue_get_task_lookup']()
+            yield self.setup_pilots(tasks)
 
 
     ### Private Functions ###
 
+    @tornado.gen.coroutine
     def check_iceprod(self):
         """check if any task is in a state for too long"""
-        tasks = self.db.queue_get_active_tasks(gridspec=self.gridspec,async=False)
+        tasks = yield self.modules['db']['queue_get_active_tasks'](gridspec=self.gridspec)
         logger.debug('active tasks: %r',tasks)
         if tasks is None:
             raise Exception('db.queue_get_active_tasks(%s) returned none'%self.gridspec)
@@ -270,7 +255,7 @@ class grid(object):
             self.statsd.gauge('processing_tasks', self.tasks_processing)
             self.statsd.gauge('queued_tasks', self.tasks_queued)
             self.statsd.gauge('waiting_tasks', tasks_waiting)
-            self.statsd.incr('_idle_tasks', len(idle_tasks))
+            self.statsd.incr('idle_tasks', len(idle_tasks))
             self.statsd.incr('waiting_tasks', len(waiting_tasks))
             self.statsd.incr('reset_tasks', len(reset_tasks))
 
@@ -278,7 +263,7 @@ class grid(object):
             # change status to idle
             # TODO: this should also flush any caches
             #       but how to do that is in question
-            ret = self.db.queue_set_task_status(task={t['task_id'] for t in idle_tasks},
+            ret = yield self.modules['db']['queue_set_task_status'](task={t['task_id'] for t in idle_tasks},
                                                 status='idle',
                                                 async=False)
             if isinstance(ret,Exception):
@@ -286,7 +271,7 @@ class grid(object):
 
         if waiting_tasks:
             # change status to waiting
-            ret = self.db.queue_set_task_status(task={t['task_id'] for t in waiting_tasks},
+            ret = yield self.modules['db']['queue_set_task_status'](task={t['task_id'] for t in waiting_tasks},
                                                 status='waiting',
                                                 async=False)
             if isinstance(ret,Exception):
@@ -302,10 +287,11 @@ class grid(object):
                     failures.append(t['task_id'])
                 else:
                     resets.append(t['task_id'])
-            ret = self.db.queue_reset_tasks(reset=resets,fail=failures,async=False)
+            ret = yield self.modules['db']['queue_reset_tasks'](reset=resets,fail=failures)
             if isinstance(ret,Exception):
                 raise ret
 
+    @tornado.gen.coroutine
     def check_grid(self):
         """check the queueing system for problems"""
         if ('submit_pilots' in self.cfg['queue'] and
@@ -337,9 +323,9 @@ class grid(object):
 
         # get tasks from iceprod
         if pilots:
-            tasks = self.db.queue_get_pilots(async=False)
+            tasks = yield self.modules['db']['queue_get_pilots'](async=False)
         else:
-            tasks = self.db.queue_get_grid_tasks(gridspec=self.gridspec,async=False)
+            tasks = yield self.modules['db']['queue_get_grid_tasks'](gridspec=self.gridspec)
         if isinstance(tasks,Exception):
             raise tasks
 
@@ -347,7 +333,7 @@ class grid(object):
         tasks = {t['grid_queue_id']:t for t in tasks}
 
         # get grid status
-        grid_tasks = self.get_grid_status()
+        grid_tasks = yield self.get_grid_status()
         if not isinstance(grid_tasks,dict):
             raise Exception('get_task_status() on %s did not return a dict'%self.gridspec)
 
@@ -423,9 +409,9 @@ class grid(object):
         if reset_tasks:
             logger.info('reset %r',reset_tasks)
             if pilots:
-                ret = self.db.queue_del_pilots(pilots=reset_tasks, async=False)
+                ret = yield self.modules['db']['queue_del_pilots'](pilots=reset_tasks, async=False)
             else:
-                ret = self.db.queue_set_task_status(task=reset_tasks,
+                ret = yield self.modules['db']['queue_set_task_status'](task=reset_tasks,
                                                     status='reset', async=False)
             if isinstance(ret,Exception):
                 raise ret
@@ -433,18 +419,22 @@ class grid(object):
         # remove grid tasks
         if remove_grid_tasks:
             logger.info('remove %r',remove_grid_tasks)
-            self.remove(remove_grid_tasks)
+            yield self.remove(remove_grid_tasks)
 
+        yield self._delete_dirs(delete_dirs)
+
+    @run_on_executor
+    def _delete_dirs(self, dirs):
         # delete dirs that need deleting
-        for t in delete_dirs:
+        for t in dirs:
             if not t.startswith(self.submit_dir):
                 # some security against nefarious things
-                raise Exception('directory %s not in submit_dir %s'%(t,self.submit_dir))
+                raise Exception('directory %s not in submit_dir %s'%(t, self.submit_dir))
             try:
-                logger.info('deleting submit_dir %s',t)
+                logger.info('deleting submit_dir %s', t)
                 functions.removedirs(t)
             except:
-                logger.warn('could not delete submit dir %s',t,exc_info=True)
+                logger.warn('could not delete submit dir %s', t, exc_info=True)
                 continue
 
     def _get_resources(self, tasks):
@@ -466,6 +456,7 @@ class grid(object):
                         logger.warn('bad reqs value for task %r', t)
             yield default_resource._replace(**values)
 
+    @tornado.gen.coroutine
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {}
         task_iter = itertools.izip(tasks.keys(),
@@ -475,11 +466,12 @@ class grid(object):
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         if self.statsd:
             self.statsd.incr('add_to_task_lookup', len(task_reqs))
-        ret = self.db.queue_add_task_lookup(tasks=task_reqs,async=False)
+        ret = yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
         if isinstance(ret,Exception):
             logger.error('error add_task_lookup')
             raise ret
 
+    @tornado.gen.coroutine
     def setup_pilots(self, tasks):
         """Setup pilots for the task reqs"""
         debug = False
@@ -528,15 +520,16 @@ class grid(object):
                      'reqs': r,
                      'num': groups2[resources],
             }
-            pilot_ids = self.db.queue_new_pilot_ids(num=pilot['num'],async=False)
+            pilot_ids = yield self.modules['db']['queue_new_pilot_ids'](num=pilot['num'])
             pilot['pilot_ids'] = pilot_ids
-            self.setup_submit_directory(pilot)
-            self.submit(pilot)
-            ret = self.db.queue_add_pilot(pilot=pilot,async=False)
+            yield self.setup_submit_directory(pilot)
+            yield self.submit(pilot)
+            ret = yield self.modules['db']['queue_add_pilot'](pilot=pilot)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with pilots')
                 raise ret
 
+    @tornado.gen.coroutine
     def setup_submit_directory(self,task):
         """Set up submit directory"""
         # create directory for task
@@ -564,7 +557,7 @@ class grid(object):
         expiration += timedelta(seconds=self.queue_cfg['max_task_queued_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_processing_time'])
         expiration += timedelta(seconds=self.queue_cfg['max_task_reset_time'])
-        ret = self.db.auth_new_passkey(expiration=expiration,async=False)
+        ret = yield self.modules['db']['auth_new_passkey'](expiration=expiration)
         if isinstance(ret,Exception):
             logger.error('error getting passkey for task_id %r',
                          task['task_id'])
@@ -577,19 +570,21 @@ class grid(object):
         if task['task_id'] != 'pilot':
             # update DB
             logger.info('task %s has new submit_dir %s',task['task_id'],task_dir)
-            ret = self.db.queue_set_submit_dir(task=task['task_id'],
-                                         submit_dir=task_dir,async=False)
+            ret = yield self.modules['db']['queue_set_submit_dir'](task=task['task_id'],
+                                         submit_dir=task_dir)
             if isinstance(ret,Exception):
                 logger.error('error updating DB with submit_dir')
                 raise ret
 
         # create submit file
         try:
-            self.generate_submit_file(task,cfg=cfg,passkey=passkey,filelist=filelist)
-        except Exception as e:
-            logger.error('Error generating submit file: %s',e,exc_info=True)
+            yield self.generate_submit_file(task, cfg=cfg, passkey=passkey,
+                                            filelist=filelist)
+        except:
+            logger.error('Error generating submit file',exc_info=True)
             raise
 
+    @tornado.gen.coroutine
     def write_cfg(self,task):
         """Write the config file for a task"""
         filename = os.path.join(task['submit_dir'],'task.cfg')
@@ -598,7 +593,7 @@ class grid(object):
             config = dataclasses.Job()
         else:
             # get config from database
-            ret = self.db.queue_get_cfg_for_task(task_id=task['task_id'],async=False)
+            ret = yield self.modules['db']['queue_get_cfg_for_task'](task_id=task['task_id'])
             if isinstance(ret,Exception):
                 logger.error('error getting task cfg for task_id %r',
                              task['task_id'])
@@ -664,8 +659,10 @@ class grid(object):
         # write to file
         serialization.serialize_json.dump(config,filename)
 
-        return config, filelist
+        ret = (config, filelist)
+        raise tornado.gen.Return(ret)
 
+    # not async: called from executor
     def get_submit_args(self,task,cfg=None,passkey=None):
         """Get the submit arguments to start the loader script."""
         # get website address
@@ -705,20 +702,24 @@ class grid(object):
 
     ### Plugin Overrides ###
 
+    @tornado.gen.coroutine
     def get_grid_status(self):
         """Get all tasks running on the queue system.
            Returns {grid_queue_id:{status,submit_dir}}
         """
-        return {}
+        raise tornado.gen.Return({})
 
+    @tornado.gen.coroutine
     def generate_submit_file(self,task,cfg=None,passkey=None,filelist=None):
         """Generate queueing system submit file for task in dir."""
         raise NotImplementedError()
 
+    @tornado.gen.coroutine
     def submit(self,task):
         """Submit task to queueing system."""
         raise NotImplementedError()
 
+    @tornado.gen.coroutine
     def remove(self,tasks):
         """Remove tasks from queueing system."""
         pass

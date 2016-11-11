@@ -12,11 +12,11 @@ except ImportError:
     import pickle
 from collections import deque
 
-import tornado.ioloop
+import tornado.gen
+from tornado.concurrent import run_on_executor
 
 import iceprod.server
 from iceprod.server import module
-from iceprod.server.RPCinternal import RPCService
 from iceprod.server.master_communication import send_master
 
 logger = logging.getLogger('modules_master_updater')
@@ -29,96 +29,71 @@ class master_updater(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(master_updater,self).__init__(*args,**kwargs)
-        self.service_class = UpdateService(self)
+        self.service['add'] = self.add
 
         self.filename = '.master_updater_queue'
         self.buffer = deque()
         self.send_in_progress = False
-        self.start()
 
-    def start(self,*args,**kwargs):
-        """Start the messaging service"""
-        kwargs['callback'] = self._start
-        super(master_updater,self).start(*args,**kwargs)
-
-    def stop(self):
-        """Stop schedule"""
-        super(master_updater,self).stop()
-
-    def kill(self):
-        """Kill thread"""
-        super(master_updater,self).kill()
-
-    def _start(self):
+    def start(self):
+        """Start master updater"""
+        super(master_updater,self).start()
         if ('master_updater' in self.cfg and
             'filename' in self.cfg['master_updater']):
             self.filename = os.path.expandvars(os.path.expanduser(
                             self.cfg['master_updater']['filename']))
+        self._load()
+        self.io_loop.add_callback(self._send)
+
+    def stop(self):
+        """Stop master updater"""
+        super(master_updater,self).stop()
+
+    def kill(self):
+        """Kill master updater"""
+        super(master_updater,self).kill()
+
+    def _load(self):
+        """Load from cache file"""
         self.buffer = pickle.load(open(self.filename))
-        self.send_in_progress = False
-        if self.buffer:
-            self._send()
 
-    def update_cfg(self,cfg):
-        self.cfg = cfg
-        if ('master_updater' in self.cfg and
-            'filename' in self.cfg['master_updater']):
-            filename = os.path.expandvars(os.path.expanduser(
-                       self.cfg['master_updater']['filename']))
-            if filename != self.filename:
-                os.rename(self.filename,filename)
-                self.filename = filename
+    @run_on_executor
+    def _save(self):
+        """Save to cache file"""
+        pickle.dump(self.buffer, open(self.filename+'_new', 'wb'), -1)
+        os.rename(self.filename+'_new', self.filename)
 
-    def add(self,obj):
-        """Add to queue"""
+    @tornado.gen.coroutine
+    def add(self, obj):
+        """Add obj to queue"""
         try:
             self.buffer.append(obj)
-            pickle.dump(self.buffer,open(self.filename+'_new','w'),-1)
-            os.rename(self.filename+'_new',self.filename)
+            yield self._save()
             if not self.send_in_progress:
-                self._send()
+                self.io_loop.add_callback(self._send)
         except Exception:
-            logger.error('failed to add %r to buffer'%obj,exc_info=True)
+            logger.error('failed to add %r to buffer', obj, exc_info=True)
             raise
 
+    @tornado.gen.coroutine
     def _send(self):
         """Send an update to the master"""
         if self.buffer:
             self.send_in_progress = True
             data = self.buffer[0]
-            def cb(ret=None):
-                if isinstance(ret,Exception):
-                    logger.warn('error sending: %r',ret)
-                    # If the problem is server side, give it a minute.
-                    # This should stop a DDOS from happening.
-                    tornado.ioloop.IOLoop.current().call_later(60, self._send)
-                else:
-                    self.buffer.popleft()
-                    pickle.dump(self.buffer,open(self.filename+'_new','w'),-1)
-                    os.rename(self.filename+'_new',self.filename)
-                    self._send()
             params = {'updates':[data]}
-            send_master(self.cfg,'master_update',callback=cb,**params)
+            try:
+                ret = yield send_master(self.cfg, 'master_update', **params)
+            except:
+                logger.warn('error sending to master', exc_info=True)
+                # If the problem is server side, give it a minute.
+                # This should stop a DDOS from happening.
+                self.io_loop.call_later(60, self._send)
+            else:
+                # remove data we just successfully sent
+                self.buffer.popleft()
+                yield self._save()
+                self.io_loop.add_callback(self._send)
         else:
             self.send_in_progress = False
-
-class UpdateService(module.Service):
-    """
-    Override the basic :class:`Service` handler to handle more messages.
-    """
-    def reload(self,cfg,callback=None):
-        logger.warn('reload()')
-        self.mod.update_cfg(cfg)
-        if callback:
-            callback()
-
-    def add(self,arg,callback=None):
-        try:
-            self.mod.add(arg)
-        except Exception:
-            if callback:
-                callback(False)
-        else:
-            if callback:
-                callback(True)
 

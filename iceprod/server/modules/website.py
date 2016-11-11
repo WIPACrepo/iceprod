@@ -31,8 +31,6 @@ from contextlib import contextmanager
 from functools import partial, wraps
 from urlparse import urlparse
 
-from concurrent.futures import ThreadPoolExecutor
-
 # override tornado json encoder and decoder so we can use dataclasses objects
 import iceprod.core.jsonUtil
 import tornado.escape
@@ -43,6 +41,9 @@ import tornado.ioloop
 import tornado.web
 import tornado.httpserver
 import tornado.gen
+
+import tornado.concurrent
+import concurrent.futures
 
 from statsd import StatsClient
 
@@ -68,19 +69,12 @@ class website(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(website,self).__init__(*args,**kwargs)
-        self.service_class = WebsiteService(self)
+        self.service['logrotate'] = self.logrotate
 
         # set up local variables
         self.nginx = None
         self.http_server = None
         self.statsd = None
-
-        # start website
-        self.start()
-
-    def start(self):
-        """Start thread"""
-        super(website,self).start(callback=self._start)
 
     def stop(self):
         """Stop thread"""
@@ -98,26 +92,6 @@ class website(module.module):
             logger.error('cannot stop tornado: %r',e)
         super(website,self).stop()
 
-    def restart(self):
-        """restart website"""
-        logger.warn('restarting website')
-        # stop nginx
-        try:
-            if self.nginx:
-                self.nginx.stop()
-        except Exception as e:
-            logger.error('cannot stop Nginx: %r',e)
-        try:
-            if self.http_server:
-                self.http_server.stop()
-            def cb(*args,**kwargs):
-                self._start()
-            t = time.time()+0.5
-            tornado.ioloop.IOLoop.current().add_timeout(t,cb)
-        except Exception:
-            logger.warn('error during restart',exc_info=True)
-            raise
-
     def kill(self):
         """Kill thread"""
         # kill nginx
@@ -128,9 +102,20 @@ class website(module.module):
             logger.error('cannot kill Nginx: %r',e)
         super(website,self).kill()
 
+    def logrotate(self):
+        """Rotate the Nginx logs."""
+        logger.warn('got a logrotate() call')
+        try:
+            if self.nginx:
+                # rotate nginx logs
+                self.nginx.logrotate()
+            # tornado uses regular python logs, which rotate automatically
+        except:
+            pass # ignore errors in favor of continuous running
 
-    def _start(self):
+    def start(self):
         """Run the website"""
+        super(website,self).start()
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
                 self.statsd = StatsClient(self.cfg['statsd'],
@@ -185,7 +170,6 @@ class website(module.module):
                         pass
                     else:
                         kwargs['request_timeout'] = timeout
-                        self.messaging.timeout = timeout
                 if ('download' in self.cfg and 'http_username' in self.cfg['download']
                     and self.cfg['download']['http_username']):
                     kwargs['username'] = self.cfg['download']['http_username']
@@ -213,6 +197,7 @@ class website(module.module):
                             key = self.cfg['system']['ssl']['key']
                         else:
                             raise Exception('Bad ssl cert or key')
+
                     if not cert:
                         # auto-generate self-signed cert
                         create_cert('$PWD/cert','$PWD/key',days=365)
@@ -221,12 +206,8 @@ class website(module.module):
                         self.cfg['system']['ssl']['autogen'] = True
                         self.cfg['system']['ssl']['cert'] = cert
                         self.cfg['system']['ssl']['key'] = key
-                        self.messaging.config.set(key='system',value=self.cfg['system'])
-                        logger.warn('prepare for cfg reload')
-                        return
-                    else:
-                        kwargs['sslcert'] = cert
-                        kwargs['sslkey'] = key
+                    kwargs['sslcert'] = cert
+                    kwargs['sslkey'] = key
 
                     if 'cacert' in self.cfg['system']['ssl']:
                         if not os.path.exists(self.cfg['system']['ssl']['cacert']):
@@ -258,8 +239,8 @@ class website(module.module):
             #UploadHandler.upload_prefix = '/upload'
             handler_args = {
                 'cfg':self.cfg,
-                'messaging':self.messaging,
-                'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
+                'modules':self.modules,
+                'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
             }
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
@@ -273,9 +254,6 @@ class website(module.module):
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-                self.messaging.config.set(key='webserver',
-                                          value=self.cfg['webserver'],
-                                          update=False)
             self.application = tornado.web.Application([
                 (r"/jsonrpc", JSONRPCHandler, handler_args),
                 (r"/lib/.*", LibHandler, lib_args),
@@ -314,31 +292,7 @@ class website(module.module):
             logger.warn('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)
-            self.messaging.daemon.stop()
-
-    def logrotate(self):
-        """Rotate the Nginx logs."""
-        logger.warn('got a logrotate() call')
-        try:
-            if self.nginx:
-                # rotate nginx logs
-                self.nginx.logrotate()
-            # tornado uses regular python logs, which rotate automatically
-        except:
-            pass # ignore errors in favor of continuous running
-
-class WebsiteService(module.Service):
-    """
-    Override the basic :class:`Service` handler.
-    """
-    def restart(self,callback=None):
-        self.mod.restart()
-        if callback:
-            callback()
-    def logrotate(self,callback=None):
-        self.mod.logrotate()
-        if callback:
-            callback()
+            raise
 
 
 def catch_error(method):
@@ -369,7 +323,7 @@ def authenticated_secure(method):
     will add a `next` parameter so the login page knows where to send
     you once you're logged in.
     """
-    @functools.wraps(method)
+    @wraps(method)
     def wrapper(self, *args, **kwargs):
         if not self.current_user_secure:
             if self.request.method in ("GET", "HEAD"):
@@ -390,46 +344,33 @@ def authenticated_secure(method):
 
 class MyHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, messaging, fileio, debug=False, statsd=None):
+    def initialize(self, cfg, modules, fileio, debug=False, statsd=None):
         """
         Get some params from the website module
 
         :param cfg: the global config
-        :param messaging: the messaging handle
+        :param modules: modules handle
         :param fileio: AsyncFileIO object
         :param debug: debug flag (optional)
         """
         self.cfg = cfg
-        self.messaging = messaging
+        self.modules = modules
         self.fileio = fileio
         self.debug = debug
         self.statsd = statsd
 
-    @tornado.concurrent.return_future
+    @tornado.gen.coroutine
     def db_call(self,func_name,**kwargs):
-        """Turn a DB messaging call into a `Futures` object"""
+        """Make a database call, returning the result"""
         logger.debug('db_call for %s',func_name)
         try:
-            getattr(self.messaging.db,func_name)(**kwargs)
+            f = self.modules['db'][func_name](**kwargs)
+            if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
+                f = yield tornado.gen.with_timeout(f)
         except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
-
-    @tornado.concurrent.return_future
-    def daemon_call(self, func_name, **kwargs):
-        try:
-            getattr(self.messaging.daemon,func_name)(**kwargs)
-        except Exception:
-            logger.warn('daemon_call error for %s',func_name,exc_info=True)
-            raise
-
-    @tornado.concurrent.return_future
-    def config_call(self, func_name, **kwargs):
-        try:
-            getattr(self.messaging.config,func_name)(**kwargs)
-        except Exception:
-            logger.warn('config_call error for %s',func_name,exc_info=True)
-            raise
+        raise tornado.gen.Return(f)
 
     def get(self):
         """GET is invalid and returns an error"""
@@ -554,7 +495,6 @@ class LibHandler(MyHandler):
         """
         Get some params from the website module
 
-        :param messaging: the messaging handle
         :param fileio: AsyncFileIO object
         :param prefix: library url prefix
         :param directory: library directory on disk
@@ -718,29 +658,18 @@ class Site(PublicHandler):
         def cb(m):
             print(m)
 
-        ret = yield self.daemon_call('get_running_modules')
-
-        if isinstance(ret,Exception):
-            raise ret
-
-        available_modules = {}
-        for mod in iceprod.server.listmodules('iceprod.server.modules'):
-            mod_name = mod.rsplit('.',1)[1]
-            available_modules[mod_name] = mod
-
+        running_modules = self.modules['daemon']['get_running_modules']()
 
         module_state = []
-        for mod in available_modules.keys():
-            state = mod in ret
+        for mod in self.cfg['modules']:
+            state = mod in running_modules
             module_state.append([mod, state])
-        #self.messaging.daemon.get_running_modules(callback=cb)
-        #print('11111')
 
         passkey = yield self.db_call('auth_new_passkey')
         if isinstance(passkey,Exception):
             raise passkey
 
-        config = yield self.config_call('get_config_string')
+        config = self.config.save_to_string()
 
         self.render('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
         '''
@@ -799,7 +728,7 @@ class Dataset(PublicHandler):
             else:
                 dataset = None
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-            task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
+            task_info = yield self.db_call('web_get_task_reqs', dataset_id=dataset_id)
             task_info2 = []
             for t in task_info:
                 requirements = tornado.escape.json_decode(t[1])

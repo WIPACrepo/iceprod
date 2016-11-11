@@ -21,25 +21,9 @@ setlevel = {
 
 host = os.uname()[1].split(".")[0]
 
-def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
-              logsize=16777216,lognum=4):
+def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
     """Add an output to the root logger"""
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
-    
-    if cfg:
-        if 'level' in cfg.logging and cfg.logging['level'].upper() in setlevel:
-            loglevel  = cfg.logging['level']
-        if 'format' in cfg.logging:
-            logformat=cfg.logging['format']
-        if 'size' in cfg.logging:
-            logsize  = cfg.logging['size']
-        if 'num' in cfg.logging:
-            lognum  = cfg.logging['num']
-        
-        if loggername in cfg.logging:
-            logfile   = os.path.expandvars(cfg.logging[loggername])
-        else:
-            logfile   = os.path.expandvars(cfg.logging['logfile'])
 
     rootLogger = logging.getLogger('')
     rootLogger.setLevel(setlevel[loglevel.upper()])
@@ -48,13 +32,13 @@ def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
         if not logfile.startswith('/'):
             if 'I3PROD' in os.environ:
                 logfile = os.path.expanduser(os.path.expandvars(
-                            os.path.join('$I3PROD','var','log',logfile)))
+                            os.path.join('$I3PROD', 'var', 'log', logfile)))
             else:
-                logfile = os.path.join(os.getcwd(),'log',host,logfile)
+                logfile = os.path.join(os.getcwd(), 'log', host, logfile)
         if not os.path.exists(os.path.dirname(logfile)):
             os.makedirs(os.path.dirname(logfile))
-        fileHandler = logging.handlers.RotatingFileHandler(logfile,'a',
-                                                           logsize,lognum)
+        fileHandler = logging.handlers.RotatingFileHandler(logfile, 'a',
+                                                           logsize, lognum)
         formatter = logging.Formatter(logformat)
         fileHandler.setFormatter(formatter)
         rootLogger.addHandler(fileHandler)
@@ -62,7 +46,11 @@ def setlogger(loggername,cfg=None,loglevel='INFO',logfile='sys.stdout',
         logging.basicConfig()
     
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
-                    loglevel,logfile,logsize,lognum)
+                    loglevel, logfile, logsize, lognum)
+
+def set_log_level(loglevel='INFO'):
+    rootLogger = logging.getLogger('')
+    rootLogger.setLevel(setlevel[loglevel.upper()])
 
 def new_file(filename):
     """Write logging to a new file"""
