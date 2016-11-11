@@ -514,9 +514,9 @@ def runtray(cfg, globalenv,tray,stats={}):
     # run iterations
     try:
         tmpenv = globalenv.copy()
-        for i in xrange(tray['iterations']):
+        for i in range(tray['iterations']):
             # set up local env
-            tmpenv['options']['tray_iteration'] = i
+            tmpenv['options']['iter'] = i
             tmpstat = {}
             with setupenv(cfg, tray, tmpenv) as env:
                 # run modules
