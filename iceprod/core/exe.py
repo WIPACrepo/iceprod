@@ -585,6 +585,7 @@ def runmodule(cfg, globalenv, module, stats={}):
 
 def run_module(cfg, env, module):
     """Helper to runmodule. Returns a running subprocess."""
+    module_src = None
     if module['src']:
         # get script to run
         c = dataclasses.Class()
@@ -597,7 +598,10 @@ def run_module(cfg, env, module):
         setupClass(env,c)
         if c['name'] not in env['classes']:
             raise Exception('Failed to install class %s'%c['name'])
-        module['src'] = env['classes'][c['name']]
+        module_src = env['classes'][c['name']]
+
+    # set up env_shell
+    env_shell = none
     if module['env_shell']:
         env_shell = module['env_shell'].split()
         logger.info('searching for env_shell at %r', env_shell[0])
@@ -617,7 +621,6 @@ def run_module(cfg, env, module):
                 if c['name'] not in env['classes']:
                     raise Exception('Failed to install class %s'%c['name'])
                 env_shell[0] = env['classes'][c['name']]
-        module['env_shell'] = env_shell
 
     logger.warn('running module \'%s\' with class %s',module['name'],
                 module['running_class'])
@@ -640,8 +643,8 @@ def run_module(cfg, env, module):
 
     # set up the environment
     cmd = []
-    if module['env_shell']:
-        cmd.extend(module['env_shell'])
+    if env_shell:
+        cmd.extend(env_shell)
 
     # run the module
     if module['running_class']:
@@ -650,13 +653,13 @@ def run_module(cfg, env, module):
                     module['running_class']])
         if env['options']['debug']:
             cmd.append('--debug')
-        if module['src']:
-            cmd.extend(['--filename',module['src']])
+        if module_src:
+            cmd.extend(['--filename', module_src])
         if args:
             with open(constants['args'],'w') as f:
                 f.write(json_encode(args))
             cmd.append('--args')
-    elif module['src']:
+    elif module_src:
         logger.info('run as a script directly')
         if args:
             def splitter(a,b):
@@ -669,16 +672,15 @@ def run_module(cfg, env, module):
         else:
             args = []
 
-        src = module['src']
-        if src[-3:] == '.py':
+        if module_src[-3:] == '.py':
             # call as python script
-            cmd.extend(['python',src]+args)
+            cmd.extend(['python', module_src]+args)
         elif src[-3:] == '.sh':
             # call as shell script
-            cmd.extend(['/bin/sh',src]+args)
+            cmd.extend(['/bin/sh', module_src]+args)
         else:
             # call as regular executable
-            cmd.extend([src]+args)
+            cmd.extend([module_src]+args)
     else:
         logger.error('module is missing class and src')
         raise Exception('error running module')
