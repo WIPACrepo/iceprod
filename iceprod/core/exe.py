@@ -93,8 +93,9 @@ def setupenv(cfg, obj, oldenv={}):
         if isinstance(obj,dataclasses.Steering) and not obj.valid():
             raise Exception('object is not valid Steering')
 
-        # make sure deletions for this env are clear (don't inherit)
+        # make sure things for this env are clear (don't inherit)
         env['deletions'] = []
+        env['uploads'] = []
 
         # get clear environment variables
         env['environment'] = os.environ.copy()
@@ -128,8 +129,6 @@ def setupenv(cfg, obj, oldenv={}):
                 if d['movement'] in ('input','both'):
                     downloadData(env,d)
                 if d['movement'] in ('output','both'):
-                    if 'uploads' not in env:
-                        env['uploads'] = []
                     env['uploads'].append(d)
 
         if 'classes' not in env:
@@ -601,7 +600,7 @@ def run_module(cfg, env, module):
         module_src = env['classes'][c['name']]
 
     # set up env_shell
-    env_shell = none
+    env_shell = None
     if module['env_shell']:
         env_shell = module['env_shell'].split()
         logger.info('searching for env_shell at %r', env_shell[0])
