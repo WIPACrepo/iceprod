@@ -221,6 +221,24 @@ class parser_test(unittest.TestCase):
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('s 06d: ret != expected')
 
+        ret = p.sprintf_func('"%07d", 12.0000')
+        expected = '0000012'
+        if ret != expected:
+            logger.info('ret=%r, expected=%r',ret,expected)
+            raise Exception('07d: ret != expected')
+
+        ret = p.sprintf_func('"%x", 12')
+        expected = 'c'
+        if ret != expected:
+            logger.info('ret=%r, expected=%r',ret,expected)
+            raise Exception('x: ret != expected')
+
+        ret = p.sprintf_func('"%o", 12')
+        expected = '14'
+        if ret != expected:
+            logger.info('ret=%r, expected=%r',ret,expected)
+            raise Exception('o: ret != expected')
+
         try:
             p.sprintf_func('"%s,12')
         except parser.GrammarException:

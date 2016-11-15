@@ -416,10 +416,7 @@ class ExpParser:
                     if arg[0] in '\'"':            return str(arg[1:-1])
                     else:                          return str(arg)
                 elif fstring[-1] == 'r':           return repr(arg)
-                elif fstring[-1] in 'idu':         return int(arg)
-                elif fstring[-1].lower() in 'feg': return float(arg)
-                elif fstring[-1].lower() == 'x':   return int('0x%s' % arg, 0)
-                elif fstring[-1] == 'o':           return int('0%s' % arg, 0)
+                elif fstring[-1].lower() in 'idufegxo': return float(arg)
                 else:
                     raise GrammarException('Unable to cast %s using format %s'%(arg,fstring))
             
