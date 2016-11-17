@@ -59,16 +59,15 @@ class Client(object):
 
         # make request to server
         data = None
-        for i in range(2):
+        for i in range(3):
             try:
                 r = self.__session.post(self.__address, timeout=self.__timeout,
                         data=body, headers={'Content-Type': 'application/json-rpc'})
                 r.raise_for_status()
                 data = r.content
             except:
-                logging.warn('error making jsonrpc request for %s', methodname,
-                             exc_info=True)
-                if i == 0:
+                logging.warn('error making jsonrpc request for %s', methodname)
+                if i < 2:
                     # try restarting connection
                     self.close()
                     self.open()
