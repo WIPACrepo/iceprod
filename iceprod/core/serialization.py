@@ -53,26 +53,21 @@ def dict_to_dataclasses(input_dict):
     ret.convert()
     return ret
 
-
-try:
-    import json as _json
-except ImportError:
-    logger.info('json serializer is unavailable')
-else:
-    class serialize_json(object):
-        """
-        Serialize a dataset config to json.
-        """
-        @staticmethod
-        def dump(obj, filename, **kwargs):
-            return _json.dump(obj, open(filename,'w'), **kwargs)
-        @staticmethod
-        def dumps(obj, **kwargs):
-            return _json.dumps(obj, **kwargs)
-        @staticmethod
-        def load(filename, **kwargs):
-            return dict_to_dataclasses(_json.load(open(filename), **kwargs))
-        @staticmethod
-        def loads(obj, **kwargs):
-            return dict_to_dataclasses(_json.loads(obj, **kwargs))
+import json as _json
+class serialize_json(object):
+    """
+    Serialize a dataset config to json.
+    """
+    @staticmethod
+    def dump(obj, filename, **kwargs):
+        return _json.dump(obj, open(filename,'w'), **kwargs)
+    @staticmethod
+    def dumps(obj, **kwargs):
+        return _json.dumps(obj, **kwargs)
+    @staticmethod
+    def load(filename, **kwargs):
+        return dict_to_dataclasses(_json.load(open(filename), **kwargs))
+    @staticmethod
+    def loads(obj, **kwargs):
+        return dict_to_dataclasses(_json.loads(obj, **kwargs))
             
