@@ -313,7 +313,7 @@
 <li>hash : str</li>
 <li>email : str</li>
 <li>admin : bool</li>
-<li>groups : Text  <span class="gray"># csv list of group_ids</span></li>
+<li>roles : Text  <span class="gray"># csv list of role_ids</span></li>
 <li>last_login_time : str  <span class="gray"># datetime</span></li>
 </ul>
 <p><strong>groups</strong></p>
@@ -322,6 +322,12 @@
 <li>name : str</li>
 <li>description : Text</li>
 <li>priority : float  <span class="gray"># value between 0 and 1</span></li>
+</ul>
+<p><strong>roles</strong></p>
+<ul class="simple">
+<li>roles_id : str</li>
+<li>role_name : str</li>
+<li>groups_prefix : str</li>
 </ul>
 <p><strong>session</strong></p>
 <ul class="simple">
@@ -381,6 +387,7 @@
 <li>pilot_last : str</li>
 <li>user_offset : str</li>
 <li>groups_offset : str</li>
+<li>roles_offset : str</li>
 <li>session_last : str</li>
 <li>webstat_last : str</li>
 <li>webnote_last : str</li>
