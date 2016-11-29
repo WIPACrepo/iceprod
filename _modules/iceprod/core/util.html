@@ -89,6 +89,15 @@
 <span class="n">Task_Resources</span> <span class="o">=</span> <span class="n">Node_Resources</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">Task_Resources</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">24</span> <span class="c"># in hours</span>
 
+<span class="c">#: Overusage limits</span>
+<span class="n">Task_Resource_Overusage</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;cpu&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">},</span> <span class="c"># allow up to 2x without checking</span>
+    <span class="s">&#39;gpu&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
+    <span class="s">&#39;memory&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">3.</span><span class="p">},</span> <span class="c"># allow up to 3x if available</span>
+    <span class="s">&#39;disk&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">10.</span><span class="p">},</span>
+    <span class="s">&#39;time&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">},</span>
+<span class="p">}</span>
+
 <div class="viewcode-block" id="get_cpus"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.get_cpus">[docs]</a><span class="k">def</span> <span class="nf">get_cpus</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Detect the number of available (allocated) cpus.&quot;&quot;&quot;</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="k">None</span>
