@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Utilities &mdash; IceProd 2.0.4 documentation</title>
+  <title>Utilities &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../index.html"/>
         <link rel="up" title="IceProd Core" href="index.html"/>
         <link rel="next" title="IceProd Server" href="../server/index.html"/>
         <link rel="prev" title="Serialization" href="serialization.html"/> 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -149,13 +149,13 @@
 
 <dl class="data">
 <dt id="iceprod.core.util.Node_Resources">
-<code class="descclassname">iceprod.core.util.</code><code class="descname">Node_Resources</code><em class="property"> = {'gpu': 0, 'disk': 1, 'cpu': 1, 'memory': 1}</em><a class="headerlink" href="#iceprod.core.util.Node_Resources" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.util.</code><code class="descname">Node_Resources</code><em class="property"> = {'gpu': 0, 'disk': 10.0, 'cpu': 1, 'memory': 1.0}</em><a class="headerlink" href="#iceprod.core.util.Node_Resources" title="Permalink to this definition">¶</a></dt>
 <dd><p>The types of node resources, with defaults</p>
 </dd></dl>
 
 <dl class="data">
 <dt id="iceprod.core.util.Task_Resources">
-<code class="descclassname">iceprod.core.util.</code><code class="descname">Task_Resources</code><em class="property"> = {'time': 24, 'gpu': 0, 'disk': 1, 'cpu': 1, 'memory': 1}</em><a class="headerlink" href="#iceprod.core.util.Task_Resources" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.util.</code><code class="descname">Task_Resources</code><em class="property"> = {'time': 24, 'gpu': 0, 'disk': 10.0, 'cpu': 1, 'memory': 1.0}</em><a class="headerlink" href="#iceprod.core.util.Task_Resources" title="Permalink to this definition">¶</a></dt>
 <dd><p>The types of task resources, with defaults</p>
 </dd></dl>
 
@@ -205,54 +205,6 @@
 <code class="descclassname">iceprod.core.util.</code><code class="descname">get_task_resources</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/util.html#get_task_resources"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.get_task_resources" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="class">
-<dt id="iceprod.core.util.IFace">
-<em class="property">class </em><code class="descclassname">iceprod.core.util.</code><code class="descname">IFace</code><a class="reference internal" href="../_modules/iceprod/core/util.html#IFace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.IFace" title="Permalink to this definition">¶</a></dt>
-<dd><p>A network interface object</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; &#8216; &#8216;</li>
-<li><strong>encap</strong> &#8211; &#8216; &#8216;</li>
-<li><strong>mac</strong> &#8211; &#8216; &#8216;</li>
-<li><strong>link</strong> &#8211; []</li>
-<li><strong>rx_packets</strong> &#8211; 0</li>
-<li><strong>tx_packets</strong> &#8211; 0</li>
-<li><strong>rx_bytes</strong> &#8211; 0</li>
-<li><strong>tx_bytes</strong> &#8211; 0</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.core.util.PycURL">
-<em class="property">class </em><code class="descclassname">iceprod.core.util.</code><code class="descname">PycURL</code><a class="reference internal" href="../_modules/iceprod/core/util.html#PycURL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.PycURL" title="Permalink to this definition">¶</a></dt>
-<dd><p>An object to download/upload files using pycURL</p>
-<dl class="method">
-<dt id="iceprod.core.util.PycURL.put">
-<code class="descname">put</code><span class="sig-paren">(</span><em>url</em>, <em>filename</em>, <em>username=None</em>, <em>password=None</em>, <em>sslcert=None</em>, <em>sslkey=None</em>, <em>cacert=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/util.html#PycURL.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.PycURL.put" title="Permalink to this definition">¶</a></dt>
-<dd><p>Upload a file using POST</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.core.util.PycURL.fetch">
-<code class="descname">fetch</code><span class="sig-paren">(</span><em>url</em>, <em>filename</em>, <em>username=None</em>, <em>password=None</em>, <em>sslcert=None</em>, <em>sslkey=None</em>, <em>cacert=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/util.html#PycURL.fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.PycURL.fetch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download a file using GET</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.core.util.PycURL.post">
-<code class="descname">post</code><span class="sig-paren">(</span><em>url</em>, <em>writefunc</em>, <em>username=None</em>, <em>password=None</em>, <em>sslcert=None</em>, <em>sslkey=None</em>, <em>cacert=None</em>, <em>headerfunc=None</em>, <em>postbody=None</em>, <em>timeout=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/util.html#PycURL.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.util.PycURL.post" title="Permalink to this definition">¶</a></dt>
-<dd><p>Download a file using POST, output to writefunc</p>
-</dd></dl>
-
-</dd></dl>
-
 </div>
 
 
@@ -296,7 +248,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

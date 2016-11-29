@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>IceProd Server &mdash; IceProd 2.0.4 documentation</title>
+  <title>IceProd Server &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,8 +30,8 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html"/>
-        <link rel="next" title="Config Module" href="modules/config.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../index.html"/>
+        <link rel="next" title="Database Module" href="modules/db.html"/>
         <link rel="prev" title="Utilities" href="../core/util.html"/> 
 
   
@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -92,8 +92,8 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">IceProd Server</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="modules/config.html">Config Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/db.html">Database Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/queue.html">Queueing Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="modules/schedule.html">Schedule Module</a></li>
@@ -105,8 +105,6 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#regular-classes">Regular Classes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="RPCinternal.html">RPC Internal</a></li>
-<li class="toctree-l3"><a class="reference internal" href="basic_config.html">Basic Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="file_io.html">File IO</a></li>
@@ -117,6 +115,7 @@
 <li class="toctree-l3"><a class="reference internal" href="nginx.html">Nginx</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pool.html">Pool</a></li>
 <li class="toctree-l3"><a class="reference internal" href="schedule.html">Schedule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l3"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
@@ -162,8 +161,8 @@
 <p>Independent modules of the server that execute in separate processes.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modules/config.html">Config Module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/db.html">Database Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/queue.html">Queueing Module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/schedule.html">Schedule Module</a></li>
@@ -185,8 +184,6 @@
 <p>Utilities, helpers, shared code, and other bits and pieces.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="RPCinternal.html">RPC Internal</a></li>
-<li class="toctree-l1"><a class="reference internal" href="basic_config.html">Basic Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="file_io.html">File IO</a></li>
@@ -197,6 +194,7 @@
 <li class="toctree-l1"><a class="reference internal" href="nginx.html">Nginx</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pool.html">Pool</a></li>
 <li class="toctree-l1"><a class="reference internal" href="schedule.html">Schedule</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l1"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
@@ -211,7 +209,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="modules/config.html" class="btn btn-neutral float-right" title="Config Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="modules/db.html" class="btn btn-neutral float-right" title="Database Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../core/util.html" class="btn btn-neutral" title="Utilities" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -245,7 +243,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.server.config &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.server.config &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../server.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -133,7 +133,6 @@
 
 <span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span> <span class="n">json_decode</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">GlobalID</span><span class="p">,</span> <span class="n">get_pkgdata_filename</span>
-<span class="kn">from</span> <span class="nn">iceprod.server.basic_config</span> <span class="k">import</span> <span class="n">locateconfig</span>
 
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="k">try</span><span class="p">:</span>
@@ -144,6 +143,28 @@
     <span class="n">ValidationError</span> <span class="o">=</span> <span class="ne">Exception</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;config&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="locateconfig"><a class="viewcode-back" href="../../../server/config.html#iceprod.server.config.locateconfig">[docs]</a><span class="k">def</span> <span class="nf">locateconfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;iceprod_config.json&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Locate a config file&quot;&quot;&quot;</span>
+    <span class="n">cfgpaths</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&#39;$I3PROD&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfgpaths</span><span class="p">:</span>
+        <span class="n">cfgpaths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+    <span class="n">cfgpath</span> <span class="o">=</span> <span class="n">get_pkgdata_filename</span><span class="p">(</span><span class="s">&#39;iceprod.server&#39;</span><span class="p">,</span><span class="s">&#39;data&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfgpath</span><span class="p">:</span>
+        <span class="n">cfgpaths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cfgpath</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cfgpaths</span><span class="p">):</span>
+        <span class="c"># try for an etc directory</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">cfgpaths</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">)):</span>
+            <span class="n">cfgpaths</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">))</span>
+            <span class="c"># try for an iceprod directory</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">,</span><span class="s">&#39;iceprod&#39;</span><span class="p">)):</span>
+                <span class="n">cfgpaths</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">,</span><span class="s">&#39;iceprod&#39;</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">cfgpath</span> <span class="ow">in</span> <span class="n">cfgpaths</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="n">filename</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config {} not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="IceProdConfig"><a class="viewcode-back" href="../../../server/config.html#iceprod.server.config.IceProdConfig">[docs]</a><span class="k">class</span> <span class="nc">IceProdConfig</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -244,19 +265,16 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">loading</span> <span class="o">=</span> <span class="k">False</span></div>
 
 <div class="viewcode-block" id="IceProdConfig.load_string"><a class="viewcode-back" href="../../../server/config.html#iceprod.server.config.IceProdConfig.load_string">[docs]</a>    <span class="k">def</span> <span class="nf">load_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
-        <span class="n">ok</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="sd">&quot;&quot;&quot;Load a config from a string, saving to file.&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">loading</span> <span class="o">=</span> <span class="k">True</span>
             <span class="n">obj</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
                 <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">do_validate</span><span class="p">()</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="n">ok</span> <span class="o">=</span> <span class="k">False</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">loading</span> <span class="o">=</span> <span class="k">False</span>
-            <span class="k">return</span> <span class="n">ok</span></div>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="IceProdConfig.save_to_string"><a class="viewcode-back" href="../../../server/config.html#iceprod.server.config.IceProdConfig.save_to_string">[docs]</a>    <span class="k">def</span> <span class="nf">save_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">json_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span></div>
@@ -314,7 +332,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

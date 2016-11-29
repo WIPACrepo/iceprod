@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Database Module &mdash; IceProd 2.0.4 documentation</title>
+  <title>Database Module &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,10 +30,10 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server" href="../index.html"/>
-        <link rel="next" title="Proxy Module" href="proxy.html"/>
-        <link rel="prev" title="Config Module" href="config.html"/> 
+        <link rel="next" title="Master Updater Module" href="master_updater.html"/>
+        <link rel="prev" title="IceProd Server" href="../index.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -93,8 +93,8 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../index.html#modules">Modules</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="config.html">Config Module</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Database Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="proxy.html">Proxy Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="queue.html">Queueing Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="schedule.html">Schedule Module</a></li>
@@ -159,30 +159,6 @@
 <code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db.kill" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
-<dt id="iceprod.server.modules.db.db.update_cfg">
-<code class="descname">update_cfg</code><span class="sig-paren">(</span><em>new_cfg</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#db.update_cfg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.db.update_cfg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="iceprod.server.modules.db.DBService">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">DBService</code><span class="sig-paren">(</span><em>mod</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBService" title="Permalink to this definition">¶</a></dt>
-<dd><p>Override the basic <code class="xref py py-class docutils literal"><span class="pre">Service</span></code> handler to provide a more
-effecient reload method and a backup method. Other methods
-that are not defined are assumed to be DB-specific and are routed
-appropriately.</p>
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBService.reload">
-<code class="descname">reload</code><span class="sig-paren">(</span><em>cfg</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBService.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBService.reload" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBService.backup">
-<code class="descname">backup</code><span class="sig-paren">(</span><em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBService.backup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBService.backup" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="function">
@@ -203,7 +179,7 @@ appropriately.</p>
 
 <dl class="class">
 <dt id="iceprod.server.modules.db.DBAPI">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">DBAPI</code><span class="sig-paren">(</span><em>cfg</em>, <em>messaging</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">DBAPI</code><span class="sig-paren">(</span><em>parent</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI" title="Permalink to this definition">¶</a></dt>
 <dd><p>API for database interaction</p>
 <p>Config data (such as tables) are found at <a class="reference internal" href="../details/dbtables.html#dbconfig"><span class="std std-ref">DB Config</span></a>.</p>
 <dl class="attribute">
@@ -217,75 +193,80 @@ appropriately.</p>
 <dd></dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.start">
-<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.start" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><em>force=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.stop" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.backup">
-<code class="descname">backup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.backup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.backup" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.update_cfg">
-<code class="descname">update_cfg</code><span class="sig-paren">(</span><em>newcfg</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.update_cfg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.update_cfg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Update config in real time</p>
+<dt id="iceprod.server.modules.db.DBAPI.init">
+<code class="descname">init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the settings table, if necessary.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.init">
-<code class="descname">init</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.init" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the settings table if there is nothing there</p>
+<dt id="iceprod.server.modules.db.DBAPI.acquire_lock">
+<code class="descname">acquire_lock</code><span class="sig-paren">(</span><em>lock_name='_none_'</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.acquire_lock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.acquire_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Yield a <code class="xref py py-class docutils literal"><span class="pre">tornado.locks.Lock</span></code> for a specific task.</p>
+<p>This is designed to be used in a context-manager:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>with (yield db.acquire_lock(&#8216;task1&#8217;)):</dt>
+<dd># do something</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lock_name</strong> (<a class="reference external" href="http://python.readthedocs.io/en/latest/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The name of the task</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="iceprod.server.modules.db.DBAPI.increment_id">
-<code class="descname">increment_id</code><span class="sig-paren">(</span><em>table</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.increment_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.increment_id" title="Permalink to this definition">¶</a></dt>
-<dd><p>Increment the id of the table, returning the id</p>
+<code class="descname">increment_id</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.increment_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.increment_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Increment the id of a table, returning the old value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>table_name</strong> (<a class="reference external" href="http://python.readthedocs.io/en/latest/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The name of the table</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A table id</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://python.readthedocs.io/en/latest/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.sql_read_task">
-<code class="descname">sql_read_task</code><span class="sig-paren">(</span><em>sql=None</em>, <em>bindings=None</em>, <em>archive_sql=None</em>, <em>archive_bindings=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.sql_read_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.sql_read_task" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add task to the read pool</p>
+<dt id="iceprod.server.modules.db.DBAPI.query">
+<code class="descname">query</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.query"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a database query.</p>
+<p>If this is a read (SELECT) query, it will return an iterator
+over rows. If this is a write (INSERT, UPDATE, REPLACE) query,
+it will return <cite>None</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sql</strong> (<a class="reference external" href="http://python.readthedocs.io/en/latest/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; The query to execute</li>
+<li><strong>bindings</strong> (<a class="reference external" href="http://python.readthedocs.io/en/latest/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) &#8211; The bindings, if any</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">iterator or None</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.sql_write_task">
-<code class="descname">sql_write_task</code><span class="sig-paren">(</span><em>sql=None</em>, <em>bindings=None</em>, <em>archive_sql=None</em>, <em>archive_bindings=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.sql_write_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.sql_write_task" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.blocking_task">
-<code class="descname">blocking_task</code><span class="sig-paren">(</span><em>name</em>, <em>func</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.blocking_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.blocking_task" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.modules.db.DBAPI.non_blocking_task">
-<code class="descname">non_blocking_task</code><span class="sig-paren">(</span><em>func</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#DBAPI.non_blocking_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.DBAPI.non_blocking_task" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="iceprod.server.modules.db.SQLite">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">SQLite</code><span class="sig-paren">(</span><em>cfg</em>, <em>messaging</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#SQLite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.SQLite" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.db.</code><code class="descname">SQLite</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/db.html#SQLite"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.db.SQLite" title="Permalink to this definition">¶</a></dt>
 <dd><p>SQLite 3 implementation of DBAPI</p>
-<dl class="attribute">
-<dt id="iceprod.server.modules.db.SQLite.conn_cache">
-<code class="descname">conn_cache</code><em class="property"> = {}</em><a class="headerlink" href="#iceprod.server.modules.db.SQLite.conn_cache" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="iceprod.server.modules.db.SQLite.lock">
-<code class="descname">lock</code><em class="property"> = &lt;thread.lock object&gt;</em><a class="headerlink" href="#iceprod.server.modules.db.SQLite.lock" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 </div>
@@ -297,10 +278,10 @@ appropriately.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="proxy.html" class="btn btn-neutral float-right" title="Proxy Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="master_updater.html" class="btn btn-neutral float-right" title="Master Updater Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="config.html" class="btn btn-neutral" title="Config Module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../index.html" class="btn btn-neutral" title="IceProd Server" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -331,7 +312,7 @@ appropriately.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

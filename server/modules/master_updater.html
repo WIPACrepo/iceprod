@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Proxy Module &mdash; IceProd 2.0.6 documentation</title>
+  <title>Master Updater Module &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -32,8 +32,8 @@
   
     <link rel="top" title="IceProd 2.0.6 documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server" href="../index.html"/>
-        <link rel="next" title="Queueing Module" href="queue.html"/>
-        <link rel="prev" title="Master Updater Module" href="master_updater.html"/> 
+        <link rel="next" title="Proxy Module" href="proxy.html"/>
+        <link rel="prev" title="Database Module" href="db.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -94,8 +94,8 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">IceProd Server</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../index.html#modules">Modules</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="db.html">Database Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Proxy Module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Master Updater Module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="proxy.html">Proxy Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="queue.html">Queueing Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="schedule.html">Schedule Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="website.html">Website Module</a></li>
@@ -136,34 +136,37 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.modules.proxy">
-<span id="id1"></span><span id="proxy-module"></span><span id="index-0"></span><h1>Proxy Module<a class="headerlink" href="#module-iceprod.server.modules.proxy" title="Permalink to this headline">¶</a></h1>
-<p>The proxy module is a convenience module for starting and stopping a
-proxy server with IceProd. It currently uses
-<a class="reference external" href="http://www.squid-cache.org/">Squid</a>, which requires installation before
-use. The module will auto-configure <cite>Squid</cite>, so a default install suffices.</p>
-<p>Note that large grids should probably configure and use their own proxy
-infrastructure instead of running this module.</p>
+  <div class="section" id="master-updater-module">
+<span id="index-0"></span><span id="id1"></span><h1>Master Updater Module<a class="headerlink" href="#master-updater-module" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-iceprod.server.modules.master_updater"></span><p>The master_updater module queues and sends updates to the master.
+It uses a disk-based store to make sure updates survive restarting
+the local instance.</p>
 <dl class="class">
-<dt id="iceprod.server.modules.proxy.proxy">
-<em class="property">class </em><code class="descclassname">iceprod.server.modules.proxy.</code><code class="descname">proxy</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the proxy module, which runs a squid proxy</p>
+<dt id="iceprod.server.modules.master_updater.master_updater">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.master_updater.</code><code class="descname">master_updater</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/master_updater.html#master_updater"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.master_updater.master_updater" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the master_updater module, which handles updating the master.</p>
 <dl class="method">
-<dt id="iceprod.server.modules.proxy.proxy.start">
-<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.start" title="Permalink to this definition">¶</a></dt>
-<dd><p>Start proxy if not already running</p>
+<dt id="iceprod.server.modules.master_updater.master_updater.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/master_updater.html#master_updater.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.master_updater.master_updater.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start master updater</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.modules.proxy.proxy.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.stop" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stop proxy</p>
+<dt id="iceprod.server.modules.master_updater.master_updater.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/master_updater.html#master_updater.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.master_updater.master_updater.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop master updater</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.modules.proxy.proxy.kill">
-<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/proxy.html#proxy.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.proxy.proxy.kill" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kill proxy</p>
+<dt id="iceprod.server.modules.master_updater.master_updater.kill">
+<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/master_updater.html#master_updater.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.master_updater.master_updater.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kill master updater</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.master_updater.master_updater.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/master_updater.html#master_updater.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.master_updater.master_updater.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add obj to queue</p>
 </dd></dl>
 
 </dd></dl>
@@ -177,10 +180,10 @@ infrastructure instead of running this module.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="queue.html" class="btn btn-neutral float-right" title="Queueing Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="proxy.html" class="btn btn-neutral float-right" title="Proxy Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="master_updater.html" class="btn btn-neutral" title="Master Updater Module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="db.html" class="btn btn-neutral" title="Database Module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

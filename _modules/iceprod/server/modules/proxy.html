@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.server.modules.proxy &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.server.modules.proxy &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../../server.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -134,8 +134,6 @@
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
 
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">Condition</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">import</span> <span class="nn">iceprod.server</span>
@@ -150,8 +148,6 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="k">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span> <span class="o">=</span> <span class="n">ProxyService</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
     
     <span class="k">def</span> <span class="nf">_getargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="s">&#39;proxy&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
@@ -166,11 +162,9 @@
     
 <div class="viewcode-block" id="proxy.start"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Start proxy if not already running&quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c"># after module is started, start squid</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="n">Squid</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
         
 <div class="viewcode-block" id="proxy.stop"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stop proxy&quot;&quot;&quot;</span>
@@ -182,24 +176,7 @@
         <span class="sd">&quot;&quot;&quot;Kill proxy&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
-        
-<div class="viewcode-block" id="proxy.update_cfg"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.update_cfg">[docs]</a>    <span class="k">def</span> <span class="nf">update_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newcfg</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Update the cfg, making any necessary changes&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">newcfg</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">restart</span><span class="p">()</span></div></div>
-
-<div class="viewcode-block" id="ProxyService"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.ProxyService">[docs]</a><span class="k">class</span> <span class="nc">ProxyService</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">Service</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Override the basic :class:`Service` handler to provide a more</span>
-<span class="sd">    effecient reload method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="ProxyService.reload"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.ProxyService.reload">[docs]</a>    <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cfg</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">update_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">()</span></div></div>
+        <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
 </pre></div>
 
            </div>
@@ -233,7 +210,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

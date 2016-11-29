@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.server.dbmethods &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.server.dbmethods &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../server.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -132,7 +132,8 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">update_wrapper</span><span class="p">,</span> <span class="n">partial</span>
 
-<span class="kn">import</span> <span class="nn">tornado.ioloop</span>
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+<span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.functools_future</span> <span class="k">import</span> <span class="n">partialmethod</span>
 
@@ -141,98 +142,82 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods&#39;</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">dbmethod</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="authorization"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.authorization">[docs]</a><span class="k">def</span> <span class="nf">authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">match_user</span><span class="o">=</span><span class="k">False</span><span class="p">,</span> <span class="n">site_valid</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Authorization decorator.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        auth_role (str, list): The role name(s) to match against</span>
+<span class="sd">        match_user (bool): Match logged in user with kwargs `user_id`</span>
+<span class="sd">        site_valid (bool): Valid for site queries</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">make_wrapper</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">if</span> <span class="s">&#39;timeout&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;timeout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">60</span>
-        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">defaults</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_defaults&#39;</span><span class="p">))</span>
-            <span class="k">if</span> <span class="s">&#39;callback&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">False</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout_handle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
-                <span class="n">ioloop</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">current</span><span class="p">()</span>
-                <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]:</span>
-                        <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">](</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                    <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
-                    <span class="k">if</span> <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout_handle&#39;</span><span class="p">]:</span>
-                        <span class="k">def</span> <span class="nf">remove_timeout</span><span class="p">():</span>
-                            <span class="n">ioloop</span><span class="o">.</span><span class="n">remove_timeout</span><span class="p">(</span><span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout_handle&#39;</span><span class="p">])</span>
-                        <span class="n">ioloop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="n">remove_timeout</span><span class="p">)</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span><span class="n">defaults</span><span class="p">)</span>
-                <span class="k">def</span> <span class="nf">cb2</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]:</span>
-                        <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;callback&#39;</span><span class="p">](</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;timeout&#39;</span><span class="p">))</span>
-                    <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
-                <span class="k">if</span> <span class="s">&#39;timeout&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                    <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;timeout&#39;</span><span class="p">)</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout_handle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ioloop</span><span class="o">.</span><span class="n">add_timeout</span><span class="p">(</span>
-                        <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">defaults</span><span class="p">[</span><span class="s">&#39;timeout&#39;</span><span class="p">]),</span>
-                        <span class="n">partial</span><span class="p">(</span><span class="n">cb2</span><span class="p">,</span><span class="n">defaults</span><span class="p">))</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;args: %r&#39;</span><span class="p">,</span><span class="n">args</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;kwargs: %r&#39;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;got exception from dbmethod&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
-                <span class="k">raise</span>
-            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
-                <span class="n">defaults</span><span class="p">[</span><span class="s">&#39;ignore_callback&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
-            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">auth</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_auth&#39;</span><span class="p">)</span>
+            <span class="n">auth_role</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;auth_role&#39;</span><span class="p">]</span>
+            <span class="n">match_user</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;match_user&#39;</span><span class="p">]</span>
+            <span class="n">site_valid</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;site_valid&#39;</span><span class="p">]</span>
+
+            <span class="c"># get user and role</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="n">role</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="n">site_auth</span> <span class="o">=</span> <span class="n">site_valid</span>
+            <span class="k">if</span> <span class="s">&#39;passkey&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">passkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="s">&#39;site_id&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="c"># authorize site</span>
+                    <span class="n">site_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site_id&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">site_valid</span><span class="p">:</span>
+                        <span class="n">site_auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">(</span><span class="s">&#39;auth_authorize_site&#39;</span><span class="p">,</span>
+                                                       <span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c"># authorize task</span>
+                    <span class="n">user_auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_task&#39;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                    
+            <span class="k">elif</span> <span class="s">&#39;cookie_id&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">user_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;cookie_id&#39;</span><span class="p">)</span>
+
+            <span class="c"># check authorization</span>
+            <span class="k">if</span> <span class="n">auth_role</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">role</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no role to match&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_role</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                    <span class="n">auth_role</span> <span class="o">=</span> <span class="p">[</span><span class="n">auth_role</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">role</span> <span class="o">!=</span> <span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">auth_role</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;role match failure: %r!=%r&#39;</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">auth_role</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match_user</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no user to match&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
+                <span class="n">kwargs_user</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="k">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">user</span> <span class="o">!=</span> <span class="n">kwargs_user</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;user match failure: %r!=%r&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">kwargs_user</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
+
+            <span class="c"># run function</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_argcount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
             <span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;self&#39;</span><span class="p">):</span>
-            <span class="n">obj2</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_defaults</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">obj2</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_auth</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">obj2</span> <span class="o">=</span> <span class="n">update_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_defaults</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="n">obj</span><span class="p">,</span>
+            <span class="n">obj2</span> <span class="o">=</span> <span class="n">update_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_auth</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="n">obj</span><span class="p">,</span>
                     <span class="p">(</span><span class="s">&#39;__name__&#39;</span><span class="p">,</span><span class="s">&#39;__module__&#39;</span><span class="p">,</span><span class="s">&#39;__doc__&#39;</span><span class="p">),(</span><span class="s">&#39;__dict__&#39;</span><span class="p">,))</span>
         <span class="k">return</span> <span class="n">obj2</span>
-    <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">make_wrapper</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">make_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">make_wrapper</span></div>
 
-<div class="viewcode-block" id="DBMethods"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.DBMethods">[docs]</a><span class="k">class</span> <span class="nc">DBMethods</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;The actual methods to be called on the database.</span>
-<span class="sd">    Takes a handle to a subclass of iceprod.server.modules.db.DBAPI</span>
-<span class="sd">    as an argument.&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">db</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">subclasses</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">methods</span> <span class="o">=</span> <span class="p">{}</span>
-
-        <span class="c"># find all subclasses</span>
-        <span class="n">raw_types</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">listmodules</span><span class="p">(</span><span class="s">&#39;iceprod.server.dbmethods&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;available modules: %r&#39;</span><span class="p">,</span><span class="n">raw_types</span><span class="p">)</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">raw_types</span><span class="p">:</span>
-            <span class="c"># try instantiating the module</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">subclasses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">run_module</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="bp">self</span><span class="p">))</span>
-                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Error importing module&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">obj</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subclasses</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">callable</span><span class="p">):</span>
-                    <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
-                        <span class="k">continue</span>
-                    <span class="k">if</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;duplicate method name in dbmethods: %s&#39;</span><span class="p">,</span><span class="n">m</span><span class="p">)</span>
-                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;duplicate method name in dbmethods: %s&#39;</span><span class="o">%</span><span class="n">m</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
-
-    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subclasses</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">methods</span><span class="p">[</span><span class="n">name</span><span class="p">]],</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s">&quot;DBMethods instance has no attribute &#39;%s&#39;&quot;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span></div>
 
 <span class="k">class</span> <span class="nc">_Methods_Base</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Base class for DB methods classes.&quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parent</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">db</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">io_loop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">executor</span>
 
     <span class="k">def</span> <span class="nf">_list_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">table</span><span class="p">,</span><span class="n">input_row</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert an input that is a list of values from a table</span>
@@ -258,29 +243,35 @@
             <span class="k">raise</span>
         <span class="k">return</span> <span class="n">ret</span>
 
-    <span class="k">def</span> <span class="nf">_bulk_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_bulk_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Select many items by id.</span>
 
 <span class="sd">        sql should have %s for where bindings are inserted.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sql (str): An sql template</span>
+<span class="sd">            bindings (iterable): The bindings to iterate over</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of :class:`Future` objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bindings</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">while</span> <span class="n">bindings</span><span class="p">:</span>
             <span class="n">bindings2</span> <span class="o">=</span> <span class="n">bindings</span><span class="p">[:</span><span class="mi">900</span><span class="p">]</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;bulk select %s %d&#39;</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">bindings2</span><span class="p">))</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="n">bindings</span><span class="p">[</span><span class="mi">900</span><span class="p">:]</span>
             <span class="n">sql2</span> <span class="o">=</span> <span class="n">sql</span><span class="o">%</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">bindings2</span><span class="p">))</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">bindings2</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">ret</span>
-            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="n">row</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql2</span><span class="p">,</span> <span class="n">bindings2</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">ret</span>
 
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
     <span class="k">def</span> <span class="nf">_send_to_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Send an update to the master&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">master_updater</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;master_updater&#39;</span><span class="p">][</span><span class="s">&#39;add&#39;</span><span class="p">](</span><span class="n">arg</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;_send_to_master() error&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
@@ -364,7 +355,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

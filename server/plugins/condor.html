@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Condor Plugin &mdash; IceProd 2.0.4 documentation</title>
+  <title>Condor Plugin &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,9 +30,9 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server" href="../index.html"/>
-        <link rel="next" title="RPC Internal" href="../RPCinternal.html"/>
+        <link rel="next" title="Detailed Configuration" href="../config.html"/>
         <link rel="prev" title="Website Module" href="../modules/website.html"/> 
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -131,41 +131,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.plugins.condor">
-<span id="condor-plugin"></span><span id="plugins-condor"></span><span id="index-0"></span><h1>Condor Plugin<a class="headerlink" href="#module-iceprod.server.plugins.condor" title="Permalink to this headline">¶</a></h1>
-<p>The Condor plugin.  Allows submission to
-<a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a>.</p>
-<p>Note: Condor was renamed to HTCondor in 2012.</p>
-<dl class="class">
-<dt id="iceprod.server.plugins.condor.condor">
-<em class="property">class </em><code class="descclassname">iceprod.server.plugins.condor.</code><code class="descname">condor</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="iceprod.server.plugins.condor.condor.generate_submit_file">
-<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em>, <em>filelist=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.generate_submit_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate queueing system submit file for task in dir.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.plugins.condor.condor.get_grid_status">
-<code class="descname">get_grid_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.get_grid_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all tasks running on the queue system.
-Returns {grid_queue_id:{status,submit_dir}}</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.plugins.condor.condor.remove">
-<code class="descname">remove</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove tasks from queueing system.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.plugins.condor.condor.submit">
-<code class="descname">submit</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/plugins/condor.html#condor.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.plugins.condor.condor.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit task to queueing system.</p>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="condor-plugin">
+<span id="plugins-condor"></span><span id="index-0"></span><h1>Condor Plugin<a class="headerlink" href="#condor-plugin" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -175,7 +142,7 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../RPCinternal.html" class="btn btn-neutral float-right" title="RPC Internal" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../config.html" class="btn btn-neutral float-right" title="Detailed Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../modules/website.html" class="btn btn-neutral" title="Website Module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -209,7 +176,7 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

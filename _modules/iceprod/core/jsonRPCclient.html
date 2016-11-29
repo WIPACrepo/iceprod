@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.core.jsonRPCclient &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.core.jsonRPCclient &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../index.html"/>
         <link rel="up" title="iceprod.core" href="../core.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -123,14 +123,16 @@
             
   <h1>Source code for iceprod.core.jsonRPCclient</h1><div class="highlight"><pre>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">A simple jsonrpc client using pycurl for the http connection</span>
+<span class="sd">A simple jsonrpc client using `requests` for the http connection</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">RLock</span>
 
-<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
-<span class="kn">from</span> <span class="nn">iceprod.core.util</span> <span class="k">import</span> <span class="n">PycURL</span>
+<span class="kn">import</span> <span class="nn">requests</span>
 
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Client"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client">[docs]</a><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Raw JSONRPC client object&quot;&quot;&quot;</span>
@@ -140,17 +142,26 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">timeout</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span><span class="n">address</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">address</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;need a valid address&#39;</span><span class="p">)</span>
-        <span class="c"># establish pycurl connection</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__pycurl</span> <span class="o">=</span> <span class="n">PycURL</span><span class="p">()</span>
-        <span class="c"># save timeout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__timeout</span> <span class="o">=</span> <span class="n">timeout</span>
-        <span class="c"># save address</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__address</span> <span class="o">=</span> <span class="n">address</span>
-        <span class="c"># save connection options</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="c"># start session</span>
+
+<div class="viewcode-block" id="Client.open"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;establish http session for jsonrpc&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Client.close"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__pycurl</span> <span class="o">=</span> <span class="k">None</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Client.newid"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.newid">[docs]</a>    <span class="k">def</span> <span class="nf">newid</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
@@ -167,43 +178,34 @@
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;cannot use RPC for private methods&#39;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot use RPC for private methods&#39;</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
-                <span class="n">cb</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">data</span>
-        <span class="n">cb</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
-
         <span class="c"># translate request to json</span>
         <span class="n">body</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">({</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">:</span><span class="s">&#39;2.0&#39;</span><span class="p">,</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="n">methodname</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:</span><span class="n">kwargs</span><span class="p">,</span><span class="s">&#39;id&#39;</span><span class="p">:</span><span class="n">Client</span><span class="o">.</span><span class="n">newid</span><span class="p">()})</span>
 
         <span class="c"># make request to server</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;postbody&#39;</span><span class="p">:</span><span class="n">body</span><span class="p">,</span><span class="s">&#39;timeout&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeout</span><span class="p">}</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-            <span class="c"># convert from ssl.wrap_socket to curl notation</span>
-            <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
-            <span class="c"># add options for basic_auth username and password</span>
-            <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__opts</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;RPC pycurl options: %r&#39;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">__pycurl</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__address</span><span class="p">,</span><span class="n">cb</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
-            <span class="k">raise</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__address</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__timeout</span><span class="p">,</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s">&#39;application/json-rpc&#39;</span><span class="p">})</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request for %s&#39;</span><span class="p">,</span> <span class="n">methodname</span><span class="p">,</span>
+                             <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c"># try restarting connection</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
 
         <span class="c"># translate response from json</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cb</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">None</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json data: %r&#39;</span><span class="p">,</span><span class="n">cb</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json data: %r&#39;</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
             <span class="k">raise</span>
 
         <span class="k">if</span> <span class="s">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
@@ -317,7 +319,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

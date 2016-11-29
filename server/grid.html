@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Grid Queueing &mdash; IceProd 2.0.4 documentation</title>
+  <title>Grid Queueing &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../index.html"/>
         <link rel="up" title="IceProd Server" href="index.html"/>
         <link rel="next" title="Asynchronous GridFTP" href="gridftp.html"/>
         <link rel="prev" title="File IO" href="file_io.html"/> 
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -95,8 +95,6 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#modules">Modules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#plugins">Plugins</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#regular-classes">Regular Classes</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="RPCinternal.html">RPC Internal</a></li>
-<li class="toctree-l3"><a class="reference internal" href="basic_config.html">Basic Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l3"><a class="reference internal" href="file_io.html">File IO</a></li>
@@ -107,6 +105,7 @@
 <li class="toctree-l3"><a class="reference internal" href="nginx.html">Nginx</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pool.html">Pool</a></li>
 <li class="toctree-l3"><a class="reference internal" href="schedule.html">Schedule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l3"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l3"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
@@ -144,101 +143,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-iceprod.server.grid">
-<span id="grid-queueing"></span><span id="grid"></span><span id="index-0"></span><h1>Grid Queueing<a class="headerlink" href="#module-iceprod.server.grid" title="Permalink to this headline">¶</a></h1>
-<p>Interface for configuring and submitting jobs on a computing cluster.
-Do not use this class directly. Instead use one of the implementations
-that inherit from this class.</p>
-<dl class="class">
-<dt id="iceprod.server.grid.grid">
-<em class="property">class </em><code class="descclassname">iceprod.server.grid.</code><code class="descname">grid</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>Interface for a generic job distribution system.
-Do not use this class directly.  Use one of the plugins.</p>
-<dl class="attribute">
-<dt id="iceprod.server.grid.grid.GRID_STATES">
-<code class="descname">GRID_STATES</code><em class="property"> = ('queued', 'processing', 'completed', 'error', 'unknown')</em><a class="headerlink" href="#iceprod.server.grid.grid.GRID_STATES" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.check_and_clean">
-<code class="descname">check_and_clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_and_clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_and_clean" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check and Clean the Grid</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.queue">
-<code class="descname">queue</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.queue" title="Permalink to this definition">¶</a></dt>
-<dd><p>Queue tasks to the grid</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.check_iceprod">
-<code class="descname">check_iceprod</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_iceprod"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_iceprod" title="Permalink to this definition">¶</a></dt>
-<dd><p>check if any task is in a state for too long</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.check_grid">
-<code class="descname">check_grid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.check_grid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.check_grid" title="Permalink to this definition">¶</a></dt>
-<dd><p>check the queueing system for problems</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.add_tasks_to_pilot_lookup">
-<code class="descname">add_tasks_to_pilot_lookup</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.add_tasks_to_pilot_lookup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.add_tasks_to_pilot_lookup" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.setup_pilots">
-<code class="descname">setup_pilots</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.setup_pilots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.setup_pilots" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setup pilots for the task reqs</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.setup_submit_directory">
-<code class="descname">setup_submit_directory</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.setup_submit_directory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.setup_submit_directory" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set up submit directory</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.write_cfg">
-<code class="descname">write_cfg</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.write_cfg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.write_cfg" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write the config file for a task</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.get_submit_args">
-<code class="descname">get_submit_args</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.get_submit_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.get_submit_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the submit arguments to start the loader script.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.get_grid_status">
-<code class="descname">get_grid_status</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.get_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.get_grid_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all tasks running on the queue system.
-Returns {grid_queue_id:{status,submit_dir}}</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.generate_submit_file">
-<code class="descname">generate_submit_file</code><span class="sig-paren">(</span><em>task</em>, <em>cfg=None</em>, <em>passkey=None</em>, <em>filelist=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.generate_submit_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.generate_submit_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate queueing system submit file for task in dir.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.submit">
-<code class="descname">submit</code><span class="sig-paren">(</span><em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.submit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Submit task to queueing system.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.grid.grid.remove">
-<code class="descname">remove</code><span class="sig-paren">(</span><em>tasks</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/grid.html#grid.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.grid.grid.remove" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove tasks from queueing system.</p>
-</dd></dl>
-
-</dd></dl>
-
+  <div class="section" id="grid-queueing">
+<span id="grid"></span><span id="index-0"></span><h1>Grid Queueing<a class="headerlink" href="#grid-queueing" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -282,7 +188,7 @@ Returns {grid_queue_id:{status,submit_dir}}</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

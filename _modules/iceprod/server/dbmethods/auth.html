@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.server.dbmethods.auth &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.server.dbmethods.auth &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="iceprod.server.dbmethods" href="../dbmethods.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -131,9 +131,11 @@
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 <span class="kn">import</span> <span class="nn">uuid</span>
 
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+
 <span class="kn">from</span> <span class="nn">iceprod.core.dataclasses</span> <span class="k">import</span> <span class="n">Number</span><span class="p">,</span><span class="n">String</span>
 
-<span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">dbmethod</span><span class="p">,</span><span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span><span class="n">nowstr</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span><span class="n">nowstr</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods.auth&#39;</span><span class="p">)</span>
 
@@ -150,84 +152,56 @@
 <span class="sd">    Takes a handle to a subclass of iceprod.server.modules.db.DBAPI</span>
 <span class="sd">    as an argument.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_get_site_auth"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_site_auth">[docs]</a>    <span class="k">def</span> <span class="nf">auth_get_site_auth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">site_id</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_get_site_auth"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_site_auth">[docs]</a>    <span class="k">def</span> <span class="nf">auth_get_site_auth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the auth_key for the selected site (usually the current site).</span>
 <span class="sd">        Returns the auth_key&quot;&quot;&quot;</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select auth_key from site where site_id = ?&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">site_id</span><span class="p">,)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_get_site_auth_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_auth_get_site_auth_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No site match for current site name&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;More than one site match for current site name&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-                    <span class="c"># DB will return None if column is empty</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Row does not have both site and key&#39;</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No site match for current site name&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;More than one site match for current site name&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># DB will return None if column is empty</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Row does not have both site and key&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_authorize_site"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_site">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">site</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_authorize_site"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_site">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Validate site and key for authorization.</span>
 <span class="sd">        Returns True/Exception&quot;&quot;&quot;</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select site_id,auth_key from site where site_id = ?&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">site</span><span class="p">,)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_authorize_site_callback</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_auth_authorize_site_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No site match for current site id&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;More than one site match for current site id&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-                    <span class="c"># DB will return None if column is empty</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Row does not have both site and key&#39;</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth_get_site_auth</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">key</span> <span class="o">==</span> <span class="n">ret</span><span class="p">)</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_authorize_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_task">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_authorize_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_task">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Validate key for authorization.</span>
 <span class="sd">        Returns True/Exception&quot;&quot;&quot;</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select auth_key,expire from passkey where auth_key = ?&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_authorize_task_callback</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_auth_authorize_task_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No match for passkey&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;More than one match for passkey&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># DB will return None if column is empty</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Row does not have both key and expiration time&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">str2datetime</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">key</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Passkey returned from db does not match key&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Passkey is expired&#39;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No match for passkey&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;More than one match for passkey&#39;</span><span class="p">))</span>
-                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
-                    <span class="c"># DB will return None if column is empty</span>
-                    <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Row does not have both key and expiration time&#39;</span><span class="p">))</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">k</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">d</span> <span class="o">=</span> <span class="n">str2datetime</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-                    <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="n">key</span><span class="p">:</span>
-                        <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Passkey returned from db does not match key&#39;</span><span class="p">))</span>
-                    <span class="k">elif</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">():</span>
-                        <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Passkey is expired&#39;</span><span class="p">))</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="k">True</span><span class="p">)</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_new_passkey"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_new_passkey">[docs]</a>    <span class="k">def</span> <span class="nf">auth_new_passkey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expiration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_new_passkey"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_new_passkey">[docs]</a>    <span class="k">def</span> <span class="nf">auth_new_passkey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expiration</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a new passkey.  Default expiration in 1 hour.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expiration</span><span class="p">,</span><span class="n">Number</span><span class="p">):</span>
             <span class="n">expiration</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">+</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="n">expiration</span><span class="p">)</span>
@@ -236,75 +210,52 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
             <span class="n">user_id</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
 
-        <span class="n">passkey_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
+        <span class="n">passkey_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
         <span class="n">passkey</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into passkey (passkey_id, auth_key, expire, user_id) &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?,?)&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">passkey_id</span><span class="p">,</span> <span class="n">passkey</span><span class="p">,</span> <span class="n">datetime2str</span><span class="p">(</span><span class="n">expiration</span><span class="p">),</span> <span class="n">user_id</span><span class="p">)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_new_passkey_callback</span><span class="p">,</span><span class="n">passkey</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_auth_new_passkey_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">passkey</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">passkey</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">passkey</span><span class="p">)</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_get_passkey"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_passkey">[docs]</a>    <span class="k">def</span> <span class="nf">auth_get_passkey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">passkey</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_get_passkey"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_get_passkey">[docs]</a>    <span class="k">def</span> <span class="nf">auth_get_passkey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">passkey</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the expiration datetime of a passkey&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">passkey</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;bad expiration&#39;</span><span class="p">)</span>
 
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select expire from passkey where auth_key = ?&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">passkey</span><span class="p">,)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_get_passkey_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_auth_get_passkey_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;get_passkey did not return a passkey&#39;</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">expiration</span> <span class="o">=</span> <span class="n">str2datetime</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">expiration</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;get_passkey did not return a passkey&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">str2datetime</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]))</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.add_site_to_master"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.add_site_to_master">[docs]</a>    <span class="k">def</span> <span class="nf">add_site_to_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">site_id</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.add_site_to_master"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.add_site_to_master">[docs]</a>    <span class="k">def</span> <span class="nf">add_site_to_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add a remote site to the master and return a new passkey&quot;&quot;&quot;</span>
         <span class="n">passkey</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into site (site_id,auth_key) values (?,?)&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">site_id</span><span class="p">,</span><span class="n">passkey</span><span class="p">)</span>
-        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_add_site_to_master_callback</span><span class="p">,</span><span class="n">passkey</span><span class="p">,</span>
-                     <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_add_site_to_master_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">passkey</span><span class="p">,</span><span class="n">ret</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">passkey</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">passkey</span><span class="p">)</span></div>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_user_create"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user_create">[docs]</a>    <span class="k">def</span> <span class="nf">auth_user_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
-                         <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_user_create"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user_create">[docs]</a>    <span class="k">def</span> <span class="nf">auth_user_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="s">&#39;ldap&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ldap&#39;</span><span class="p">]:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot create a user with ldap&#39;</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot create a user with ldap&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_create_internal</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span>
-                         <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="n">cb</span><span class="p">)</span></div>
+            <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">)):</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_create_internal</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span></div>
 
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
     <span class="k">def</span> <span class="nf">_auth_user_create_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
-                                   <span class="n">email</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+                                   <span class="n">email</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">username</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">email</span><span class="p">:</span>
             <span class="n">email</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
             <span class="kn">from</span> <span class="nn">cryptography.hazmat.primitives</span> <span class="k">import</span> <span class="n">hashes</span>
             <span class="kn">from</span> <span class="nn">cryptography.hazmat.primitives.kdf.pbkdf2</span> <span class="k">import</span> <span class="n">PBKDF2HMAC</span>
             <span class="kn">from</span> <span class="nn">cryptography.hazmat.backends</span> <span class="k">import</span> <span class="n">default_backend</span>
@@ -319,31 +270,28 @@
             <span class="p">)</span>
             <span class="n">db_hash</span> <span class="o">=</span> <span class="n">kdf</span><span class="o">.</span><span class="n">derive</span><span class="p">(</span><span class="n">passwd</span><span class="p">)</span>
 
-            <span class="n">user_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+            <span class="n">user_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">)</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into user (user_id, username, salt, hash, name, email) &#39;</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?,?,?,?)&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">db_hash</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;internal auth failure&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
 
-    <span class="nd">@dbmethod</span>
-<div class="viewcode-block" id="auth.auth_user"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user">[docs]</a>    <span class="k">def</span> <span class="nf">auth_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="auth.auth_user"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_user">[docs]</a>    <span class="k">def</span> <span class="nf">auth_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Authenticate a username and password&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="s">&#39;ldap&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ldap&#39;</span><span class="p">]:</span>
-            <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_ldap</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span>
-                         <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_internal</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span>
-                         <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="n">cb</span><span class="p">)</span></div>
+        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="s">&#39;ldap&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ldap&#39;</span><span class="p">]:</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_ldap</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auth_user_internal</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_auth_user_ldap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span> <span class="nf">_auth_user_ldap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">server</span> <span class="o">=</span> <span class="n">ldap3</span><span class="o">.</span><span class="n">Server</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ldap&#39;</span><span class="p">][</span><span class="s">&#39;uri&#39;</span><span class="p">])</span>
             <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ldap&#39;</span><span class="p">][</span><span class="s">&#39;base&#39;</span><span class="p">]</span>
@@ -353,14 +301,11 @@
             <span class="n">name</span> <span class="o">=</span> <span class="n">ldap_conn</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cn</span>
             <span class="n">email</span> <span class="o">=</span> <span class="n">ldap_conn</span><span class="o">.</span><span class="n">entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">email</span>
 
-            <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select user_id from user where username=?&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">username</span><span class="p">,)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
             <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                <span class="n">user_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+                <span class="n">user_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">)</span>
                 <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into user (user_id,username,email,groups,last_login_time) &#39;</span>
                 <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?,?,?)&#39;</span>
                 <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="n">username</span><span class="p">,</span><span class="n">email</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="n">nowstr</span><span class="p">())</span>
@@ -368,22 +313,20 @@
                 <span class="n">user_id</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
                 <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update user set last_login_time=? where user_id=?&#39;</span>
                 <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">nowstr</span><span class="p">(),</span><span class="n">user_id</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">ret</span>
-            <span class="n">callback</span><span class="p">({</span><span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s">&#39;email&#39;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s">&#39;email&#39;</span><span class="p">:</span> <span class="n">email</span><span class="p">}</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;ldap auth failure&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_auth_user_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+    <span class="k">def</span> <span class="nf">_auth_user_internal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">passwd</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select user_id,name,salt,hash,email from user where username=?&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">username</span><span class="p">,)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
             <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot find username&#39;</span><span class="p">)</span>
             <span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="n">db_hash</span><span class="p">,</span> <span class="n">email</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -403,12 +346,13 @@
 
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update user set last_login_time=? where user_id=?&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">nowstr</span><span class="p">(),</span><span class="n">user_id</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
-
-            <span class="n">callback</span><span class="p">({</span><span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s">&#39;email&#39;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s">&#39;email&#39;</span><span class="p">:</span> <span class="n">email</span><span class="p">}</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;internal auth failure&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">))</span></div>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authentication failure&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
@@ -442,7 +386,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

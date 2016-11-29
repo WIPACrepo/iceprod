@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>iceprod.server.modules.schedule &mdash; IceProd 2.0.4 documentation</title>
+  <title>iceprod.server.modules.schedule &mdash; IceProd 2.0.6 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html"/>
+    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../../index.html"/>
         <link rel="up" title="iceprod.server" href="../../server.html"/> 
 
   
@@ -60,7 +60,7 @@
             
             
               <div class="version">
-                2.0.4
+                2.0.6
               </div>
             
           
@@ -136,6 +136,9 @@
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">izip</span>
 
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+<span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
+
 <span class="kn">import</span> <span class="nn">iceprod.server</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
 <span class="kn">from</span> <span class="nn">iceprod.server.schedule</span> <span class="k">import</span> <span class="n">Scheduler</span>
@@ -150,16 +153,11 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c"># run default init</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="k">None</span>
-
-        <span class="c"># start Scheduler</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
 <div class="viewcode-block" id="schedule.start"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Start schedule&quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span></div>
-    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="p">:</span>
             <span class="c"># make Scheduler</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="p">()</span>
@@ -171,7 +169,7 @@
                 <span class="k">raise</span>
 
         <span class="c"># start things</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="schedule.stop"><a class="viewcode-back" href="../../../../server/modules/schedule.html#iceprod.server.modules.schedule.schedule.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stop schedule&quot;&quot;&quot;</span>
@@ -206,7 +204,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 6 hours&#39;</span><span class="p">,</span>
                 <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_db_call</span><span class="p">,</span> <span class="s">&#39;cron_remove_old_passkeys&#39;</span><span class="p">))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 minutes&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 10 minutes&#39;</span><span class="p">,</span>
                 <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_db_call</span><span class="p">,</span> <span class="s">&#39;cron_generate_web_graphs&#39;</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="s">&#39;master&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
@@ -270,7 +268,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'2.0.4',
+            VERSION:'2.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
