@@ -1,0 +1,1114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.dbmethods.rpc &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server.dbmethods" href="../dbmethods.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" accesskey="U">iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.dbmethods.rpc</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">RPC database methods</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core.util</span> <span class="k">import</span> <span class="n">Node_Resources</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">serialization</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">GlobalID</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">dataset_prio</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">dbmethod</span><span class="p">,</span><span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span><span class="n">nowstr</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods.rpc&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="rpc"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc">[docs]</a><span class="k">class</span> <span class="nc">rpc</span><span class="p">(</span><span class="n">_Methods_Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The RPC DB methods.</span>
+
+<span class="sd">    :param parent: the parent DBMethods class instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_echo"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_echo">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_echo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Echo a single value. Just a test to see if rpc is working&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_new_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_new_task">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_new_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridspec</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a new task from the queue specified by the gridspec,</span>
+<span class="sd">           based on the platform, hostname, network interfaces, python unicode.</span>
+<span class="sd">           Save plaform,hostname,network in nodes table.</span>
+<span class="sd">           Returns a runnable config file with site content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;gridspec is not given&#39;</span><span class="p">)</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gridspec&#39;</span><span class="p">:</span><span class="n">gridspec</span><span class="p">,</span>
+                <span class="s">&#39;platform&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                <span class="s">&#39;hostname&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                <span class="s">&#39;domain&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                <span class="s">&#39;ifaces&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                <span class="s">&#39;python_unicode&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+               <span class="p">}</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">node_update</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span> <span class="c"># non-blocking node update</span>
+        <span class="n">cb2</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_new_task_callback</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_new_task_blocking</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">,</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_new_task_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This executes in a single thread regardless of the number of</span>
+<span class="sd">           parallel requests for a new task.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># check resource requirements</span>
+        <span class="n">reqs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">Node_Resources</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">args</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="n">Node_Resources</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                <span class="n">reqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+        
+        <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task_lookup &#39;</span>
+            <span class="k">if</span> <span class="n">reqs</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where &#39;</span><span class="o">+</span><span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;req_&#39;</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="s">&#39; &lt;= ?&#39;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; limit 1&#39;</span>
+            <span class="k">if</span> <span class="n">reqs</span><span class="p">:</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">reqs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="n">resources</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;task_lookup&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                <span class="n">task_id</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;task_id&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+                    <span class="n">resources</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;req_&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">task_id</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id = ? and task_status = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,</span><span class="s">&#39;queued&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;task %s not valid, remove from task_lookup&#39;</span><span class="p">,</span>
+                            <span class="n">task_id</span><span class="p">)</span>
+                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_lookup where task_id = ?&#39;</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                    <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                    <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span> <span class="c"># we found a valid task</span>
+        
+        <span class="n">newtask</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;new task: %r&#39;</span><span class="p">,</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">newtask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error converting search results&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">pass</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">newtask</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">newtask</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_index from job where job_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;job_id&#39;</span><span class="p">],)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to find job with known job_id %r&#39;</span><span class="p">,</span>
+                        <span class="n">newtask</span><span class="p">[</span><span class="s">&#39;job_id&#39;</span><span class="p">])</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">newtask</span><span class="p">[</span><span class="s">&#39;job&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select jobs_submitted, debug from dataset where dataset_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">],)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to find dataset with known dataset_id&#39;</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">js</span><span class="p">,</span> <span class="n">debug</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">newtask</span><span class="p">[</span><span class="s">&#39;jobs_submitted&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">js</span>
+            <span class="n">newtask</span><span class="p">[</span><span class="s">&#39;debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">debug</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="n">newtask</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update search set task_status = ? &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">])</span>
+        <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;update task set prev_status = status, &#39;</span>
+        <span class="n">sql2</span> <span class="o">+=</span> <span class="s">&#39; status = ?, status_changed = ? where task_id = ?&#39;</span>
+        <span class="n">bindings2</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">])</span>
+        <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;delete from task_lookup where task_id = ?&#39;</span>
+        <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">sql</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">sql3</span><span class="p">],[</span><span class="n">bindings</span><span class="p">,</span><span class="n">bindings2</span><span class="p">,</span><span class="n">bindings3</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                <span class="n">bindings4</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">sql3</span><span class="p">,</span><span class="n">sql3</span><span class="p">],[</span><span class="n">bindings3</span><span class="p">,</span><span class="n">bindings4</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">bindings2</span><span class="p">))</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">newtask</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_rpc_new_task_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">task</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_new_task_callback2</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_get_cfg_for_dataset</span><span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">],</span>
+                                                  <span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_rpc_new_task_callback2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+                <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;job&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;job&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;jobs_submitted&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;jobs_submitted&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;debug&#39;</span><span class="p">]</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_set_processing"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_processing">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_set_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set a task to the processing status&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_set_task_status</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span>
+                                                 <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_finish_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_finish_task">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_finish_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">stats</span><span class="o">=</span><span class="p">{},</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Do task completion operations.</span>
+<span class="sd">        Takes a task_id and a stats dict as input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_finish_task_blocking</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">stats</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">,</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_finish_task_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">stats</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+
+        <span class="c"># update task status</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update search set task_status = ? &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
+        <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;update task set prev_status = status, &#39;</span>
+        <span class="n">sql2</span> <span class="o">+=</span> <span class="s">&#39; status = ?, status_changed = ? where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">bindings2</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">sql</span><span class="p">,</span><span class="n">sql2</span><span class="p">],[</span><span class="n">bindings</span><span class="p">,</span><span class="n">bindings2</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                <span class="n">bindings4</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">newtask</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">sql3</span><span class="p">,</span><span class="n">sql3</span><span class="p">],[</span><span class="n">bindings3</span><span class="p">,</span><span class="n">bindings4</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">bindings2</span><span class="p">))</span>
+
+        <span class="c"># update task statistics</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_stat_id,task_id from task_stat where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task</span><span class="p">,)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="n">task_stat_id</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ts</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">task_stat_id</span> <span class="o">=</span> <span class="n">ts</span>
+        <span class="k">if</span> <span class="n">task_stat_id</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;replace previous task_stat&#39;</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update task_stat set stat = ? where task_stat_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">stats</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;insert new task_stat&#39;</span><span class="p">)</span>
+            <span class="n">task_stat_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;replace into task_stat (task_stat_id,task_id,stat) values &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; (?, ?, ?)&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">stats</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+
+        <span class="c"># check if whole job is finished</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.dataset_id,job_id,jobs_submitted,tasks_submitted &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from search &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; join dataset on search.dataset_id = dataset.dataset_id &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task</span><span class="p">,)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="n">job_id</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="n">total_jobs</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="n">total_tasks</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d_id</span><span class="p">,</span><span class="n">j_id</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">ntasks</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">d_id</span>
+                <span class="n">job_id</span> <span class="o">=</span> <span class="n">j_id</span>
+                <span class="n">total_jobs</span> <span class="o">=</span> <span class="n">njobs</span>
+                <span class="n">total_tasks</span> <span class="o">=</span> <span class="n">ntasks</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">job_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">total_jobs</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">total_tasks</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot find dataset or job id&#39;</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="n">tasks_per_job</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total_tasks</span><span class="o">/</span><span class="n">total_jobs</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id,task_status from search where job_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">job_id</span><span class="p">,)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="n">task_statuses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">ret</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">==</span> <span class="n">tasks_per_job</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;tasks_per_job = %d, len(ret) = %d&#39;</span><span class="p">,</span><span class="n">tasks_per_job</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">))</span>
+            <span class="c"># require that all tasks for this job are in our db</span>
+            <span class="c"># means that distributed jobs can only complete at the master</span>
+            <span class="k">for</span> <span class="n">t</span><span class="p">,</span><span class="n">s</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">task_statuses</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="n">job_status</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="n">task_statuses</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;waiting&#39;</span><span class="p">,</span><span class="s">&#39;queued&#39;</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="s">&#39;resume&#39;</span><span class="p">,</span><span class="s">&#39;reset&#39;</span><span class="p">}:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">}:</span>
+                <span class="n">job_status</span> <span class="o">=</span> <span class="s">&#39;complete&#39;</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="s">&#39;failed&#39;</span><span class="p">}:</span>
+                <span class="n">job_status</span> <span class="o">=</span> <span class="s">&#39;errors&#39;</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">task_statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">,</span><span class="s">&#39;failed&#39;</span><span class="p">,</span><span class="s">&#39;suspended&#39;</span><span class="p">}:</span>
+                <span class="n">job_status</span> <span class="o">=</span> <span class="s">&#39;suspended&#39;</span>
+        <span class="k">if</span> <span class="n">job_status</span><span class="p">:</span>
+            <span class="c"># update job status</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as %s&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">job_status</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = ?, status_changed = ? &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">job_status</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">job_status</span> <span class="o">==</span> <span class="s">&#39;complete&#39;</span><span class="p">:</span>
+                <span class="c"># TODO: collate task stats</span>
+                <span class="k">pass</span>
+
+        <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_task_error"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_task_error">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_task_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">error_info</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Mark task as ERROR and possibly adjust resources&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no task specified&#39;</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_task_error_blocking</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">error_info</span><span class="p">,</span>
+                     <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">non_blocking_task</span><span class="p">(</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_task_error_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">error_info</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select failures, requirements, task_rel_id from task &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where task_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;did not get failures&#39;</span><span class="p">)</span>
+            <span class="n">failures</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">task_reqs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">task_rel_id</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">failures</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">task_rel_id</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">task_reqs</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select requirements from task_rel where task_rel_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_rel_id</span><span class="p">,)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;did not get task_rel requirements&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">reqs</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_reqs</span><span class="p">:</span>
+                            <span class="n">task_reqs</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id from search where task_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_id</span><span class="p">,)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;did not get dataset_id&#39;</span><span class="p">)</span>
+            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select debug from dataset where dataset_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;did not get debug&#39;</span><span class="p">)</span>
+            <span class="n">debug</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="k">True</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;true&#39;</span><span class="p">,</span> <span class="s">&#39;T&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;suspended&#39;</span>
+            <span class="k">elif</span> <span class="n">failures</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;max_resets&#39;</span><span class="p">]:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;failed&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="s">&#39;reset&#39;</span>
+
+            <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update search set task_status = ? &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="n">task_id</span><span class="p">)</span>
+            <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;update task set prev_status = status, &#39;</span>
+            <span class="n">sql2</span> <span class="o">+=</span> <span class="s">&#39; status = ?, failures = ?, status_changed = ? &#39;</span>
+            <span class="n">bindings2</span> <span class="o">=</span> <span class="p">[</span><span class="n">status</span><span class="p">,</span><span class="n">failures</span><span class="p">,</span><span class="n">now</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">error_info</span> <span class="ow">and</span> <span class="s">&#39;requirements&#39;</span> <span class="ow">in</span> <span class="n">error_info</span><span class="p">:</span>
+                <span class="c"># update requirements</span>
+                <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]:</span>
+                    <span class="n">req_value</span> <span class="o">=</span> <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">][</span><span class="n">req</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">req_value</span><span class="p">,</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+                        <span class="n">req_value</span> <span class="o">*=</span> <span class="mf">1.5</span>
+                        <span class="k">if</span> <span class="n">req</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_reqs</span> <span class="ow">or</span> <span class="n">task_reqs</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">req_value</span><span class="p">:</span>
+                            <span class="n">task_reqs</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="n">req_value</span>
+                    <span class="k">elif</span> <span class="n">req</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_reqs</span><span class="p">:</span>
+                        <span class="n">task_reqs</span><span class="p">[</span><span class="n">req</span><span class="p">]</span> <span class="o">=</span> <span class="n">req_value</span>
+                <span class="n">sql2</span> <span class="o">+=</span> <span class="s">&#39;, requirements = ? &#39;</span>
+                <span class="n">bindings2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json_encode</span><span class="p">(</span><span class="n">task_reqs</span><span class="p">))</span>
+            <span class="n">sql2</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
+            <span class="n">bindings2</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bindings2</span><span class="o">+</span><span class="p">[</span><span class="n">task_id</span><span class="p">])</span>
+            <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into task_stat (task_stat_id, task_id, stat) &#39;</span>
+            <span class="n">sql3</span> <span class="o">+=</span> <span class="s">&#39;values (?,?,?)&#39;</span>
+            <span class="n">task_stat_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;error_&#39;</span><span class="o">+</span><span class="n">now</span><span class="p">:</span> <span class="n">error_info</span><span class="p">}</span>
+            <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">stat</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">sql</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">sql3</span><span class="p">],[</span><span class="n">bindings</span><span class="p">,</span><span class="n">bindings2</span><span class="p">,</span><span class="n">bindings3</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">msql</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">mbindings1</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="n">mbindings2</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="n">mbindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,[</span><span class="n">msql</span><span class="p">,</span><span class="n">msql</span><span class="p">,</span><span class="n">msql</span><span class="p">],[</span><span class="n">mbindings1</span><span class="p">,</span><span class="n">mbindings2</span><span class="p">,</span><span class="n">mbindings3</span><span class="p">],</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">bindings2</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">))</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in task_error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_upload_logfile"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_upload_logfile">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_upload_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Uploading of a logfile from a task&quot;&quot;&quot;</span>
+        <span class="n">cb2</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_upload_logfile_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_upload_logfile_blocking</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;logfile&#39;</span><span class="p">,</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_upload_logfile_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_log_id,task_id from task_log where &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; task_id = ? and name = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="n">task_log_id</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ts</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">task_log_id</span> <span class="o">=</span> <span class="n">ts</span>
+        <span class="k">if</span> <span class="n">task_log_id</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;replace previous task_log&#39;</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update task_log set data = ? where task_log_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">task_log_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;insert new task_log&#39;</span><span class="p">)</span>
+            <span class="n">task_log_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;task_log&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into task_log (task_log_id,task_id,name,data) &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; values (?,?,?,?)&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_log_id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task_log&#39;</span><span class="p">,</span><span class="n">task_log_id</span><span class="p">,</span><span class="n">nowstr</span><span class="p">())</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task_log&#39;</span><span class="p">,</span><span class="n">task_log_id</span><span class="p">,</span><span class="n">nowstr</span><span class="p">(),</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_rpc_upload_logfile_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ret</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;sql error in upload_logfile&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_stillrunning"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_stillrunning">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_stillrunning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check that the task is still in a running state&quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id,status from task where task_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_stillrunning_callback</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_stillrunning_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">ret</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;sql error in stillrunning&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;queued&#39;</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="k">False</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_update_pilot"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_pilot">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_update_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pilot_id</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the pilot table&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;update pilot: %s&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no update given&#39;</span><span class="p">))</span>
+            <span class="k">return</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update pilot set &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="s">&#39;pilot&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="n">name</span><span class="o">+</span><span class="s">&#39;=? &#39;</span>
+                <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where pilot_id = ?&#39;</span>
+        <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="nb">tuple</span><span class="p">(</span><span class="n">bindings</span><span class="p">),</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_submit_dataset"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_submit_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_submit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">difplus</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="n">description</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="n">gridspec</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span>
+                           <span class="n">njobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">stat_keys</span><span class="o">=</span><span class="p">[],</span><span class="n">debug</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
+                           <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Submit a dataset&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">gridspec</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="n">gridspec</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_submit_dataset_blocking</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">difplus</span><span class="p">,</span><span class="n">description</span><span class="p">,</span>
+                     <span class="n">gridspec</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">stat_keys</span><span class="p">,</span><span class="n">debug</span><span class="p">,</span>
+                     <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;submit_dataset&#39;</span><span class="p">,</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_submit_dataset_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">config</span><span class="p">,</span><span class="n">difplus</span><span class="p">,</span><span class="n">description</span><span class="p">,</span><span class="n">gridspec</span><span class="p">,</span>
+                                     <span class="n">njobs</span><span class="p">,</span><span class="n">stat_keys</span><span class="p">,</span><span class="n">debug</span><span class="p">,</span>
+                                     <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+        <span class="c"># make sure we have a serialized and deserialized copy of config</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error converting config: %r&#39;</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                            <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">serialize_json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error deserializing config: %r&#39;</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                            <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">return</span>
+
+        <span class="c"># check the number of jobs, tasks, and trays</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">njobs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">njobs</span><span class="p">)</span>
+            <span class="n">ntasks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">])</span><span class="o">*</span><span class="n">njobs</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error reading ntasks from submitting config&#39;</span><span class="p">,</span>
+                        <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="c"># join categories as csv</span>
+        <span class="n">category_csv</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">category_csv</span> <span class="o">=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;categories&#39;</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c"># look up dependencies</span>
+        <span class="n">task_rels</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">depends</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dataset_depends</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;depends&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="s">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">dep</span><span class="p">:</span>
+                        <span class="n">dataset_depends</span><span class="p">[</span><span class="n">dep</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">dataset_depends</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_rel_id,dataset_id,task_index,name from task_rel &#39;</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where dataset_id in (&#39;</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dataset_depends</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dataset_depends</span><span class="p">)</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">ret</span>
+                <span class="k">for</span> <span class="n">tid</span><span class="p">,</span><span class="n">did</span><span class="p">,</span><span class="n">task_index</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="n">dataset_depends</span><span class="p">[</span><span class="n">did</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;task_rel_id&#39;</span><span class="p">:</span><span class="n">tid</span><span class="p">,</span>
+                                                 <span class="s">&#39;task_index&#39;</span><span class="p">:</span><span class="n">task_index</span><span class="p">,</span>
+                                                 <span class="s">&#39;name&#39;</span><span class="p">:</span><span class="n">name</span><span class="p">})</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]:</span>
+                <span class="n">task_dep</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">task_rel_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;task_rel&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;depends&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="s">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">dep</span><span class="p">:</span>
+                        <span class="n">did</span><span class="p">,</span> <span class="n">dep</span> <span class="o">=</span> <span class="n">dep</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">dep</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                            <span class="n">dep</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">dataset_depends</span><span class="p">[</span><span class="n">did</span><span class="p">]:</span>
+                            <span class="k">if</span> <span class="n">rel</span><span class="p">[</span><span class="s">&#39;task_index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dep</span> <span class="ow">or</span> <span class="n">rel</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">dep</span><span class="p">:</span>
+                                <span class="n">task_dep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel</span><span class="p">[</span><span class="s">&#39;task_rel_id&#39;</span><span class="p">])</span>
+                                <span class="k">break</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;missing a dataset dependency&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">dep</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                            <span class="n">task_dep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_rels</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dep</span><span class="p">)])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">task</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]):</span>
+                                <span class="k">if</span> <span class="n">dep</span> <span class="o">==</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]:</span>
+                                    <span class="n">task_dep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_rels</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                                    <span class="k">break</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;missing a dependency&#39;</span><span class="p">)</span>
+                <span class="n">depends</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">task_dep</span><span class="p">))</span>
+                <span class="n">task_rels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_rel_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;task dependency error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Task dependency error&#39;</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="c"># start constructing sql</span>
+        <span class="n">db_updates_sql</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">db_updates_bindings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># add dataset</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="n">gridspec</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">gridspec</span><span class="p">)</span>
+            <span class="n">dataset_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">conn</span><span class="p">)</span>
+            <span class="n">config</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">GlobalID</span><span class="o">.</span><span class="n">localID_ret</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+            <span class="n">stat_keys</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">stat_keys</span><span class="p">)</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="n">description</span><span class="p">,</span><span class="n">gridspec</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span>
+                        <span class="s">&#39;user&#39;</span><span class="p">,</span><span class="s">&#39;institution&#39;</span><span class="p">,</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">ntasks</span><span class="p">,</span>
+                        <span class="n">now</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">,</span><span class="n">stat_keys</span><span class="p">,</span>
+                        <span class="n">category_csv</span><span class="p">,</span><span class="n">debug</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into dataset (dataset_id,name,description,gridspec,&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;status,username,institution,submit_host,priority,&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;jobs_submitted,tasks_submitted,start_date,end_date,&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;temporary_storage,global_storage,groups_id,stat_keys,&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;categoryvalue_ids,debug)&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; values (&#39;</span><span class="o">+</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">bindings</span><span class="p">])</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+            <span class="n">db_updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+            <span class="n">db_updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+            
+            <span class="c"># add config</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">config_data</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">serialize_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error serializing config: %r&#39;</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                            <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into config (dataset_id,config_data,difplus_data)&#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; values (?,?,?)&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">config_data</span><span class="p">,</span><span class="n">difplus</span><span class="p">)</span>
+            <span class="n">db_updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+            <span class="n">db_updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+
+            <span class="c"># add task_rel</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">task</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">reqs</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">serialize_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">task</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cannot serialize requirements&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">return</span>
+                <span class="n">task_name</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">task_name</span><span class="p">:</span>
+                    <span class="n">task_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;insert into task_rel (task_rel_id,dataset_id,task_index,&#39;</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;name,depends,requirements) values (?,?,?,?,?,?)&#39;</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_rels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">task_name</span><span class="p">,</span><span class="n">depends</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">reqs</span><span class="p">)</span>
+                <span class="n">db_updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+                <span class="n">db_updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bindings</span><span class="p">)</span>
+
+            <span class="c"># write to database</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">db_updates_sql</span><span class="p">,</span><span class="n">db_updates_bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">db_updates_sql</span><span class="p">)):</span>
+                <span class="n">sql</span> <span class="o">=</span> <span class="n">db_updates_sql</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="n">db_updates_bindings</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">],</span><span class="n">bindings</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="n">sql</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">],</span><span class="n">bindings</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;submit error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_update_dataset_config"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_dataset_config">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_update_dataset_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update a dataset config&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">serialize_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error serializing config: %r&#39;</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span>
+                            <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">return</span>
+
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update config set config_data = ? where dataset_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_update_dataset_config_callback</span><span class="p">,</span>
+                     <span class="n">dataset_id</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_write_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_update_dataset_config_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">ret</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">nowstr</span><span class="p">())</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql3</span><span class="p">,</span><span class="n">bindings3</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="p">,</span><span class="n">nowstr</span><span class="p">(),</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_get_groups"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_get_groups">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_get_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all the groups.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">groups</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                    <span class="n">groups</span><span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s">&#39;groups_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">r</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from groups&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(),</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_set_groups"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_groups">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_set_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">passkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set all the groups.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">True</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;invalid passkey&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cb2</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_set_groups_blocking</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">auth_authorize_task</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_set_groups_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+
+            <span class="c"># check user authorization to set groups</span>
+
+            <span class="c"># get groups</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from groups&#39;</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="nb">tuple</span><span class="p">(),</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+
+            <span class="c"># set groups</span>
+            <span class="n">updates_sql</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">updates_bindings</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="n">delete_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">update_ids</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">existing_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">groups_id</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">desc</span><span class="p">,</span><span class="n">prio</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">groups_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+                    <span class="n">delete_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">groups_id</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">existing_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">groups_id</span><span class="p">)</span>
+                    <span class="n">g</span> <span class="o">=</span> <span class="n">groups</span><span class="p">[</span><span class="n">groups_id</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">desc</span> <span class="ow">or</span>
+                        <span class="n">g</span><span class="p">[</span><span class="s">&#39;priority&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">prio</span><span class="p">):</span>
+                        <span class="n">update_ids</span><span class="p">[</span><span class="n">groups_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span>
+
+            <span class="n">create_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span> <span class="o">-</span> <span class="n">existing_ids</span>
+
+            <span class="k">if</span> <span class="n">delete_ids</span><span class="p">:</span>
+                <span class="n">updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;delete from groups where groups_id in (&#39;</span><span class="o">+</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">delete_ids</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">))</span>
+                <span class="n">updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">delete_ids</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">ids</span> <span class="ow">in</span> <span class="n">update_ids</span><span class="p">:</span>
+                <span class="n">updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;update groups set name=?, description=?, priority=? where groups_id=?&#39;</span><span class="p">)</span>
+                <span class="n">updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;description&#39;</span><span class="p">],</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;priority&#39;</span><span class="p">],</span><span class="n">ids</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">ids</span> <span class="ow">in</span> <span class="n">create_ids</span><span class="p">:</span>
+                <span class="n">updates_sql</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;insert into groups (name,description,priority) values (?,?,?)&#39;</span><span class="p">)</span>
+                <span class="n">updates_bindings</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;description&#39;</span><span class="p">],</span><span class="n">groups</span><span class="p">[</span><span class="n">ids</span><span class="p">][</span><span class="s">&#39;priority&#39;</span><span class="p">]))</span>
+
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">updates_sql</span><span class="p">,</span><span class="n">updates_bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to set groups&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_queue_master"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_queue_master">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_queue_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                         <span class="n">filters</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                         <span class="n">queueing_factor_priority</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                         <span class="n">queueing_factor_dataset</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                         <span class="n">queueing_factor_tasks</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                         <span class="n">num</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                         <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle global queueing request from a site.</span>
+
+<span class="sd">        For a task to queue on a site, it must be matched in the dataset</span>
+<span class="sd">        gridspec list (or the list should be empty to match all), and</span>
+<span class="sd">        the necessary resources should be available on the site.</span>
+
+<span class="sd">        :param resources: (optional) the available resources on the site</span>
+<span class="sd">        :param filters: (optional) group filters on the site</span>
+<span class="sd">        :param queueing_factor_priority: (optional) queueing factor for priority</span>
+<span class="sd">        :param queueing_factor_dataset: (optional) queueing factor for dataset id</span>
+<span class="sd">        :param queueing_factor_tasks: (optional) queueing factor for number of tasks</span>
+<span class="sd">        :param num: (optional) number of tasks to queue</span>
+<span class="sd">        :returns: (via callback) dict of table entries to be merged</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># priority factors</span>
+        <span class="n">qf_p</span> <span class="o">=</span> <span class="n">queueing_factor_priority</span>
+        <span class="n">qf_d</span> <span class="o">=</span> <span class="n">queueing_factor_dataset</span>
+        <span class="n">qf_t</span> <span class="o">=</span> <span class="n">queueing_factor_tasks</span>
+
+        <span class="k">def</span> <span class="nf">cb3</span><span class="p">(</span><span class="n">tasks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;queue_get_queueing_tasks() did not return a dict&#39;</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">tasks</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;rpc_queue_master(): tasks: %r&#39;</span><span class="p">,</span><span class="n">tasks</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">({})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;rpc_queue_master(): tasks: %r&#39;</span><span class="p">,</span><span class="n">tasks</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">misc_get_tables_for_task</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">cb2</span><span class="p">(</span><span class="n">groups</span><span class="p">,</span><span class="n">datasets</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">groups</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">datasets</span> <span class="o">=</span> <span class="n">dataset_prio</span><span class="o">.</span><span class="n">apply_group_prios</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span>
+                        <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+                <span class="n">dataset_prios</span> <span class="o">=</span> <span class="n">dataset_prio</span><span class="o">.</span><span class="n">calc_datasets_prios</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span>
+                        <span class="n">queueing_factor_priority</span><span class="o">=</span><span class="n">qf_p</span><span class="p">,</span>
+                        <span class="n">queueing_factor_dataset</span><span class="o">=</span><span class="n">qf_d</span><span class="p">,</span>
+                        <span class="n">queueing_factor_tasks</span><span class="o">=</span><span class="n">qf_t</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;rpc_queue_master(): dataset prios: %r&#39;</span><span class="p">,</span><span class="n">dataset_prios</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_get_queueing_tasks</span><span class="p">(</span><span class="n">dataset_prios</span><span class="p">,</span>
+                                                     <span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">,</span>
+                                                     <span class="n">resources</span><span class="o">=</span><span class="n">resources</span><span class="p">,</span>
+                                                     <span class="n">global_queueing</span><span class="o">=</span><span class="k">True</span><span class="p">,</span>
+                                                     <span class="n">callback</span><span class="o">=</span><span class="n">cb4</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">cb2</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">datasets</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">({})</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;queue_get_queueing_datasets() did not return a dict&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">rpc_get_groups</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">cb2</span><span class="p">,</span><span class="n">datasets</span><span class="o">=</span><span class="n">datasets</span><span class="p">))</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_get_queueing_datasets</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="c"># buffer tasks before queueing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_buffer_jobs_tasks</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_master_update"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_master_update">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_master_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">updates</span><span class="p">,</span> <span class="n">ret</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">updates</span><span class="p">:</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">updates</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">cb2</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">misc_update_master_db</span><span class="p">(</span><span class="o">*</span><span class="n">u</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb2</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to apply update: %r&#39;</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="k">raise</span>
+                    <span class="c">#cb2()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">()</span>
+        <span class="n">cb</span><span class="p">(</span><span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_stop_module"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_stop_module">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_stop_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">daemon</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">mod</span> <span class="o">=</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_start_module"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_start_module">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_start_module</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">daemon</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">mod</span> <span class="o">=</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_update_config"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_config">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_update_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_text</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set_config_string</span><span class="p">(</span><span class="n">config_text</span> <span class="o">=</span> <span class="n">config_text</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_reset_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_reset_task">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_reset_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_set_task_status</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+    
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_resume_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_resume_task">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_resume_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_set_task_status</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s">&#39;resume&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+    
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_suspend_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_suspend_task">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_suspend_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">queue_set_task_status</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s">&#39;suspended&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span></div>
+    
+
+    <span class="c">### Public Methods ###</span>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_public_get_graphs"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_graphs">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_public_get_graphs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the graph data for a length of time.</span>
+
+<span class="sd">        :param start: Amount of minutes in the past to start grabbing</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">datetime2str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">-</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">start</span><span class="p">))</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from graph where timestamp &gt;= ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="p">,)</span>
+        <span class="n">cb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_public_get_graphs_cb</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_public_get_graphs_cb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ret</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">gid</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">timestamp</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;name&#39;</span><span class="p">:</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;value&#39;</span><span class="p">:</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;timestamp&#39;</span><span class="p">:</span><span class="n">timestamp</span><span class="p">})</span>
+        <span class="n">callback</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span><span class="n">r</span><span class="p">[</span><span class="s">&#39;timestamp&#39;</span><span class="p">]))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="../dbmethods.html" >iceprod.server.dbmethods</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

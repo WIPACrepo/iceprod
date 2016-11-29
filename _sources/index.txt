@@ -1,9 +1,9 @@
-.. index:: IceProd
-.. _IceProd:
+.. index:: IceProdMetaProject
+.. _IceProdMetaProject:
 
 
-IceProd
-=======
+IceProd Metaproject
+===================
 
 .. toctree::
     :maxdepth: 2

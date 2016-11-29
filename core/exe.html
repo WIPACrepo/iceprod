@@ -1,231 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Execution &mdash; IceProd 2.0.6 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
-  
-
-  
-
-  
-    <link rel="top" title="IceProd 2.0.6 documentation" href="../index.html"/>
-        <link rel="up" title="IceProd Core" href="index.html"/>
-        <link rel="next" title="Execution Helpers" href="exe_helper.html"/>
-        <link rel="prev" title="Dataclasses" href="dataclasses.html"/> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-   
-  <div class="wy-grid-for-nav">
-
+    <title>Execution &#8212; IceProd 2.0.4 documentation</title>
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
+    <link rel="stylesheet" href="../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../index.html" />
+    <link rel="up" title="IceProd Core" href="index.html" />
+    <link rel="next" title="Functions" href="functions.html" />
+    <link rel="prev" title="Dataclasses" href="dataclasses.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dataclasses.html" title="Dataclasses"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>  
 
-          
-            <a href="../index.html" class="icon icon-home"> IceProd
-          
-
-          
-          </a>
-
-          
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
-            
-              <div class="version">
-                2.0.6
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="dataclasses.html">Dataclasses</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Execution</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#environment-functions">Environment Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#object-setup">Object Setup</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#run-functions">Run Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="exe_helper.html">Execution Helpers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="exe_json.html">JSONRPC Calls</a></li>
-<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gridftp.html">GridFTP</a></li>
-<li class="toctree-l2"><a class="reference internal" href="i3exec.html">i3exec</a></li>
-<li class="toctree-l2"><a class="reference internal" href="init.html">Core Init</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonRPCclient.html">JSON-RPC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonUtil.html">JSON Utilities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parser.html">Config File Meta-Language Parser</a></li>
-<li class="toctree-l2"><a class="reference internal" href="serialization.html">Serialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="util.html">Utilities</a></li>
-</ul>
-</li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../details.html">Technical Details</a></li>
-</ul>
-
-            
-          
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">IceProd</a>
-        
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
-  <div class="section" id="execution">
-<span id="exe"></span><span id="index-0"></span><h1>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-iceprod.core.exe">
+<span id="execution"></span><span id="exe"></span><span id="index-0"></span><h1>Execution<a class="headerlink" href="#module-iceprod.core.exe" title="Permalink to this headline">¶</a></h1>
+<p>The core execution functions for running on a node.</p>
+<p>These are all called from <cite>i3exec</cite>.</p>
 <div class="section" id="environment-functions">
 <h2>Environment Functions<a class="headerlink" href="#environment-functions" title="Permalink to this headline">¶</a></h2>
 <p>The internal IceProd environment, designed to be nested and clean up after itself.</p>
+<dl class="class">
+<dt id="iceprod.core.exe.Config">
+<em class="property">class </em><code class="descclassname">iceprod.core.exe.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>config=None</em>, <em>parser=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contain the configuration and related methods</p>
+<dl class="method">
+<dt id="iceprod.core.exe.Config.parseValue">
+<code class="descname">parseValue</code><span class="sig-paren">(</span><em>value</em>, <em>env={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config.parseValue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config.parseValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse a value from the available env and global config.</p>
+<p>Uses the <a class="reference internal" href="parser.html#module-iceprod.core.parser" title="iceprod.core.parser"><code class="xref py py-class docutils literal"><span class="pre">Meta</span> <span class="pre">Parser</span></code></a> on any string value.
+Pass-through for any other object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> &#8211; The value to parse</li>
+<li><strong>env</strong> &#8211; The environment to use, optional</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The parsed value</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.core.exe.Config.parseObject">
+<code class="descname">parseObject</code><span class="sig-paren">(</span><em>obj</em>, <em>env</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#Config.parseObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.Config.parseObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run <a class="reference internal" href="#iceprod.core.exe.Config.parseValue" title="iceprod.core.exe.Config.parseValue"><code class="xref py py-func docutils literal"><span class="pre">parseValue()</span></code></a> on all values of a dict</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.setupenv">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">setupenv</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#setupenv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.setupenv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up an environment to run things in</p>
+</dd></dl>
+
 </div>
 <div class="section" id="object-setup">
 <h2>Object Setup<a class="headerlink" href="#object-setup" title="Permalink to this headline">¶</a></h2>
 <p>Download/upload and setup the main IceProd objects (Resources, Data, Classes).</p>
+<dl class="function">
+<dt id="iceprod.core.exe.downloadResource">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadResource</code><span class="sig-paren">(</span><em>env</em>, <em>resource</em>, <em>remote_base=None</em>, <em>local_base=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadResource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download a resource and put location in the env</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.downloadData">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadData</code><span class="sig-paren">(</span><em>env</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download data and put location in the env</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.uploadData">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">uploadData</code><span class="sig-paren">(</span><em>env</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#uploadData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.uploadData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload data</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.setupClass">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">setupClass</code><span class="sig-paren">(</span><em>env</em>, <em>class_obj</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#setupClass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.setupClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up a class for use in modules, and put it in the env</p>
+</dd></dl>
+
 </div>
 <div class="section" id="run-functions">
 <h2>Run Functions<a class="headerlink" href="#run-functions" title="Permalink to this headline">¶</a></h2>
 <p>The main execution flow goes through here.</p>
+<dl class="function">
+<dt id="iceprod.core.exe.runtask">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">runtask</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>task</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runtask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the specified task</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.runtray">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">runtray</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>tray</em>, <em>stats={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runtray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runtray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the specified tray</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.runmodule">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">runmodule</code><span class="sig-paren">(</span><em>cfg</em>, <em>globalenv</em>, <em>module</em>, <em>stats={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#runmodule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.runmodule" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the specified module</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.core.exe.run_module">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">run_module</code><span class="sig-paren">(</span><em>cfg</em>, <em>env</em>, <em>module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#run_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.run_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper to runmodule. Returns a running subprocess.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="functions-for-jsonrpc">
+<h2>Functions for JSONRPC<a class="headerlink" href="#functions-for-jsonrpc" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="iceprod.core.exe.finishtask">
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">finishtask</code><span class="sig-paren">(</span><em>cfg</em>, <em>stats={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe_json.html#finishtask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.finishtask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finish a task</p>
+</dd></dl>
+
 </div>
 </div>
 
 
-           </div>
           </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="exe_helper.html" class="btn btn-neutral float-right" title="Execution Helpers" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="dataclasses.html" class="btn btn-neutral" title="Dataclasses" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2016, IceCube Collaboration.
-
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
-</footer>
-
         </div>
       </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Execution</a><ul>
+<li><a class="reference internal" href="#environment-functions">Environment Functions</a></li>
+<li><a class="reference internal" href="#object-setup">Object Setup</a></li>
+<li><a class="reference internal" href="#run-functions">Run Functions</a></li>
+<li><a class="reference internal" href="#functions-for-jsonrpc">Functions for JSONRPC</a></li>
+</ul>
+</li>
+</ul>
 
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../',
-            VERSION:'2.0.6',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
-      <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dataclasses.html"
+                        title="previous chapter">Dataclasses</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="functions.html"
+                        title="next chapter">Functions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/core/exe.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="functions.html" title="Functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dataclasses.html" title="Dataclasses"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >IceProd Core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
 </html>

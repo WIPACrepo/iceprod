@@ -51,7 +51,7 @@ Tables
 * end_date : str  :gray:`# datetime`
 * temporary_storage : Text
 * global_storage : Text
-* parent_id : str
+* groups_id : str  :gray:`# group this dataset is assigned to`
 * stat_keys : Text  :gray:`# json of [key1,key2]`
 * categoryvalue_ids : Text  :gray:`# csv list of categoryvalues`
 * debug : bool
@@ -199,7 +199,15 @@ Tables
 * password : str
 * email : str
 * admin : bool
+* groups : Text  :gray:`# csv list of group_ids`
 * last_login_time : str  :gray:`# datetime`
+
+**groups**
+
+* groups_id : str
+* name : str
+* description : Text
+* priority : float  :gray:`# value between 0 and 1`
 
 **session**
 
@@ -258,6 +266,7 @@ Tables
 * passkey_last : str
 * pilot_last : str
 * user_offset : str
+* groups_offset : str
 * session_last : str
 * webstat_last : str
 * webnote_last : str

@@ -1,0 +1,281 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.core.exe_json &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.core" href="../core.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" accesskey="U">iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.core.exe_json</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Functions to communicate with the server using JSONRPC&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;exe_json&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.util</span> <span class="k">import</span> <span class="n">get_node_resources</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.serialization</span> <span class="k">import</span> <span class="n">dict_to_dataclasses</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonRPCclient</span> <span class="k">import</span> <span class="n">JSONRPC</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_compressor</span><span class="p">,</span><span class="n">json_decode</span>
+
+
+<span class="k">def</span> <span class="nf">setupjsonRPC</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">passkey</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Setup the JSONRPC communications&quot;&quot;&quot;</span>
+    <span class="n">JSONRPC</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">url</span><span class="p">,</span><span class="n">passkey</span><span class="o">=</span><span class="n">passkey</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#39;e&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;JSONRPC communcation did not start.  &#39;</span>
+                        <span class="s">&#39;url=%s and passkey=%s&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">passkey</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ret</span> <span class="o">!=</span> <span class="s">&#39;e&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;JSONRPC communication error when starting - &#39;</span>
+                            <span class="s">&#39;echo failed (%r).  url=%s and passkey=%s&#39;</span>
+                            <span class="o">%</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">url</span><span class="p">,</span><span class="n">passkey</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">downloadtask</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Download a new task from the server&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">platform</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PLATFORM&#39;</span><span class="p">]</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">platform</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">platform</span><span class="p">()</span>
+    <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+    <span class="n">ifaces</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">getInterfaces</span><span class="p">()</span>
+    <span class="n">python_unicode</span> <span class="o">=</span> <span class="s">&#39;ucs4&#39;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxunicode</span> <span class="o">==</span> <span class="mi">1114111</span> <span class="k">else</span> <span class="s">&#39;ucs2&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">resources</span><span class="p">:</span>
+        <span class="n">resources</span> <span class="o">=</span> <span class="n">get_node_resources</span><span class="p">()</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">new_task</span><span class="p">(</span><span class="n">gridspec</span><span class="o">=</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">platform</span><span class="o">=</span><span class="n">platform</span><span class="p">,</span>
+                            <span class="n">hostname</span><span class="o">=</span><span class="n">hostname</span><span class="p">,</span> <span class="n">ifaces</span><span class="o">=</span><span class="n">ifaces</span><span class="p">,</span>
+                            <span class="n">python_unicode</span><span class="o">=</span><span class="n">python_unicode</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">resources</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">task</span>
+    <span class="k">if</span> <span class="n">task</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;not a Job: %r&#39;</span><span class="p">,</span><span class="n">task</span><span class="p">)</span>
+            <span class="k">raise</span>
+    <span class="k">return</span> <span class="n">task</span>
+
+<span class="k">def</span> <span class="nf">processing</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tell the server that we are processing this task&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot update status&#39;</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">set_processing</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+
+<div class="viewcode-block" id="finishtask"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.finishtask">[docs]</a><span class="k">def</span> <span class="nf">finishtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;Finish a task&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][&quot;task_id&quot;] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot finish task&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">&#39;DBkill&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;DBkill&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="c"># don&#39;t finish task on a DB kill</span>
+    <span class="n">outstats</span> <span class="o">=</span> <span class="n">stats</span>
+    <span class="k">if</span> <span class="s">&#39;stats&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="c"># filter stats</span>
+        <span class="n">stat_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">json_decode</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;stats&#39;</span><span class="p">]))</span>
+        <span class="n">outstats</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">stats</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">stats</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">stat_keys</span><span class="p">}</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">finish_task</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="n">stats</span><span class="o">=</span><span class="n">outstats</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span></div>
+
+<span class="k">def</span> <span class="nf">stillrunning</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check if the task should still be running according to the DB&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot finish task&#39;</span><span class="p">)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">stillrunning</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;DBkill&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;task should be stopped&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tell the server about the error experienced&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot send error&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">&#39;DBkill&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;DBkill&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="c"># don&#39;t change status on a DB kill</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">start_time</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;stderr&#39;</span><span class="p">):</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="n">json_compressor</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;stderr&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="n">error_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;hostname&#39;</span><span class="p">:</span><span class="n">hostname</span><span class="p">,</span> <span class="s">&#39;time_used&#39;</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span> <span class="s">&#39;error_summary&#39;</span><span class="p">:</span><span class="n">log</span><span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="n">error_info</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">task_error</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span>
+                             <span class="n">error_info</span><span class="o">=</span><span class="n">error_info</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+
+<span class="k">def</span> <span class="nf">task_kill</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tell the server that we killed a task&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">error_info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="n">resources</span> <span class="ow">and</span> <span class="s">&#39;time&#39;</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
+            <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">resources</span><span class="p">:</span>
+            <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
+        <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
+            <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;error_summary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_compressor</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="n">error_info</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">task_error</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span> <span class="n">error_info</span><span class="o">=</span><span class="n">error_info</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+
+<span class="k">def</span> <span class="nf">_upload_logfile</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload a log file&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;DBkill&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;DBkill&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="c"># don&#39;t upload logs on a DB kill</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json_compressor</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">upload_logfile</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+
+<span class="k">def</span> <span class="nf">uploadLogging</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload all logging files&quot;&quot;&quot;</span>
+    <span class="n">uploadLog</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">uploadErr</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">uploadOut</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">uploadLog</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload log files&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot send log&#39;</span><span class="p">)</span>
+    <span class="n">_upload_logfile</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="s">&#39;stdlog&#39;</span><span class="p">,</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stdlog&#39;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">uploadErr</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload error files&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot send error&#39;</span><span class="p">)</span>
+    <span class="n">_upload_logfile</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="s">&#39;stderr&#39;</span><span class="p">,</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stderr&#39;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">uploadOut</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload out files&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
+                        <span class="s">&#39;so cannot send output&#39;</span><span class="p">)</span>
+    <span class="n">_upload_logfile</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">],</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">update_pilot</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update the pilot table&quot;&quot;&quot;</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">update_pilot</span><span class="p">(</span><span class="n">pilot_id</span><span class="o">=</span><span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="c"># an error occurred</span>
+        <span class="k">raise</span> <span class="n">ret</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" >iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

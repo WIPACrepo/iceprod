@@ -1,0 +1,966 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.modules.website &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.modules.website</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The website module uses `Tornado &lt;http://www.tornadoweb.org&gt;`_,</span>
+<span class="sd">a fast and scalable python web server.</span>
+
+<span class="sd">There are three groups of handlers:</span>
+
+<span class="sd">* Main website</span>
+<span class="sd">    This is the external website users will see when interacting with IceProd.</span>
+<span class="sd">    It has been broken down into several sub-handlers for easier maintenance.</span>
+
+<span class="sd">* JSONRPC</span>
+<span class="sd">    This is the machine-readable portion of the website. Jobs talk to the</span>
+<span class="sd">    server through this mechanism. The main website also uses this for</span>
+<span class="sd">    various actions.</span>
+
+<span class="sd">* lib downloads</span>
+<span class="sd">    This is a directory of downloads local to the IceProd instance.</span>
+<span class="sd">    Usually this will be the necessary software to run the iceprod core.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">binascii</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">Condition</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">wraps</span>
+<span class="kn">from</span> <span class="nn">urlparse</span> <span class="k">import</span> <span class="n">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="k">import</span> <span class="n">ThreadPoolExecutor</span>
+
+<span class="c"># override tornado json encoder and decoder so we can use dataclasses objects</span>
+<span class="kn">import</span> <span class="nn">iceprod.core.jsonUtil</span>
+<span class="kn">import</span> <span class="nn">tornado.escape</span>
+<span class="n">tornado</span><span class="o">.</span><span class="n">escape</span><span class="o">.</span><span class="n">json_encode</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">jsonUtil</span><span class="o">.</span><span class="n">json_encode</span>
+<span class="n">tornado</span><span class="o">.</span><span class="n">escape</span><span class="o">.</span><span class="n">json_decode</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">jsonUtil</span><span class="o">.</span><span class="n">json_decode</span>
+
+<span class="kn">import</span> <span class="nn">tornado.ioloop</span>
+<span class="kn">import</span> <span class="nn">tornado.web</span>
+<span class="kn">import</span> <span class="nn">tornado.httpserver</span>
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+
+<span class="kn">import</span> <span class="nn">iceprod</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">get_pkgdata_filename</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.nginx</span> <span class="k">import</span> <span class="n">Nginx</span><span class="p">,</span> <span class="n">find_nginx</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.ssl_cert</span> <span class="k">import</span> <span class="n">create_cert</span><span class="p">,</span> <span class="n">verify_cert</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.file_io</span> <span class="k">import</span> <span class="n">AsyncFileIO</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.modules.db</span> <span class="k">import</span> <span class="n">DBAPI</span>
+<span class="kn">import</span> <span class="nn">iceprod.core.functions</span>
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">documentation</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;website&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="website"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website">[docs]</a><span class="k">class</span> <span class="nc">website</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The main website module.</span>
+
+<span class="sd">    Run the website, which is required for anything to work.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># run default init</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">website</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">service_class</span> <span class="o">=</span> <span class="n">WebsiteService</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c"># set up local variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span> <span class="o">=</span> <span class="k">None</span>
+
+        <span class="c"># start website</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<div class="viewcode-block" id="website.start"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start thread&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">website</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="website.stop"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stop thread&quot;&quot;&quot;</span>
+        <span class="c"># stop nginx</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;cannot stop Nginx: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+        <span class="c"># stop tornado</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;cannot stop tornado: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">website</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="website.restart"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website.restart">[docs]</a>    <span class="k">def</span> <span class="nf">restart</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;restart website&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;restarting website&#39;</span><span class="p">)</span>
+        <span class="c"># stop nginx</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;cannot stop Nginx: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">()</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="mf">0.5</span>
+            <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">current</span><span class="p">()</span><span class="o">.</span><span class="n">add_timeout</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">cb</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error during restart&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+<div class="viewcode-block" id="website.kill"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Kill thread&quot;&quot;&quot;</span>
+        <span class="c"># kill nginx</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;cannot kill Nginx: %r&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">website</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the website&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># make sure directories are set up properly</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s">&#39;_dir&#39;</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="n">d</span><span class="p">]</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+            <span class="c"># get package data</span>
+            <span class="n">static_path</span> <span class="o">=</span> <span class="n">get_pkgdata_filename</span><span class="p">(</span><span class="s">&#39;iceprod.server&#39;</span><span class="p">,</span><span class="s">&#39;data/www&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">static_path</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">static_path</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;static path: %r&#39;</span><span class="p">,</span><span class="n">static_path</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;bad static path&#39;</span><span class="p">)</span>
+            <span class="n">template_path</span> <span class="o">=</span> <span class="n">get_pkgdata_filename</span><span class="p">(</span><span class="s">&#39;iceprod.server&#39;</span><span class="p">,</span><span class="s">&#39;data/www_templates&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">template_path</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">template_path</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;template path: %r&#39;</span><span class="p">,</span><span class="n">template_path</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;bad template path&#39;</span><span class="p">)</span>
+
+            <span class="c"># detect nginx</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s">&#39;nginx&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                    <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;nginx&#39;</span><span class="p">]):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;nginx explicitly disabled&#39;</span><span class="p">)</span>
+                <span class="n">find_nginx</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s">&#39;system&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">False</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Nginx not present when SSL requested&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;Nginx not present, running Tornado directly&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;(Note that this mode is not secure)&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># configure nginx</span>
+                <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;webserver&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span>
+                    <span class="s">&#39;request_timeout&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">timeout</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;request_timeout&#39;</span><span class="p">])</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;request_timeout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">timeout</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s">&#39;download&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;http_username&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">]</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">][</span><span class="s">&#39;http_username&#39;</span><span class="p">]):</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">][</span><span class="s">&#39;http_username&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s">&#39;download&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;http_password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">]</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">][</span><span class="s">&#39;http_password&#39;</span><span class="p">]):</span>
+                    <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;download&#39;</span><span class="p">][</span><span class="s">&#39;http_password&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span><span class="s">&#39;system&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">]</span>
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">False</span><span class="p">):</span>
+                    <span class="n">cert</span> <span class="o">=</span> <span class="k">None</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="k">None</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s">&#39;autogen&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]</span>
+                        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;autogen&#39;</span><span class="p">]):</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cert&#39;</span><span class="p">])</span>
+                            <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;key&#39;</span><span class="p">])):</span>
+                            <span class="n">cert</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cert&#39;</span><span class="p">]</span>
+                            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;key&#39;</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">verify_cert</span><span class="p">(</span><span class="n">cert</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
+                                <span class="n">cert</span> <span class="o">=</span> <span class="k">None</span>
+                                <span class="n">key</span> <span class="o">=</span> <span class="k">None</span>
+                    <span class="k">elif</span> <span class="p">(</span><span class="s">&#39;cert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]</span>
+                          <span class="ow">and</span> <span class="s">&#39;key&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]):</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cert&#39;</span><span class="p">])</span>
+                            <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;key&#39;</span><span class="p">])):</span>
+                            <span class="n">cert</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cert&#39;</span><span class="p">]</span>
+                            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;key&#39;</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Bad ssl cert or key&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">cert</span><span class="p">:</span>
+                        <span class="c"># auto-generate self-signed cert</span>
+                        <span class="n">create_cert</span><span class="p">(</span><span class="s">&#39;$PWD/cert&#39;</span><span class="p">,</span><span class="s">&#39;$PWD/key&#39;</span><span class="p">,</span><span class="n">days</span><span class="o">=</span><span class="mi">365</span><span class="p">)</span>
+                        <span class="n">cert</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&#39;$PWD/cert&#39;</span><span class="p">)</span>
+                        <span class="n">key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&#39;$PWD/key&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;autogen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cert</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;system&#39;</span><span class="p">,</span><span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">])</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;prepare for cfg reload&#39;</span><span class="p">)</span>
+                        <span class="k">return</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cert</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+
+                    <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cacert&#39;</span><span class="p">]):</span>
+                            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Bad path to cacert&#39;</span><span class="p">)</span>
+                        <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">][</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;port&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;port&#39;</span><span class="p">]</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;proxy_port&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;tornado_port&#39;</span><span class="p">]</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;static_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">static_path</span>
+
+                <span class="c"># start nginx</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span> <span class="o">=</span> <span class="n">Nginx</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;cannot start Nginx:&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                    <span class="k">raise</span>
+
+            <span class="c"># configure tornado</span>
+            <span class="k">def</span> <span class="nf">tornado_logger</span><span class="p">(</span><span class="n">handler</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">handler</span><span class="o">.</span><span class="n">get_status</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
+                    <span class="n">log_method</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">debug</span>
+                <span class="k">elif</span> <span class="n">handler</span><span class="o">.</span><span class="n">get_status</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
+                    <span class="n">log_method</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">log_method</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">error</span>
+                <span class="n">request_time</span> <span class="o">=</span> <span class="mf">1000.0</span> <span class="o">*</span> <span class="n">handler</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">request_time</span><span class="p">()</span>
+                <span class="n">log_method</span><span class="p">(</span><span class="s">&quot;%d %s %.2fms&quot;</span><span class="p">,</span> <span class="n">handler</span><span class="o">.</span><span class="n">get_status</span><span class="p">(),</span>
+                        <span class="n">handler</span><span class="o">.</span><span class="n">_request_summary</span><span class="p">(),</span> <span class="n">request_time</span><span class="p">)</span>
+            <span class="c">#UploadHandler.upload_prefix = &#39;/upload&#39;</span>
+            <span class="n">handler_args</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;cfg&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span>
+                <span class="s">&#39;messaging&#39;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="p">,</span>
+                <span class="s">&#39;fileio&#39;</span><span class="p">:</span><span class="n">AsyncFileIO</span><span class="p">(</span><span class="n">executor</span><span class="o">=</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="mi">10</span><span class="p">)),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]:</span>
+                <span class="n">handler_args</span><span class="p">[</span><span class="s">&#39;debug&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
+            <span class="n">lib_args</span> <span class="o">=</span> <span class="n">handler_args</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">lib_args</span><span class="p">[</span><span class="s">&#39;prefix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;/lib/&#39;</span>
+            <span class="n">lib_args</span><span class="p">[</span><span class="s">&#39;directory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;lib_dir&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="s">&#39;cookie_secret&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]:</span>
+                <span class="n">cookie_secret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;cookie_secret&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cookie_secret</span> <span class="o">=</span> <span class="s">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">15</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;cookie_secret&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cookie_secret</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s">&#39;webserver&#39;</span><span class="p">,</span>
+                                          <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">],</span>
+                                          <span class="n">update</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">Application</span><span class="p">([</span>
+                <span class="p">(</span><span class="s">r&quot;/jsonrpc&quot;</span><span class="p">,</span> <span class="n">JSONRPCHandler</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/lib/.*&quot;</span><span class="p">,</span> <span class="n">LibHandler</span><span class="p">,</span> <span class="n">lib_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/&quot;</span><span class="p">,</span> <span class="n">Default</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/submit&quot;</span><span class="p">,</span> <span class="n">Submit</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/config&quot;</span><span class="p">,</span> <span class="n">Config</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/dataset(/.*)?&quot;</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/task(/.*)?&quot;</span><span class="p">,</span> <span class="n">Task</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/site(/.*)?&quot;</span><span class="p">,</span> <span class="n">Site</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/help&quot;</span><span class="p">,</span> <span class="n">Help</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/docs/(.*)&quot;</span><span class="p">,</span> <span class="n">Documentation</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/log/(.*)/(.*)&quot;</span><span class="p">,</span> <span class="n">Log</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/groups&quot;</span><span class="p">,</span> <span class="n">GroupsHandler</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/login&quot;</span><span class="p">,</span> <span class="n">Login</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/logout&quot;</span><span class="p">,</span> <span class="n">Logout</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+                <span class="p">(</span><span class="s">r&quot;/.*&quot;</span><span class="p">,</span> <span class="n">Other</span><span class="p">,</span> <span class="n">handler_args</span><span class="p">),</span>
+            <span class="p">],</span><span class="n">static_path</span><span class="o">=</span><span class="n">static_path</span><span class="p">,</span>
+              <span class="n">template_path</span><span class="o">=</span><span class="n">template_path</span><span class="p">,</span>
+              <span class="n">log_function</span><span class="o">=</span><span class="n">tornado_logger</span><span class="p">,</span>
+              <span class="n">xsrf_cookies</span><span class="o">=</span><span class="k">True</span><span class="p">,</span>
+              <span class="n">cookie_secret</span><span class="o">=</span><span class="n">binascii</span><span class="o">.</span><span class="n">unhexlify</span><span class="p">(</span><span class="n">cookie_secret</span><span class="p">),</span>
+              <span class="n">login_url</span><span class="o">=</span><span class="s">&#39;/login&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">httpserver</span><span class="o">.</span><span class="n">HTTPServer</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">application</span><span class="p">,</span>
+                    <span class="n">xheaders</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+
+            <span class="c"># start tornado</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                <span class="n">tornado_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;port&#39;</span><span class="p">]</span>
+                <span class="n">tornado_address</span> <span class="o">=</span> <span class="s">&#39;0.0.0.0&#39;</span> <span class="c"># bind to all</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tornado_port</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;tornado_port&#39;</span><span class="p">]</span>
+                <span class="n">tornado_address</span> <span class="o">=</span> <span class="s">&#39;localhost&#39;</span> <span class="c"># bind locally</span>
+            <span class="n">numcpus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;numcpus&#39;</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;tornado bound to port %d with %d cpus&#39;</span><span class="p">,</span><span class="n">tornado_port</span><span class="p">,</span><span class="n">numcpus</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">tornado_port</span><span class="p">,</span><span class="n">address</span><span class="o">=</span><span class="n">tornado_address</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">http_server</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">numcpus</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;tornado starting&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;website startup error&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">daemon</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<div class="viewcode-block" id="website.logrotate"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.website.logrotate">[docs]</a>    <span class="k">def</span> <span class="nf">logrotate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Rotate the Nginx logs.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;got a logrotate() call&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="p">:</span>
+                <span class="c"># rotate nginx logs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nginx</span><span class="o">.</span><span class="n">logrotate</span><span class="p">()</span>
+            <span class="c"># tornado uses regular python logs, which rotate automatically</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span> <span class="c"># ignore errors in favor of continuous running</span></div></div>
+
+<div class="viewcode-block" id="WebsiteService"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.WebsiteService">[docs]</a><span class="k">class</span> <span class="nc">WebsiteService</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">Service</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Override the basic :class:`Service` handler.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="WebsiteService.restart"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.WebsiteService.restart">[docs]</a>    <span class="k">def</span> <span class="nf">restart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">restart</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span></div>
+<div class="viewcode-block" id="WebsiteService.logrotate"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.WebsiteService.logrotate">[docs]</a>    <span class="k">def</span> <span class="nf">logrotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mod</span><span class="o">.</span><span class="n">logrotate</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">callback</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="catch_error"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.catch_error">[docs]</a><span class="k">def</span> <span class="nf">catch_error</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorator to catch and handle errors on handlers&quot;&quot;&quot;</span>
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Error in website handler&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="s">&#39;Error generating page for &#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">message</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_error</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapper</span></div>
+
+
+<div class="viewcode-block" id="MyHandler"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler">[docs]</a><span class="k">class</span> <span class="nc">MyHandler</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Default Handler&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="MyHandler.initialize"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">,</span> <span class="n">messaging</span><span class="p">,</span> <span class="n">fileio</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get some params from the website module</span>
+
+<span class="sd">        :param cfg: the global config</span>
+<span class="sd">        :param messaging: the messaging handle</span>
+<span class="sd">        :param fileio: AsyncFileIO object</span>
+<span class="sd">        :param debug: debug flag (optional)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">cfg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span> <span class="o">=</span> <span class="n">messaging</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileio</span> <span class="o">=</span> <span class="n">fileio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span> <span class="o">=</span> <span class="n">debug</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">return_future</span>
+<div class="viewcode-block" id="MyHandler.db_call"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.db_call">[docs]</a>    <span class="k">def</span> <span class="nf">db_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func_name</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Turn a DB messaging call into a `Futures` object&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;db_call for %s&#39;</span><span class="p">,</span><span class="n">func_name</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">db</span><span class="p">,</span><span class="n">func_name</span><span class="p">)(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;db_call error for %s&#39;</span><span class="p">,</span><span class="n">func_name</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">return_future</span>
+<div class="viewcode-block" id="MyHandler.daemon_call"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.daemon_call">[docs]</a>    <span class="k">def</span> <span class="nf">daemon_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">daemon</span><span class="p">,</span><span class="n">func_name</span><span class="p">)(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;daemon_call error for %s&#39;</span><span class="p">,</span><span class="n">func_name</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">return_future</span>
+<div class="viewcode-block" id="MyHandler.config_call"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.config_call">[docs]</a>    <span class="k">def</span> <span class="nf">config_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging</span><span class="o">.</span><span class="n">config</span><span class="p">,</span><span class="n">func_name</span><span class="p">)(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;config_call error for %s&#39;</span><span class="p">,</span><span class="n">func_name</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="MyHandler.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;GET is invalid and returns an error&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span><span class="s">&#39;GET is invalid.  Use POST&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MyHandler.post"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.MyHandler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;POST is invalid and returns an error&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span><span class="s">&#39;POST is invalid.  Use GET&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="JSONRPCHandler"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler">[docs]</a><span class="k">class</span> <span class="nc">JSONRPCHandler</span><span class="p">(</span><span class="n">MyHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;JSONRPC 2.0 Handler.</span>
+
+<span class="sd">       Call DB methods using RPC over json.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="JSONRPCHandler.check_xsrf_cookie"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.check_xsrf_cookie">[docs]</a>    <span class="k">def</span> <span class="nf">check_xsrf_cookie</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="JSONRPCHandler.post"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parses json in the jsonrpc format, returning results in</span>
+<span class="sd">           jsonrpc format as well.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># parse JSON</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">escape</span><span class="o">.</span><span class="n">json_decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span><span class="s">&#39;POST request is not valid json&#39;</span><span class="p">)</span>
+
+        <span class="c"># check for all parts of jsonrpc 2.0 spec</span>
+        <span class="k">if</span> <span class="s">&#39;jsonrpc&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">request</span> <span class="ow">or</span> <span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;2.0&#39;</span> <span class="ow">and</span>
+            <span class="n">request</span><span class="p">[</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">2.0</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32600</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Invalid Request&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="s">&#39;jsonrpc is not 2.0&#39;</span><span class="p">})</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="s">&#39;method&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">request</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32600</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Invalid Request&#39;</span><span class="p">,</span>
+                <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="s">&#39;method not in request&#39;</span><span class="p">})</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">request</span><span class="p">[</span><span class="s">&#39;method&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32600</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Invalid Request&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="s">&#39;method name cannot start with underscore&#39;</span><span class="p">})</span>
+            <span class="k">return</span>
+
+        <span class="c"># add rpc_ to method name to prevent calling other DB methods</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s">&#39;rpc_&#39;</span><span class="o">+</span><span class="n">request</span><span class="p">[</span><span class="s">&#39;method&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;params&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">request</span><span class="p">[</span><span class="s">&#39;params&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">request</span><span class="p">:</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="n">request</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">id</span> <span class="o">=</span> <span class="k">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">method</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&quot;rpc_public&quot;</span><span class="p">):</span>
+            <span class="c"># check for auth</span>
+            <span class="k">if</span> <span class="s">&#39;passkey&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="mi">403</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Not Authorized&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="s">&#39;missing passkey&#39;</span><span class="p">})</span>
+                <span class="k">return</span>
+            <span class="n">passkey</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s">&#39;site_id&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="c"># authorize site</span>
+                <span class="n">site_id</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site_id&#39;</span><span class="p">)</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_site&#39;</span><span class="p">,</span><span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># authorize task</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_task&#39;</span><span class="p">,</span><span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth</span><span class="p">,</span><span class="ne">Exception</span><span class="p">)</span> <span class="ow">or</span> <span class="n">auth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="mi">403</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Not Authorized&#39;</span><span class="p">,</span>
+                                 <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="s">&#39;passkey invalid&#39;</span><span class="p">})</span>
+                <span class="k">return</span>
+
+        <span class="c"># check for args and kwargs</span>
+        <span class="k">if</span> <span class="s">&#39;args&#39;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;args&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># call method on DB if exists</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32601</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Method not found&#39;</span><span class="p">})</span>
+            <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error in DB method&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32000</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Server error&#39;</span><span class="p">},</span>
+                            <span class="n">status</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">json_error</span><span class="p">({</span><span class="s">&#39;code&#39;</span><span class="p">:</span><span class="o">-</span><span class="mi">32000</span><span class="p">,</span><span class="s">&#39;message&#39;</span><span class="p">:</span><span class="s">&#39;Server error&#39;</span><span class="p">,</span>
+                             <span class="s">&#39;data&#39;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">ret</span><span class="p">)},</span> <span class="n">status</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># return response</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">:</span><span class="s">&#39;2.0&#39;</span><span class="p">,</span><span class="s">&#39;result&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">,</span><span class="s">&#39;id&#39;</span><span class="p">:</span><span class="nb">id</span><span class="p">})</span></div>
+
+<div class="viewcode-block" id="JSONRPCHandler.json_error"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.JSONRPCHandler.json_error">[docs]</a>    <span class="k">def</span> <span class="nf">json_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">error</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span><span class="nb">id</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a proper jsonrpc error message&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json_error: %r&#39;</span><span class="p">,</span><span class="n">error</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s">&#39;jsonrpc&#39;</span><span class="p">:</span><span class="s">&#39;2.0&#39;</span><span class="p">,</span><span class="s">&#39;error&#39;</span><span class="p">:</span><span class="n">error</span><span class="p">,</span><span class="s">&#39;id&#39;</span><span class="p">:</span><span class="nb">id</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="LibHandler"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.LibHandler">[docs]</a><span class="k">class</span> <span class="nc">LibHandler</span><span class="p">(</span><span class="n">MyHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handler for iceprod library downloads.</span>
+
+<span class="sd">       These are straight http downloads like normal.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="LibHandler.initialize"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.LibHandler.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get some params from the website module</span>
+
+<span class="sd">        :param messaging: the messaging handle</span>
+<span class="sd">        :param fileio: AsyncFileIO object</span>
+<span class="sd">        :param prefix: library url prefix</span>
+<span class="sd">        :param directory: library directory on disk</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LibHandler</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">directory</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="LibHandler.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.LibHandler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Look up a library&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">uri</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">):]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
+            <span class="c"># TODO: make this human-browsable in future</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">HTTPError</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span><span class="s">&#39;not browsable&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># TODO: make this work better for multi-site</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span><span class="n">url</span><span class="p">)</span>
+            <span class="c"># open the file and send it</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="mi">65536</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">bytes</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">num</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileio</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="nb">bytes</span><span class="o">=</span><span class="n">num</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileio</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">file</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="PublicHandler"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.PublicHandler">[docs]</a><span class="k">class</span> <span class="nc">PublicHandler</span><span class="p">(</span><span class="n">MyHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handler for public facing website&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PublicHandler.get_template_namespace"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.PublicHandler.get_template_namespace">[docs]</a>    <span class="k">def</span> <span class="nf">get_template_namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">namespace</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">MyHandler</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_template_namespace</span><span class="p">()</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">__version__</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;section&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">uri</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;?&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;master&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span>
+                               <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">])</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;master_url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;master&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span>
+                                   <span class="s">&#39;url&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">][</span><span class="s">&#39;url&#39;</span><span class="p">])</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s">&#39;site_id&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="k">else</span> <span class="k">None</span><span class="p">)</span>
+        <span class="n">namespace</span><span class="p">[</span><span class="s">&#39;sites&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;sites&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span>
+                              <span class="s">&#39;webserver&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span>
+                              <span class="s">&#39;sites&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">])</span> <span class="k">else</span> <span class="k">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">namespace</span></div>
+
+<div class="viewcode-block" id="PublicHandler.get_current_user"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.PublicHandler.get_current_user">[docs]</a>    <span class="k">def</span> <span class="nf">get_current_user</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secure_cookie</span><span class="p">(</span><span class="s">&quot;user&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PublicHandler.write_error"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.PublicHandler.write_error">[docs]</a>    <span class="k">def</span> <span class="nf">write_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write out custom error page.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="n">status_code</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status_code</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;h2&gt;Internal Error&lt;/h2&gt;&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;h2&gt;Request Error&lt;/h2&gt;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;message&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&lt;br /&gt;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;message&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="Default"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Default">[docs]</a><span class="k">class</span> <span class="nc">Default</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle / urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Default.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Default.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_datasets&#39;</span><span class="p">,</span><span class="n">groups</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">datasets</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;no datasets to display: %r&#39;</span><span class="p">,</span><span class="n">datasets</span><span class="p">)</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># set to iterable to prevent None error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;main.html&#39;</span><span class="p">,</span><span class="n">datasets</span><span class="o">=</span><span class="n">datasets</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Submit"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Submit">[docs]</a><span class="k">class</span> <span class="nc">Submit</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle /submit urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">authenticated</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Submit.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Submit.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">uri</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">passkey</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_new_passkey&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">passkey</span>
+        <span class="n">grids</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_gridspec&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">grids</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">grids</span>
+        <span class="n">render_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;passkey&#39;</span><span class="p">:</span><span class="n">passkey</span><span class="p">,</span>
+            <span class="s">&#39;grids&#39;</span><span class="p">:</span><span class="n">grids</span><span class="p">,</span>
+            <span class="s">&#39;edit&#39;</span><span class="p">:</span><span class="k">False</span><span class="p">,</span>
+            <span class="s">&#39;dataset&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+            <span class="s">&#39;config&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;submit.html&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">render_args</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Config">[docs]</a><span class="k">class</span> <span class="nc">Config</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle /submit urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">authenticated</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Config.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Config.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;dataset_id&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_error</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span><span class="n">message</span><span class="o">=</span><span class="s">&#39;must provide dataset_id&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_datasets_details&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">dataset</span>
+        <span class="k">if</span> <span class="n">dataset_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;get_dataset_details does not have dataset_id &#39;</span><span class="o">+</span><span class="n">dataset_id</span><span class="p">)</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span>
+        <span class="n">edit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;edit&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">edit</span><span class="p">:</span>
+            <span class="n">passkey</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_new_passkey&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">passkey</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">passkey</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;queue_get_cfg_for_dataset&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">config</span>
+        <span class="n">render_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;edit&#39;</span><span class="p">:</span><span class="n">edit</span><span class="p">,</span>
+            <span class="s">&#39;passkey&#39;</span><span class="p">:</span><span class="n">passkey</span><span class="p">,</span>
+            <span class="s">&#39;grids&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+            <span class="s">&#39;dataset&#39;</span><span class="p">:</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="s">&#39;config&#39;</span><span class="p">:</span><span class="n">config</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;submit.html&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">render_args</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Site"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Site">[docs]</a><span class="k">class</span> <span class="nc">Site</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle /site urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">authenticated</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Site.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Site.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">url</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+            <span class="n">url_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">daemon_call</span><span class="p">(</span><span class="s">&#39;get_running_modules&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ret</span>
+
+        <span class="n">available_modules</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">server</span><span class="o">.</span><span class="n">listmodules</span><span class="p">(</span><span class="s">&#39;iceprod.server.modules&#39;</span><span class="p">):</span>
+            <span class="n">mod_name</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">available_modules</span><span class="p">[</span><span class="n">mod_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">mod</span>
+
+
+        <span class="n">module_state</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">available_modules</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">ret</span>
+            <span class="n">module_state</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">mod</span><span class="p">,</span> <span class="n">state</span><span class="p">])</span>
+        <span class="c">#self.messaging.daemon.get_running_modules(callback=cb)</span>
+        <span class="c">#print(&#39;11111&#39;)</span>
+
+        <span class="n">passkey</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_new_passkey&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">passkey</span>
+
+        <span class="n">config</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_call</span><span class="p">(</span><span class="s">&#39;get_config_string&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;site.html&#39;</span><span class="p">,</span> <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">modules</span> <span class="o">=</span> <span class="n">module_state</span><span class="p">,</span> <span class="n">passkey</span><span class="o">=</span><span class="n">passkey</span><span class="p">,</span> <span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">)</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        filter_options = {}</span>
+<span class="sd">        filter_results = {n:self.get_arguments(n) for n in filter_options}</span>
+<span class="sd">        if url and url_parts:</span>
+<span class="sd">            site_id = url_parts[0]</span>
+<span class="sd">            ret = yield self.db_call(&#39;web_get_site_details&#39;,dataset_id=dataset_id)</span>
+<span class="sd">            if isinstance(ret,Exception):</span>
+<span class="sd">                raise ret</span>
+<span class="sd">            if ret:</span>
+<span class="sd">                site = ret.values()[0]</span>
+<span class="sd">            else:</span>
+<span class="sd">                site = None</span>
+<span class="sd">            tasks = yield self.db_call(&#39;web_get_tasks_by_status&#39;,site_id=site_id)</span>
+<span class="sd">            if isinstance(tasks,Exception):</span>
+<span class="sd">                raise tasks</span>
+<span class="sd">            self.render(&#39;site_detail.html&#39;,site_id=site_id,</span>
+<span class="sd">                               site=site,tasks=tasks)</span>
+<span class="sd">        else:</span>
+<span class="sd">            sites = yield self.db_call(&#39;web_get_sites&#39;,**filter_results)</span>
+<span class="sd">            if isinstance(sites,Exception):</span>
+<span class="sd">                raise sites</span>
+<span class="sd">            self.render(&#39;site_browse.html&#39;,sites=sites,</span>
+<span class="sd">                               filter_options=filter_options,</span>
+<span class="sd">                               filter_results=filter_results)</span>
+<span class="sd">        &#39;&#39;&#39;</span></div></div>
+
+<div class="viewcode-block" id="Dataset"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Dataset">[docs]</a><span class="k">class</span> <span class="nc">Dataset</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle /dataset urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Dataset.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Dataset.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">url</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+            <span class="n">url_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+        <span class="n">filter_options</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;status&#39;</span><span class="p">:</span><span class="n">DBAPI</span><span class="o">.</span><span class="n">status_options</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">]}</span>
+        <span class="n">filter_results</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">get_arguments</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">filter_options</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">and</span> <span class="n">url_parts</span><span class="p">:</span>
+            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">url_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">dataset_id</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10000000</span><span class="p">:</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_dataset_by_name&#39;</span><span class="p">,</span>
+                                                 <span class="n">name</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">ret</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">ret</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_datasets_details&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="n">tasks</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_tasks_by_status&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">tasks</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render_handle</span><span class="p">(</span><span class="s">&#39;dataset_detail.html&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span>
+                               <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span><span class="n">tasks</span><span class="o">=</span><span class="n">tasks</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_datasets&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">filter_results</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">datasets</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;dataset_browse.html&#39;</span><span class="p">,</span><span class="n">datasets</span><span class="o">=</span><span class="n">datasets</span><span class="p">,</span>
+                        <span class="n">filter_options</span><span class="o">=</span><span class="n">filter_options</span><span class="p">,</span>
+                        <span class="n">filter_results</span><span class="o">=</span><span class="n">filter_results</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle /task urls&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Task.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Task.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">url</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+            <span class="n">url_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;dataset_id&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;status&#39;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">)</span>
+
+        <span class="n">passkey</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_new_passkey&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">passkey</span>
+
+        <span class="k">if</span> <span class="n">url</span> <span class="ow">and</span> <span class="n">url_parts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dataset_id</span> <span class="ow">and</span> <span class="n">dataset_id</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10000000</span><span class="p">:</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_dataset_by_name&#39;</span><span class="p">,</span>
+                                                 <span class="n">name</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">ret</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">ret</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="n">url_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_tasks_details&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span>
+                                     <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+            <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">task_details</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">task_details</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="n">logs</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_logs&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span><span class="n">lines</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span> <span class="c">#TODO: make lines adjustable</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">logs</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">logs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;task_detail.html&#39;</span><span class="p">,</span><span class="n">task</span><span class="o">=</span><span class="n">task_details</span><span class="p">,</span><span class="n">logs</span><span class="o">=</span><span class="n">logs</span><span class="p">,</span><span class="n">passkey</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">status</span><span class="p">:</span>
+
+            <span class="n">tasks</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_tasks_details&#39;</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">,</span>
+                                       <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">tasks</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;task_browse.html&#39;</span><span class="p">,</span><span class="n">tasks</span><span class="o">=</span><span class="n">tasks</span><span class="p">,</span> <span class="n">passkey</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_tasks_by_status&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">status</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;tasks.html&#39;</span><span class="p">,</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Documentation"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Documentation">[docs]</a><span class="k">class</span> <span class="nc">Documentation</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Documentation.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Documentation.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="n">doc_path</span> <span class="o">=</span> <span class="n">get_pkgdata_filename</span><span class="p">(</span><span class="s">&#39;iceprod.server&#39;</span><span class="p">,</span><span class="s">&#39;data/docs&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">documentation</span><span class="o">.</span><span class="n">load_doc</span><span class="p">(</span><span class="n">doc_path</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">url</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="Log"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Log">[docs]</a><span class="k">class</span> <span class="nc">Log</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="Log.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Log.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">log</span><span class="p">):</span>
+        <span class="n">logs</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_logs&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">log_text</span> <span class="o">=</span> <span class="n">logs</span><span class="p">[</span><span class="n">log</span><span class="p">]</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="s">&#39;&lt;html&gt;&lt;body&gt;&#39;</span>
+        <span class="n">html</span> <span class="o">+=</span> <span class="n">log_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39;&lt;br/&gt;&#39;</span><span class="p">)</span>
+        <span class="n">html</span> <span class="o">+=</span> <span class="s">&#39;&lt;/body&gt;&lt;/html&gt;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="GroupsHandler"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.GroupsHandler">[docs]</a><span class="k">class</span> <span class="nc">GroupsHandler</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;View/modify groups&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="GroupsHandler.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.GroupsHandler.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">render_args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;edit&#39;</span><span class="p">:</span> <span class="k">True</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_user</span> <span class="k">else</span> <span class="k">False</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">render_args</span><span class="p">[</span><span class="s">&#39;groups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;rpc_get_groups&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">render_args</span><span class="p">[</span><span class="s">&#39;edit&#39;</span><span class="p">]:</span>
+            <span class="n">passkey</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_new_passkey&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">passkey</span>
+            <span class="n">render_args</span><span class="p">[</span><span class="s">&#39;passkey&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">passkey</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;groups.html&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">render_args</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Help"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Help">[docs]</a><span class="k">class</span> <span class="nc">Help</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Help Page&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Help.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Help.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;help.html&#39;</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Other"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Other">[docs]</a><span class="k">class</span> <span class="nc">Other</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle any other urls - this is basically all 404&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Other.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Other.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="mi">404</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;404.html&#39;</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Login"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Login">[docs]</a><span class="k">class</span> <span class="nc">Login</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Handle the login url&quot;&quot;&quot;</span>
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Login.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Login.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;next&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;login.html&#39;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="nb">next</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_secure_cookie</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">,</span> <span class="n">expires_days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></div>
+
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Login.post"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Login.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;next&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">]</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_argument</span><span class="p">(</span><span class="s">&#39;pwd&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;webserver&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_secure_cookie</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">,</span> <span class="n">expires_days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redirect</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;login.html&#39;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s">&#39;failed&#39;</span><span class="p">,</span> <span class="nb">next</span><span class="o">=</span><span class="n">n</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="Logout"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Logout">[docs]</a><span class="k">class</span> <span class="nc">Logout</span><span class="p">(</span><span class="n">PublicHandler</span><span class="p">):</span>
+    <span class="nd">@catch_error</span>
+<div class="viewcode-block" id="Logout.get"><a class="viewcode-back" href="../../../../server/modules/website.html#iceprod.server.modules.website.Logout.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clear_cookie</span><span class="p">(</span><span class="s">&quot;user&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_user</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s">&#39;logout.html&#39;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

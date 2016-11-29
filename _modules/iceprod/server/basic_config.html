@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>iceprod.server.basic_config &#8212; IceProd 2.0.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.server" href="../server.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" accesskey="U">iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for iceprod.server.basic_config</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Basic config file support for IceProd.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="c"># In py3, ConfigParser was renamed to the more-standard configparser</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">configparser</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">ConfigParser</span> <span class="k">as</span> <span class="nn">configparser</span>
+
+<span class="kn">from</span> <span class="nn">tornado.netutil</span> <span class="k">import</span> <span class="n">bind_sockets</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">get_pkgdata_filename</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.functions</span> <span class="k">import</span> <span class="n">getInterfaces</span><span class="p">,</span> <span class="n">get_local_ip_address</span>
+
+<div class="viewcode-block" id="locateconfig"><a class="viewcode-back" href="../../../server/basic_config.html#iceprod.server.basic_config.locateconfig">[docs]</a><span class="k">def</span> <span class="nf">locateconfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s">&#39;iceprod.cfg&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Locate a config file&quot;&quot;&quot;</span>
+    <span class="n">cfgpaths</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="s">&#39;$I3PROD&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfgpaths</span><span class="p">:</span>
+        <span class="n">cfgpaths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+    <span class="n">cfgpath</span> <span class="o">=</span> <span class="n">get_pkgdata_filename</span><span class="p">(</span><span class="s">&#39;iceprod.server&#39;</span><span class="p">,</span><span class="s">&#39;data&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfgpath</span><span class="p">:</span>
+        <span class="n">cfgpaths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cfgpath</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cfgpaths</span><span class="p">):</span>
+        <span class="c"># try for an etc directory</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">cfgpaths</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">)):</span>
+            <span class="n">cfgpaths</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">))</span>
+            <span class="c"># try for an iceprod directory</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">,</span><span class="s">&#39;iceprod&#39;</span><span class="p">)):</span>
+                <span class="n">cfgpaths</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="s">&#39;etc&#39;</span><span class="p">,</span><span class="s">&#39;iceprod&#39;</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">cfgpath</span> <span class="ow">in</span> <span class="n">cfgpaths</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="n">filename</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfgpath</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config {} not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="BasicConfig"><a class="viewcode-back" href="../../../server/basic_config.html#iceprod.server.basic_config.BasicConfig">[docs]</a><span class="k">class</span> <span class="nc">BasicConfig</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    IceProd basic configuration.</span>
+
+<span class="sd">    Settings for basic server daemon startup and connectivity.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">force_tcp</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+        <span class="c"># modules to start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proxy</span> <span class="o">=</span> <span class="k">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">website</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messaging</span> <span class="o">=</span> <span class="k">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">master_updater</span> <span class="o">=</span> <span class="k">False</span>
+
+        <span class="c"># start order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_order</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;messaging&#39;</span><span class="p">,</span><span class="s">&#39;config&#39;</span><span class="p">,</span><span class="s">&#39;db&#39;</span><span class="p">,</span><span class="s">&#39;proxy&#39;</span><span class="p">,</span><span class="s">&#39;website&#39;</span><span class="p">,</span>
+                            <span class="s">&#39;schedule&#39;</span><span class="p">,</span><span class="s">&#39;master_updater&#39;</span><span class="p">,</span><span class="s">&#39;queue&#39;</span><span class="p">]</span>
+
+        <span class="c"># messaging server url</span>
+        <span class="n">is_mac</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;darwin&#39;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">force_tcp</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">is_mac</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="s">&#39;AF_UNIX&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">messaging_url</span> <span class="o">=</span> <span class="s">&#39;ipc://&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;unix_socket.sock&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># attempt to bind to an ip</span>
+            <span class="n">ip</span> <span class="o">=</span> <span class="n">get_local_ip_address</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">1024</span><span class="p">,</span><span class="mi">65535</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">bind_sockets</span><span class="p">(</span><span class="n">port</span><span class="p">,</span><span class="n">ip</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">messaging_url</span> <span class="o">=</span> <span class="s">&#39;tcp://%s:%d&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span><span class="n">port</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">break</span>
+
+        <span class="c"># logging</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logging</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;logfile&#39;</span><span class="p">:</span><span class="s">&#39;iceprod.log&#39;</span><span class="p">}</span>
+
+<div class="viewcode-block" id="BasicConfig.read_file"><a class="viewcode-back" href="../../../server/basic_config.html#iceprod.server.basic_config.BasicConfig.read_file">[docs]</a>    <span class="k">def</span> <span class="nf">read_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;%s is not a file&#39;</span><span class="o">%</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">configparser</span><span class="o">.</span><span class="n">RawConfigParser</span><span class="p">()</span>
+        <span class="n">read_files</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">read_files</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;failed to read %s&#39;</span><span class="o">%</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">option_spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG_FILE_OPTIONS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_attr_from_config_option</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span> <span class="o">*</span><span class="n">option_spec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">messaging_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">messaging_url</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BasicConfig.set_attr_from_config_option"><a class="viewcode-back" href="../../../server/basic_config.html#iceprod.server.basic_config.BasicConfig.set_attr_from_config_option">[docs]</a>    <span class="k">def</span> <span class="nf">set_attr_from_config_option</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cp</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">where</span><span class="p">,</span> <span class="n">type_</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set an attribute on self if it exists in the ConfigParser.&quot;&quot;&quot;</span>
+        <span class="n">section</span><span class="p">,</span> <span class="n">option</span> <span class="o">=</span> <span class="n">where</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cp</span><span class="o">.</span><span class="n">has_option</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">option</span><span class="p">):</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span> <span class="s">&#39;get&#39;</span><span class="o">+</span><span class="n">type_</span><span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">option</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;|&#39;</span> <span class="ow">in</span> <span class="n">attr</span><span class="p">:</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">attr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;|&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="p">]</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="n">d</span><span class="p">[</span><span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+
+    <span class="n">CONFIG_FILE_OPTIONS</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c"># [modules]</span>
+        <span class="p">(</span><span class="s">&#39;db&#39;</span><span class="p">,</span> <span class="s">&#39;modules:db&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;proxy&#39;</span><span class="p">,</span> <span class="s">&#39;modules:proxy&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">,</span> <span class="s">&#39;modules:queue&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;schedule&#39;</span><span class="p">,</span> <span class="s">&#39;modules:schedule&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;website&#39;</span><span class="p">,</span> <span class="s">&#39;modules:website&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;config&#39;</span><span class="p">,</span> <span class="s">&#39;modules:config&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;messaging&#39;</span><span class="p">,</span> <span class="s">&#39;modules:messaging&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;master_updater&#39;</span><span class="p">,</span> <span class="s">&#39;modules:master_updater&#39;</span><span class="p">,</span> <span class="s">&#39;boolean&#39;</span><span class="p">),</span>
+
+        <span class="c"># [messaging]</span>
+        <span class="p">(</span><span class="s">&#39;messaging_url&#39;</span><span class="p">,</span> <span class="s">&#39;messaging:messaging_url&#39;</span><span class="p">),</span>
+
+        <span class="c"># [logging]</span>
+        <span class="p">(</span><span class="s">&#39;logging|level&#39;</span><span class="p">,</span> <span class="s">&#39;logging:level&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;logging|format&#39;</span><span class="p">,</span> <span class="s">&#39;logging:format&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;logging|size&#39;</span><span class="p">,</span> <span class="s">&#39;logging:size&#39;</span><span class="p">,</span> <span class="s">&#39;int&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;logging|num&#39;</span><span class="p">,</span> <span class="s">&#39;logging:num&#39;</span><span class="p">,</span> <span class="s">&#39;int&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s">&#39;logging|logfile&#39;</span><span class="p">,</span> <span class="s">&#39;logging:logfile&#39;</span><span class="p">),</span>
+    <span class="p">]</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../server.html" >iceprod.server</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
+</html>

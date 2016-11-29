@@ -1,125 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>iceprod.core.util &mdash; IceProd 2.0.6 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
-  
-
-  
-
-  
-    <link rel="top" title="IceProd 2.0.6 documentation" href="../../../index.html"/>
-        <link rel="up" title="iceprod.core" href="../core.html"/> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-   
-  <div class="wy-grid-for-nav">
-
+    <title>iceprod.core.util &#8212; IceProd 2.0.4 documentation</title>
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
+    <link rel="stylesheet" href="../../../_static/iceprod.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '2.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="IceProd 2.0.4 documentation" href="../../../index.html" />
+    <link rel="up" title="iceprod.core" href="../core.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" accesskey="U">iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>  
 
-          
-            <a href="../../../index.html" class="icon icon-home"> IceProd
-          
-
-          
-          </a>
-
-          
-            
-            
-              <div class="version">
-                2.0.6
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../details.html">Technical Details</a></li>
-</ul>
-
-            
-          
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">IceProd</a>
-        
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div style="float:right">
-            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
-          </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
   <h1>Source code for iceprod.core.util</h1><div class="highlight"><pre>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -154,22 +81,13 @@
 <span class="n">Node_Resources</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s">&#39;cpu&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
     <span class="s">&#39;gpu&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="s">&#39;memory&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="c"># float, in GB</span>
-    <span class="s">&#39;disk&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="c"># float, in GB</span>
+    <span class="s">&#39;memory&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="c"># in GB</span>
+    <span class="s">&#39;disk&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="c"># in GB</span>
 <span class="p">}</span>
 
 <span class="c">#: The types of task resources, with defaults</span>
 <span class="n">Task_Resources</span> <span class="o">=</span> <span class="n">Node_Resources</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 <span class="n">Task_Resources</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">24</span> <span class="c"># in hours</span>
-
-<span class="c">#: Overusage limits</span>
-<span class="n">Task_Resource_Overusage</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&#39;cpu&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">},</span> <span class="c"># allow up to 2x without checking</span>
-    <span class="s">&#39;gpu&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">1.5</span><span class="p">},</span>
-    <span class="s">&#39;memory&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">3.</span><span class="p">},</span> <span class="c"># allow up to 3x if available</span>
-    <span class="s">&#39;disk&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">10.</span><span class="p">},</span>
-    <span class="s">&#39;time&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;ignore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;allowed&#39;</span><span class="p">:</span> <span class="mf">2.</span><span class="p">},</span>
-<span class="p">}</span>
 
 <div class="viewcode-block" id="get_cpus"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.get_cpus">[docs]</a><span class="k">def</span> <span class="nf">get_cpus</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;Detect the number of available (allocated) cpus.&quot;&quot;&quot;</span>
@@ -235,7 +153,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;.machine.ad&#39;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">line</span> <span class="ow">and</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;memory&#39;</span><span class="p">:</span>
-                    <span class="n">ret</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mf">1000.</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">1000</span>
                     <span class="k">break</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">pass</span>
@@ -256,7 +174,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;.machine.ad&#39;</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">line</span> <span class="ow">and</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;disk&#39;</span><span class="p">:</span>
-                    <span class="n">ret</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mf">1000000.</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">1000000</span>
                     <span class="k">break</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="k">pass</span>
@@ -314,65 +232,333 @@
         <span class="s">&#39;disk&#39;</span><span class="p">:</span><span class="n">get_disk</span><span class="p">(),</span>
         <span class="s">&#39;time&#39;</span><span class="p">:</span><span class="n">get_time</span><span class="p">(),</span>
     <span class="p">}</span></div>
+
+<div class="viewcode-block" id="IFace"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.IFace">[docs]</a><span class="k">class</span> <span class="nc">IFace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A network interface object</span>
+<span class="sd">    </span>
+<span class="sd">       :ivar name: &#39; &#39;</span>
+<span class="sd">       :ivar encap: &#39; &#39;</span>
+<span class="sd">       :ivar mac: &#39; &#39;</span>
+<span class="sd">       :ivar link: []</span>
+<span class="sd">       :ivar rx_packets: 0</span>
+<span class="sd">       :ivar tx_packets: 0</span>
+<span class="sd">       :ivar rx_bytes: 0</span>
+<span class="sd">       :ivar tx_bytes: 0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encap</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mac</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">link</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># list of dicts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rx_packets</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_packets</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rx_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tx_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">encap</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">encap</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mac</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">mac</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">link</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">link</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="s">&#39;Interface name=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">+</span><span class="s">&#39; encap=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">encap</span><span class="o">+</span><span class="s">&#39; mac=&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">mac</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">link</span><span class="p">:</span>
+            <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s"> &#39;</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">l</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">+</span><span class="n">k</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="n">l</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">  RX packets=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rx_packets</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; TX packets=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tx_packets</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">  RX bytes=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rx_bytes</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; TX bytes=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tx_bytes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+<span class="c"># TODO: consider moving this to its own module, with more general naming</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pycurl</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">class</span> <span class="nc">PycURL</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An object to download/upload files using cURL&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;connect-timeout&#39;</span><span class="p">:</span><span class="s">&#39;30&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;cert-type&#39;</span><span class="p">:</span><span class="s">&#39;PEM&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;key-type&#39;</span><span class="p">:</span><span class="s">&#39;PEM&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;fail&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                         <span class="s">&#39;max-time&#39;</span><span class="p">:</span><span class="s">&#39;300&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;location&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                         <span class="s">&#39;max-redirs&#39;</span><span class="p">:</span><span class="s">&#39;5&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;post301&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                         <span class="s">&#39;post302&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                         <span class="s">&#39;post303&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
+                        <span class="p">}</span>
+
+        <span class="k">def</span> <span class="nf">_build_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;curl&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--&#39;</span><span class="o">+</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;--&#39;</span><span class="o">+</span><span class="n">k</span><span class="p">,</span> <span class="n">opts</span><span class="p">[</span><span class="n">k</span><span class="p">]])</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">cmd</span>
+
+        <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Upload a file using POST&quot;&quot;&quot;</span>
+            <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span>
+            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s">&#39;data-binary&#39;</span><span class="p">:</span><span class="s">&#39;@&#39;</span><span class="o">+</span><span class="n">filename</span><span class="p">,</span>
+                <span class="s">&#39;max-time&#39;</span><span class="p">:</span><span class="s">&#39;1800&#39;</span><span class="p">,</span>
+            <span class="p">})</span>
+            <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span>
+            <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">opts</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Download a file using GET&quot;&quot;&quot;</span>
+            <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span>
+            <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="s">&#39;output&#39;</span><span class="p">:</span><span class="n">filename</span><span class="p">,</span>
+            <span class="p">})</span>
+            <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span>
+            <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">)</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">opts</span><span class="p">)</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">writefunc</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">headerfunc</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">postbody</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Download a file using POST, output to writefunc&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">writefunc</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">writefunc</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Write function invalid: %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">writefunc</span><span class="p">))</span>
+            <span class="c"># make some tempfiles</span>
+            <span class="n">tmp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">,</span><span class="s">&#39;download&#39;</span><span class="p">)</span>
+            <span class="n">headerfunc_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">,</span><span class="s">&#39;headers&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">opts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">opts</span>
+                <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                    <span class="s">&#39;output&#39;</span><span class="p">:</span><span class="n">filename</span><span class="p">,</span>
+                <span class="p">})</span>
+                <span class="k">if</span> <span class="n">postbody</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">postbody</span>
+                <span class="k">if</span> <span class="n">headerfunc</span> <span class="ow">and</span> <span class="n">callable</span><span class="p">(</span><span class="n">headerfunc</span><span class="p">):</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;dump-header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">headerfunc_file</span>
+                <span class="k">if</span> <span class="n">timeout</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;max-time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                        <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">opts</span><span class="p">[</span><span class="s">&#39;user&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">)</span>
+                <span class="n">cmd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_cmd</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">opts</span><span class="p">)</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">headerfunc</span> <span class="ow">and</span> <span class="n">callable</span><span class="p">(</span><span class="n">headerfunc</span><span class="p">):</span>
+                    <span class="n">headerfunc</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">headerfunc_file</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                <span class="n">writefunc</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmp_dir</span><span class="p">)</span>
+
+<span class="k">else</span><span class="p">:</span>
+<div class="viewcode-block" id="PycURL"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.PycURL">[docs]</a>    <span class="k">class</span> <span class="nc">PycURL</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An object to download/upload files using pycURL&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span> <span class="o">=</span> <span class="n">pycurl</span><span class="o">.</span><span class="n">Curl</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">FOLLOWLOCATION</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">MAXREDIRS</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CONNECTTIMEOUT</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span> <span class="c"># timeout after 300 seconds (5 min)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">NOSIGNAL</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">NOPROGRESS</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERTTYPE</span><span class="p">,</span> <span class="s">&#39;PEM&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEYTYPE</span><span class="p">,</span> <span class="s">&#39;PEM&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYPEER</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSL_VERIFYHOST</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">FAILONERROR</span><span class="p">,</span> <span class="k">True</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="PycURL.put"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.PycURL.put">[docs]</a>        <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Upload a file using POST&quot;&quot;&quot;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">URL</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">HTTPPOST</span><span class="p">,</span> <span class="p">[(</span><span class="s">&#39;file&#39;</span><span class="p">,(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">FORM_FILE</span><span class="p">,</span> <span class="n">filename</span><span class="p">))])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="mi">1800</span><span class="p">)</span> <span class="c"># use longer timeout for uploads</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">perform</span><span class="p">()</span>
+                <span class="n">error_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">getinfo</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">HTTP_CODE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">error_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="mi">304</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;HTTP error code: %d&#39;</span><span class="o">%</span><span class="n">error_code</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="PycURL.fetch"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.PycURL.fetch">[docs]</a>        <span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Download a file using GET&quot;&quot;&quot;</span>
+            <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;wb&#39;</span><span class="p">)</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="k">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">URL</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">WRITEDATA</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">perform</span><span class="p">()</span>
+                <span class="n">error_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">getinfo</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">HTTP_CODE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">error_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="mi">304</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;HTTP error code: %d&#39;</span><span class="o">%</span><span class="n">error_code</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="PycURL.post"><a class="viewcode-back" href="../../../core/util.html#iceprod.core.util.PycURL.post">[docs]</a>        <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">writefunc</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> 
+                <span class="n">sslcert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">sslkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">cacert</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">headerfunc</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                <span class="n">postbody</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Download a file using POST, output to writefunc&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">writefunc</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">writefunc</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Write function invalid: %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">writefunc</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">URL</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">postbody</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">POST</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">POSTFIELDS</span><span class="p">,</span> <span class="n">postbody</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">headerfunc</span> <span class="ow">and</span> <span class="n">callable</span><span class="p">(</span><span class="n">headerfunc</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">HEADERFUNCTION</span><span class="p">,</span><span class="n">headerfunc</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">WRITEFUNCTION</span><span class="p">,</span><span class="n">writefunc</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">timeout</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">password</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">password</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslcert</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sslkey</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">cacert</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">perform</span><span class="p">()</span>
+                <span class="n">error_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">getinfo</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">HTTP_CODE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">error_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="mi">304</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;HTTP error code: %d&#39;</span><span class="o">%</span><span class="n">error_code</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">timeout</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">username</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">USERPWD</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslcert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLCERT</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">sslkey</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">SSLKEY</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cacert</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">curl</span><span class="o">.</span><span class="n">setopt</span><span class="p">(</span><span class="n">pycurl</span><span class="o">.</span><span class="n">CAINFO</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span></div></div>
+
 </pre></div>
 
-           </div>
           </div>
-          <footer>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2016, IceCube Collaboration.
-
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
-</footer>
-
         </div>
       </div>
-
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../../../',
-            VERSION:'2.0.6',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="../../../_static/jquery.js"></script>
-      <script type="text/javascript" src="../../../_static/underscore.js"></script>
-      <script type="text/javascript" src="../../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">IceProd 2.0.4 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../core.html" >iceprod.core</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014, IceCube Collaboration.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.6.
+    </div>
+  </body>
 </html>
