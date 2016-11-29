@@ -631,10 +631,11 @@
         <span class="k">if</span> <span class="n">success_checksum</span><span class="p">:</span>
             <span class="c"># check checksum</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;checking checksum for %s against %s&#39;</span><span class="p">,</span><span class="n">success_file</span><span class="p">,</span><span class="n">success_checksum</span><span class="p">)</span>
-            <span class="n">success</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">success_file</span><span class="p">,</span><span class="n">checksum_type</span><span class="p">,</span><span class="n">success_checksum</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">success_file</span><span class="p">,</span><span class="n">checksum_type</span><span class="p">,</span><span class="n">success_checksum</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">success</span> <span class="o">=</span> <span class="k">True</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to download %s to %s&#39;</span><span class="p">,</span><span class="n">url</span><span class="p">,</span><span class="n">local</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="upload"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.upload">[docs]</a><span class="k">def</span> <span class="nf">upload</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">remote</span><span class="p">,</span><span class="n">proxy</span><span class="o">=</span><span class="k">False</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>

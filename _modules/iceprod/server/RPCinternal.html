@@ -906,7 +906,8 @@
 
         <span class="c"># make async request to server</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cl</span><span class="o">.</span><span class="n">send</span><span class="p">({</span><span class="s">&#39;method&#39;</span><span class="p">:</span><span class="n">methodname</span><span class="p">,</span><span class="s">&#39;params&#39;</span><span class="p">:</span><span class="n">kwargs</span><span class="p">},</span> <span class="o">**</span><span class="n">request_args</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;sent method %s with params %r&#39;</span><span class="p">,</span><span class="n">methodname</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;sent method %s&#39;</span><span class="p">,</span><span class="n">methodname</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;with params %r&#39;</span><span class="p">,</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cl</span>
