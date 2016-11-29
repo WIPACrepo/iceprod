@@ -128,101 +128,97 @@
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
 
-<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Thread</span><span class="p">,</span><span class="n">Event</span><span class="p">,</span><span class="n">RLock</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
-<span class="kn">import</span> <span class="nn">heapq</span><span class="o">,</span><span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">heapq</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span><span class="n">timedelta</span>
 <span class="kn">import</span> <span class="nn">calendar</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
 
-<span class="kn">from</span> <span class="nn">iceprod.server.pool</span> <span class="k">import</span> <span class="n">ThreadPoolDeque</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
+
+<span class="kn">import</span> <span class="nn">tornado.concurrent</span>
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
+<span class="kn">import</span> <span class="nn">tornado.ioloop</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;schedule&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="n">Thread</span><span class="p">):</span>
+<div class="viewcode-block" id="Scheduler"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler">[docs]</a><span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Schedules future tasks based on time.</span>
 <span class="sd">    Uses a threadpool to execute tasks.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    
-    <span class="n">MAXWAIT</span> <span class="o">=</span> <span class="mi">1</span> <span class="c"># in seconds</span>
-    
+
+    <span class="n">MAXWAIT</span> <span class="o">=</span> <span class="mi">60</span> <span class="c"># in seconds</span>
+
     <span class="c"># task format: (next_run_time, id, task_function, recurring_cron_pattern)</span>
     <span class="c">#    next_run_time is first so it sorts by soonest first</span>
-    
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">num_threads</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">io_loop</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sched</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># heap of things to run on</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c"># the ids of currently running jobs, so we don&#39;t get duplicates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idcount</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">idlock</span> <span class="o">=</span> <span class="n">RLock</span><span class="p">()</span>
-        
+
+        <span class="k">if</span> <span class="n">io_loop</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">io_loop</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">current</span><span class="p">()</span>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
     <span class="k">def</span> <span class="nf">_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;run task, then remove from running when done&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">task</span><span class="p">()</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in scheduled task: %s&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">task</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">Future</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)):</span>
+                <span class="k">yield</span> <span class="n">f</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in scheduled task&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
     
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="Scheduler.run"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;run the scheduler&quot;&quot;&quot;</span>
-        <span class="n">tp</span> <span class="o">=</span> <span class="n">ThreadPoolDeque</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-        <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
-            <span class="n">waittime</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="o">.</span><span class="n">MAXWAIT</span>
-            
-            <span class="c"># check if it&#39;s time to run the next event</span>
-            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="p">(</span><span class="n">tasktime</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">recurring</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># peek at heap</span>
-                <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">tasktime</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
-                        <span class="c"># start task</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
-                        <span class="n">tp</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wrapper</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">))</span>
-                    <span class="k">if</span> <span class="n">recurring</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
-                        <span class="c"># check for when to next run task</span>
-                        <span class="n">nextrun</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="o">.</span><span class="n">parsecron</span><span class="p">(</span><span class="n">recurring</span><span class="p">,</span><span class="n">tasktime</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="n">nextrun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
-                            <span class="c"># remove old task from heap and add new task</span>
-                            <span class="n">heapq</span><span class="o">.</span><span class="n">heappushpop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">,(</span><span class="n">nextrun</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">recurring</span><span class="p">))</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="c"># remove task from heap</span>
-                        <span class="n">heapq</span><span class="o">.</span><span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">)</span>
-                    
-                    <span class="c"># look at next job</span>
-                    <span class="k">continue</span>
+        <span class="c"># check if it&#39;s time to run the next event</span>
+        <span class="n">tasktime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="n">Scheduler</span><span class="o">.</span><span class="n">MAXWAIT</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">tasktime</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">recurring</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># peek at heap</span>
+            <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">tasktime</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                    <span class="c"># start task</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">recurring</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="c"># check for when to next run task</span>
+                    <span class="n">nextrun</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="o">.</span><span class="n">parsecron</span><span class="p">(</span><span class="n">recurring</span><span class="p">,</span><span class="n">tasktime</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">nextrun</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="c"># remove old task from heap and add new task</span>
+                        <span class="n">heapq</span><span class="o">.</span><span class="n">heapreplace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">,(</span><span class="n">nextrun</span><span class="p">,</span><span class="nb">id</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">recurring</span><span class="p">))</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c"># there&#39;s still time left</span>
-                    <span class="k">break</span>
-            
-            <span class="c"># get time to next task</span>
-            <span class="n">ntime</span> <span class="o">=</span> <span class="n">tasktime</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">waittime</span> <span class="o">&gt;</span> <span class="n">ntime</span><span class="p">:</span>
-                <span class="n">waittime</span> <span class="o">=</span> <span class="n">ntime</span>
-            
-            <span class="c"># wait here until told to do something</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">waittime</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="k">True</span><span class="p">:</span>
-                <span class="k">break</span> <span class="c"># got stop signal</span>
-            <span class="c"># if ret is None, task is ready to run</span>
-            <span class="c"># if ret is False, new task has been added so re-evaluate next time</span>
-        <span class="n">tp</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span></div>
+                    <span class="c"># remove task from heap</span>
+                    <span class="n">heapq</span><span class="o">.</span><span class="n">heappop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sched</span><span class="p">)</span>
+
+                <span class="c"># look at next job</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># there&#39;s still time left</span>
+                <span class="k">break</span>
+
+        <span class="c"># get time to next task</span>
+        <span class="n">ntime</span> <span class="o">=</span> <span class="n">tasktime</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">waittime</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="o">.</span><span class="n">MAXWAIT</span>
+        <span class="k">if</span> <span class="n">waittime</span> <span class="o">&gt;</span> <span class="n">ntime</span><span class="p">:</span>
+            <span class="n">waittime</span> <span class="o">=</span> <span class="n">ntime</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span><span class="n">waittime</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Scheduler.start"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-    
-<div class="viewcode-block" id="Scheduler.finish"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">set</span><span class="p">()</span></div>
-    
+<div class="viewcode-block" id="Scheduler.start"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Scheduler.schedule"><a class="viewcode-back" href="../../../server/schedule.html#iceprod.server.schedule.Scheduler.schedule">[docs]</a>    <span class="k">def</span> <span class="nf">schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cron</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">oneshot</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add event to schedule&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">idlock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="c"># lock around the id increment, since that&#39;s not thread-safe</span>
         <span class="nb">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">idcount</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idcount</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">idlock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span> <span class="c"># everything else is thread safe, so release lock</span>
         <span class="n">nextrun</span> <span class="o">=</span> <span class="n">Scheduler</span><span class="o">.</span><span class="n">parsecron</span><span class="p">(</span><span class="n">cron</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span><span class="k">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">oneshot</span> <span class="ow">is</span> <span class="k">True</span><span class="p">:</span>
             <span class="n">cron</span> <span class="o">=</span> <span class="k">None</span> <span class="c"># only run this once</span>
@@ -358,7 +354,10 @@
             <span class="n">flag</span> <span class="o">=</span> <span class="k">False</span>
             <span class="k">class</span> <span class="nc">FlagException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
                 <span class="k">pass</span>
-            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1000000000</span><span class="p">):</span> <span class="c"># do max of 1B loops</span>
+            <span class="n">iterations</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">iterations</span> <span class="o">&lt;</span> <span class="mi">1000000000</span><span class="p">:</span> <span class="c"># do max of 1B loops</span>
+                <span class="n">iterations</span> <span class="o">+=</span> <span class="mi">1</span>
+
                 <span class="n">incmin</span> <span class="o">=</span> <span class="mi">1</span>
                 <span class="n">inchour</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="n">incday</span> <span class="o">=</span> <span class="mi">0</span>
@@ -524,7 +523,7 @@
             <span class="k">if</span> <span class="n">flag</span> <span class="ow">is</span> <span class="k">False</span><span class="p">:</span>
                 <span class="c"># no match, return None</span>
                 <span class="k">return</span> <span class="k">None</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">except</span><span class="p">:</span>
             <span class="c"># invalid cron</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;Invalid cron&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
             <span class="k">return</span> <span class="k">None</span>

@@ -163,19 +163,22 @@
 <div class="viewcode-block" id="proxy.start"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Start proxy if not already running&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="n">Squid</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="n">Squid</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_getargs</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
         
 <div class="viewcode-block" id="proxy.stop"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stop proxy&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="k">None</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
     
 <div class="viewcode-block" id="proxy.kill"><a class="viewcode-back" href="../../../../server/modules/proxy.html#iceprod.server.modules.proxy.proxy.kill">[docs]</a>    <span class="k">def</span> <span class="nf">kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Kill proxy&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">squid</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">squid</span> <span class="o">=</span> <span class="k">None</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
 </pre></div>
 

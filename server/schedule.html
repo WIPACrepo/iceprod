@@ -147,28 +147,23 @@
 <span id="index-0"></span><span id="id1"></span><h1>Schedule<a class="headerlink" href="#schedule" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="iceprod.server.schedule.Scheduler">
-<em class="property">class </em><code class="descclassname">iceprod.server.schedule.</code><code class="descname">Scheduler</code><span class="sig-paren">(</span><em>num_threads=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">iceprod.server.schedule.</code><code class="descname">Scheduler</code><span class="sig-paren">(</span><em>io_loop=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Schedules future tasks based on time.
 Uses a threadpool to execute tasks.</p>
 <dl class="attribute">
 <dt id="iceprod.server.schedule.Scheduler.MAXWAIT">
-<code class="descname">MAXWAIT</code><em class="property"> = 1</em><a class="headerlink" href="#iceprod.server.schedule.Scheduler.MAXWAIT" title="Permalink to this definition">¶</a></dt>
+<code class="descname">MAXWAIT</code><em class="property"> = 60</em><a class="headerlink" href="#iceprod.server.schedule.Scheduler.MAXWAIT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="iceprod.server.schedule.Scheduler.run">
-<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler.run" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>run the scheduler</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="iceprod.server.schedule.Scheduler.start">
-<code class="descname">start</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler.start" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.schedule.Scheduler.finish">
-<code class="descname">finish</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler.finish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler.finish" title="Permalink to this definition">¶</a></dt>
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/schedule.html#Scheduler.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.schedule.Scheduler.start" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
