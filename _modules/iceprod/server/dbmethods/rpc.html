@@ -936,6 +936,72 @@
             <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
 
     <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_get_user_groups"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_get_user_groups">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_get_user_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the groups a username belongs to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">username</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no username&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">cb2</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">groups</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                    <span class="n">groups</span><span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s">&#39;groups_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">r</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot find username %s&#39;</span><span class="o">%</span><span class="n">username</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">callback</span><span class="p">({})</span> <span class="c"># no groups</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">groups</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">)</span>
+                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from groups where groups_id in (&#39;</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">groups</span><span class="p">),</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select groups from user where username=?&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">sql_read_task</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="p">(</span><span class="n">username</span><span class="p">,),</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+
+    <span class="nd">@dbmethod</span>
+<div class="viewcode-block" id="rpc.rpc_set_user_groups"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_set_user_groups">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_set_user_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">passkey</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                            <span class="n">groups</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the groups of a username.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">ret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">True</span><span class="p">:</span>
+                <span class="n">callback</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;invalid passkey&#39;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cb2</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rpc_set_user_groups_blocking</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span>
+                              <span class="n">username</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">blocking_task</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">cb2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">auth_authorize_task</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_rpc_set_user_groups_blocking</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">groups</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">conn</span><span class="p">,</span><span class="n">archive_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+
+            <span class="c"># check user authorization to set groups</span>
+
+            <span class="c"># set groups</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update user set groups = ? where username = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span><span class="p">),</span> <span class="n">username</span><span class="p">)</span>
+
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">,</span><span class="k">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">ret</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to set groups for username %s&#39;</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span>
+                        <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">callback</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="nd">@dbmethod</span>
 <div class="viewcode-block" id="rpc.rpc_queue_master"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_queue_master">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_queue_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
                          <span class="n">filters</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
                          <span class="n">queueing_factor_priority</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
