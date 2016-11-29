@@ -127,7 +127,7 @@ Returns True/Exception</p>
 
 <dl class="method">
 <dt id="iceprod.server.dbmethods.auth.auth.auth_new_passkey">
-<code class="descname">auth_new_passkey</code><span class="sig-paren">(</span><em>expiration=3600</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/auth.html#auth.auth_new_passkey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.auth.auth.auth_new_passkey" title="Permalink to this definition">¶</a></dt>
+<code class="descname">auth_new_passkey</code><span class="sig-paren">(</span><em>expiration=3600</em>, <em>user_id=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/auth.html#auth.auth_new_passkey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.auth.auth.auth_new_passkey" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make a new passkey.  Default expiration in 1 hour.</p>
 </dd></dl>
 
@@ -141,6 +141,17 @@ Returns True/Exception</p>
 <dt id="iceprod.server.dbmethods.auth.auth.add_site_to_master">
 <code class="descname">add_site_to_master</code><span class="sig-paren">(</span><em>site_id</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/auth.html#auth.add_site_to_master"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.auth.auth.add_site_to_master" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a remote site to the master and return a new passkey</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.auth.auth.auth_user_create">
+<code class="descname">auth_user_create</code><span class="sig-paren">(</span><em>username</em>, <em>passwd</em>, <em>name=None</em>, <em>email=None</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/auth.html#auth.auth_user_create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.auth.auth.auth_user_create" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.auth.auth.auth_user">
+<code class="descname">auth_user</code><span class="sig-paren">(</span><em>username</em>, <em>passwd</em>, <em>callback=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/auth.html#auth.auth_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.auth.auth.auth_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Authenticate a username and password</p>
 </dd></dl>
 
 </dd></dl>

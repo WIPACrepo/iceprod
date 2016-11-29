@@ -102,11 +102,71 @@ interface in the website.</p>
 </div>
 <div class="section" id="nginx">
 <h2>Nginx<a class="headerlink" href="#nginx" title="Permalink to this headline">¶</a></h2>
-<p>For security, the website uses nginx as a front end.  Nginx handles all SSL
+<p>The website uses nginx as a front end proxy.  Nginx handles all SSL
 certificate checking, static files, and file uploading before proxying the
-request to Tornado.  Nginx has been proven to be a very robust web server,
-with over 10% of the web (and growing) using it.  It is also the recommended
-front end for production Tornado sites.</p>
+request to Tornado.</p>
+<p>Note that Apache can also be used separately, while Nginx config is built-in.</p>
+</div>
+<div class="section" id="security">
+<h2>Security<a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="user-accounts">
+<h3>User Accounts<a class="headerlink" href="#user-accounts" title="Permalink to this headline">¶</a></h3>
+<p>The default account is a username and password.</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol">LDAP</a>
+functionality can be enabled to authenticate supplied passwords against
+LDAP.  This removes the ability to create new accounts or change passwords
+from IceProd, as this needs to be done on the LDAP server.</p>
+<p>An X509 (gridftp) proxy certificate can also be linked to an account for
+use with datasets submitted by that user.</p>
+</div>
+<div class="section" id="csrf">
+<h3>CSRF<a class="headerlink" href="#csrf" title="Permalink to this headline">¶</a></h3>
+<p>To protect against Cross-Site Request Forgery (and other session-stealing
+attacks), the following schemes are used:</p>
+<div class="section" id="headers">
+<h4>Headers<a class="headerlink" href="#headers" title="Permalink to this headline">¶</a></h4>
+<p>If available, the <cite>Origin</cite> or <cite>Referer</cite> headers are checked.
+If they are not available, JSON-RPC requests are passed while
+other requests are blocked.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Why are JSON-RPC requests passed?</p>
+<p>This is because JSON-RPC serves multiple purposes.  Only one of them
+is for website requests.  One other is as an API for scripts or other
+external entities.  But the main purpose is for IceProd task and site
+communication.  In order to not hinder these uses, the headers are left
+unchecked.</p>
+<p class="last">Note that JSON-RPC does not use the user login cookie, so it cannnot be
+tricked into running cross-site requests that way.</p>
+</div>
+</div>
+<div class="section" id="login">
+<h4>Login<a class="headerlink" href="#login" title="Permalink to this headline">¶</a></h4>
+<p>There are two different types of login, which are treated differently.</p>
+<div class="section" id="web-login">
+<h5>Web Login<a class="headerlink" href="#web-login" title="Permalink to this headline">¶</a></h5>
+<p>The initial web login will save a secure cookie to identify the user, but
+this will not in itself grant any access to JSON-RPC or secure areas. The
+lifetime for the login is measured in days, and is configurable.</p>
+<p>When loading a page that needs to make JSON-RPC requests, a very limited
+lifetime passkey is generated (assume 15 minutes) and inserted in a hidden
+field in the html.  This passkey is then added to JSON-RPC requests.</p>
+<p>Secure areas like account details will require a second login before granting
+access.</p>
+</div>
+<div class="section" id="json-rpc-login">
+<h5>JSON-RPC Login<a class="headerlink" href="#json-rpc-login" title="Permalink to this headline">¶</a></h5>
+<p>This version directly returns the passkey necessary to execute authenticated
+JSON-RPC requests.  It has a fairly limited lifetime and is designed to be
+used immediately within the same script.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Anyone with the passkey can impersonate you for the lifetime of the key.
+Try not to save it to file, and dispose of it when finished.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 
@@ -123,6 +183,19 @@ front end for production Tornado sites.</p>
 <li><a class="reference internal" href="#site-to-site-communication">Site-to-Site Communication</a></li>
 <li><a class="reference internal" href="#human-interaction">Human Interaction</a></li>
 <li><a class="reference internal" href="#nginx">Nginx</a></li>
+<li><a class="reference internal" href="#security">Security</a><ul>
+<li><a class="reference internal" href="#user-accounts">User Accounts</a></li>
+<li><a class="reference internal" href="#csrf">CSRF</a><ul>
+<li><a class="reference internal" href="#headers">Headers</a></li>
+<li><a class="reference internal" href="#login">Login</a><ul>
+<li><a class="reference internal" href="#web-login">Web Login</a></li>
+<li><a class="reference internal" href="#json-rpc-login">JSON-RPC Login</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
