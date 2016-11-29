@@ -177,28 +177,23 @@
     <span class="n">ret</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">ret</span></div>
 
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">json</span> <span class="k">as</span> <span class="nn">_json</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json serializer is unavailable&#39;</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-<div class="viewcode-block" id="serialize_json"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json">[docs]</a>    <span class="k">class</span> <span class="nc">serialize_json</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Serialize a dataset config to json.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="serialize_json.dump"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dump">[docs]</a>        <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-        <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="serialize_json.dumps"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dumps">[docs]</a>        <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-        <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="serialize_json.load"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.load">[docs]</a>        <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
-        <span class="nd">@staticmethod</span>
-<div class="viewcode-block" id="serialize_json.loads"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.loads">[docs]</a>        <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div></div>
+<span class="kn">import</span> <span class="nn">json</span> <span class="k">as</span> <span class="nn">_json</span>
+<div class="viewcode-block" id="serialize_json"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json">[docs]</a><span class="k">class</span> <span class="nc">serialize_json</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Serialize a dataset config to json.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.dump"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.dumps"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.dumps">[docs]</a>    <span class="k">def</span> <span class="nf">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.load"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="serialize_json.loads"><a class="viewcode-back" href="../../../core/serialization.html#iceprod.core.serialization.serialize_json.loads">[docs]</a>    <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">_json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div></div>
             
 </pre></div>
 
