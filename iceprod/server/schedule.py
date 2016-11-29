@@ -4,101 +4,97 @@ Scheduler
 
 from __future__ import absolute_import, division, print_function
 
-from threading import Thread,Event,RLock
 from functools import partial
-import heapq,time
+import heapq
+import time
 from datetime import datetime,timedelta
 import calendar
 import logging
+import inspect
 
-from iceprod.server.pool import ThreadPoolDeque
+import concurrent.futures
+
+import tornado.concurrent
+import tornado.gen
+import tornado.ioloop
 
 logger = logging.getLogger('schedule')
 
-class Scheduler(Thread):
+class Scheduler(object):
     """
     Schedules future tasks based on time.
     Uses a threadpool to execute tasks.
     """
-    
-    MAXWAIT = 1 # in seconds
-    
+
+    MAXWAIT = 60 # in seconds
+
     # task format: (next_run_time, id, task_function, recurring_cron_pattern)
     #    next_run_time is first so it sorts by soonest first
-    
-    def __init__(self,num_threads=5):
-        super(Scheduler,self).__init__()
-        self.end = Event()
+
+    def __init__(self, io_loop=None):
         self.sched = [] # heap of things to run on
         self.running = set() # the ids of currently running jobs, so we don't get duplicates
         self.idcount = 0
-        self.idlock = RLock()
-        
+
+        if io_loop:
+            self.io_loop = io_loop
+        else:
+            self.io_loop = tornado.ioloop.IOLoop.current()
+
+    @tornado.gen.coroutine
     def _wrapper(self,id,task):
         """run task, then remove from running when done"""
+        self.running.add(id)
         try:
-            task()
-        except Exception, e:
-            logging.warning('Error in scheduled task: %s',str(e),exc_info=True)
+            f = task()
+            if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
+                yield f
+        except:
+            logging.warning('Error in scheduled task',exc_info=True)
         finally:
             self.running.discard(id)
     
+    @tornado.gen.coroutine
     def run(self):
         """run the scheduler"""
-        tp = ThreadPoolDeque(5)
-        while True:
-            waittime = Scheduler.MAXWAIT
-            
-            # check if it's time to run the next event
-            while len(self.sched) > 0:
-                (tasktime,id,task,recurring) = self.sched[0] # peek at heap
-                if time.time() > tasktime:
-                    if id not in self.running:
-                        # start task
-                        self.running.add(id)
-                        tp.add_task(partial(self._wrapper,id,task))
-                    if recurring is not None:
-                        # check for when to next run task
-                        nextrun = Scheduler.parsecron(recurring,tasktime)
-                        if nextrun is not None:
-                            # remove old task from heap and add new task
-                            heapq.heappushpop(self.sched,(nextrun,id,task,recurring))
-                    else:
-                        # remove task from heap
-                        heapq.heappop(self.sched)
-                    
-                    # look at next job
-                    continue
+        # check if it's time to run the next event
+        tasktime = time.time()+Scheduler.MAXWAIT
+        while self.sched:
+            (tasktime,id,task,recurring) = self.sched[0] # peek at heap
+            if time.time() > tasktime:
+                if id not in self.running:
+                    # start task
+                    yield self._wrapper(id,task)
+                if recurring is not None:
+                    # check for when to next run task
+                    nextrun = Scheduler.parsecron(recurring,tasktime)
+                    if nextrun is not None:
+                        # remove old task from heap and add new task
+                        heapq.heapreplace(self.sched,(nextrun,id,task,recurring))
                 else:
-                    # there's still time left
-                    break
-            
-            # get time to next task
-            ntime = tasktime - time.time()
-            if waittime > ntime:
-                waittime = ntime
-            
-            # wait here until told to do something
-            ret = self.end.wait(waittime)
-            if ret is True:
-                break # got stop signal
-            # if ret is None, task is ready to run
-            # if ret is False, new task has been added so re-evaluate next time
-        tp.finish()
+                    # remove task from heap
+                    heapq.heappop(self.sched)
+
+                # look at next job
+                continue
+            else:
+                # there's still time left
+                break
+
+        # get time to next task
+        ntime = tasktime - time.time()
+        waittime = Scheduler.MAXWAIT
+        if waittime > ntime:
+            waittime = ntime
+        self.io_loop.call_later(waittime, self.run)
     
-    def start(self,*args,**kwargs):
-        self.end.clear()
-        super(Scheduler,self).start(*args,**kwargs)
-    
-    def finish(self):
-        self.end.set()
-    
+    def start(self):
+        self.io_loop.add_callback(self.run)
+
     def schedule(self, cron, task, oneshot=False):
         """Add event to schedule"""
-        self.idlock.acquire() # lock around the id increment, since that's not thread-safe
         id = self.idcount
         self.idcount += 1
-        self.idlock.release() # everything else is thread safe, so release lock
         nextrun = Scheduler.parsecron(cron,time.time(),True)
         if oneshot is True:
             cron = None # only run this once
@@ -234,7 +230,10 @@ class Scheduler(Thread):
             flag = False
             class FlagException(Exception):
                 pass
-            for _ in xrange(1000000000): # do max of 1B loops
+            iterations = 0
+            while iterations < 1000000000: # do max of 1B loops
+                iterations += 1
+
                 incmin = 1
                 inchour = 0
                 incday = 0
@@ -400,7 +399,7 @@ class Scheduler(Thread):
             if flag is False:
                 # no match, return None
                 return None
-        except Exception as e:
+        except:
             # invalid cron
             logger.warn('Invalid cron',exc_info=True)
             return None

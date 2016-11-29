@@ -26,6 +26,8 @@ import logging.handlers
 import argparse
 import unittest
 
+sys.path.insert(0,os.getcwd())
+
 logging.basicConfig()
 logger = logging.getLogger('tests')
 

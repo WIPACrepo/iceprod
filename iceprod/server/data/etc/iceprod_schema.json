@@ -16,8 +16,7 @@
                 "submit_dir": {
                     "type": "string"
                 }
-            },
-            "required": ["max_resets", "task_buffer", "submit_dir"]
+            }
         },
         
         "db": {
@@ -34,8 +33,7 @@
                 "name": {
                     "type": "string"
                 }
-            },
-            "required": ["backup_name", "type","name"]
+            }
         },
         "webserver": {
             "type": "object",
@@ -58,8 +56,7 @@
                 "numcpus": {
                     "type": "integer"
                 }
-            },
-            "required": ["request_timeout", "lib_dir", "sites", "tornado_port", "port", "numcpus"]
+            }
         },
         "master":
         {
@@ -71,12 +68,10 @@
                 "url":{
                     "type": "string"
                 }
-            },
-            "required": ["status", "url"]
+            }
         },
         "site_id": {
             "type": "string"
         }
-    },
-     "required": ["queue", "db", "webserver", "master"]
+    }
 }

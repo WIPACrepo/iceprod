@@ -1,4 +1,15 @@
 {
+    "logging":{
+        "level":"INFO"
+    },
+    "modules":{
+        "db": true,
+        "proxy": false,
+        "queue": true,
+        "schedule": true,
+        "website": true,
+        "master_updater": false
+    },
     "queue":{
         "max_resets":10,
         "task_buffer":10,
@@ -23,7 +34,7 @@
     "db":{
         "type":"sqlite",
         "name":"db",
-        "backup_name":"db_back"
+        "nthreads":1
     },
     "webserver":{
         "request_timeout":10,

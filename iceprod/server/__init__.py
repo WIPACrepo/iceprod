@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 from pkgutil import get_loader
+import importlib
 
 try:
     # do a monkey patching of tornado json library
@@ -40,12 +41,11 @@ def listmodules(package_name=''):
             ret.append(package_name+'.'+tmp)
     return ret
 
-def run_module(name,args):
+def run_module(name,*args,**kwargs):
     """Import and start the module"""
     class_name = name.rsplit('.',1)[1]
-    #print "package = ",name," and class = ",class_name
-    x = __import__(name,globals(),locals(),[class_name])
-    return (getattr(x,class_name))(args)
+    x = importlib.import_module(name)
+    return (getattr(x,class_name))(*args,**kwargs)
 
 
 class GlobalID(object):
@@ -118,77 +118,6 @@ class GlobalID(object):
         if type == 'str':
             ret = cls.int2char(ret)
         return ret
-
-def calc_dataset_prio(dataset, queueing_factor_priority=1.0,
-                      queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):
-    """
-    Calculate the dataset priority.
-
-    :param dataset: a dataset with 'dataset_id', 'priority' and 'tasks_submitted'
-    :param queueing_factor_priority: queueing factor for priority
-    :param queueing_factor_dataset: queueing factor for dataset id
-    :param queueing_factor_tasks: queueing factor for number of tasks
-    """
-    import math
-    # priority factors
-    qf_p = queueing_factor_priority
-    qf_d = queueing_factor_dataset
-    qf_t = queueing_factor_tasks
-
-    # get dataset info
-    p = dataset['priority']
-    if p < 0 or p > 100:
-        # do not allow negative or overly large priorities (they skew things)
-        p = 0
-        logging.warning('Priority for dataset %s is invalid, using default',dataset['dataset_id'])
-    d = GlobalID.localID_ret(dataset['dataset_id'],type='int')
-    if d < 0:
-        d = 0
-        logging.warning('Dataset for dataset %s is invalid, using default',dataset['dataset_id'])
-    t = dataset['tasks_submitted']
-
-    # return prio
-    if t < 1:
-        prio = (qf_p/10.0*p-qf_d/10000.0*d)
-    else:
-        prio = (qf_p/10.0*p-qf_d/10000.0*d-qf_t/10.0*math.log10(t))
-    if prio < 0:
-        prio = 0
-        logging.error('Dataset prio for dataset %s is <0',dataset['dataset_id'])
-    return prio
-
-def calc_datasets_prios(datasets, queueing_factor_priority=1.0,
-                        queueing_factor_dataset=1.0, queueing_factor_tasks=1.0):
-    """
-    Calculate the dataset priority for each dataset, normalized.
-
-    :param dataset: a dataset with 'dataset_id', 'priority' and 'tasks_submitted'
-    :param queueing_factor_priority: queueing factor for priority
-    :param queueing_factor_dataset: queueing factor for dataset id
-    :param queueing_factor_tasks: queueing factor for number of tasks
-    """
-    import math
-    # priority factors
-    qf_p = queueing_factor_priority
-    qf_d = queueing_factor_dataset
-    qf_t = queueing_factor_tasks
-
-    dataset_prios = {}
-    for id in datasets:
-        dataset_prios[id] = calc_dataset_prio(datasets[id],qf_p,qf_d,qf_t)
-    logging.debug('dataset prios: %r',dataset_prios)
-    # normalize
-    total_prio = math.fsum(dataset_prios.values())
-    if total_prio <= 0:
-        # datasets do not have priority, so assign all equally
-        for d in dataset_prios:
-            dataset_prios[d] = 1.0/len(dataset_prios)
-    else:
-        for d in dataset_prios:
-            dataset_prios[d] /= total_prio
-
-    return dataset_prios
-
 
 def salt(length=2):
     """Returns a string of random letters"""

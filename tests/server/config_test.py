@@ -14,6 +14,8 @@ import shutil
 import tempfile
 import random
 import unittest
+import json
+
 import iceprod.server.config
 
 
@@ -38,8 +40,9 @@ class config_test(unittest.TestCase):
             cfg['testing'] = [1,2,3]
             if cfg['testing'] != [1,2,3]:
                 raise Exception('did not set param')
-            expected = '{"testing":[1,2,3]}'
-            actual = open(cfg.filename).read().replace(' ','').replace('\n','')
+            expected = dict(cfg)
+            with open(cfg.filename) as f:
+                actual = json.load(f)
             if actual != expected:
                 logger.info('expected: %s',expected)
                 logger.info('actual: %s',actual)
@@ -52,8 +55,9 @@ class config_test(unittest.TestCase):
             del cfg['testing']
             if 'testing' in cfg:
                 raise Exception('did not delete param')
-            expected = '{}'
-            actual = open(cfg.filename).read().replace(' ','').replace('\n','')
+            expected = dict(cfg)
+            with open(cfg.filename) as f:
+                actual = json.load(f)
             if actual != expected:
                 logger.info('expected: %s',expected)
                 logger.info('actual: %s',actual)

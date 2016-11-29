@@ -13,28 +13,31 @@ import uuid
 import shutil
 from io import BytesIO
 
+import tornado.gen
+
 import iceprod.core.functions
-from iceprod.core.util import Node_Resources
-from iceprod.core.dataclasses import Number,String
-from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
-from iceprod.server.dbmethods import dbmethod,_Methods_Base,datetime2str,str2datetime, filtered_input
+from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, filtered_input
 
 logger = logging.getLogger('dbmethods.web')
 
 class web(_Methods_Base):
     """
     The website DB methods.
-
-    Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
-    as an argument.
     """
 
-    @dbmethod
-    def web_get_tasks_by_status(self,gridspec=None,dataset_id=None,callback=None):
-        """Get the number of tasks in each state on this site and plugin,
-           returning {status:num}
+    @tornado.gen.coroutine
+    def web_get_tasks_by_status(self, gridspec=None, dataset_id=None):
+        """
+        Get the number of tasks in each state on this site and plugin.
+
+        Args:
+            gridspec (str): grid and plugin id
+            dataset_id (str): dataset id
+
+        Returns:
+           dict: {status:num}
         """
         sql = 'select search.task_status, count(*) as num from search '
         bindings = tuple()
@@ -49,23 +52,26 @@ class web(_Methods_Base):
             sql += ' search.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
         sql += ' group by search.task_status '
-        cb = partial(self._web_get_tasks_by_status_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_tasks_by_status_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            else:
-                task_groups = {}
-                if ret and ret[0]:
-                    for status,num in ret:
-                        task_groups[status] = num
-                callback(task_groups)
+        ret = yield self.parent.db.query(sql, bindings)
+        task_groups = {}
+        for status,num in ret:
+            task_groups[status] = num
+        raise tornado.gen.Return(task_groups)
 
-    @dbmethod
-    def web_get_datasets(self,gridspec=None,groups=None,callback=None,**filters):
-        """Get the number of datasets in each state on this site and plugin,
-           returning {status:num}
+    @tornado.gen.coroutine
+    def web_get_datasets(self, gridspec=None, groups=None, **filters):
+        """
+        Get the number of datasets in each state on this site and plugin.
+
+        Filters are specified as key=['match1','match2']
+
+        Args:
+            gridspec (str): grid and plugin id
+            groups (iterable): Fields to group by
+            **filters (dict): (optional) filters for the query
+
+        Returns:
+            list: [{dataset}]
         """
         sql = 'select '
         if groups:
@@ -78,8 +84,8 @@ class web(_Methods_Base):
         if gridspec or any(filters.values()):
             sql += ' where '
         if gridspec:
-            sql += ' gridspec like "%?%" '
-            bindings.append(gridspec)
+            sql += ' gridspec like ? '
+            bindings.append('%'+gridspec+'%')
         for f in filters:
             if filters[f]:
                 sql += ' '+filtered_input(f)+' in ('
@@ -88,36 +94,40 @@ class web(_Methods_Base):
                 bindings.extend(filters[f])
         if groups:
             sql += ' group by ' + ','.join(groups)
-        cb = partial(self._web_get_datasets_callback,groups,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
+        ret = yield self.parent.db.query(sql, bindings)
 
-    def _web_get_datasets_grouper(self, data, groups, val):
-        if len(groups) == 1:
-            data[groups[0]] = val
-        else:
-            if groups[0] not in data:
-                data[groups[0]] = {}
-            self._web_get_datasets_grouper(data[groups[0]],groups[1:],val)
-    def _web_get_datasets_callback(self,groups,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            elif groups:
-                dataset_groups = {}
-                if ret and ret[0]:
-                    for row in ret:
-                        self._web_get_datasets_grouper(dataset_groups,row[:-1],row[-1])
-                callback(dataset_groups)
+        def grouper(data, groups, val):
+            if len(groups) == 1:
+                data[groups[0]] = val
             else:
-                callback([self._list_to_dict('dataset',x) for x in ret])
+                if groups[0] not in data:
+                    data[groups[0]] = {}
+                grouper(data[groups[0]], groups[1:], val)
 
-    @dbmethod
-    def web_get_datasets_details(self,dataset_id=None,status=None,gridspec=None,
-                          callback=None):
-        """Get the number of datasets in each state on this site and plugin,
-           returning {status:num}
+        if groups:
+            dataset_groups = {}
+            for row in ret:
+                grouper(dataset_groups,row[:-1],row[-1])
+            ret = dataset_groups
+        else:
+            ret = [self._list_to_dict('dataset',x) for x in ret]
+        raise tornado.gen.Return(ret)
+
+    @tornado.gen.coroutine
+    def web_get_datasets_details(self, dataset_id=None, status=None,
+                                 gridspec=None):
         """
-        sql = 'select dataset.* from dataset '
+        Get the number of datasets in each state on this site and plugin.
+
+        Args:
+            dataset_id (str): dataset id
+            status (str): dataset status
+            gridspec (str): grid and plugin id
+
+        Returns:
+            dict: {status:num}
+        """
+        sql = 'select * from dataset '
         bindings = tuple()
         if dataset_id:
             sql += ' where dataset.dataset_id = ? '
@@ -136,25 +146,27 @@ class web(_Methods_Base):
                 sql += ' and '
             sql += ' dataset.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
-        cb = partial(self._web_get_datasets_details_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_datasets_details_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            else:
-                datasets = {}
-                if ret:
-                    for row in ret:
-                        tmp = self._list_to_dict('dataset',row)
-                        datasets[tmp['dataset_id']] = tmp
-                callback(datasets)
+        ret = yield self.parent.db.query(sql, bindings)
+        datasets = {}
+        for row in ret:
+            tmp = self._list_to_dict('dataset',row)
+            datasets[tmp['dataset_id']] = tmp
+        raise tornado.gen.Return(datasets)
 
-    @dbmethod
-    def web_get_tasks_details(self,task_id=None,status=None,gridspec=None,
-                          dataset_id=None,callback=None):
-        """Get the number of tasks in each state on this site and plugin,
-           returning {status:num}
+    @tornado.gen.coroutine
+    def web_get_tasks_details(self, task_id=None, status=None, gridspec=None,
+                              dataset_id=None):
+        """
+        Get the number of tasks in each state on this site and plugin.
+
+        Args:
+            task_id (str): task id
+            status (str): task status
+            gridspec (str): grid and plugin id
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {status:num}
         """
         sql = 'select search.*,task.* from search '
         sql += ' join task on search.task_id = task.task_id '
@@ -181,92 +193,98 @@ class web(_Methods_Base):
                 sql += ' and '
             sql += ' search.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
-        cb = partial(self._web_get_tasks_details_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_tasks_details_callback(self,ret,callback=None):
-        if callback:
-            if isinstance(ret,Exception):
-                callback(ret)
-            else:
-                tasks = {}
-                if ret:
-                    for row in ret:
-                        tmp = self._list_to_dict(['search','task'],row)
-                        tasks[tmp['task_id']] = tmp
-                callback(tasks)
+        ret = yield self.parent.db.query(sql, bindings)
+        tasks = {}
+        for row in ret:
+            tmp = self._list_to_dict(['search','task'],row)
+            tasks[tmp['task_id']] = tmp
+        raise tornado.gen.Return(tasks)
 
-    @dbmethod
-    def web_get_logs(self,task_id,lines=None,callback=None):
-        """Get the logs for a task, returns {log_name:text}"""
+    @tornado.gen.coroutine
+    def web_get_logs(self, task_id, lines=None):
+        """
+        Get the logs for a task.
+
+        Args:
+            task_id (str): task id
+            lines (int): tail this number of lines (default: all lines)
+
+        Returns:
+            dict: {log_name:text}
+        """
         sql = 'select * from task_log where task_id = ?'
         bindings = (task_id,)
-        cb = partial(self._web_get_logs_callback,lines,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_logs_callback(self,lines,ret,callback=None):
-        if isinstance(ret,Exception):
-            callback(ret)
-        else:
-            logs = {}
-            for row in ret:
-                tmp = self._list_to_dict('task_log',row)
-                if tmp['name'] and tmp['data']:
-                    data = json_compressor.uncompress(tmp['data'])
-                    if lines and isinstance(lines,int):
-                        data = '\n'.join(data.rsplit('\n',lines+1)[-1*lines:])
-                    logs[tmp['name']] = data
-            def sort_key(k):
-                log_order = ['stdout','stderr','stdlog']
-                if k in log_order:
-                    return '_'+str(log_order.index(k))
-                else:
-                    return k
-            callback(OrderedDict((k,logs[k]) for k in sorted(logs,key=sort_key)))
+        ret = yield self.parent.db.query(sql, bindings)
+        logs = {}
+        for row in ret:
+            tmp = self._list_to_dict('task_log',row)
+            if tmp['name'] and tmp['data']:
+                data = json_compressor.uncompress(tmp['data'])
+                if lines and isinstance(lines,int):
+                    data = '\n'.join(data.rsplit('\n',lines+1)[-1*lines:])
+                logs[tmp['name']] = data
+        def sort_key(k):
+            log_order = ['stdout','stderr','stdlog']
+            if k in log_order:
+                return '_'+str(log_order.index(k))
+            else:
+                return k
+        ret = OrderedDict((k,logs[k]) for k in sorted(logs,key=sort_key))
+        raise tornado.gen.Return(ret)
 
-    @dbmethod
-    def web_get_gridspec(self,callback=None):
-        """Get the possible gridspecs that we know about"""
+    @tornado.gen.coroutine
+    def web_get_gridspec(self):
+        """
+        Get the possible gridspecs that we know about.
+
+        Returns:
+            dict: {gridspecs}
+        """
         sql = 'select site_id,queues from site'
         bindings = tuple()
-        cb = partial(self._web_get_gridspec_callback,callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_gridspec_callback(self,ret,callback=None):
-        if isinstance(ret,Exception):
-            callback(ret)
-        else:
-            gridspecs = {}
-            for site_id,queues in ret:
-                try:
-                    gridspecs.update(json_decode(queues))
-                except:
-                    pass
-            callback(gridspecs)
+        ret = yield self.parent.db.query(sql, bindings)
+        gridspecs = {}
+        for site_id,queues in ret:
+            try:
+                gridspecs.update(json_decode(queues))
+            except:
+                pass
+        raise tornado.gen.Return(gridspecs)
 
-    @dbmethod
-    def web_get_sites(self,callback=None,**kwargs):
+    def web_get_sites(self, **kwargs):
         """Get sites matching kwargs"""
         # TODO: finish this
         raise NotImplementedException()
 
-    @dbmethod
+    @tornado.gen.coroutine
     def web_get_dataset_by_name(self, name, callback=None):
-        """Get a dataset by its name"""
+        """
+        Get a dataset by its name.
+
+        Args:
+            name (str): dataset name
+
+        Returns:
+            str: dataset id
+        """
         sql = 'select dataset_id from dataset where name = ?'
         bindings = (name,)
-        cb = partial(self._web_dataset_by_name_callback, callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_dataset_by_name_callback(self, ret, callback=None):
-        if isinstance(ret, Exception):
-            callback(ret)
-        elif len(ret) == 1:
-            callback(ret[0][0])
+        ret = yield self.parent.db.query(sql, bindings)
+        if len(ret) == 1:
+            raise tornado.gen.Return(ret[0][0])
         else:
-            callback(Exception('name not found'))
+            raise Exception('name not found')
 
-    @dbmethod
-    def web_get_task_completion_stats(self, dataset_id, callback=None):
+    def web_get_task_reqs(self, dataset_id, callback=None):
+        """
+        Get the task requirements for a dataset.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            list: [{task name: reqs}]
+        """
         sql = 'select name, requirements from task_rel where dataset_id = ?'
         bindings = (dataset_id,)
-        cb = partial(self._web_get_task_completion_stats_callback, callback=callback)
-        self.db.sql_read_task(sql,bindings,callback=cb)
-    def _web_get_task_completion_stats_callback(self, ret, callback=None):
-        callback(ret)
+        return self.parent.db.query(sql, bindings)

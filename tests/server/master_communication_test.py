@@ -15,149 +15,126 @@ import tempfile
 import random
 import unittest
 
-from flexmock import flexmock
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
+
+from tornado.testing import AsyncTestCase
+from tornado.concurrent import Future
 
 from iceprod.core.jsonUtil import json_encode, json_decode
 import iceprod.server.master_communication
 
-class FakeResponse:
-    def __init__(self,status,body,error=None):
-        self.code = status
+class FakeResponse(object):
+    def __init__(self, code, body, error=None):
+        self.code = code
         self.body = body
-        self.error = error
+        if (not error) and (code < 200 or code >= 300):
+            self.error = Exception('http code error')
+        else:
+            self.error = error
+    def rethrow(self):
+        if self.error:
+            raise self.error
 
-class master_communication_test(unittest.TestCase):
+def make_response(*args, **kwargs):
+    f = Future()
+    f.set_result(FakeResponse(*args,**kwargs))
+    return f
+
+class master_communication_test(AsyncTestCase):
     def setUp(self):
         super(master_communication_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        orig_dir = os.getcwd()
+        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
+        os.chdir(self.test_dir)
+        def clean_dir():
+            os.chdir(orig_dir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(clean_dir)
 
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(master_communication_test,self).tearDown()
-
+    @patch('iceprod.server.master_communication.AsyncHTTPClient.fetch')
     @unittest_reporter
-    def test_01_send_master(self):
+    def test_01_send_master(self, fetch):
         """Test master_communication.send_master()"""
-        def client(*args,**kwargs):
-            client.args = args
-            client.kwargs = kwargs
-            client.called = True
-        client.called = False
-        flexmock(iceprod.server.master_communication.AsyncHTTPClient).should_receive('fetch').replace_with(client)
 
         site_id = 'thesite'
         cfg = {'site_id':site_id,'master':{'url':'localhost','passkey':'thekey'}}
         method = 'mymethod'
-        def cb(ret=None):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-        iceprod.server.master_communication.send_master(cfg,method,callback=cb)
-        if not client.called:
-            raise Exception('client not called')
-        client_body = json_decode(client.kwargs['body'])
-        if client_body['method'] != method:
-            raise Exception('method not correct')
+        fetch.return_value = make_response(200,json_encode({'result':'ok'}))
+        
+        ret = yield iceprod.server.master_communication.send_master(cfg, method)
+        self.assertTrue(fetch.call_count, 1)
+        client_body = json_decode(fetch.call_args[1]['body'])
+        self.assertEqual(client_body['method'], method)
         expected = {'site_id':site_id,'passkey':cfg['master']['passkey']}
-        if client_body['params'] != expected:
-            raise Exception('params not correct')
+        self.assertEqual(client_body['params'], expected)
+        self.assertEqual(ret, 'ok')
 
-        r = FakeResponse(200,json_encode({'result':'ok'}),None)
-        client.kwargs['callback'](r)
-        if not cb.called:
-            raise Exception('did not call callback')
-        if cb.ret != 'ok':
-            raise Exception('did not get response result')
-
-        cb.called = False
-        r = FakeResponse(200,json_encode({'error':'fail'}),None)
-        client.kwargs['callback'](r)
-        if not cb.called:
-            raise Exception('did not call callback')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
-        correct = ('error: %r'%u'fail',)
-        if cb.ret.args != correct:
-            logger.info('value: %r',cb.ret.args)
-            logger.info('correct: %r',correct)
-            raise Exception('wrong error')
-
-        cb.called = False
-        r = FakeResponse(400,'','fail')
-        client.kwargs['callback'](r)
-        if not cb.called:
-            raise Exception('did not call callback')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
-        correct = ('http error: %r'%'fail',)
-        if cb.ret.args != correct:
-            logger.info('value: %r',cb.ret.args)
-            logger.info('correct: %r',correct)
-            raise Exception('wrong error')
-
-        cb.called = False
-        r = FakeResponse(200,json_encode({}),None)
-        client.kwargs['callback'](r)
-        if not cb.called:
-            raise Exception('did not call callback')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
-        correct = ('bad response',)
-        if cb.ret.args != correct:
-            logger.info('value: %r',cb.ret.args)
-            logger.info('correct: %r',correct)
-            raise Exception('wrong error')
-
-        client.called = False
-        iceprod.server.master_communication.send_master(cfg,method)
-        if not client.called:
-            raise Exception('client not called')
-
+        fetch.return_value = make_response(200,json_encode({'error':'fail'}))
         try:
-            cfg = {}
-            iceprod.server.master_communication.send_master(cfg,method)
-        except Exception:
+            yield iceprod.server.master_communication.send_master(cfg, method)
+        except:
             pass
         else:
-            raise Exception('did not raise exception')
+            raise Exception('did not raise Exception')
+
+        fetch.return_value = make_response(400,'','fail')
+        try:
+            yield iceprod.server.master_communication.send_master(cfg, method)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+        fetch.return_value = make_response(200,json_encode({}))
+        try:
+            yield iceprod.server.master_communication.send_master(cfg, method)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+        fetch.return_value = make_response(200,json_encode({'result':'ok'}))
+        cfg = {}
+        try:
+            yield iceprod.server.master_communication.send_master(cfg, method)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
         # try without passkey
         cfg = {'master':{'url':'localhost'}}
-        method = 'mymethod'
-        cb.called = False
         try:
-            iceprod.server.master_communication.send_master(cfg,method,callback=cb)
-        except Exception:
+            yield iceprod.server.master_communication.send_master(cfg, method)
+        except:
             pass
         else:
-            raise Exception('did not raise exception')
+            raise Exception('did not raise Exception')
 
         # try giving passkey directly
+        fetch.reset_mock()
         cfg = {'master':{'url':'localhost','passkey':'tmpkey'}}
-        method = 'mymethod'
-        cb.called = False
-        iceprod.server.master_communication.send_master(cfg,method,
-                                                        passkey='otherkey',
-                                                        callback=cb)
-        if not client.called:
-            raise Exception('client not called')
-        client_body = json_decode(client.kwargs['body'])
+        ret = yield iceprod.server.master_communication.send_master(cfg,
+                method, passkey='otherkey')
+        self.assertTrue(fetch.call_count, 1)
+        client_body = json_decode(fetch.call_args[1]['body'])
+        self.assertEqual(client_body['method'], method)
         expected = {'passkey':'otherkey'}
-        if client_body['params'] != expected:
-            raise Exception('params not correct')
+        self.assertEqual(client_body['params'], expected)
+        self.assertEqual(ret, 'ok')
 
         # try with / on end of url
-        cfg = {'site_id':site_id,'master':{'url':'localhost/','passkey':'tmpkey'}}
-        cb.called = False
-        iceprod.server.master_communication.send_master(cfg,method,callback=cb)
-        if not client.called:
-            raise Exception('client not called')
-        client_body = json_decode(client.kwargs['body'])
-        if client_body['method'] != method:
-            raise Exception('method not correct')
-        expected = {'site_id':site_id,'passkey':cfg['master']['passkey']}
-        if client_body['params'] != expected:
-            raise Exception('params not correct')
+        cfg = {'master':{'url':'localhost/','passkey':'tmpkey'}}
+        ret = yield iceprod.server.master_communication.send_master(cfg, method)
+        self.assertTrue(fetch.call_count, 1)
+        client_body = json_decode(fetch.call_args[1]['body'])
+        self.assertEqual(client_body['method'], method)
+        expected = {'passkey':cfg['master']['passkey']}
+        self.assertEqual(client_body['params'], expected)
+        self.assertEqual(ret, 'ok')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

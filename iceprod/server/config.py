@@ -9,7 +9,6 @@ import logging
 
 from iceprod.core.jsonUtil import json_encode, json_decode
 from iceprod.server import GlobalID, get_pkgdata_filename
-from iceprod.server.basic_config import locateconfig
 
 import json
 try:
@@ -20,6 +19,28 @@ except ImportError:
     ValidationError = Exception
 
 logger = logging.getLogger('config')
+
+
+def locateconfig(filename='iceprod_config.json'):
+    """Locate a config file"""
+    cfgpaths = [os.path.expandvars('$I3PROD')]
+    if os.getcwd() not in cfgpaths:
+        cfgpaths.append(os.getcwd())
+    cfgpath = get_pkgdata_filename('iceprod.server','data')
+    if cfgpath:
+        cfgpaths.append(cfgpath)
+    for cfgpath in list(cfgpaths):
+        # try for an etc directory
+        i = cfgpaths.index(cfgpath)
+        if os.path.isdir(os.path.join(cfgpath,'etc')):
+            cfgpaths.insert(i,os.path.join(cfgpath,'etc'))
+            # try for an iceprod directory
+            if os.path.isdir(os.path.join(cfgpath,'etc','iceprod')):
+                cfgpaths.insert(i,os.path.join(cfgpath,'etc','iceprod'))
+    for cfgpath in cfgpaths:
+        if os.path.isfile(os.path.join(cfgpath,filename)):
+            return os.path.join(cfgpath,filename)
+    raise Exception('config {} not found'.format(filename))
 
 class IceProdConfig(dict):
     """
@@ -41,7 +62,15 @@ class IceProdConfig(dict):
         if filename:
             self.filename = filename
         else:
-            self.filename = locateconfig('iceprod_config.json')
+            try:
+                self.filename = locateconfig()
+            except:
+                logger.warn('config file does not exist, so making a new one')
+                if 'I3PROD' in os.environ:
+                    self.filename = os.path.join(os.environ['I3PROD'],'etc','iceprod_config.json')
+                else:
+                    self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
+
         self.validate = validate
         self.loading = False
 
@@ -120,19 +149,16 @@ class IceProdConfig(dict):
             self.loading = False
 
     def load_string(self, text):
-        ok = True
+        """Load a config from a string, saving to file."""
         try:
             self.loading = True
             obj = json_decode(text)
             for key in obj:
                 self[key] = obj[key]
             self.do_validate()
-        except Exception:
-            ok = False
         finally:
             self.loading = False
-            return ok
-
+            self.save()
 
     def save_to_string(self):
         return json_encode(self, indent = 4)

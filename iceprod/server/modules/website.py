@@ -28,10 +28,8 @@ import binascii
 from threading import Thread,Event,Condition
 import logging
 from contextlib import contextmanager
-from functools import partial
+from functools import partial, wraps
 from urlparse import urlparse
-
-from concurrent.futures import ThreadPoolExecutor
 
 # override tornado json encoder and decoder so we can use dataclasses objects
 import iceprod.core.jsonUtil
@@ -43,6 +41,9 @@ import tornado.ioloop
 import tornado.web
 import tornado.httpserver
 import tornado.gen
+
+import tornado.concurrent
+import concurrent.futures
 
 from statsd import StatsClient
 
@@ -68,69 +69,53 @@ class website(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(website,self).__init__(*args,**kwargs)
-        self.service_class = WebsiteService(self)
+        self.service['logrotate'] = self.logrotate
 
         # set up local variables
         self.nginx = None
         self.http_server = None
         self.statsd = None
 
-        # start website
-        self.start()
-
-    def start(self):
-        """Start thread"""
-        super(website,self).start(callback=self._start)
-
     def stop(self):
-        """Stop thread"""
+        """Stop website"""
         # stop nginx
         try:
             if self.nginx:
                 self.nginx.stop()
-        except Exception as e:
-            logger.error('cannot stop Nginx: %r',e)
+        except:
+            logger.error('cannot stop Nginx', exc_info=True)
         # stop tornado
         try:
             if self.http_server:
                 self.http_server.stop()
-        except Exception as e:
-            logger.error('cannot stop tornado: %r',e)
+        except:
+            logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
 
-    def restart(self):
-        """restart website"""
-        logger.warn('restarting website')
-        # stop nginx
-        try:
-            if self.nginx:
-                self.nginx.stop()
-        except Exception as e:
-            logger.error('cannot stop Nginx: %r',e)
-        try:
-            if self.http_server:
-                self.http_server.stop()
-            def cb(*args,**kwargs):
-                self._start()
-            t = time.time()+0.5
-            tornado.ioloop.IOLoop.current().add_timeout(t,cb)
-        except Exception:
-            logger.warn('error during restart',exc_info=True)
-            raise
-
     def kill(self):
-        """Kill thread"""
+        """Kill website"""
         # kill nginx
         try:
             if self.nginx:
                 self.nginx.kill()
-        except Exception as e:
-            logger.error('cannot kill Nginx: %r',e)
+        except:
+            logger.error('cannot kill Nginx', exc_info=True)
         super(website,self).kill()
 
+    def logrotate(self):
+        """Rotate the Nginx logs."""
+        logger.warn('got a logrotate() call')
+        try:
+            if self.nginx:
+                # rotate nginx logs
+                self.nginx.logrotate()
+            # tornado uses regular python logs, which rotate automatically
+        except:
+            logger.warn('error in logrotate', exc_info=True)
 
-    def _start(self):
+    def start(self):
         """Run the website"""
+        super(website,self).start()
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
                 self.statsd = StatsClient(self.cfg['statsd'],
@@ -152,10 +137,12 @@ class website(module.module):
 
             # get package data
             static_path = get_pkgdata_filename('iceprod.server','data/www')
-            if static_path is None:
+            if static_path is None or not os.path.exists(static_path):
+                logger.info('static path: %r',static_path)
                 raise Exception('bad static path')
             template_path = get_pkgdata_filename('iceprod.server','data/www_templates')
-            if template_path is None:
+            if template_path is None or not os.path.exists(template_path):
+                logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
             # detect nginx
@@ -183,7 +170,6 @@ class website(module.module):
                         pass
                     else:
                         kwargs['request_timeout'] = timeout
-                        self.messaging.timeout = timeout
                 if ('download' in self.cfg and 'http_username' in self.cfg['download']
                     and self.cfg['download']['http_username']):
                     kwargs['username'] = self.cfg['download']['http_username']
@@ -211,6 +197,7 @@ class website(module.module):
                             key = self.cfg['system']['ssl']['key']
                         else:
                             raise Exception('Bad ssl cert or key')
+
                     if not cert:
                         # auto-generate self-signed cert
                         create_cert('$PWD/cert','$PWD/key',days=365)
@@ -219,12 +206,8 @@ class website(module.module):
                         self.cfg['system']['ssl']['autogen'] = True
                         self.cfg['system']['ssl']['cert'] = cert
                         self.cfg['system']['ssl']['key'] = key
-                        self.messaging.config.set(key='system',value=self.cfg['system'])
-                        logger.warn('prepare for cfg reload')
-                        return
-                    else:
-                        kwargs['sslcert'] = cert
-                        kwargs['sslkey'] = key
+                    kwargs['sslcert'] = cert
+                    kwargs['sslkey'] = key
 
                     if 'cacert' in self.cfg['system']['ssl']:
                         if not os.path.exists(self.cfg['system']['ssl']['cacert']):
@@ -256,8 +239,8 @@ class website(module.module):
             #UploadHandler.upload_prefix = '/upload'
             handler_args = {
                 'cfg':self.cfg,
-                'messaging':self.messaging,
-                'fileio':AsyncFileIO(executor=ThreadPoolExecutor(10)),
+                'modules':self.modules,
+                'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
             }
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
@@ -271,9 +254,6 @@ class website(module.module):
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-                self.messaging.config.set(key='webserver',
-                                          value=self.cfg['webserver'],
-                                          update=False)
             self.application = tornado.web.Application([
                 (r"/jsonrpc", JSONRPCHandler, handler_args),
                 (r"/lib/.*", LibHandler, lib_args),
@@ -286,6 +266,7 @@ class website(module.module):
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/log/(.*)/(.*)", Log, handler_args),
+                (r"/groups", GroupsHandler, handler_args),
                 (r"/login", Login, handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
@@ -311,74 +292,85 @@ class website(module.module):
             logger.warn('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)
-            self.messaging.daemon.stop()
+            raise
 
-    def logrotate(self):
-        """Rotate the Nginx logs."""
-        logger.warn('got a logrotate() call')
+
+def catch_error(method):
+    """Decorator to catch and handle errors on handlers"""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
         try:
-            if self.nginx:
-                # rotate nginx logs
-                self.nginx.logrotate()
-            # tornado uses regular python logs, which rotate automatically
-        except:
-            pass # ignore errors in favor of continuous running
+            return method(self, *args, **kwargs)
+        except Exception as e:
+            if self.statsd:
+                self.statsd.incr(self.__class__.__name__+'.error')
+            logger.warn('Error in website handler', exc_info=True)
+            message = 'Error generating page for '+self.__class__.__name__
+            if self.debug:
+                message = message + '\n' + str(e)
+            self.send_error(500, message=message)
+    return wrapper
 
-class WebsiteService(module.Service):
+def authenticated_secure(method):
+    """Decorate methods with this to require that the user be logged in
+    to a secure area.
+
+    If the user is not logged in, they will be redirected to the configured
+    `login url <RequestHandler.get_login_url>`.
+
+    If you configure a login url with a query parameter, Tornado will
+    assume you know what you're doing and use it as-is.  If not, it
+    will add a `next` parameter so the login page knows where to send
+    you once you're logged in.
     """
-    Override the basic :class:`Service` handler.
-    """
-    def restart(self,callback=None):
-        self.mod.restart()
-        if callback:
-            callback()
-    def logrotate(self,callback=None):
-        self.mod.logrotate()
-        if callback:
-            callback()
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user_secure:
+            if self.request.method in ("GET", "HEAD"):
+                url = self.get_login_url()
+                if "?" not in url:
+                    if urlparse.urlsplit(url).scheme:
+                        # if login url is absolute, make next absolute too
+                        next_url = self.request.full_url()
+                    else:
+                        next_url = self.request.uri
+                    url += "?" + urlencode(dict(next=next_url,secure=True))
+                self.redirect(url)
+                return
+            raise HTTPError(403)
+        return method(self, *args, **kwargs)
+    return wrapper
+
 
 class MyHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, messaging, fileio, debug=False, statsd=None):
+    def initialize(self, cfg, modules, fileio, debug=False, statsd=None):
         """
         Get some params from the website module
 
         :param cfg: the global config
-        :param messaging: the messaging handle
+        :param modules: modules handle
         :param fileio: AsyncFileIO object
         :param debug: debug flag (optional)
         """
         self.cfg = cfg
-        self.messaging = messaging
+        self.modules = modules
         self.fileio = fileio
         self.debug = debug
         self.statsd = statsd
 
-    @tornado.concurrent.return_future
+    @tornado.gen.coroutine
     def db_call(self,func_name,**kwargs):
-        """Turn a DB messaging call into a `Futures` object"""
+        """Make a database call, returning the result"""
         logger.debug('db_call for %s',func_name)
         try:
-            getattr(self.messaging.db,func_name)(**kwargs)
+            f = self.modules['db'][func_name](**kwargs)
+            if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
+                f = yield tornado.gen.with_timeout(60,f)
         except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
-
-    @tornado.concurrent.return_future
-    def daemon_call(self, func_name, **kwargs):
-        try:
-            getattr(self.messaging.daemon,func_name)(**kwargs)
-        except Exception:
-            logger.warn('daemon_call error for %s',func_name,exc_info=True)
-            raise
-
-    @tornado.concurrent.return_future
-    def config_call(self, func_name, **kwargs):
-        try:
-            getattr(self.messaging.config,func_name)(**kwargs)
-        except Exception:
-            logger.warn('config_call error for %s',func_name,exc_info=True)
-            raise
+        raise tornado.gen.Return(f)
 
     def get(self):
         """GET is invalid and returns an error"""
@@ -503,7 +495,6 @@ class LibHandler(MyHandler):
         """
         Get some params from the website module
 
-        :param messaging: the messaging handle
         :param fileio: AsyncFileIO object
         :param prefix: library url prefix
         :param directory: library directory on disk
@@ -541,14 +532,6 @@ class LibHandler(MyHandler):
 
 class PublicHandler(MyHandler):
     """Handler for public facing website"""
-    def render_handle(self,*args,**kwargs):
-        """Handle renderer exceptions properly"""
-        try:
-            self.render(*args,**kwargs)
-        except Exception as e:
-            logger.error('render error',exc_info=True)
-            self.send_error(message='render error')
-
     def get_template_namespace(self):
         namespace = super(MyHandler,self).get_template_namespace()
         namespace['version'] = iceprod.__version__
@@ -566,7 +549,13 @@ class PublicHandler(MyHandler):
         return namespace
 
     def get_current_user(self):
-        return self.get_secure_cookie("user")
+        user = self.get_secure_cookie("user", max_age_days=1)
+        user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
+        self.current_user_secure = (user_secure is not None)
+        if user_secure is None or user == user_secure:
+            return user
+        else:
+            return None
 
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
@@ -579,266 +568,242 @@ class PublicHandler(MyHandler):
             self.write('<br />'.join(kwargs['message'].split('\n')))
         self.finish()
 
-    @contextmanager
-    def catch_error(self,message='Error generating page'):
-        """Context manager for catching, logging, and displaying errors."""
-        try:
-            yield
-        except Exception as e:
-            logger.warn('Error in public website',exc_info=True)
-            if self.statsd:
-                self.statsd.incr('public_error')
-            if self.debug:
-                message = message + '\n' + str(e)
-            self.write_error(500,message=message)
-
 class Default(PublicHandler):
     """Handle / urls"""
+    @catch_error
     @tornado.gen.coroutine
     def get(self):
         if self.statsd:
             self.statsd.incr('default')
-        with self.catch_error():
-            datasets = yield self.db_call('web_get_datasets',groups=['status'])
-            if isinstance(datasets,Exception):
-                raise datasets
-            if not datasets:
-                logger.info('no datasets to display: %r',datasets)
-                datasets = [] # set to iterable to prevent None error
-            self.render_handle('main.html',datasets=datasets)
+        datasets = yield self.db_call('web_get_datasets',groups=['status'])
+        if isinstance(datasets,Exception):
+            raise datasets
+        if not datasets:
+            logger.info('no datasets to display: %r',datasets)
+            datasets = [] # set to iterable to prevent None error
+        self.render('main.html',datasets=datasets)
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
+    @catch_error
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
         if self.statsd:
             self.statsd.incr('submit')
-        with self.catch_error(message='error generating submit page'):
-            url = self.request.uri[1:]
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
-            grids = yield self.db_call('web_get_gridspec')
-            if isinstance(grids,Exception):
-                raise grids
-            render_args = {
-                'passkey':passkey,
-                'grids':grids,
-                'edit':False,
-                'dataset':None,
-                'config':None,
-            }
-            self.render_handle('submit.html',**render_args)
+        url = self.request.uri[1:]
+        passkey = yield self.db_call('auth_new_passkey')
+        if isinstance(passkey,Exception):
+            raise passkey
+        grids = yield self.db_call('web_get_gridspec')
+        if isinstance(grids,Exception):
+            raise grids
+        render_args = {
+            'passkey':passkey,
+            'grids':grids,
+            'edit':False,
+            'dataset':None,
+            'config':None,
+        }
+        self.render('submit.html',**render_args)
 
 class Config(PublicHandler):
     """Handle /submit urls"""
+    @catch_error
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
         if self.statsd:
             self.statsd.incr('config')
-        with self.catch_error(message='error generating config page'):
-            dataset_id = self.get_argument('dataset_id',default=None)
-            if not dataset_id:
-                self.write_error(400,message='must provide dataset_id')
-                return
-            dataset = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-            if isinstance(dataset,Exception):
-                raise dataset
-            if dataset_id not in dataset:
-                raise Exception('get_dataset_details does not have dataset_id '+dataset_id)
-            dataset = dataset[dataset_id]
-            edit = self.get_argument('edit',default=False)
-            if edit:
-                passkey = yield self.db_call('auth_new_passkey')
-                if isinstance(passkey,Exception):
-                    raise passkey
-            else:
-                passkey = None
-            config = yield self.db_call('queue_get_cfg_for_dataset',dataset_id=dataset_id)
-            if isinstance(config,Exception):
-                raise config
-            render_args = {
-                'edit':edit,
-                'passkey':passkey,
-                'grids':None,
-                'dataset':dataset,
-                'config':config,
-            }
-            self.render_handle('submit.html',**render_args)
+        dataset_id = self.get_argument('dataset_id',default=None)
+        if not dataset_id:
+            self.write_error(400,message='must provide dataset_id')
+            return
+        dataset = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
+        if isinstance(dataset,Exception):
+            raise dataset
+        if dataset_id not in dataset:
+            raise Exception('get_dataset_details does not have dataset_id '+dataset_id)
+        dataset = dataset[dataset_id]
+        edit = self.get_argument('edit',default=False)
+        if edit:
+            passkey = yield self.db_call('auth_new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+        else:
+            passkey = None
+        config = yield self.db_call('queue_get_cfg_for_dataset',dataset_id=dataset_id)
+        if isinstance(config,Exception):
+            raise config
+        render_args = {
+            'edit':edit,
+            'passkey':passkey,
+            'grids':None,
+            'dataset':dataset,
+            'config':config,
+        }
+        self.render('submit.html',**render_args)
 
 class Site(PublicHandler):
     """Handle /site urls"""
+    @catch_error
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self,url):
         if self.statsd:
             self.statsd.incr('site')
-        #self.write_error(404,message='Not yet implemented')
-        #return
-        with self.catch_error(message='error generating site page'):
-            if url:
-                url_parts = [x for x in url.split('/') if x]
+        if url:
+            url_parts = [x for x in url.split('/') if x]
 
-            def cb(m):
-                print(m)
+        def cb(m):
+            print(m)
 
-            ret = yield self.daemon_call('get_running_modules')
+        running_modules = self.modules['daemon']['get_running_modules']()
 
+        module_state = []
+        for mod in self.cfg['modules']:
+            state = mod in running_modules
+            module_state.append([mod, state])
+
+        passkey = yield self.db_call('auth_new_passkey')
+        if isinstance(passkey,Exception):
+            raise passkey
+
+        config = self.config.save_to_string()
+
+        self.render('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
+        '''
+        filter_options = {}
+        filter_results = {n:self.get_arguments(n) for n in filter_options}
+        if url and url_parts:
+            site_id = url_parts[0]
+            ret = yield self.db_call('web_get_site_details',dataset_id=dataset_id)
             if isinstance(ret,Exception):
                 raise ret
-
-            available_modules = {}
-            for mod in iceprod.server.listmodules('iceprod.server.modules'):
-                mod_name = mod.rsplit('.',1)[1]
-                available_modules[mod_name] = mod
-
-
-            module_state = []
-            for mod in available_modules.keys():
-                state = mod in ret
-                module_state.append([mod, state])
-            #self.messaging.daemon.get_running_modules(callback=cb)
-            #print('11111')
-
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
-
-            config = yield self.config_call('get_config_string')
-
-            self.render_handle('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
-            '''
-            filter_options = {}
-            filter_results = {n:self.get_arguments(n) for n in filter_options}
-            if url and url_parts:
-                site_id = url_parts[0]
-                ret = yield self.db_call('web_get_site_details',dataset_id=dataset_id)
-                if isinstance(ret,Exception):
-                    raise ret
-                if ret:
-                    site = ret.values()[0]
-                else:
-                    site = None
-                tasks = yield self.db_call('web_get_tasks_by_status',site_id=site_id)
-                if isinstance(tasks,Exception):
-                    raise tasks
-                self.render_handle('site_detail.html',site_id=site_id,
-                                   site=site,tasks=tasks)
+            if ret:
+                site = ret.values()[0]
             else:
-                sites = yield self.db_call('web_get_sites',**filter_results)
-                if isinstance(sites,Exception):
-                    raise sites
-                self.render_handle('site_browse.html',sites=sites,
-                                   filter_options=filter_options,
-                                   filter_results=filter_results)
-            '''
+                site = None
+            tasks = yield self.db_call('web_get_tasks_by_status',site_id=site_id)
+            if isinstance(tasks,Exception):
+                raise tasks
+            self.render('site_detail.html',site_id=site_id,
+                               site=site,tasks=tasks)
+        else:
+            sites = yield self.db_call('web_get_sites',**filter_results)
+            if isinstance(sites,Exception):
+                raise sites
+            self.render('site_browse.html',sites=sites,
+                               filter_options=filter_options,
+                               filter_results=filter_results)
+        '''
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
+    @catch_error
     @tornado.gen.coroutine
     def get(self,url):
         if self.statsd:
             self.statsd.incr('dataset')
-        with self.catch_error(message='error generating dataset page'):
-            if url:
-                url_parts = [x for x in url.split('/') if x]
-            filter_options = {'status':DBAPI.status_options['dataset']}
-            filter_results = {n:self.get_arguments(n) for n in filter_options}
-            if url and url_parts:
-                dataset_id = url_parts[0]
-                if dataset_id.isdigit():
-                    try:
-                        if int(dataset_id) < 10000000:
-                            ret = yield self.db_call('web_get_dataset_by_name',
-                                                     name=dataset_id)
-                            if ret and not isinstance(ret,Exception):
-                                dataset_id = ret
-                    except:
-                        pass
-                ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-                if isinstance(ret,Exception):
-                    raise ret
-                if ret:
-                    dataset = ret.values()[0]
-                else:
-                    dataset = None
-                tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-                task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
-                task_info2 = []
-                for t in task_info:
-                    requirements = tornado.escape.json_decode(t[1])
-                    type = 'CPU'
-                    if 'gpu' in requirements and requirements['gpu']: type = 'GPU'
-                    q = 0
-                    r = 0
-                    task_info2.append([t[0], type, q, r])
-                if isinstance(tasks,Exception):
-                    raise tasks
-                self.render_handle('dataset_detail.html',dataset_id=dataset_id,
-                                   dataset=dataset,tasks=tasks,task_info=task_info2)
+        if url:
+            url_parts = [x for x in url.split('/') if x]
+        filter_options = {'status':DBAPI.status_options['dataset']}
+        filter_results = {n:self.get_arguments(n) for n in filter_options}
+        if url and url_parts:
+            dataset_id = url_parts[0]
+            if dataset_id.isdigit():
+                try:
+                    if int(dataset_id) < 10000000:
+                        ret = yield self.db_call('web_get_dataset_by_name',
+                                                 name=dataset_id)
+                        if ret and not isinstance(ret,Exception):
+                            dataset_id = ret
+                except:
+                    pass
+            ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
+            if isinstance(ret,Exception):
+                raise ret
+            if ret:
+                dataset = ret.values()[0]
             else:
-                datasets = yield self.db_call('web_get_datasets',**filter_results)
-                if isinstance(datasets,Exception):
-                    raise datasets
-                self.render_handle('dataset_browse.html',datasets=datasets,
-                                   filter_options=filter_options,
-                                   filter_results=filter_results)
+                dataset = None
+            tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
+            task_info = yield self.db_call('web_get_task_reqs', dataset_id=dataset_id)
+            task_info2 = []
+            for t in task_info:
+                requirements = tornado.escape.json_decode(t[1])
+                type = 'CPU'
+                if 'gpu' in requirements and requirements['gpu']:
+                    type = 'GPU'
+                q = 0
+                r = 0
+                task_info2.append([t[0], type, q, r])
+            if isinstance(tasks,Exception):
+                raise tasks
+            self.render_handle('dataset_detail.html',dataset_id=dataset_id,
+                               dataset=dataset,tasks=tasks,task_info=task_info2)
+        else:
+            datasets = yield self.db_call('web_get_datasets',**filter_results)
+            if isinstance(datasets,Exception):
+                raise datasets
+            self.render('dataset_browse.html',datasets=datasets,
+                        filter_options=filter_options,
+                        filter_results=filter_results)
 
 class Task(PublicHandler):
     """Handle /task urls"""
+    @catch_error
     @tornado.gen.coroutine
     def get(self,url):
         if self.statsd:
             self.statsd.incr('task')
-        with self.catch_error(message='error generating dataset page'):
-            if url:
-                url_parts = [x for x in url.split('/') if x]
-            dataset_id = self.get_argument('dataset_id',default=None)
-            status = self.get_argument('status',default=None)
+        if url:
+            url_parts = [x for x in url.split('/') if x]
+        dataset_id = self.get_argument('dataset_id',default=None)
+        status = self.get_argument('status',default=None)
 
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
+        passkey = yield self.db_call('auth_new_passkey')
+        if isinstance(passkey,Exception):
+            raise passkey
 
-            if url and url_parts:
-                if dataset_id and dataset_id.isdigit():
-                    try:
-                        if int(dataset_id) < 10000000:
-                            ret = yield self.db_call('web_get_dataset_by_name',
-                                                     name=dataset_id)
-                            if ret and not isinstance(ret,Exception):
-                                dataset_id = ret
-                    except:
-                        pass
-                task_id = url_parts[0]
-                ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
-                                         dataset_id=dataset_id)
-                if isinstance(ret,Exception):
-                    raise ret
-                if ret:
-                    task_details = ret.values()[0]
-                else:
-                    task_details = None
-                logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
-                if isinstance(logs,Exception):
-                    raise logs
-                self.render_handle('task_detail.html',task=task_details,logs=logs,passkey=passkey)
-            elif status:
-
-                tasks = yield self.db_call('web_get_tasks_details',status=status,
-                                           dataset_id=dataset_id)
-                if isinstance(tasks,Exception):
-                    raise tasks
-                self.render_handle('task_browse.html',tasks=tasks, passkey=passkey)
+        if url and url_parts:
+            if dataset_id and dataset_id.isdigit():
+                try:
+                    if int(dataset_id) < 10000000:
+                        ret = yield self.db_call('web_get_dataset_by_name',
+                                                 name=dataset_id)
+                        if ret and not isinstance(ret,Exception):
+                            dataset_id = ret
+                except:
+                    pass
+            task_id = url_parts[0]
+            ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
+                                     dataset_id=dataset_id)
+            if isinstance(ret,Exception):
+                raise ret
+            if ret:
+                task_details = ret.values()[0]
             else:
-                status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-                if isinstance(status,Exception):
-                    raise status
-                self.render_handle('tasks.html',status=status)
+                task_details = None
+            logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
+            if isinstance(logs,Exception):
+                raise logs
+            self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
+        elif status:
+
+            tasks = yield self.db_call('web_get_tasks_details',status=status,
+                                       dataset_id=dataset_id)
+            if isinstance(tasks,Exception):
+                raise tasks
+            self.render('task_browse.html',tasks=tasks, passkey=passkey)
+        else:
+            status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
+            if isinstance(status,Exception):
+                raise status
+            self.render('tasks.html',status=status)
 
 class Documentation(PublicHandler):
+    @catch_error
     def get(self, url):
         if self.statsd:
             self.statsd.incr('documentation')
@@ -847,6 +812,7 @@ class Documentation(PublicHandler):
         self.flush()
 
 class Log(PublicHandler):
+    @catch_error
     @tornado.gen.coroutine
     def get(self, url, log):
         if self.statsd:
@@ -859,51 +825,90 @@ class Log(PublicHandler):
         self.write(html)
         self.flush()
 
+class GroupsHandler(PublicHandler):
+    """View/modify groups"""
+    @catch_error
+    @tornado.gen.coroutine
+    def get(self):
+        render_args = {
+            'edit': True if self.current_user else False,
+        }
+        render_args['groups'] = yield self.db_call('rpc_get_groups')
+        if render_args['edit']:
+            passkey = yield self.db_call('auth_new_passkey')
+            if isinstance(passkey,Exception):
+                raise passkey
+            render_args['passkey'] = passkey
+        self.render('groups.html', **render_args)
+
+class UserAccount(PublicHandler):
+    """View/modify a user account"""
+    @catch_error
+    @authenticated_secure
+    @tornado.gen.coroutine
+    def get(self):
+        username = self.get_argument('username', default=self.current_user)
+        account = yield self.db_call('website_get_user_account')
+        if isinstance(account, Exception):
+            raise account
+        self.render('user_account.html', account=account)
+
+    @catch_error
+    @authenticated_secure
+    @tornado.gen.coroutine
+    def post(self):
+        username = self.get_argument('username', default=self.current_user)
+        password = self.get_argument('password', default=None)
+        if not password:
+            raise Exception('invalid password')
+        ret = yield self.db_call('website_edit_user_account', password=password)
+        if isinstance(ret, Exception):
+            raise ret
+        self.get()
 
 class Help(PublicHandler):
     """Help Page"""
+    @catch_error
     def get(self):
         if self.statsd:
             self.statsd.incr('help')
-        with self.catch_error(message='error generating site page'):
-            self.render_handle('help.html')
-
-
+        self.render('help.html')
 
 class Other(PublicHandler):
     """Handle any other urls - this is basically all 404"""
+    @catch_error
     def get(self):
         if self.statsd:
             self.statsd.incr('other')
         path = self.request.path
         self.set_status(404)
-        self.render_handle('404.html',path=path)
+        self.render('404.html',path=path)
 
 class Login(PublicHandler):
     """Handle the login url"""
+    @catch_error
     def get(self):
         if self.statsd:
             self.statsd.incr('login')
         n = self.get_argument('next', default='/')
+        secure = self.get_argument('secure', default=None)
         if 'password' in self.cfg['webserver']:
-            self.render_handle('login.html', status=None, next=n)
+            self.render('login.html', status=None, next=n)
         else:
+            if secure:
+                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
             self.set_secure_cookie('user', 'admin', expires_days=1)
             self.redirect(n)
 
     def post(self):
-        n = self.get_argument('next', default='/')
-        if ('password' in self.cfg['webserver'] and
-            self.get_argument('pwd') == self.cfg['webserver']['password']):
-            self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(n)
-        else:
-            self.render_handle('login.html', status='failed', next=n)
+        self.get()
 
 class Logout(PublicHandler):
+    @catch_error
     def get(self):
         if self.statsd:
             self.statsd.incr('logout')
         self.clear_cookie("user")
+        self.clear_cookie("user_secure")
         self.current_user = None
-        self.render_handle('logout.html', status=None)
+        self.render('logout.html', status=None)

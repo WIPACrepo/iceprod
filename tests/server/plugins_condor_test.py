@@ -27,7 +27,10 @@ except:
 
 import unittest
 
-from flexmock import flexmock
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 import iceprod.server
 from iceprod.server.plugins.condor import condor
@@ -40,7 +43,6 @@ class plugins_condor_test(grid_test.grid_test):
     def test_100_generate_submit_file(self):
         """Test generate_submit_file"""
         site = 'thesite'
-        self.check_run_stop = False
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
@@ -56,17 +58,15 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = condor(args)
-        if not g:
-            raise Exception('init did not return grid object')
+        g = condor(gridspec, cfg['queue'][name], cfg, self.services,
+                 self.io_loop, self.executor)
+        self.assertTrue(g)
 
         # call normally
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid', 'submit_dir':submit_dir}
-        g.generate_submit_file(task)
+        yield g.generate_submit_file(task)
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         for l in open(os.path.join(submit_dir,'condor.submit')):
@@ -81,7 +81,7 @@ class plugins_condor_test(grid_test.grid_test):
         # add passkey
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
         passkey = 'aklsdfj'
-        g.generate_submit_file(task,passkey=passkey)
+        yield g.generate_submit_file(task,passkey=passkey)
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         for l in open(os.path.join(submit_dir,'condor.submit')):
@@ -96,7 +96,7 @@ class plugins_condor_test(grid_test.grid_test):
         cfg['steering']['batchsys'] = dataclasses.Batchsys()
         cfg['steering']['batchsys']['condor'] = {'+GPU_JOB':'true',
                 'Requirements':'Target.Has_GPU == True'}
-        g.generate_submit_file(task,cfg=cfg)
+        yield g.generate_submit_file(task,cfg=cfg)
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         gpu_job = False
@@ -120,7 +120,7 @@ class plugins_condor_test(grid_test.grid_test):
         cfg['tasks'][0]['batchsys'] = dataclasses.Batchsys()
         cfg['tasks'][0]['batchsys']['condor'] = {'+GPU_JOB':'true',
                 'Requirements':'Target.Has_GPU == True'}
-        g.generate_submit_file(task,cfg=cfg)
+        yield g.generate_submit_file(task,cfg=cfg)
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         gpu_job = False
@@ -138,9 +138,9 @@ class plugins_condor_test(grid_test.grid_test):
             raise Exception('task requirements failed')
         os.unlink(os.path.join(submit_dir,'condor.submit'))
 
+    @patch('subprocess.check_output')
     @unittest_reporter
-    def test_101_submit(self):
-        """Test submit"""
+    def test_101_submit(self, check_output):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -148,10 +148,9 @@ class plugins_condor_test(grid_test.grid_test):
             if isinstance(caller.ret,Exception):
                 raise caller.ret
             return caller.ret
-        flexmock(subprocess).should_receive('check_output').replace_with(caller)
+        check_output.side_effect = caller
 
         site = 'thesite'
-        self.check_run_stop = False
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
@@ -167,11 +166,9 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = condor(args)
-        if not g:
-            raise Exception('init did not return grid object')
+        g = condor(gridspec, cfg['queue'][name], cfg, self.services,
+                 self.io_loop, self.executor)
+        self.assertTrue(g)
 
         # call normally
         caller.called = False
@@ -179,7 +176,7 @@ class plugins_condor_test(grid_test.grid_test):
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
-        g.submit(task)
+        yield g.submit(task)
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_submit':
@@ -195,15 +192,15 @@ class plugins_condor_test(grid_test.grid_test):
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
         try:
-            g.submit(task)
+            yield g.submit(task)
         except:
             pass
         else:
             raise Exception('did not raise Exception')
 
+    @patch('subprocess.check_output')
     @unittest_reporter
-    def test_102_get_grid_status(self):
-        """Test get_grid_status"""
+    def test_102_get_grid_status(self, check_output):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -211,10 +208,9 @@ class plugins_condor_test(grid_test.grid_test):
             if isinstance(caller.ret,Exception):
                 raise caller.ret
             return caller.ret
-        flexmock(subprocess).should_receive('check_output').replace_with(caller)
+        check_output.side_effect = caller
 
         site = 'thesite'
-        self.check_run_stop = False
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
@@ -230,17 +226,15 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = condor(args)
-        if not g:
-            raise Exception('init did not return grid object')
+        g = condor(gridspec, cfg['queue'][name], cfg, self.services,
+                 self.io_loop, self.executor)
+        self.assertTrue(g)
 
         # call empty queue
         caller.called = False
         caller.ret = ''
 
-        ret = g.get_grid_status()
+        ret = yield g.get_grid_status()
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -253,7 +247,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 1 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = g.get_grid_status()
+        ret = yield g.get_grid_status()
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -267,7 +261,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 2 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = g.get_grid_status()
+        ret = yield g.get_grid_status()
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -281,7 +275,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 4 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = g.get_grid_status()
+        ret = yield g.get_grid_status()
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -296,7 +290,7 @@ class plugins_condor_test(grid_test.grid_test):
             caller.called = False
             caller.ret = '1234.0 '+s+' '+os.path.join(submit_dir,'loader.sh')
 
-            ret = g.get_grid_status()
+            ret = yield g.get_grid_status()
             if not caller.called:
                 raise Exception('subprocess.call not called')
             if caller.args[0][0] != 'condor_q':
@@ -310,7 +304,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 blah '+os.path.join(submit_dir,'loader.sh')
 
-        ret = g.get_grid_status()
+        ret = yield g.get_grid_status()
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -325,7 +319,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.ret = Exception('bad call')
 
         try:
-            g.get_grid_status()
+            yield g.get_grid_status()
         except:
             pass
         else:
@@ -336,15 +330,15 @@ class plugins_condor_test(grid_test.grid_test):
         caller.ret = 'blah\nfoo bar'
 
         try:
-            ret = g.get_grid_status()
+            ret = yield g.get_grid_status()
         except Exception:
             pass
         else:
             raise Exception('did not raise Exception')
 
+    @patch('subprocess.check_call')
     @unittest_reporter
-    def test_103_remove(self):
-        """Test remove"""
+    def test_103_remove(self, check_call):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -352,10 +346,9 @@ class plugins_condor_test(grid_test.grid_test):
             if isinstance(caller.ret,Exception):
                 raise caller.ret
             return caller.ret
-        flexmock(subprocess).should_receive('check_call').replace_with(caller)
+        check_call.side_effect = caller
 
         site = 'thesite'
-        self.check_run_stop = False
         name = 'grid1'
         gridspec = site+'.'+name
         submit_dir = os.path.join(self.test_dir,'submit_dir')
@@ -371,17 +364,15 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        args = (gridspec,cfg['queue'][name],cfg,self._check_run,
-                getattr(self.messaging,'db'))
-        g = condor(args)
-        if not g:
-            raise Exception('init did not return grid object')
+        g = condor(gridspec, cfg['queue'][name], cfg, self.services,
+                 self.io_loop, self.executor)
+        self.assertTrue(g)
 
         # remove task
         caller.called = False
         caller.ret = ''
 
-        g.remove(['1','2'])
+        yield g.remove(['1','2'])
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_rm':
@@ -398,7 +389,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = ''
 
-        g.remove([])
+        yield g.remove([])
         if caller.called:
             raise Exception('subprocess.call when no tasks')
 

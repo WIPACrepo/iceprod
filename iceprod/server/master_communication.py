@@ -9,44 +9,28 @@ import certifi
 
 from iceprod.core.jsonUtil import json_encode, json_decode
 from tornado.httpclient import AsyncHTTPClient
+import tornado.gen
 
 logger = logging.getLogger('master_communication')
 
-def send_master(cfg,method,callback=None,**kwargs):
+@tornado.gen.coroutine
+def send_master(cfg,method,**kwargs):
     """
     Send an asyncronous request to the master.
 
     This assumes an :ref:`tornado.ioloop.IOLoop` is already running.
 
-    If a callback is provided, it is given either an exception
-    or the response result as an argument.
+    Args:
+        cfg (dict): the main configuration dictionary
+        method (str): Which method to call on the server
+        **kwargs: Keyword arguments to pass to the master method
 
-    :param cfg: the main configuration dictionary
-    :param method: Which method to call on the server
-    :param callback: Callback to call when finished (optional)
-    :param **kwargs: Keyword arguments to pass to the master method
-    :returns: A `Future` with the :ref:`tornado.httpclient.HTTPResonse`
+    Returns:
+        str: Response from master
     """
     if ('master' not in cfg or 'url' not in cfg['master'] or
         not cfg['master']['url']):
         raise Exception('no master url, cannot communicate')
-
-    if callback:
-        def cb(response):
-            if response.error:
-                logger.warn('error receiving: http error: %r',
-                            response.error)
-                callback(Exception('http error: %r'%response.error))
-                return
-            ret = json_decode(response.body)
-            if 'error' in ret:
-                logger.warn('error receiving: %r',ret['error'])
-                callback(Exception('error: %r'%ret['error']))
-            elif 'result' in ret:
-                callback(ret['result'])
-            else:
-                logger.warn('error receiving: no result')
-                callback(Exception('bad response'))
 
     if 'passkey' not in kwargs:
         if 'master' not in cfg or 'passkey' not in cfg['master']:
@@ -60,8 +44,6 @@ def send_master(cfg,method,callback=None,**kwargs):
             'request_timeout': 120,
             'validate_cert': True,
             'ca_certs': certifi.where()}
-    if callback:
-        args['callback'] = cb
     http_client = AsyncHTTPClient()
     url = cfg['master']['url']
     if url.endswith('/'):
@@ -73,4 +55,15 @@ def send_master(cfg,method,callback=None,**kwargs):
                         'params':kwargs,'id':1})
     args['body'] = body
 
-    return http_client.fetch(url,**args)
+    response = yield http_client.fetch(url,**args)
+    response.rethrow()
+    ret = json_decode(response.body)
+    if 'error' in ret:
+        logger.warn('error receiving: %r',ret['error'])
+        raise Exception('error: %r'%ret['error'])
+    elif 'result' in ret:
+        raise tornado.gen.Return(ret['result'])
+    else:
+        logger.warn('error receiving: no result')
+        raise Exception('bad response')
+    

@@ -81,9 +81,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         logf = os.path.abspath(logfile)
     else:
         logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
-    iceprod.core.logger.setlogger('i3exec',
-                                  None,
-                                  loglevel=logl,
+    iceprod.core.logger.setlogger(loglevel=logl,
                                   logfile=logf,
                                   logsize=67108864,
                                   lognum=1)

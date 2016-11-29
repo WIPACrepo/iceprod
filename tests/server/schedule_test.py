@@ -19,18 +19,22 @@ except:
 
 import unittest
 
+try:
+    from unittest.mock import patch, MagicMock
+except ImportError:
+    from mock import patch, MagicMock
+
+import tornado.gen
+import tornado.ioloop
+from tornado.concurrent import Future
+from tornado.testing import AsyncTestCase
+
 import iceprod.server
 from iceprod.server import schedule
 from iceprod.core import to_log
 
 
-class schedule_test(unittest.TestCase):
-    def setUp(self):
-        super(schedule_test,self).setUp()
-
-    def tearDown(self):
-        super(schedule_test,self).tearDown()
-
+class schedule_test(AsyncTestCase):
     @unittest_reporter
     def test_01_ParseCron(self):
         now = time.time()
@@ -159,28 +163,77 @@ class schedule_test(unittest.TestCase):
             raise Exception('n=T - diff is not 6 months apart: now=%r,next=%r,diff=%r',(now2,next,diff))
 
     @unittest_reporter
-    def test_10_Scheduler(self):
+    def test_10_start(self):
+        loop = MagicMock()
+        sched = schedule.Scheduler(io_loop=loop)
+        sched.start()
+        loop.add_callback.assert_called_once_with(sched.run)
+
+    @unittest_reporter
+    def test_20_run(self):
         sched = schedule.Scheduler()
-        def foo():
-            foo.time = time.time()
-            foo.cnt += 1
-        def bar():
-            bar.cnt += 1
-            bar.time = time.time()
-            time.sleep(150) # make it skip every other instance
-            bar.time2 = time.time()
-        foo.cnt = 0
-        bar.cnt = 0
+        foo = MagicMock()
+        bar = MagicMock()
+        baz = MagicMock()
+        sched.schedule('every 1 min',foo)
+        sched.schedule('every 2 min',bar)
+        sched.schedule('every 1 min',baz,True) # oneshot
+        # this should produce the timeline:
+        # minute: 0     1    2    3    4
+        # event:        fbz  f    fb   f
+
+        sched.start()
+        try:
+            self.wait(timeout=181)
+        except:
+            pass
+        self.assertEqual(foo.call_count, 3)
+        self.assertEqual(bar.call_count, 2)
+        self.assertEqual(baz.call_count, 1)
+
+    @patch('tornado.ioloop.IOLoop.call_later')
+    @unittest_reporter(name='run - empty')
+    def test_21_run(self, call_later):
+        sched = schedule.Scheduler()
+        yield sched.run()
+        self.assertEqual(call_later.call_count, 1)
+        self.assertLess(call_later.call_args[0][0], sched.MAXWAIT)
+
+    @unittest_reporter(name='run - already running')
+    def test_22_run(self):
+        sched = schedule.Scheduler()
+        sched.running.add(sched.idcount)
+        foo = MagicMock()
         sched.schedule('every 1 min',foo)
         sched.start()
-        sched.schedule('every 2 min',bar)
-        time.sleep(60-datetime.now().second) # start at beginning of minute
-        time.sleep(4*60+10) # sleep for 4:10
-        sched.finish()
-        if foo.cnt != 5:
-            raise Exception('foo not run correct number of times: 5 != %d'%foo.cnt)
-        if bar.cnt != 2:
-            raise Exception('bar not run correct number of times: 2 != %d'%bar.cnt)
+        try:
+            self.wait(timeout=61)
+        except:
+            pass
+        foo.assert_not_called()
+
+    @unittest_reporter
+    def test_30_wrapper(self):
+        sched = schedule.Scheduler()
+
+        foo = MagicMock(return_value=None)
+        yield sched._wrapper('a',foo)
+        foo.assert_called_once_with()
+
+        foo = MagicMock(side_effect=Exception())
+        yield sched._wrapper('a',foo)
+        foo.assert_called_once_with()
+
+        f = Future()
+        f.set_result(None)
+        foo = MagicMock(return_value=f)
+        yield sched._wrapper('a',foo)
+        foo.assert_called_once_with()
+
+        @tornado.gen.coroutine
+        def foo():
+            yield f
+        yield sched._wrapper('a',foo)
 
 
 def load_tests(loader, tests, pattern):
