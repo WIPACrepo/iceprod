@@ -53,9 +53,9 @@ class rpc(_Methods_Base):
                 'python_unicode':None,
                }
         args.update(kwargs)
-        yield self.parent.services['node_update'](**args)
+        yield self.parent.service['node_update'](**args)
 
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             # check resource requirements
             reqs = {}
             for k in Node_Resources:
@@ -74,7 +74,7 @@ class rpc(_Methods_Base):
                     bindings = tuple(reqs.values())
                 else:
                     bindings = tuple()
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 task_id = None
                 resources = {}
                 for row in ret:
@@ -87,13 +87,13 @@ class rpc(_Methods_Base):
                     return
                 sql = 'select * from search where task_id = ? and task_status = ?'
                 bindings = (task_id,'queued')
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if not ret:
                     logger.info('task %s not valid, remove from task_lookup',
                                 task_id)
                     sql = 'delete from task_lookup where task_id = ?'
                     bindings = (task_id,)
-                    yield self.db.query(sql, bindings)
+                    yield self.parent.db.query(sql, bindings)
                 else:
                     break # we found a valid task
 
@@ -103,7 +103,7 @@ class rpc(_Methods_Base):
                 return
             sql = 'select job_index from job where job_id = ?'
             bindings = (newtask['job_id'],)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 logger.warn('failed to find job with known job_id %r',
                             newtask['job_id'])
@@ -111,7 +111,7 @@ class rpc(_Methods_Base):
             newtask['job'] = ret[0][0]
             sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
             bindings = (newtask['dataset_id'],)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 logger.warn('failed to find dataset with known dataset_id')
                 return
@@ -130,13 +130,13 @@ class rpc(_Methods_Base):
             bindings2 = ('processing',now,newtask['task_id'])
             sql3 = 'delete from task_lookup where task_id = ?'
             bindings3 = (newtask['task_id'],)
-            yield self.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
+            yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('search',newtask['task_id'],now)
                 bindings4 = ('task',newtask['task_id'],now)
                 try:
-                    yield self.db.query([sql3,sql3], [bindings3,bindings4])
+                    yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -144,7 +144,7 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
                 yield self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
 
-            ret = yield self.parent.services['queue_get_cfg_for_dataset'](newtask['dataset_id'])
+            ret = yield self.parent.service['queue_get_cfg_for_dataset'](newtask['dataset_id'])
 
             # now make the job config
             config = json_decode(ret)
@@ -167,7 +167,7 @@ class rpc(_Methods_Base):
             task (str): task_id
         """
         logger.info('rpc_set_processing for %r', task)
-        return self.parent.services['queue_set_task_status'](task, 'processing')
+        return self.parent.service['queue_set_task_status'](task, 'processing')
 
     @tornado.gen.coroutine
     def rpc_finish_task(self, task, stats):
@@ -179,7 +179,7 @@ class rpc(_Methods_Base):
             stats (dict): statistics from task
         """
         stats = json_encode(stats)
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             # update task status
             now = nowstr()
             sql = 'update search set task_status = ? '
@@ -188,13 +188,13 @@ class rpc(_Methods_Base):
             sql2 += ' status = ?, status_changed = ? where task_id = ?'
             bindings = ('complete',task)
             bindings2 = ('complete',now,task)
-            yield self.db.query([sql,sql2],[bindings,bindings2])
+            yield self.parent.db.query([sql,sql2],[bindings,bindings2])
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('search',newtask['task_id'],now)
                 bindings4 = ('task',newtask['task_id'],now)
                 try:
-                    yield self.db.query([sql3,sql3], [bindings3,bindings4])
+                    yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -205,7 +205,7 @@ class rpc(_Methods_Base):
             # update task statistics
             sql = 'select task_stat_id,task_id from task_stat where task_id = ?'
             bindings = (task,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             task_stat_id = None
             for ts,t in ret:
                 task_stat_id = ts
@@ -215,16 +215,16 @@ class rpc(_Methods_Base):
                 bindings = (stats,task_stat_id)
             else:
                 logger.debug('insert new task_stat')
-                task_stat_id = self.db._increment_id_helper('task_stat',conn)
+                task_stat_id = yield self.parent.db.increment_id('task_stat')
                 sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
                 sql += ' (?, ?, ?)'
                 bindings = (task_stat_id,task,stats)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_stat',task_stat_id,now)
                 try:
-                    yield self.db.query(sql3, bindings3)
+                    yield self.parent.db.query(sql3, bindings3)
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -237,7 +237,7 @@ class rpc(_Methods_Base):
             sql += ' join dataset on search.dataset_id = dataset.dataset_id '
             sql += ' where task_id = ?'
             bindings = (task,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             dataset_id = None
             job_id = None
             total_jobs = None
@@ -253,7 +253,7 @@ class rpc(_Methods_Base):
             tasks_per_job = int(total_tasks/total_jobs)
             sql = 'select task_id,task_status from search where job_id = ?'
             bindings = (job_id,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             task_statuses = set()
             if ret and len(ret) == tasks_per_job:
                 logger.debug('tasks_per_job = %d, len(ret) = %d',tasks_per_job,len(ret))
@@ -275,12 +275,12 @@ class rpc(_Methods_Base):
                 sql = 'update job set status = ?, status_changed = ? '
                 sql += ' where job_id = ?'
                 bindings = (job_status,now,job_id)
-                yield self.db.query(sql, bindings)
+                yield self.parent.db.query(sql, bindings)
                 if self._is_master():
                     sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('job',job_id,now)
                     try:
-                        self.db._db_write(conn,sql3,bindings3,None,None,None)
+                        yield self.parent.db.query(sql3, bindings3)
                     except Exception as e:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
@@ -291,13 +291,13 @@ class rpc(_Methods_Base):
                     # TODO: collate task stats
 
                     # clean dagtemp
-                    if 'site_temp' in self.cfg['queue']:
-                        temp_dir = self.cfg['queue']['site_temp']
+                    if 'site_temp' in self.parent.cfg['queue']:
+                        temp_dir = self.parent.cfg['queue']['site_temp']
                         dataset = GlobalID.localID_ret(dataset_id, type='int')
                         sql = 'select job_index from job where job_id = ?'
                         bindings = (job_id,)
                         try:
-                            ret = yield self.db.query(sql, bindings)
+                            ret = yield self.parent.db.query(sql, bindings)
                             job = ret[0][0]
                             dagtemp = os.path.join(temp_dir, dataset, job)
                             functions.delete(dagtemp)
@@ -305,20 +305,20 @@ class rpc(_Methods_Base):
                             logger.warn('failed to clean site_temp', exc_info=True)
 
     @tornado.gen.coroutine
-    def rpc_task_error(self, task, error_info=None):
+    def rpc_task_error(self, task_id, error_info=None):
         """
         Mark task as ERROR and possibly adjust resources.
 
         Args:
-            task (str): task_id
+            task_id (str): task id
             error_info (dict): error information
         """
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select failures, requirements, task_rel_id from task '
                 sql += 'where task_id = ?'
                 bindings = (task_id,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     raise Exception('did not get failures')
                 failures = 0
@@ -333,32 +333,35 @@ class rpc(_Methods_Base):
                         pass
                 sql = 'select requirements from task_rel where task_rel_id = ?'
                 bindings = (task_rel_id,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     raise Exception('did not get task_rel requirements')
                 for row in ret:
                     try:
+                        if not row[0]:
+                            continue
                         reqs = json_decode(row[0])
                         for r in reqs:
                             if r not in task_reqs:
                                 task_reqs[r] = r
                     except Exception:
-                        pass
+                        logger.warn('could not decode task_rel requirements: %r',
+                                    row, exc_info=True)
                 sql = 'select dataset_id from search where task_id = ?'
                 bindings = (task_id,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     raise Exception('did not get dataset_id')
                 dataset_id = ret[0][0]
                 sql = 'select debug from dataset where dataset_id = ?'
                 bindings = (dataset_id,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     raise Exception('did not get debug')
                 debug = ret[0][0] in (True, 1, 'true', 'T')
                 if debug:
                     status = 'suspended'
-                elif failures >= self.db.cfg['queue']['max_resets']:
+                elif failures >= self.parent.db.cfg['queue']['max_resets']:
                     status = 'failed'
                 else:
                     status = 'reset'
@@ -395,17 +398,17 @@ class rpc(_Methods_Base):
                 bindings2 = tuple(bindings2+[task_id])
                 sql3 = 'replace into task_stat (task_stat_id, task_id, stat) '
                 sql3 += 'values (?,?,?)'
-                task_stat_id = self.db._increment_id_helper('task_stat',conn)
+                task_stat_id = yield self.parent.db.increment_id('task_stat')
                 stat = {'error_'+now: error_info}
                 bindings3 = (task_stat_id, task_id, json_encode(stat))
-                yield self.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
+                yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
                 if self._is_master():
                     msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     mbindings1 = ('search',task_id,now)
                     mbindings2 = ('task',task_id,now)
                     mbindings3 = ('task_stat',task_stat_id,now)
                     try:
-                        yield self.db.query([msql,msql,msql], [mbindings1,mbindings2,mbindings3])
+                        yield self.parent.db.query([msql,msql,msql], [mbindings1,mbindings2,mbindings3])
                     except:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
@@ -420,11 +423,11 @@ class rpc(_Methods_Base):
     @tornado.gen.coroutine
     def rpc_upload_logfile(self,task,name,data,callback=None):
         """Uploading of a logfile from a task"""
-        with (yield self.db.acquire_lock('logfile')):
+        with (yield self.parent.db.acquire_lock('logfile')):
             sql = 'select task_log_id,task_id from task_log where '
             sql += ' task_id = ? and name = ?'
             bindings = (task,name)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             task_log_id = None
             for ts,t in ret:
                 task_log_id = ts
@@ -434,16 +437,16 @@ class rpc(_Methods_Base):
                 bindings = (data,task_log_id)
             else:
                 logger.debug('insert new task_log')
-                task_log_id = self.db._increment_id_helper('task_log',conn)
+                task_log_id = yield self.parent.db.increment_id('task_log')
                 sql = 'insert into task_log (task_log_id,task_id,name,data) '
                 sql += ' values (?,?,?,?)'
                 bindings = (task_log_id,task,name,data)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('task_log',task_log_id,nowstr())
                 try:
-                    yield self.db.query(sql3, bindings3)
+                    yield self.parent.db.query(sql3, bindings3)
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -451,15 +454,24 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('task_log',task_log_id,nowstr(),sql,bindings))
 
     @tornado.gen.coroutine
-    def rpc_stillrunning(self,task):
-        """Check that the task is still in a running state"""
+    def rpc_stillrunning(self, task):
+        """
+        Check that the task is still in a running state.
+
+        Running states are "queued" or "processing". Queued is allowed because
+        of possible race conditions around changing status to processing.
+
+        Args:
+            task: task id
+
+        Returns:
+            bool: True or False
+        """
         sql = 'select task_id,status from task where task_id = ?'
         bindings = (task,)
-        ret = yield self.db.query(sql, bindings)
-        if (not ret) or not ret[0]:
-            raise Exception('sql error in stillrunning')
-        else:
-            if ret[0][1] in ('queued','processing'):
+        ret = yield self.parent.db.query(sql, bindings)
+        for task_id, status in ret:
+            if status in ('queued','processing'):
                 raise tornado.gen.Return(True)
             else:
                 raise tornado.gen.Return(False)
@@ -478,13 +490,13 @@ class rpc(_Methods_Base):
             raise Exception('no update given')
         sql = 'update pilot set '
         bindings = []
-        for name in self.db.tables['pilot']:
+        for name in self.parent.db.tables['pilot']:
             if name in kwargs:
                 sql += name+'=? '
                 bindings.append(kwargs[name])
         sql += ' where pilot_id = ?'
         bindings.append(pilot_id)
-        yield self.db.query(sql, tuple(bindings))
+        yield self.parent.db.query(sql, tuple(bindings))
 
     @tornado.gen.coroutine
     def rpc_submit_dataset(self, config, difplus='', description='', gridspec='',
@@ -536,7 +548,7 @@ class rpc(_Methods_Base):
         except:
             pass
 
-        with (yield self.db.acquire_lock('dataset')):
+        with (yield self.parent.db.acquire_lock('dataset')):
             # look up dependencies
             task_rels = []
             depends = []
@@ -551,14 +563,14 @@ class rpc(_Methods_Base):
                     sql += 'where dataset_id in ('
                     sql += ','.join('?' for _ in dataset_depends)+')'
                     bindings = tuple(dataset_depends)
-                    ret = yield self.db.query(sql, bindings)
+                    ret = yield self.parent.db.query(sql, bindings)
                     for tid,did,task_index,name in ret:
                         dataset_depends[did].append({'task_rel_id':tid,
                                                      'task_index':task_index,
                                                      'name':name})
                 for task in config['tasks']:
                     task_dep = []
-                    task_rel_id = self.db._increment_id_helper('task_rel',conn)
+                    task_rel_id = yield self.parent.db.increment_id('task_rel')
                     for dep in task['depends']:
                         if '.' in dep:
                             did, dep = dep.split('.')
@@ -595,7 +607,7 @@ class rpc(_Methods_Base):
                 # add dataset
                 if isinstance(gridspec,dict):
                     gridspec = json_encode(gridspec)
-                dataset_id = self.db._increment_id_helper('dataset',conn)
+                dataset_id = yield self.parent.db.increment_id('dataset')
                 config['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
                 stat_keys = json_encode(stat_keys)
                 bindings = (dataset_id,'name',description,gridspec,'processing',
@@ -642,7 +654,7 @@ class rpc(_Methods_Base):
                     db_updates_bindings.append(bindings)
 
                 # write to database
-                yield self.db.query(db_updates_sql, db_updates_bindings)
+                yield self.parent.db.query(db_updates_sql, db_updates_bindings)
                 for i in range(len(db_updates_sql)):
                     sql = db_updates_sql[i]
                     bindings = db_updates_bindings[i]
@@ -650,7 +662,7 @@ class rpc(_Methods_Base):
                         sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         bindings3 = (sql.split()[2],bindings[0],now)
                         try:
-                            yield self.db.query(sql3, bindings3)
+                            yield self.parent.db.query(sql3, bindings3)
                         except:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
@@ -671,20 +683,26 @@ class rpc(_Methods_Base):
         """
         if isinstance(data,dict):
             try:
+                data = serialization.dict_to_dataclasses(data)
+            except:
+                logger.info('error converting config: %r', data,
+                            exc_info=True)
+                raise
+            try:
                 data = serialization.serialize_json.dumps(data)
             except:
-                logger.info('error serializing config: %r', config,
+                logger.info('error serializing config: %r', data,
                             exc_info=True)
                 raise
 
         sql = 'update config set config_data = ? where dataset_id = ?'
         bindings = (data,dataset_id)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)
         if self._is_master():
             sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
             bindings3 = ('dataset',dataset_id,nowstr())
             try:
-                yield self.db.query(sql3, bindings3)
+                yield self.parent.db.query(sql3, bindings3)
             except:
                 logger.info('error updating master_update_history',
                             exc_info=True)
@@ -700,7 +718,7 @@ class rpc(_Methods_Base):
             dict: {group_id: group}
         """
         sql = 'select * from groups'
-        ret = yield self.db.query(sql, tuple())
+        ret = yield self.parent.db.query(sql, tuple())
         groups = {}
         for row in ret:
             r = self._list_to_dict('groups',row)
@@ -716,13 +734,13 @@ class rpc(_Methods_Base):
             user (str): user_id for authorization
             groups (dict): groups to update
         """
-        with (yield self.db.acquire_lock('dataset')):
+        with (yield self.parent.db.acquire_lock('dataset')):
             try:
                 # check user authorization to set groups
 
                 # get groups
                 sql = 'select * from groups'
-                ret = yield self.db.query(sql, tuple())
+                ret = yield self.parent.db.query(sql, tuple())
 
                 # set groups
                 updates_sql = []
@@ -749,9 +767,10 @@ class rpc(_Methods_Base):
                     updates_sql.append('update groups set name=?, description=?, priority=? where groups_id=?')
                     updates_bindings.append((groups[ids]['name'],groups[ids]['description'],groups[ids]['priority'],ids))
                 for ids in create_ids:
-                    updates_sql.append('insert into groups (name,description,priority) values (?,?,?)')
-                    updates_bindings.append((groups[ids]['name'],groups[ids]['description'],groups[ids]['priority']))
-                yield self.db.query(updates_sql, updates_bindings)
+                    i = yield self.parent.db.increment_id('groups')
+                    updates_sql.append('insert into groups (groups_id,name,description,priority) values (?,?,?,?)')
+                    updates_bindings.append((i,groups[ids]['name'],groups[ids]['description'],groups[ids]['priority']))
+                yield self.parent.db.query(updates_sql, updates_bindings)
             except:
                 logger.warn('failed to set groups', exc_info=True)
                 raise
@@ -771,7 +790,7 @@ class rpc(_Methods_Base):
             raise Exception('no username')
 
         sql = 'select roles from user where username=?'
-        ret = yield self.db.query(sql, (username,))
+        ret = yield self.parent.db.query(sql, (username,))
         if (not ret) or (not ret[0]):
             raise Exception('cannot find username %s'%username)
         elif not ret[0][0]:
@@ -780,7 +799,7 @@ class rpc(_Methods_Base):
             roles = ret[0][0].split(',')
             sql = 'select * from roles where roles_id in ('
             sql += ','.join('?' for _ in roles)+')'
-            ret = yield self.db.query(sql, tuple(roles))
+            ret = yield self.parent.db.query(sql, tuple(roles))
             
             roles = {}
             for row in ret:
@@ -804,7 +823,7 @@ class rpc(_Methods_Base):
             # set roles
             sql = 'update user set roles = ? where username = ?'
             bindings = (','.join(roles), username)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
         except:
             logger.warn('failed to set roles for username %s', username,
                         exc_info=True)
@@ -841,9 +860,9 @@ class rpc(_Methods_Base):
         qf_t = queueing_factor_tasks
         
         # buffer tasks before queueing
-        yield self.parent.services['queue_buffer_jobs_tasks']()
+        yield self.parent.service['queue_buffer_jobs_tasks']()
 
-        datasets = yield self.parent.services['queue_get_queueing_datasets']()
+        datasets = yield self.parent.service['queue_get_queueing_datasets']()
         if not datasets:
             raise tornado.gen.Return({})
         elif not isinstance(datasets,dict):
@@ -858,7 +877,7 @@ class rpc(_Methods_Base):
                 queueing_factor_tasks=qf_t)
         logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
 
-        tasks = yield self.parent.services['queue_get_queueing_tasks'](
+        tasks = yield self.parent.service['queue_get_queueing_tasks'](
                 dataset_prios, num=num, resources=resources,
                 global_queueing=True)
         if not isinstance(tasks,dict):
@@ -868,7 +887,7 @@ class rpc(_Methods_Base):
             raise tornado.gen.Return({})
         logger.debug('rpc_queue_master(): tasks: %r',tasks)
 
-        tables = yield self.parent.services['misc_get_tables_for_task'](tasks)
+        tables = yield self.parent.service['misc_get_tables_for_task'](tasks)
         raise tornado.gen.Return(tables)
 
     @tornado.gen.coroutine
@@ -876,7 +895,7 @@ class rpc(_Methods_Base):
         while updates:
             u = updates.pop(0)
             try:
-                yield self.parent.services['misc_update_master_db'](*u)
+                yield self.parent.service['misc_update_master_db'](*u)
             except:
                 logger.warn('failed to apply update: %r', u, exc_info=True)
                 raise
@@ -892,13 +911,13 @@ class rpc(_Methods_Base):
         self.parent.modules['daemon']['reload']()
 
     def rpc_reset_task(self, task):
-        return self.parent.services['queue_set_task_status'](task=task, status='reset')
+        return self.parent.service['queue_set_task_status'](task=task, status='reset')
 
     def rpc_resume_task(self, task):
-        return self.parent.services['queue_set_task_status'](task=task, status='resume')
+        return self.parent.service['queue_set_task_status'](task=task, status='resume')
 
     def rpc_suspend_task(self, task):
-        return self.parent.services['queue_set_task_status'](task=task, status='suspended')
+        return self.parent.service['queue_set_task_status'](task=task, status='suspended')
 
 
     ### Public Methods ###
@@ -917,7 +936,7 @@ class rpc(_Methods_Base):
         t = datetime2str(datetime.utcnow()-timedelta(minutes=start))
         sql = 'select * from graph where timestamp >= ?'
         bindings = (t,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         data = []
         for gid, name, value, timestamp in ret:
             value = json_decode(value)

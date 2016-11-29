@@ -4,161 +4,100 @@ Test script for the schedule module.
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, messaging_mock
+from tests.util import unittest_reporter, glob_tests, services_mock
 
 import logging
-logger = logging.getLogger('modules_proxy_test')
+logger = logging.getLogger('modules_schedule_test')
 
 import os
 import sys
-import time
-import random
-import signal
 from datetime import datetime,timedelta
-import shutil
-import tempfile
 import unittest
 
-from flexmock import flexmock
+try:
+    from unittest.mock import patch, MagicMock
+except ImportError:
+    from mock import patch, MagicMock
 
+import tornado.gen
 
 import iceprod.server
-import iceprod.core.logger
-from iceprod.server import module
-from iceprod.server import basic_config
 from iceprod.server.modules.schedule import schedule
 
-class _Schedule(object):
-    def __init__(self,*args,**kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.started = False
-        self.finished = False
-        self.scheduled = False
-        self.restarted = False
-    def start(self):
-        self.started = True
-    def finish(self):
-        self.finished = True
-    def join(self,*args,**kwargs):
-        pass
-    def is_alive(self):
-        return False
-    def schedule(self,*args,**kwargs):
-        self.scheduled = True
-        self.args = args
-        self.kwargs = kwargs
+from .module_test import module_test
 
-class modules_schedule_test(unittest.TestCase):
+class modules_schedule_test(module_test):
     def setUp(self):
         super(modules_schedule_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-
-        def sig(*args):
-            sig.args = args
-        flexmock(signal).should_receive('signal').replace_with(sig)
-        def basicConfig(*args,**kwargs):
-            pass
-        flexmock(logging).should_receive('basicConfig').replace_with(basicConfig)
-        def setLogger(*args,**kwargs):
-            pass
-        flexmock(iceprod.core.logger).should_receive('setlogger').replace_with(setLogger)
-        def removestdout(*args,**kwargs):
-            pass
-        flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(modules_schedule_test,self).tearDown()
-
-    @unittest_reporter
-    def test_01_init(self):
-        """Test init"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(schedule).should_receive('start').replace_with(start)
-        start.called = False
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        q = schedule(bcfg)
-        if not q:
-            raise Exception('did not return schedule object')
-        if start.called != True:
-            raise Exception('init did not call start')
-
-        q.messaging = messaging_mock()
-
-        new_cfg = {'new':1}
-        q.messaging.BROADCAST.reload(cfg=new_cfg)
-        if not q.messaging.called:
-            raise Exception('init did not call messaging')
-        if q.messaging.called[0] != ['BROADCAST','reload',tuple(),{'cfg':new_cfg}]:
-            raise Exception('init did not call correct message')
-
-    @unittest_reporter
-    def test_02_make_schedule(self):
-        """Test make_schedule"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(schedule).should_receive('start').replace_with(start)
-        start.called = False
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        q = schedule(bcfg)
-        q.messaging = messaging_mock()
-        q.cfg = {'site_id':'1'}
-
-        q.scheduler = _Schedule()
-        q._make_schedule()
-        if q.scheduler.scheduled is not True:
-            raise Exception('nothing scheduled')
-
-    @unittest_reporter
-    def test_03_start_stop(self):
-        """Test start_stop"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(schedule).should_receive('start').replace_with(start)
-        start.called = False
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        q = schedule(bcfg)
-        q.messaging = messaging_mock()
-        sch = _Schedule()
-        q.scheduler = sch
-
-        q.start()
-        if start.called is not True:
-            raise Exception('did not start')
-
-        q.scheduler.start()
-        if sch.started is not True:
-            raise Exeption('did not start scheduler')
-
-        q.stop()
-        if sch.finished is not True:
-            raise Exception('did not finish scheduler')
-
-        sch.finished = False
-        q.scheduler = sch
-        q.kill()
-        if sch.finished is not True:
-            raise Exception('did not finish scheduler on kill')
-
-        q.scheduler = None
         try:
-            q.stop()
-            q.kill()
-        except Exception:
-            logger.info('exception raised',exc_info=True)
-            raise Exception('scheduler = None and exception raised')
+            self.cfg = {'queue':{
+                            'init_queue_interval':0.1,
+                            'submit_dir':self.test_dir,
+                            '*':{'type':'Test1','description':'d'},
+                        },
+                        'master':{
+                            'url':False,
+                        },
+                        'site_id':'abcd',
+                       }
+            self.executor = {}
+            self.modules = services_mock()
+            
+            self.sched = schedule(self.cfg, self.io_loop, self.executor, self.modules)
+        except:
+            logger.warn('error setting up modules_schedule', exc_info=True)
+            raise
 
+    @unittest_reporter
+    def test_10_start(self):
+        self.sched.start()
+        self.sched._make_schedule = MagicMock()
+        yield tornado.gen.moment
+        self.sched._make_schedule.assert_called_once_with()
+        self.sched.stop()
+
+        self.sched.start()
+        self.sched._make_schedule = MagicMock(side_effect=Exception())
+        yield tornado.gen.moment
+        self.sched._make_schedule.assert_called_once_with()
+
+    @patch('iceprod.server.modules.schedule.Scheduler')
+    @unittest_reporter(name='start/stop/kill')
+    def test_11_start_stop_kill(self, s):
+        self.sched.start()
+        self.assertIsNotNone(self.sched.scheduler)
+        s.assert_called_once_with(self.io_loop)
+        self.sched.stop()
+        self.assertIsNone(self.sched.scheduler)
+        self.sched.stop()
+
+        s.reset_mock()
+        self.sched.start()
+        self.assertIsNotNone(self.sched.scheduler)
+        self.sched.start()
+        self.assertIsNotNone(self.sched.scheduler)
+        s.assert_called_once_with(self.io_loop)
+        self.sched.kill()
+        self.assertIsNone(self.sched.scheduler)
+        self.sched.kill()
+
+    @unittest_reporter
+    def test_20_make_schedule(self):
+        self.sched.start()
+
+        self.sched._master_schedule = MagicMock()
+        self.sched._make_schedule()
+        self.sched._master_schedule.assert_not_called()
+
+        self.cfg['master']['status'] = True
+        self.sched._make_schedule()
+        self.sched._master_schedule.assert_called_once_with()
+
+    @unittest_reporter
+    def test_30_master_schedule(self):
+        self.sched.start()
+        self.cfg['master']['status'] = True
+        self.sched._master_schedule()
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

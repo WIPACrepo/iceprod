@@ -45,11 +45,11 @@ def authorization(auth_role=None, match_user=False, site_valid=False):
                     # authorize site
                     site_id = kwargs.pop('site_id')
                     if site_valid:
-                        site_auth = self.db('auth_authorize_site',
+                        site_auth = self.parent.db('auth_authorize_site',
                                                        site=site_id, key=passkey)
                 else:
                     # authorize task
-                    user_auth = yield self.db_call('auth_authorize_task', key=passkey)
+                    user_auth = yield self.parent.db_call('auth_authorize_task', key=passkey)
                     
             elif 'cookie_id' in kwargs:
                 user_id = kwargs.pop('cookie_id')
@@ -91,21 +91,21 @@ class _Methods_Base():
     """Base class for DB methods classes."""
     def __init__(self,parent):
         self.parent = parent
-        self.db = parent.db
         self.io_loop = parent.io_loop
         self.executor = parent.executor
 
     def _list_to_dict(self,table,input_row):
         """Convert an input that is a list of values from a table
            into a dict of values from that table."""
+        tables = self.parent.db.tables
         if isinstance(table,basestring):
-            if table not in self.db.tables:
+            if table not in tables:
                 raise Exception('bad table')
-            keys = self.db.tables[table]
+            keys = tables[table]
         elif isinstance(table,Iterable):
-            if not set(table) <= set(self.db.tables):
+            if not set(table) <= set(tables):
                 raise Exception('bad table')
-            keys = reduce(lambda a,b:a+self.db.tables[b].keys(), table, [])
+            keys = reduce(lambda a,b: a+tables[b].keys(), table, [])
         else:
             raise Exception('bad table type')
 
@@ -140,7 +140,7 @@ class _Methods_Base():
             logger.info('bulk select %s %d',sql,len(bindings2))
             bindings = bindings[900:]
             sql2 = sql%(','.join('?' for _ in bindings2))
-            ret.extend(self.db.query(sql2, bindings2))
+            ret.append(self.parent.db.query(sql2, bindings2))
         return ret
 
     @tornado.gen.coroutine
@@ -153,9 +153,9 @@ class _Methods_Base():
 
     def _is_master(self):
         """Test if this is the master"""
-        return ('master' in self.db.cfg and
-                'status' in self.db.cfg['master'] and
-                self.db.cfg['master']['status'])
+        return ('master' in self.parent.db.cfg and
+                'status' in self.parent.db.cfg['master'] and
+                self.parent.db.cfg['master']['status'])
 
 
 def filtered_input(input_data):

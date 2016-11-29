@@ -20,10 +20,13 @@ def send_master(cfg,method,**kwargs):
 
     This assumes an :ref:`tornado.ioloop.IOLoop` is already running.
 
-    :param cfg: the main configuration dictionary
-    :param method: Which method to call on the server
-    :param **kwargs: Keyword arguments to pass to the master method
-    :returns: Response from master
+    Args:
+        cfg (dict): the main configuration dictionary
+        method (str): Which method to call on the server
+        **kwargs: Keyword arguments to pass to the master method
+
+    Returns:
+        str: Response from master
     """
     if ('master' not in cfg or 'url' not in cfg['master'] or
         not cfg['master']['url']):

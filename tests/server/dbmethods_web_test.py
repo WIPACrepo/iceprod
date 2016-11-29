@@ -25,109 +25,100 @@ from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 
-from .dbmethods_test import dbmethods_base,DB
-
-def get_tables():
-    tables = {
-        'dataset': [
-                    {'dataset_id': 'd1', 'jobs_submitted': 1, 'tasks_submitted':1, 'status': 'processing'},
-                    {'dataset_id': 'd2', 'jobs_submitted': 2, 'tasks_submitted':4},
-                    {'dataset_id': 'd3', 'jobs_submitted': 3, 'tasks_submitted':9},
-                    {'dataset_id': 'd4', 'jobs_submitted': 1, 'tasks_submitted':1},
-                    ],
-            'search': [
-                       {'dataset_id': 'd1', 'task_status': 'complete'},
-                       ],
-    }
-    return tables
-
-
+from .dbmethods_test import dbmethods_base
 
 class dbmethods_web_test(dbmethods_base):
     @unittest_reporter
-    def test_600_cron_dataset_completion(self):
-        """Test cron_dataset_completion"""
+    def test_000_web_get_tasks_by_status(self):
+        tables = {
+            'search':[
+                {'task_id':'t1', 'job_id':'j1', 'dataset_id':'d1',
+                 'gridspec':'g1', 'name':'0', 'task_status':'waiting'},
+                {'task_id':'t2', 'job_id':'j1', 'dataset_id':'d1',
+                 'gridspec':'g1', 'name':'0', 'task_status':'waiting'},
+                {'task_id':'t3', 'job_id':'j1', 'dataset_id':'d2',
+                 'gridspec':'g1', 'name':'0', 'task_status':'queued'},
+                {'task_id':'t4', 'job_id':'j1', 'dataset_id':'d2',
+                 'gridspec':'g1', 'name':'0', 'task_status':'processing'},
+                {'task_id':'t5', 'job_id':'j1', 'dataset_id':'d2',
+                 'gridspec':'g2', 'name':'0', 'task_status':'processing'},
+            ],
+        }        
+        yield self.set_tables(tables)
         
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
+        ret = yield self.db['web_get_tasks_by_status']()
+        ret_should_be = {'waiting':2, 'queued':1, 'processing':2}
+        self.assertEqual(ret, ret_should_be)
         
+        ret = yield self.db['web_get_tasks_by_status'](dataset_id='d1')
+        ret_should_be = {'waiting':2}
+        self.assertEqual(ret, ret_should_be)
         
-        tables = get_tables()
-        self.mock.setup(tables)
+        ret = yield self.db['web_get_tasks_by_status'](gridspec='g2')
+        ret_should_be = {'processing':1}
+        self.assertEqual(ret, ret_should_be)
+        
+        ret = yield self.db['web_get_tasks_by_status'](dataset_id='d2', gridspec='g1')
+        ret_should_be = {'queued':1, 'processing':1}
+        self.assertEqual(ret, ret_should_be)
 
-        # everything working
-        cb.called = False
-        '''
-        sql_read_task.task_ret = {'processing':datasets[0:1],
-                                  datasets[0][0]:status[0:1]}
-        sql_write_task.task_ret = {'complete':{}}
-        '''
+        # queue error
+        self.set_failures([True])
+        try:
+            yield self.db['web_get_tasks_by_status']()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
-        self._db.cron_dataset_completion(callback=cb)
+    @unittest_reporter
+    def test_010_web_get_datasets(self):
+        tables = {
+            'dataset':[
+                {'dataset_id':'d1','status':'processing','gridspec':'g1'},
+                {'dataset_id':'d2','status':'errors','gridspec':'g1'},
+                {'dataset_id':'d3','status':'processing','gridspec':'g1'},
+                {'dataset_id':'d4','status':'processing','gridspec':'g2'},
+            ],
+        }
+        yield self.set_tables(tables)
+        starttables = yield self.get_tables(tables)
+        
+        ret = yield self.db['web_get_datasets']()
+        self.assertEqual(ret, starttables['dataset'])
 
-        if cb.called is False:
-            raise Exception('everything working: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('everything working: callback ret is Exception')
+        # gridspec
+        ret = yield self.db['web_get_datasets'](gridspec='2')
+        self.assertEqual(ret, [starttables['dataset'][-1]])
 
-        # no processing datasets
-        cb.called = False
-        tables = get_tables()
-        tables['dataset'][0]['status'] = 'complete'
-        self.mock.setup(tables)
+        # group by status
+        ret = yield self.db['web_get_datasets'](groups=['status'])
+        self.assertEqual(ret, {'processing':3, 'errors':1})
 
-        self._db.cron_dataset_completion(callback=cb)
+        # group by status,gridspec
+        ret = yield self.db['web_get_datasets'](groups=['status','gridspec'])
+        self.assertEqual(ret, {'processing':{'g1':2,'g2':1}, 'errors':{'g1':1}})
 
-        if cb.called is False:
-            raise Exception('no processing datasets: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no processing datasets: callback ret is Exception')
+        # filter by status
+        ret = yield self.db['web_get_datasets'](status=['errors'])
+        self.assertEqual(ret, [starttables['dataset'][1]])
 
-        # tasks not completed
-        cb.called = False
-        tables = get_tables()
-        tables['search'][0]['task_status'] = 'processing'
-        self.mock.setup(tables)
+        # filter by dataset_id
+        ret = yield self.db['web_get_datasets'](dataset_id=['d1'])
+        self.assertEqual(ret, [starttables['dataset'][0]])
 
-        self._db.cron_dataset_completion(callback=cb)
+        # non-selected filter
+        ret = yield self.db['web_get_datasets'](dataset_id=None)
+        self.assertEqual(ret, starttables['dataset'])
 
-        if cb.called is False:
-            raise Exception('tasks not completed: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('tasks not completed: callback ret is Exception')
-
-
-        #sql error
-        for i in range(3):
-            cb.called = False
-            tables = get_tables()
-            self.mock.setup(tables)
-            self.mock.failures = i + 1
-            self._db.cron_dataset_completion(callback=cb)
-            if cb.called is False:
-                raise Exception('sql error: callback not called')
-            if not isinstance(cb.ret,Exception):
-                raise Exception('sql error: callback ret != Exception')
-
-        # multiple datasets of same status
-        cb.called = False
-        tables = get_tables()
-        tables['dataset'][1]['status'] = 'processing'
-        self.mock.setup(tables)
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('multiple datasets of same status: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('read_sql %r %r',sql_read_task.sql,sql_read_task.bindings)
-            logger.info('write_sql %r %r',sql_write_task.sql,sql_write_task.bindings)
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('multiple datasets of same status: callback ret is Exception')
-
+        # queue error
+        self.set_failures([True])
+        try:
+            yield self.db['web_get_datasets']()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
 
 def load_tests(loader, tests, pattern):

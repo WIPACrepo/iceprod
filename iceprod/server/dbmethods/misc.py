@@ -73,7 +73,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if not ret:
             raise tornado.gen.Return({})
         for row in ret:
@@ -86,7 +86,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if not ret:
             raise tornado.gen.Return({})
 
@@ -102,7 +102,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in task_ids)
         sql += ')'
         bindings = tuple(task_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         task_rel_ids = set()
         if ret:
             keys = []
@@ -118,7 +118,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in job_ids)
         sql += ')'
         bindings = tuple(job_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -132,7 +132,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         categoryvalue_ids = set()
         group_ids = set()
         if ret:
@@ -151,7 +151,7 @@ class misc(_Methods_Base):
         sql = 'select * from groups where group_ids in ('
         sql += ','.join('?' for _ in group_ids) + ')'
         bindings = tuple(group_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -164,7 +164,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -177,7 +177,7 @@ class misc(_Methods_Base):
         sql += ','.join('?' for _ in dataset_ids)
         sql += ')'
         bindings = tuple(dataset_ids)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if ret:
             keys = []
             for row in ret:
@@ -192,7 +192,7 @@ class misc(_Methods_Base):
             sql += ','.join('?' for _ in categoryvalue_ids)
             sql += ')'
             bindings = tuple(categoryvalue_ids)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if ret:
                 keys = []
                 for row in ret:
@@ -207,7 +207,7 @@ class misc(_Methods_Base):
             sql += ','.join('?' for _ in categorydef_ids)
             sql += ')'
             bindings = tuple(categorydef_ids)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if ret:
                 keys = []
                 for row in ret:
@@ -242,7 +242,7 @@ class misc(_Methods_Base):
                 sql += ')'
                 for values in tables[name]['values']:
                     bindings = tuple(values)
-                    yield self.db.query(sql, bindings)
+                    yield self.parent.db.query(sql, bindings)
         except:
             logger.warn('error updating tables', exc_info=True)
             raise
@@ -259,12 +259,12 @@ class misc(_Methods_Base):
             sql (str): An sql statement
             bindings (tuple): Bindings for the sql statement
         """
-        with (yield self.db.acquire_lock('update_master')):
+        with (yield self.parent.db.acquire_lock('update_master')):
             try:
                 sql2 = 'select timestamp from master_update_history '
                 sql2 += 'where table_name = ? and update_index = ?'
                 bindings2 = (table,index)
-                ret = yield self.db.query(sql2, bindings2)
+                ret = yield self.parent.db.query(sql2, bindings2)
                 prev_timestamp = None
                 for row in ret:
                     prev_timestamp = row[0]
@@ -272,7 +272,7 @@ class misc(_Methods_Base):
                     logger.info('newer data already present for %s %s %s',
                                 table, index, timestamp)
                     return
-                yield self.db.query(sql, bindings)
+                yield self.parent.db.query(sql, bindings)
             except MySQLdb.Error:
                 logger.warn('dropping history for %r', sql, exc_info=True)
             except:
@@ -282,7 +282,7 @@ class misc(_Methods_Base):
                 sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings2 = (table,index,timestamp)
                 try:
-                    yield self.db.query(sql2, bindings2)
+                    yield self.parent.db.query(sql2, bindings2)
                 except MySQLdb.Error:
                     logger.warn('mysql error updating update_history',
                                 exc_info=True)

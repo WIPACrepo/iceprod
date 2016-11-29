@@ -26,19 +26,13 @@ from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 
-from .dbmethods_test import dbmethods_base,DB
+from .dbmethods_test import dbmethods_base
 
 
 class dbmethods_cron_test(dbmethods_base):
     @unittest_reporter
     def test_001_cron_dataset_completion(self):
         """Test cron_dataset_completion"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
-        # everything working
         tables = {
             'dataset':[
                 {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':1,'status':'processing'},
@@ -53,16 +47,13 @@ class dbmethods_cron_test(dbmethods_base):
             ],
         }
 
-        cb.called = False
-        self.mock.setup(tables)
-        self._db.cron_dataset_completion(callback=cb)
+        self.services.ret['master_updater']['add'] = None
 
-        if cb.called is False:
-            raise Exception('everything working: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('everything working: callback ret is Exception')
-        end_tables = self.mock.get(tables.keys())
+        # everything working
+        yield self.set_tables(tables)
+        yield self.db['cron_dataset_completion']()
+
+        end_tables = yield self.get_tables(tables.keys())
         if 'dataset' not in end_tables:
             logger.info('tables: %r',end_tables)
             raise Exception('bad end tables')
@@ -71,17 +62,11 @@ class dbmethods_cron_test(dbmethods_base):
             raise Exception('datasets not marked complete')
 
         # no processing datasets
-        cb.called = False
-        # use previous output's mock
-        self._db.cron_dataset_completion(callback=cb)
+        yield self.db['cron_dataset_completion']()
 
-        if cb.called is False:
-            raise Exception('no processing datasets: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no processing datasets: callback ret is Exception')
-        if end_tables != self.mock.get(tables.keys()):
-            logger.info('%r\n%r',end_tables,self.mock.get(tables.keys()))
+        end_tables2 = yield self.get_tables(tables.keys())
+        if end_tables != end_tables2:
+            logger.info('%r\n%r',end_tables,end_tables2)
             raise Exception('no processing datasets: tables changed')
 
         # tasks not completed
@@ -98,56 +83,77 @@ class dbmethods_cron_test(dbmethods_base):
                 {'task_id':'t5','dataset_id':'d2','task_status':'complete'},
             ],
         }
-        cb.called = False
-        self.mock.setup(tables2)
-        self._db.cron_dataset_completion(callback=cb)
+        yield self.set_tables(tables2)
+        yield self.db['cron_dataset_completion']()
 
-        if cb.called is False:
-            raise Exception('tasks not completed: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('tasks not completed: callback ret is Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables2.keys())
         if not cmp_dict(tables2,end_tables):
             logger.info('%r\n%r',tables2,end_tables)
             raise Exception('tasks not completed: bad end_tables')
 
-        # sql_read_task error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        # tasks remaining
+        tables2 = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':4,'status':'processing'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'complete'},
+            ],
+        }
+        yield self.set_tables(tables2)
+        yield self.db['cron_dataset_completion']()
 
-        self._db.cron_dataset_completion(callback=cb)
+        end_tables = yield self.get_tables(tables2.keys())
+        if not cmp_dict(tables2,end_tables):
+            logger.info('%r\n%r',tables2,end_tables)
+            raise Exception('tasks not completed: bad end_tables')
 
-        if cb.called is False:
-            raise Exception('sql_read_task error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql_read_task error: callback ret != Exception')
+        # errors
+        tables2 = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':1,'status':'processing'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'failed'},
+            ],
+        }
+        yield self.set_tables(tables2)
+        yield self.db['cron_dataset_completion']()
 
-        # sql_read_task error2
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 2
+        end_tables = yield self.get_tables(tables2.keys())
+        if any(row['status'] != 'errors' for row in end_tables['dataset']):
+            logger.info('tables: %r',end_tables)
+            raise Exception('datasets not marked errors')
 
-        self._db.cron_dataset_completion(callback=cb)
+        # suspended
+        tables2 = {
+            'dataset':[
+                {'dataset_id':'d1','jobs_submitted':1,'tasks_submitted':2,'status':'processing'},
+            ],
+            'search':[
+                {'task_id':'t1','dataset_id':'d1','task_status':'suspended'},
+                {'task_id':'t2','dataset_id':'d1','task_status':'failed'},
+            ],
+        }
+        yield self.set_tables(tables2)
+        yield self.db['cron_dataset_completion']()
 
-        if cb.called is False:
-            raise Exception('sql_read_task error2: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql_read_task error2: callback ret != Exception')
+        end_tables = yield self.get_tables(tables2.keys())
+        if any(row['status'] != 'suspended' for row in end_tables['dataset']):
+            logger.info('tables: %r',end_tables)
+            raise Exception('datasets not marked suspended')
 
-        # sql_write_task error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 3
+        # sql error
+        for i in range(3):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
 
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql_write_task error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('sql_write_task error: callback ret != Exception')
+            try:
+                yield self.db['cron_dataset_completion']()
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
 
         # multiple datasets of different status
         tables3 = {
@@ -163,17 +169,10 @@ class dbmethods_cron_test(dbmethods_base):
                 {'task_id':'t5','dataset_id':'d2','task_status':'suspended'},
             ],
         }
-        cb.called = False
-        self.mock.setup(tables3)
+        yield self.set_tables(tables3)
+        yield self.db['cron_dataset_completion']()
 
-        self._db.cron_dataset_completion(callback=cb)
-
-        if cb.called is False:
-            raise Exception('multiple datasets of different status: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('multiple datasets of different status: callback ret is Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables3.keys())
         if not cmp_dict(tables3,end_tables):
             logger.info('%r\n%r',tables2,end_tables)
             raise Exception('multiple datasets of different status: bad end_tables')
@@ -181,10 +180,6 @@ class dbmethods_cron_test(dbmethods_base):
     @unittest_reporter
     def test_002_cron_remove_old_passkeys(self):
         now = datetime.utcnow()
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-
         tables = {
             'passkey':[
                 {'passkey_id': 'p0', 'auth_key': 'k0', 'expire': (now + timedelta(1)).isoformat()},
@@ -193,35 +188,28 @@ class dbmethods_cron_test(dbmethods_base):
                 {'passkey_id': 'p3', 'auth_key': 'k3', 'expire': (now + timedelta(-1)).isoformat()},
             ]
         }
-        self.mock.setup(tables)
-        cb.called = False
-        self._db.cron_remove_old_passkeys(callback = cb)
-        if not cb.called: raise Exception('Callback not called')
-        if isinstance(cb.ret, Exception): raise Exception('Callback ret is Exception: "%r"' % cb.ret)
+        yield self.set_tables(tables)
+        yield self.db['cron_remove_old_passkeys']()
 
-        passkeys = self.mock.get(['passkey'])['passkey']
+        passkeys = (yield self.get_tables(['passkey']))['passkey']
         keys = [k['auth_key'] for k in passkeys]
         correct = ('k0' in keys) and ('k1' in keys) and ('k2' not in keys) and ('k3' not in keys)
         if not correct:
             raise Exception('Function result not correct')
 
 
-        self.mock.setup()
-        self.mock.failures = 1
-        cb.called = False
-        self._db.cron_remove_old_passkeys(callback = cb)
-        if not cb.called:
-            raise Exception('Callback not called')
-        if not isinstance(cb.ret, Exception):
-            raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
+        yield self.set_tables(tables)
+        self.set_failures(True)
+        try:
+            yield self.db['cron_remove_old_passkeys']()
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
     @unittest_reporter
     def test_003_cron_generate_web_graphs(self):
         now = datetime.utcnow()
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-
         tables = {
             'search':[
                 {'task_id': 't0', 'job_id': 'j0', 'dataset_id': 'd0',
@@ -272,15 +260,11 @@ class dbmethods_cron_test(dbmethods_base):
                  'task_rel_id': 'tr0'},
             ],
         }
-        self.mock.setup(tables)
-        cb.called = False
-        self._db.cron_generate_web_graphs(callback = cb)
-        if not cb.called:
-            raise Exception('Callback not called')
-        if isinstance(cb.ret, Exception):
-            raise Exception('Callback ret is Exception: "%r"' % cb.ret)
+        yield self.set_tables(tables)
+        
+        yield self.db['cron_generate_web_graphs']()
 
-        graphs = self.mock.get(['graph'])['graph']
+        graphs = (yield self.get_tables(['graph']))['graph']
         answer = {"queued":1, "processing":3, "suspended":1, "failed":1,
                   "resume":1, "reset":2}
         if (not graphs or graphs[0]['name'] != 'active_tasks' or
@@ -292,15 +276,17 @@ class dbmethods_cron_test(dbmethods_base):
             logger.info('bad result: %s', graphs[1]['value'])
             raise Exception('Bad completed tasks')
 
-        for i in range(1,5):
-            self.mock.setup(tables)
-            self.mock.failures = i
-            cb.called = False
-            self._db.cron_generate_web_graphs(callback = cb)
-            if not cb.called:
-                raise Exception('Callback not called')
-            if not isinstance(cb.ret, Exception):
-                raise Exception('Callback ret is not Exception: "%r"' % cb.ret)
+        # sql error
+        for i in range(4):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
+
+            try:
+                yield self.db['cron_generate_web_graphs']()
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

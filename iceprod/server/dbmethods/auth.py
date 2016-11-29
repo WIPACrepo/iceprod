@@ -30,12 +30,21 @@ class auth(_Methods_Base):
     """
     @tornado.gen.coroutine
     def auth_get_site_auth(self, site_id):
-        """Get the auth_key for the selected site (usually the current site).
-        Returns the auth_key"""
+        """
+        Get the auth_key for the selected site.
+
+        The selected site is usually the current site.
+
+        Args:
+            site_id (str): site id
+
+        Returns:
+            str: the auth_key
+        """
         sql = 'select auth_key from site where site_id = ?'
         bindings = (site_id,)
-        ret = yield self.db.query(sql, bindings)
-        if len(ret) < 1:
+        ret = yield self.parent.db.query(sql, bindings)
+        if not ret:
             raise Exception('No site match for current site name')
         elif len(ret) > 1:
             raise Exception('More than one site match for current site name')
@@ -50,7 +59,8 @@ class auth(_Methods_Base):
         """Validate site and key for authorization.
         Returns True/Exception"""
         ret = yield self.auth_get_site_auth(site_id)
-        raise tornado.gen.Return(key == ret)
+        if key != ret:
+            raise Exception("key does not match")
 
     @tornado.gen.coroutine
     def auth_authorize_task(self, key):
@@ -58,7 +68,7 @@ class auth(_Methods_Base):
         Returns True/Exception"""
         sql = 'select auth_key,expire from passkey where auth_key = ?'
         bindings = (key,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if len(ret) < 1:
             raise Exception('No match for passkey')
         elif len(ret) > 1:
@@ -86,23 +96,23 @@ class auth(_Methods_Base):
         if not user_id:
             user_id = ''
 
-        passkey_id = yield self.db.increment_id('passkey')
+        passkey_id = yield self.parent.db.increment_id('passkey')
         passkey = uuid.uuid4().hex
         sql = 'insert into passkey (passkey_id, auth_key, expire, user_id) '
         sql += 'values (?,?,?,?)'
         bindings = (passkey_id, passkey, datetime2str(expiration), user_id)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(passkey)
 
     @tornado.gen.coroutine
     def auth_get_passkey(self, passkey):
         """Get the expiration datetime of a passkey"""
         if not passkey:
-            raise Exception('bad expiration')
+            raise Exception('missing key')
 
         sql = 'select expire from passkey where auth_key = ?'
         bindings = (passkey,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if (not ret) or (not ret[0]) or not ret[0][0]:
             raise Exception('get_passkey did not return a passkey')
         raise tornado.gen.Return(str2datetime(ret[0][0]))
@@ -113,15 +123,15 @@ class auth(_Methods_Base):
         passkey = uuid.uuid4().hex
         sql = 'insert into site (site_id,auth_key) values (?,?)'
         bindings = (site_id,passkey)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(passkey)
 
     @tornado.gen.coroutine
     def auth_user_create(self, username, passwd, name=None, email=None):
-        if 'ldap' in self.db.cfg['system'] and self.db.cfg['system']['ldap']:
+        if 'ldap' in self.parent.db.cfg['system'] and self.parent.db.cfg['system']['ldap']:
             raise Exception('cannot create a user with ldap')
         else:
-            with (yield self.db.acquire_lock('user')):
+            with (yield self.parent.db.acquire_lock('user')):
                 yield self._auth_user_create_internal(username, passwd, name, email)
 
     @tornado.gen.coroutine
@@ -146,11 +156,11 @@ class auth(_Methods_Base):
             )
             db_hash = kdf.derive(passwd)
 
-            user_id = yield self.db.increment_id('user')
+            user_id = yield self.parent.db.increment_id('user')
             sql = 'insert into user (user_id, username, salt, hash, name, email) '
             sql += 'values (?,?,?,?,?,?)'
             bindings = (user_id, username, salt, db_hash, name, email)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
         except:
             logger.info('internal auth failure', exc_info=True)
             raise Exception('authentication failure')
@@ -160,8 +170,8 @@ class auth(_Methods_Base):
     @tornado.gen.coroutine
     def auth_user(self, username, passwd):
         """Authenticate a username and password"""
-        with (yield self.db.acquire_lock('user')):
-            if 'ldap' in self.db.cfg['system'] and self.db.cfg['system']['ldap']:
+        with (yield self.parent.db.acquire_lock('user')):
+            if 'ldap' in self.parent.db.cfg['system'] and self.parent.db.cfg['system']['ldap']:
                 yield self._auth_user_ldap(username, passwd)
             else:
                 yield self._auth_user_internal(username, passwd)
@@ -169,8 +179,8 @@ class auth(_Methods_Base):
     @tornado.gen.coroutine
     def _auth_user_ldap(self, username, passwd):
         try:
-            server = ldap3.Server(self.db.cfg['system']['ldap']['uri'])
-            base = self.db.cfg['system']['ldap']['base']
+            server = ldap3.Server(self.parent.db.cfg['system']['ldap']['uri'])
+            base = self.parent.db.cfg['system']['ldap']['base']
             ldap_conn = ldap3.Connection(server, 'uid={},{}'.format(username, base),
                                     passwd, auto_bind=True)
             ldap_conn.search(base, '(uid={})'.format(username), attributes=['cn','email'])
@@ -179,9 +189,9 @@ class auth(_Methods_Base):
 
             sql = 'select user_id from user where username=?'
             bindings = (username,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
-                user_id = yield self.db.increment_id('user')
+                user_id = yield self.parent.db.increment_id('user')
                 sql = 'insert into user (user_id,username,email,groups,last_login_time) '
                 sql += 'values (?,?,?,?,?)'
                 bindings = (user_id,username,email,'',nowstr())
@@ -189,7 +199,7 @@ class auth(_Methods_Base):
                 user_id = ret[0][0]
                 sql = 'update user set last_login_time=? where user_id=?'
                 bindings = (nowstr(),user_id)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
             ret = {'id': user_id, 'name': name, 'email': email}
         except:
             logger.info('ldap auth failure', exc_info=True)
@@ -202,7 +212,7 @@ class auth(_Methods_Base):
         try:
             sql = 'select user_id,name,salt,hash,email from user where username=?'
             bindings = (username,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 raise Exception('cannot find username')
             user_id, name, salt, db_hash, email = ret[0]
@@ -222,7 +232,7 @@ class auth(_Methods_Base):
 
             sql = 'update user set last_login_time=? where user_id=?'
             bindings = (nowstr(),user_id)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
             ret = {'id': user_id, 'name': name, 'email': email}
         except:
             logger.info('internal auth failure', exc_info=True)

@@ -44,8 +44,8 @@ class Server(object):
         set_log_level(self.cfg['logging']['level'])
 
         for mod_name in self.cfg['modules']:
-            if self.cfg['modules'][mod]:
-                m = importlib.load_module('iceprod.server.module.'+mod_name)
+            if self.cfg['modules'][mod_name]:
+                m = importlib.import_module('iceprod.server.modules.'+mod_name)
                 mod = getattr(m, mod_name)(cfg=self.cfg,
                                            io_loop=self.io_loop,
                                            executor=self.executor,

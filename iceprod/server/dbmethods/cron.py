@@ -25,11 +25,11 @@ class cron(_Methods_Base):
     @tornado.gen.coroutine
     def cron_dataset_completion(self):
         """Check for newly completed datasets and mark them as such"""
-        with (yield self.db.acquire_lock('dataset')):
+        with (yield self.parent.db.acquire_lock('dataset')):
             sql = 'select dataset_id,jobs_submitted,tasks_submitted '
             sql += ' from dataset where status = ? '
             bindings = ('processing',)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             datasets = OrderedDict()
             for dataset_id,njobs,ntasks in ret:
                 datasets[dataset_id] = {'jobs_submitted':njobs,
@@ -43,7 +43,7 @@ class cron(_Methods_Base):
             sql += ','.join(['?' for _ in datasets])
             sql += ')'
             bindings = tuple(datasets.keys())
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             for dataset_id,task_status in ret:
                 datasets[dataset_id]['ntasks'] += 1
                 datasets[dataset_id]['task_status'].add(task_status)
@@ -100,14 +100,14 @@ class cron(_Methods_Base):
                     for d in statuses[s]:
                         master_sql.append(sql)
                         master_bindings.append(bindings+(d,))
-                yield self.db.query(multi_sql, multi_bindings)
+                yield self.parent.db.query(multi_sql, multi_bindings)
 
                 if self._is_master():
                     sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     for sql,bindings in zip(master_sql,master_bindings):
                         bindings3 = ('dataset',bindings[-1],now)
                         try:
-                            yield self.db.query(sql, bindings3)
+                            yield self.parent.db.query(sql, bindings3)
                         except Exception:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
@@ -122,35 +122,35 @@ class cron(_Methods_Base):
         now = nowstr()
         sql = 'delete from passkey where expire < ?'
         bindings = (now,)
-        return self.db.query(sql, bindings)
+        return self.parent.db.query(sql, bindings)
 
     @tornado.gen.coroutine
     def cron_generate_web_graphs(self):
         sql = 'select task_status, count(*) from search '
         sql += 'where task_status not in (?,?,?) group by task_status'
         bindings = ('idle','waiting','complete')
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
 
         now = nowstr()
         results = {}
         for status, count in ret:
             results[status] = count
-        graph_id = self.db.increment_id('graph')
+        graph_id = yield self.parent.db.increment_id('graph')
         sql = 'insert into graph (graph_id, name, value, timestamp) '
         sql += 'values (?,?,?,?)'
         bindings = (graph_id, 'active_tasks', json_encode(results), now)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)
         
         time_interval = datetime2str(datetime.utcnow()-timedelta(minutes=1))
         sql = 'select count(*) from task where status = ? and '
         sql += 'status_changed > ?'
         bindings = ('complete', time_interval)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
 
         now = nowstr()
         results = {'completions':ret[0][0] if ret and ret[0] else 0}
-        graph_id = self.db.increment_id('graph')
+        graph_id = yield self.parent.db.increment_id('graph')
         sql = 'insert into graph (graph_id, name, value, timestamp) '
         sql += 'values (?,?,?,?)'
         bindings = (graph_id, 'completed_tasks', json_encode(results), now)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)

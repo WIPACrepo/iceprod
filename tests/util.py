@@ -5,8 +5,12 @@ import sys
 import logging
 import fnmatch
 import unittest
+import inspect
+from collections import defaultdict
+from functools import wraps, partial
 
-from functools import wraps
+from tornado.concurrent import Future
+from tornado.testing import gen_test
 
 def printer(input,passed=True,skipped=False):
     numcols = 60
@@ -54,14 +58,18 @@ def unittest_reporter(*args,**kwargs):
                 skip = skip()
             skip = bool(skip)
         @wraps(obj)
-        def wrapper(*args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             from iceprod.core import to_log
             if skip:
                 printer('Test '+test_name,skipped=True)
                 return
             try:
                 with to_log(sys.stdout), to_log(sys.stderr):
-                    obj(*args,**kwargs)
+                    if inspect.isgeneratorfunction(obj):
+                        logging.info('test is async')
+                        gen_test(obj)(self, *args,**kwargs)
+                    else:
+                        obj(self, *args,**kwargs)
             except Exception as e:
                 logging.error('Error running %s test',name,
                              exc_info=True)
@@ -100,56 +108,33 @@ def listmodules(package_name=''):
     return ret
 
 
-class messaging_mock(object):
+class services_mock(dict):
     """
-    A fake :class:`iceprod.server.RPCinternal.Service` object.
-    Designed to replace module.messaging.
+    A fake `iceprod.modules.module.modules` object.
+
+    It mocks a two-level dict of function objects,
+    recording all calls and allowing different return values.
     """
     def __init__(self):
         self.called = []
-        self.args = []
-        self.ret = None
-        self._local_called = []
-    def start(self):
-        self._local_called.append('start')
-    def stop(self):
-        self._local_called.append('stop')
-    def kill(self):
-        self._local_called.append('kill')
-    def __request(self, service, method, args, kwargs):
-        self.called.append([service,method,args,kwargs])
-        logging.info('__request: %r',self.called[-1])
-        if 'callback' in kwargs and kwargs['callback']:
-            if self.ret and service in self.ret and method in self.ret[service]:
-                logging.debug('returning %r',self.ret[service][method])
-                kwargs['callback'](self.ret[service][method])
-            else:
-                logging.debug('returning None. ret=%r',self.ret)
-                kwargs['callback'](None)
-        elif 'async' in kwargs and kwargs['async'] is False:
-            if self.ret and service in self.ret and method in self.ret[service]:
-                return self.ret[service][method]
-    def __getattr__(self,name):
-        class _Method:
-            def __init__(self,send,service,name):
-                self.__send = send
-                self.__service = service
-                self.__name = name
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,
-                               "%s.%s"%(self.__name,name))
-            def __call__(self,*args,**kwargs):
-                return self.__send(self.__service,self.__name,args,kwargs)
-        class _Service:
-            def __init__(self,send,service):
-                self.__send = send
-                self.__service = service
-            def __getattr__(self,name):
-                return _Method(self.__send,self.__service,name)
-            def __call__(self,**kwargs):
-                raise Exception('Service %s, method name not specified'%(
-                                self.__service))
-        return _Service(self.__request,name)
+        self.ret = defaultdict(dict)
+    def __request(self, service, method, *args, **kwargs):
+        self.called.append((service, method, args, kwargs))
+        logging.info('__request: %r', self.called[-1])
+        ret = self.ret[service][method]
+        if isinstance(ret, Exception):
+            raise ret
+        f = Future()
+        f.set_result(ret)
+        return f
+    def __missing__(self, name):
+        class Service(dict):
+            def __init__(self, name, request):
+                self.name = name
+                self.request = request
+            def __missing__(self, key):
+                return partial(self.request,name,key)
+        return Service(name,self.__request)
 
 def return_once(*args, **kwargs):
     """Return every argument once, then return end_value repeatedly"""

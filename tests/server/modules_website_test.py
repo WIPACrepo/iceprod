@@ -4,7 +4,7 @@ Test script for the website module.
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests, messaging_mock
+from tests.util import unittest_reporter, glob_tests, services_mock
 
 import logging
 logger = logging.getLogger('modules_website_test')
@@ -14,13 +14,17 @@ import shutil
 import tempfile
 import random
 import threading
-import signal
 import subprocess
 from datetime import datetime,timedelta
 from functools import partial
 import unittest
+from contextlib import contextmanager
 
-from flexmock import flexmock
+try:
+    from unittest.mock import patch, MagicMock
+except ImportError:
+    from mock import patch, MagicMock
+
 import tornado.ioloop
 import requests
 
@@ -29,12 +33,13 @@ from iceprod.core import to_log
 import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
 import iceprod.server
-from iceprod.server import basic_config
 from iceprod.server.modules.website import website
 try:
     from iceprod.server import ssl_cert
 except ImportError:
     ssl_cert = None
+
+from .module_test import module_test
 
 # check for javascript testing
 try:
@@ -48,303 +53,144 @@ except Exception:
     logger.info('skipping javascript tests', exc_info=True)
     testjs = False
 
-class _Nginx(object):
-    def __init__(self,*args,**kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.started = False
-        self.stopped = False
-        self.killed = False
-    def start(self):
-        self.started = True
-    def stop(self):
-        self.stopped = True
-    def kill(self):
-        self.killed = True
 
-class modules_website_test(unittest.TestCase):
+class modules_website_test(module_test):
     def setUp(self):
         super(modules_website_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
         os.environ['I3PROD'] = self.test_dir
-
-        self.ca_cert = os.path.join(self.test_dir,'ca.crt')
-        self.ca_key = os.path.join(self.test_dir,'ca.key')
-        self.ssl_key = os.path.join(self.test_dir,'test.key')
-        self.ssl_cert = os.path.join(self.test_dir,'test.crt')
-
-        # set hostname
-        self.hostname = 'localhost'
-
-        # make cfg
-        self.cfg = {'webserver':{'tornado_port':random.randint(10000,32000),
-                                 'port':random.randint(10000,32000),
-                                 'numcpus':1,
-                                 'lib_dir':os.path.join(self.test_dir,'lib'),
-                                 'proxycache_dir':os.path.join(self.test_dir,'proxy'),
-                                 'proxy_request_timeout':10,
-                                },
-                    'db':{'name':'test'},
-                    'system':{'ssl':False},
-                    'download':{'http_username':None,
-                                'http_password':None,
-                               },
-                   }
-
-        def sig(*args):
-            sig.args = args
-        flexmock(signal).should_receive('signal').replace_with(sig)
-        def basicConfig(*args,**kwargs):
-            pass
-        flexmock(logging).should_receive('basicConfig').replace_with(basicConfig)
-        def setLogger(*args,**kwargs):
-            pass
-        flexmock(iceprod.core.logger).should_receive('setlogger').replace_with(setLogger)
-        def removestdout(*args,**kwargs):
-            pass
-        flexmock(iceprod.core.logger).should_receive('removestdout').replace_with(removestdout)
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(modules_website_test,self).tearDown()
-
-    @unittest_reporter
-    def test_01_init(self):
-        """Test init"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        q = website(bcfg)
-        q.messaging = messaging_mock()
-        if not q:
-            raise Exception('did not return website object')
-        if start.called is not True:
-            raise Exception('init did not call start')
-
-        new_cfg = {'new':1}
-        q.messaging.BROADCAST.reload(cfg=new_cfg)
-        if not q.messaging.called:
-            raise Exception('init did not call messaging')
-        if q.messaging.called != [['BROADCAST','reload',(),{'cfg':new_cfg}]]:
-            raise Exception('init did not call correct message')
-
-    @unittest_reporter
-    def test_02_start_stop(self):
-        """Test start_stop"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        q = website(bcfg)
-        q.messaging = messaging_mock()
-        ngx = _Nginx()
-        q.nginx = ngx
-
-        q.start()
-        if start.called is not True:
-            raise Exception('did not start')
-
-        q.nginx.start()
-        if ngx.started is not True:
-            raise Exeption('did not start Nginx')
-
-        q.stop()
-        if ngx.stopped is not True:
-            raise Exception('did not stop Nginx')
-
-        ngx.finished = False
-        q.nginx = ngx
-        q.kill()
-        if ngx.killed is not True:
-            raise Exception('did not kill Nginx')
-
-        q.nginx = None
         try:
-            q.stop()
-            q.kill()
-        except Exception:
-            logger.info('exception raised',exc_info=True)
-            raise Exception('website = None and exception raised')
+            # set hostname
+            self.hostname = 'localhost'
+            
+            self.ca_cert = os.path.join(self.test_dir,'ca.crt')
+            self.ca_key = os.path.join(self.test_dir,'ca.key')
+            self.ssl_key = os.path.join(self.test_dir,'test.key')
+            self.ssl_cert = os.path.join(self.test_dir,'test.crt')
 
-    @unittest_reporter
-    def test_03_start_no_ssl(self):
-        """Test _start without ssl"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+            self.cfg = {'webserver':{'tornado_port':random.randint(10000,32000),
+                                     'port':random.randint(10000,32000),
+                                     'numcpus':1,
+                                     'lib_dir':os.path.join(self.test_dir,'lib'),
+                                     'proxycache_dir':os.path.join(self.test_dir,'proxy'),
+                                     'proxy_request_timeout':10,
+                                    },
+                        'db':{'name':'test'},
+                        'site_id':'abc',
+                        'system':{'ssl':False},
+                        'download':{'http_username':None,
+                                    'http_password':None,
+                                   },
+                       }
+            self.executor = {}
+            self.modules = services_mock()
+            
+            self.website = website(self.cfg, self.io_loop, self.executor, self.modules)
+        except:
+            logger.warn('error setting up modules_website', exc_info=True)
+            raise
 
-        passkey = 'key'
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        datasets_status = {'processing':3}
-        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
+    @contextmanager
+    def start(self):
+        self.website.start()
+        t = threading.Thread(target=self.wait)
         t.start()
-
-        auth = (self.cfg['download']['http_username'],
-                self.cfg['download']['http_password'])
-
         try:
+            yield
+        finally:
+            self.stop()
+            t.join()
+            self.website.stop()
+
+    @patch('iceprod.server.modules.website.Nginx')
+    @unittest_reporter(name='start/stop/kill')
+    def test_10_start_stop_kill(self, nginx):
+        self.website.start()
+        self.assertTrue(nginx.called)
+        self.assertTrue(nginx.return_value.start.called)
+
+        self.website.stop()
+        self.assertTrue(nginx.return_value.stop.called)
+
+        self.website.start()
+        self.website.kill()
+        self.assertTrue(nginx.return_value.kill.called)
+
+    @unittest_reporter(name='start() no ssl')
+    def test_11_start_no_ssl(self):
+        with self.start():
+            datasets_status = {'processing':3}
+            self.modules.ret['db']['web_get_datasets'] = datasets_status
+
+            auth = (self.cfg['download']['http_username'],
+                    self.cfg['download']['http_password'])
+
             address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
-            logger.info('try connecting directly to tornado at %s',address)
+            logger.info('try connecting at %s',address)
 
             r = requests.get(address, auth=auth)
             r.raise_for_status()
-        finally:
-            ioloop.stop()
-            web.stop()
 
-    @unittest_reporter(skip=not ssl_cert)
-    def test_04_start_ssl(self):
-        """Test _start with ssl"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+    @unittest_reporter(skip=not ssl_cert, name='start() with ssl')
+    def test_12_start_ssl(self):
+        # self-signed cert
+        ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
+                             hostname=self.hostname)
+        self.cfg['system']['ssl'] = {
+            'cert':self.ssl_cert,
+            'key':self.ssl_key,
+        }
 
-        # trigger self-signed cert
-        if ssl_cert:
-            ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
-                                 hostname=self.hostname)
-            self.cfg['system']['ssl'] = {
-                'cert':self.ssl_cert,
-                'key':self.ssl_key,
-            }
+        with self.start():
+            datasets_status = {'processing':3}
+            self.modules.ret['db']['web_get_datasets'] = datasets_status
 
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        datasets_status = {'processing':3}
-        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-            if not any(x[0] == 'config' and x[1] == 'set' for x in web.messaging.called):
-                logger.info('%r',web.messaging.called)
-                raise Exception('did not call config')
+            auth = (self.cfg['download']['http_username'],
+                    self.cfg['download']['http_password'])
 
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
+            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
 
-        auth = (self.cfg['download']['http_username'],
-                self.cfg['download']['http_password'])
-
-        try:
-            address = 'https://localhost:%d'%self.cfg['webserver']['port']
-            logger.info('try connecting directly to tornado at %s',address)
-
-            r = requests.get(address, auth=auth,
-                             verify=self.cfg['system']['ssl']['cert'])
+            r = requests.get(address, auth=auth, verify=self.ssl_cert)
             r.raise_for_status()
-        finally:
-            ioloop.stop()
-            web.stop()
 
-    @unittest_reporter(skip=not ssl_cert)
-    def test_05_start_ssl_ca(self):
-        """Test _start with ssl"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
-
+    @unittest_reporter(skip=not ssl_cert, name='start() with ssl, ca cert')
+    def test_13_start_ssl_ca(self):
         # make certs
-        if ssl_cert:
-            ssl_cert.create_ca(self.ca_cert,self.ca_key,days=1,
-                              hostname=self.hostname)
-            ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
-                                cacert=self.ca_cert,cakey=self.ca_key,
-                                hostname=self.hostname)
-            self.cfg['system']['ssl'] = {
-                'cert':self.ssl_cert,
-                'key':self.ssl_key,
-                'cacert':self.ca_cert,
-            }
+        ssl_cert.create_ca(self.ca_cert,self.ca_key,days=1,
+                          hostname=self.hostname)
+        ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
+                            cacert=self.ca_cert,cakey=self.ca_key,
+                            hostname=self.hostname)
+        self.cfg['system']['ssl'] = {
+            'cert':self.ssl_cert,
+            'key':self.ssl_key,
+            'cacert':self.ca_cert,
+        }
 
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        datasets_status = {'processing':3}
-        web.messaging.ret = {'db':{'web_get_datasets':datasets_status}}
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
+        with self.start():
+            datasets_status = {'processing':3}
+            self.modules.ret['db']['web_get_datasets'] = datasets_status
 
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
+            auth = (self.cfg['download']['http_username'],
+                    self.cfg['download']['http_password'])
 
-        auth = (self.cfg['download']['http_username'],
-                self.cfg['download']['http_password'])
-
-        try:
-            address = 'https://localhost:%d'%(self.cfg['webserver']['port'])
-            logger.info('try connecting directly to tornado at %s',address)
+            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
 
             r = requests.get(address, auth=auth, verify=self.ca_cert)
             r.raise_for_status()
-        finally:
-            ioloop.stop()
-            web.stop()
 
     @unittest_reporter
-    def test_10_JSONRPCHandler(self):
-        """Test JSONRPCHandler"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+    def test_20_JSONRPCHandler(self):
+        with self.start():
+            self.modules.ret['db']['auth_authorize_task'] = True
+            self.modules.ret['db']['rpc_echo'] = 'e'
+            self.modules.ret['db']['rpc_test'] = 'testing'
 
-        passkey = 'key'
-
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        web.messaging.ret = {'db':{'auth_authorize_task':True,
-                                   'echo':'e',
-                                   'rpc_test':'testing'}}
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
-        try:
-
+            passkey = 'key'
             address = 'http://localhost:%d/jsonrpc'%(
                       self.cfg['webserver']['port'])
-            logger.info('try connecting directly to tornado at %s',address)
+            logger.info('try connecting to %s',address)
 
             ssl_opts = {'username': self.cfg['download']['http_username'],
                         'password': self.cfg['download']['http_password'],
@@ -355,73 +201,42 @@ class modules_website_test(unittest.TestCase):
                                                      ssl_options=ssl_opts)
             try:
                 ret = iceprod.core.jsonRPCclient.JSONRPC.test()
-                if ret != 'testing':
-                    raise Exception('bad ret from JSONRPC.test()')
+                self.assertEqual(ret, 'testing')
 
-                web.messaging.ret = {'db':{'auth_authorize_task':True,
-                                           'rpc_test':Exception()}}
+                self.modules.ret['db']['rpc_test'] = Exception()
                 try:
                     iceprod.core.jsonRPCclient.JSONRPC.test()
-                except Exception:
+                except:
                     pass
                 else:
-                    raise Exception('JSONRPC.test() did not raise Exception')
+                    raise Exception('did not raise Exception')
             finally:
                 iceprod.core.jsonRPCclient.JSONRPC.stop()
 
-            time.sleep(0.1)
-
-        finally:
-            ioloop.stop()
-            web.stop()
-
     @unittest_reporter
     def test_30_MainHandler(self):
-        """Test MainHandler"""
-        # mock some functions so we don't go too far
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+        with self.start():
+            gridspec = 'thegrid'
+            passkey = 'key'
+            datasets = {'d1':1,'d2':2}
+            datasets_status = {'processing':3}
+            datasets_full = [{'dataset_id':'d1','name':'dataset 1','status':'processing','description':'desc','gridspec':gridspec}]
+            dataset_details = datasets_full
+            tasks = {'task_1':3,'task_2':4}
+            task_details = {'waiting':{'c':1,'d':2}}
+            tasks_status = {'waiting':10,'queued':30}
+            
+            self.modules.ret['db']['auth_new_passkey'] = passkey
+            self.modules.ret['db']['web_get_gridspec'] = gridspec
+            self.modules.ret['db']['web_get_datasets_details'] = dataset_details
+            self.modules.ret['db']['web_get_datasets'] = datasets_status
+            self.modules.ret['db']['web_get_tasks_by_status'] = tasks_status
+            self.modules.ret['db']['web_get_datasets_by_status'] = datasets
+            self.modules.ret['db']['web_get_tasks_details'] = task_details
 
-        gridspec = 'thegrid'
-        passkey = 'key'
-        datasets = {'d1':1,'d2':2}
-        datasets_status = {'processing':3}
-        datasets_full = [{'dataset_id':'d1','name':'dataset 1','status':'processing','description':'desc','gridspec':gridspec}]
-        dataset_details = datasets_full
-        tasks = {'task_1':3,'task_2':4}
-        task_details = {'waiting':{'c':1,'d':2}}
-        tasks_status = {'waiting':10,'queued':30}
+            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
 
-        bcfg = basic_config.BasicConfig()
-        bcfg.messaging_url = 'localhost'
-        web = website(bcfg)
-        web.messaging = messaging_mock()
-        web.messaging.ret = {'db':{'auth_new_passkey':passkey,
-                                   'web_get_gridspec':gridspec,
-                                   'web_get_datasets_details':dataset_details,
-                                   'web_get_datasets':datasets_status,
-                                   'web_get_tasks_by_status':tasks_status,
-                                   'web_get_datasets_by_status':datasets,
-                                   'web_get_tasks_details':task_details,
-                            }}
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
-
-        try:
-
-            address = 'http://localhost:%d/'%(
-                      self.cfg['webserver']['port'])
-            logger.info('try connecting directly to tornado at %s',address)
-
-            ssl_opts = {}
             outfile = os.path.join(self.test_dir,
                                    str(random.randint(0,10000)))
 
@@ -440,55 +255,31 @@ class modules_website_test(unittest.TestCase):
             except:
                 pass
             else:
-                raise Exception('did not raise exception when testing bad page')
+                raise Exception('did not raise Exception')
 
             # test internal error
             logger.info('url: /task?status=waiting  internal error')
-            task_browse = None
-            web.messaging.ret['db']['web_get_tasks_details'] = task_browse
+            self.modules.ret['db']['web_get_tasks_details'] = None
             try:
                 r = requests.get(address+'task?status=waiting')
                 r.raise_for_status()
             except:
                 pass
             else:
-                raise Exception('did not raise exception when testing internal error')
-
-            time.sleep(0.1)
-
-        finally:
-            ioloop.stop()
-            web.stop()
+                raise Exception('did not raise Exception')
 
     @unittest_reporter(skip=not testjs)
     def test_40_groups(self):
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+        with self.start():
+            passkey = 'key'
+            groups = {
+                'a': {'name':'/Sim','priority':0.3,'description':'blah'},
+                'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
+            }
 
-        passkey = 'key'
-        groups = {
-            'a': {'name':'/Sim','priority':0.3,'description':'blah'},
-            'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
-        }
+            self.modules.ret['db']['auth_new_passkey'] = passkey
+            self.modules.ret['db']['rpc_get_groups'] = groups
 
-        web = website(basic_config.BasicConfig())
-        web.messaging = messaging_mock()
-        web.messaging.ret = {'db':{'auth_new_passkey': passkey,
-                                  'rpc_get_groups': groups,
-                                  }
-                            }
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
-
-        try:
             driver = webdriver.PhantomJS()
             driver.get('http://localhost:%d/groups'%self.cfg['webserver']['port'])
             web_groups = {}
@@ -501,42 +292,23 @@ class modules_website_test(unittest.TestCase):
                     'description': row.find_element_by_class_name('description').text,
                 }
             self.assertEqual(groups, web_groups)
-        finally:
-            ioloop.stop()
-            web.stop()
 
     @unittest_reporter(skip=not testjs)
     def test_41_groups_edit(self):
-        def start():
-            start.called = True
-        flexmock(website).should_receive('start').replace_with(start)
-        start.called = False
+        with self.start():
 
-        passkey = 'key'
-        groups = {
-            'a': {'name':'/Sim','priority':0.3,'description':'blah'},
-            'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
-        }
+            passkey = 'key'
+            groups = {
+                'a': {'name':'/Sim','priority':0.3,'description':'blah'},
+                'b': {'name':'/Filt','priority':0.4,'description':'blah2'},
+            }
 
-        web = website(basic_config.BasicConfig())
-        web.messaging = messaging_mock()
-        web.messaging.ret = {'db':{'auth_new_passkey': passkey,
-                                   'auth_authorize_task': True,
-                                   'rpc_get_groups': groups,
-                                   'rpc_set_groups': True,
-                                   'web_get_datasets': [],
-                                  }
-                            }
-        web.cfg = self.cfg
-        with to_log(sys.stderr):
-            web._start()
-
-        # actual start
-        ioloop = tornado.ioloop.IOLoop.instance()
-        t = threading.Thread(target=ioloop.start)
-        t.start()
-
-        try:
+            self.modules.ret['db']['auth_new_passkey'] = passkey
+            self.modules.ret['db']['auth_authorize_task'] = True
+            self.modules.ret['db']['rpc_get_groups'] = groups
+            self.modules.ret['db']['rpc_set_groups'] = True
+            self.modules.ret['db']['web_get_datasets'] = []
+            
             driver = webdriver.PhantomJS()
             #driver = webdriver.Firefox()
             driver.implicitly_wait(1)
@@ -556,14 +328,11 @@ class modules_website_test(unittest.TestCase):
                     (webdriver.common.by.By.ID,'status'),'OK'))
             finally:
                 logger.warn('status: %r',driver.find_element_by_id('status').text)
-            c = web.messaging.called[-1]
+            c = self.modules.called[-1]
             logger.info('%r',c)
-            self.assertEqual(c[:2], ['db','rpc_set_groups'])
+            self.assertEqual(c[:2], ('db','rpc_set_groups'))
             web_groups = c[-1]['groups']
             self.assertDictEqual(groups, web_groups)
-        finally:
-            ioloop.stop()
-            web.stop()
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

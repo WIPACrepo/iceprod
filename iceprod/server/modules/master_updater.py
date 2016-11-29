@@ -42,7 +42,8 @@ class master_updater(module.module):
             'filename' in self.cfg['master_updater']):
             self.filename = os.path.expandvars(os.path.expanduser(
                             self.cfg['master_updater']['filename']))
-        self._load()
+        if os.path.exists(self.filename):
+            self._load()
         self.io_loop.add_callback(self._send)
 
     def stop(self):
@@ -83,7 +84,7 @@ class master_updater(module.module):
             data = self.buffer[0]
             params = {'updates':[data]}
             try:
-                ret = yield send_master(self.cfg, 'master_update', **params)
+                yield send_master(self.cfg, 'master_update', **params)
             except:
                 logger.warn('error sending to master', exc_info=True)
                 # If the problem is server side, give it a minute.

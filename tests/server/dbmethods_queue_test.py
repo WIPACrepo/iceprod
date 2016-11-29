@@ -25,6 +25,7 @@ import tornado.escape
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.core.util import Node_Resources
 from iceprod.server import dbmethods
 import iceprod.server.dbmethods.queue
 
@@ -33,15 +34,115 @@ from .dbmethods_test import dbmethods_base
 
 class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
-    def test_110_queue_get_active_tasks(self):
+    def test_000_queue_set_site_queues(self):
+        """Test queue_set_site_queues"""
+        now = dbmethods.nowstr()
+        tables = {
+            'site':[
+                {'site_id':'s0','name':'n','institution':'inst',
+                 'queues':'{}','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+
+        yield self.set_tables(tables)
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        yield self.db['queue_set_site_queues']('s0', queues)
+        endtables = yield self.get_tables(['site'])
+        if ((not endtables['site']) or
+            endtables['site'][0]['site_id'] != 's0'):
+            raise Exception('did not set site')
+        expected = json_encode(queues)
+        self.assertEqual(endtables['site'][0]['queues'], expected)
+
+        # update no queue
+        yield self.set_tables(tables)
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        yield self.db['queue_set_site_queues']('s1', queues)
+        endtables = yield self.get_tables(['site'])
+        if not cmp_dict(tables,endtables):
+            raise Exception('tables modified')
+
+        # update existing
+        tables2 = {
+            'site':[
+                {'site_id':'s1','name':'n','institution':'inst',
+                 'queues':'{"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+        yield self.set_tables(tables2)
+        queues = {"g1":{"type":"b","description":"desc","resources":{"disk":[20,10]}}}
+
+        yield self.db['queue_set_site_queues']('s1', queues)
+        endtables = yield self.get_tables(['site'])
+        if ((not endtables['site']) or
+            endtables['site'][0]['site_id'] != 's1'):
+            raise Exception('did not set site')
+        expected = json_encode({"g1":{"type":"b","description":"desc","resources":{"mem":[20,10],"disk":[20,10]}}})
+        self.assertEqual(endtables['site'][0]['queues'], expected)
+
+        # bad queue db info
+        tables3 = {
+            'site':[
+                {'site_id':'s1','name':'n','institution':'inst',
+                 'queues':'garbage','auth_key':None,'website_url':'',
+                 'version':'2','last_update':now,'admin_name':'',
+                 'admin_email':''},
+            ],
+        }
+        yield self.set_tables(tables3)
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+
+        try:
+            yield self.db['queue_set_site_queues']('s1', queues)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        endtables = yield self.get_tables(['site'])
+        if not cmp_dict(tables3,endtables):
+            raise Exception('tables modified')
+
+        # bad queue insert info
+        yield self.set_tables({'site':[]})
+        queues = lambda a:a+1 # something that can't be json
+
+        try:
+            yield self.db['queue_set_site_queues']('s0', queues)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        endtables = yield self.get_tables(['site'])
+        if endtables['site']:
+            raise Exception('tables modified')
+
+        # sql error
+        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+        for i in range(2):
+            yield self.set_tables({'site':[]})
+            self.set_failures([False for _ in range(i)]+[True])
+
+            try:
+                yield self.db['queue_set_site_queues']('s0', queues)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+            endtables = yield self.get_tables(['site'])
+            if endtables['site']:
+                raise Exception('tables modified')
+
+    @unittest_reporter
+    def test_010_queue_get_active_tasks(self):
         """Test queue_get_active_tasks"""
         gridspec = 'klsjdfl.grid1'
         now = dbmethods.nowstr()
-
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
 
         # single task
         tables = {
@@ -58,31 +159,22 @@ class dbmethods_queue_test(dbmethods_base):
             ],
         }
 
-        cb.called = False
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_active_tasks'](gridspec)
 
-        self._db.queue_get_active_tasks(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('normal task: callback not called')
         ret_should_be = {'queued':{'asdf':tables['task'][0].copy()}}
         ret_should_be['queued']['asdf']['status_changed'] = dbmethods.str2datetime(now)
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('normal task: callback ret != task')
+        self.assertEqual(ret, ret_should_be)
+
+        # without gridspec
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_active_tasks']()
+        self.assertEqual(ret, ret_should_be)
 
         # no tasks
-        cb.called = False
-        self.mock.setup({'task':[],'search':[]})
-
-        self._db.queue_get_active_tasks(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no task: callback not called')
-        if cb.ret != {}:
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no task: callback ret != {}')
+        yield self.set_tables({'task':[],'search':[]})
+        ret = yield self.db['queue_get_active_tasks'](gridspec)
+        self.assertEqual(ret, {})
 
         # several tasks
         tables2 = {
@@ -112,13 +204,9 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':gridspec, 'name':'0', 'task_status':'processing'},
             ],
         }
-        cb.called = False
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
+        ret = yield self.db['queue_get_active_tasks'](gridspec)
 
-        self._db.queue_get_active_tasks(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('several tasks: callback not called')
         ret_should_be = {'queued':{'asdf':tables2['task'][0].copy(),
                                    'gdf':tables2['task'][1].copy()},
                          'processing':{'ertert':tables2['task'][2].copy()}
@@ -127,31 +215,65 @@ class dbmethods_queue_test(dbmethods_base):
             d['status_changed'] = dbmethods.str2datetime(now)
         for d in ret_should_be['processing'].values():
             d['status_changed'] = dbmethods.str2datetime(now)
-        if not cmp_dict(cb.ret,ret_should_be):
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
+        if not cmp_dict(ret, ret_should_be):
+            logger.error('cb.ret = %r', ret)
+            logger.error('ret should be = %r', ret_should_be)
             raise Exception('several tasks: callback ret != task task2 task3')
 
         # sql error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 1
-
-        self._db.queue_get_active_tasks(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
+        for i in range(2):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
+            try:
+                yield self.db['queue_get_active_tasks'](gridspec)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
 
     @unittest_reporter
-    def test_111_queue_set_task_status(self):
-        """Test queue_set_task_status"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
+    def test_015_queue_get_grid_tasks(self):
+        """Test queue_get_grid_tasks"""
+        # single task
+        now = dbmethods.nowstr()
+        gridspec = 'skldfnk'
+        tables = {
+            'task':[
+                {'task_id':'asdf', 'status':'queued', 'prev_status':'waiting',
+                 'error_message':None, 'status_changed':now,
+                 'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
+                 'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
+                 'task_rel_id':None},
+            ],
+            'search':[
+                {'task_id':'asdf', 'job_id':'bfsd', 'dataset_id':'d1',
+                 'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
+            ],
+        }
+        task = 'asdf'
+        status = 'waiting'
+        yield self.set_tables(tables)
 
+        ret = yield self.db['queue_get_grid_tasks'](gridspec)
+        expected = {'task_id':'asdf','grid_queue_id':'lkn',
+                    'submit_time':dbmethods.str2datetime(now),
+                    'submit_dir':self.test_dir}
+        self.assertEqual(ret[0], expected)
+
+        # query error
+        for i in range(2):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
+            try:
+                yield self.db['queue_get_grid_tasks'](gridspec)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_020_queue_set_task_status(self):
+        """Test queue_set_task_status"""
         # single task
         now = dbmethods.nowstr()
         tables = {
@@ -167,19 +289,13 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
             ],
         }
-        cb.called = False
         task = 'asdf'
         status = 'waiting'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_set_task_status(task,status,callback=cb)
+        ret = yield self.db['queue_set_task_status'](task, status)
 
-        if cb.called is False:
-            raise Exception('single task: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('single task: callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if (end_tables['task'][0]['status'] != status or
             end_tables['task'][0]['prev_status'] != 'queued' or
             end_tables['task'][0]['status_changed'] <= now or
@@ -188,21 +304,16 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('set status failed')
 
         # no task
-        cb.called = False
         task = None
         status = 'waiting'
-        self.mock.setup({'task':[],'search':[]})
+        yield self.set_tables({'task':[],'search':[]})
 
         try:
-            self._db.queue_set_task_status(task,status,callback=cb)
+            yield self.db['queue_set_task_status'](task, status)
         except:
             pass
         else:
-            logger.info('cb.ret=%r',cb.ret)
-            raise Exception('no task: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no task: callback called')
+            raise Exception('did not raise Exception')
 
         # multiple tasks (dict)
         tables2 = {
@@ -232,19 +343,13 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'processing'},
             ],
         }
-        cb.called = False
         task = {'asdf':{},'gdf':{}}
         status = 'waiting'
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_set_task_status(task,status,callback=cb)
+        ret = yield self.db['queue_set_task_status'](task, status)
 
-        if cb.called is False:
-            raise Exception('multiple tasks (dict): callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('multiple tasks (dict): callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if (end_tables['task'][0]['status'] != status or
             end_tables['task'][1]['status'] != status or
             end_tables['task'][2]['status'] != 'processing' or
@@ -260,19 +365,13 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('multiple tasks (dict): set status failed')
 
         # multiple tasks (list)
-        cb.called = False
         task = ['asdf','gdf']
         status = 'waiting'
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_set_task_status(task,status,callback=cb)
+        ret = yield self.db['queue_set_task_status'](task, status)
 
-        if cb.called is False:
-            raise Exception('multiple tasks (list): callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('multiple tasks (list): callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if (end_tables['task'][0]['status'] != status or
             end_tables['task'][1]['status'] != status or
             end_tables['task'][2]['status'] != 'processing' or
@@ -288,27 +387,24 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('multiple tasks (list): set status failed')
 
         # sql error
-        cb.called = False
         task = 'asdf'
         status = 'waiting'
-        self.mock.setup(tables)
-        self.mock.failures = 1
-
-        self._db.queue_set_task_status(task,status,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
+        
+        yield self.set_tables(tables)
+        self.set_failures([True])
+        try:
+            yield self.db['queue_set_task_status'](task, status)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        
+        endtables = yield self.get_tables(['task'])
+        self.assertEqual(endtables['task'], tables['task'])
 
     @unittest_reporter
-    def test_112_queue_reset_tasks(self):
+    def test_030_queue_reset_tasks(self):
         """Test queue_reset_tasks"""
-        def cb(ret=None):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         # single task
         now = dbmethods.nowstr()
         tables = {
@@ -324,18 +420,12 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
             ],
         }
-        cb.called = False
         reset = 'asdf'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_reset_tasks(reset,callback=cb)
+        yield self.db['queue_reset_tasks'](reset)
 
-        if cb.called is False:
-            raise Exception('single task: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('single task: callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if (end_tables['task'][0]['status'] != 'reset' or
             end_tables['task'][0]['prev_status'] != 'queued' or
             end_tables['task'][0]['status_changed'] <= now or
@@ -371,19 +461,13 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'processing'},
             ],
         }
-        cb.called = False
         reset = 'asdf'
         fail = 'gdf'
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_reset_tasks(reset,fail,callback=cb)
+        yield self.db['queue_reset_tasks'](reset, fail)
 
-        if cb.called is False:
-            raise Exception('single task w/fail: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('single task w/fail: callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables2.keys())
         if (end_tables['task'][0]['status'] != 'reset' or
             end_tables['task'][1]['status'] != 'failed' or
             end_tables['task'][2]['status'] != 'processing' or
@@ -399,18 +483,12 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('reset with fail failed')
 
         # single fail task
-        cb.called = False
         fail = 'asdf'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_reset_tasks(fail=fail,callback=cb)
+        yield self.db['queue_reset_tasks'](fail=fail)
 
-        if cb.called is False:
-            raise Exception('single fail task: callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('single fail task: callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if (end_tables['task'][0]['status'] != 'failed' or
             end_tables['task'][0]['prev_status'] != 'queued' or
             end_tables['task'][0]['status_changed'] <= now or
@@ -419,19 +497,13 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('single task w/fail')
 
         # multiple tasks (dict)
-        cb.called = False
         reset = {'asdf':{},'gdf':{}}
         fail = {'ertert':{}}
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_reset_tasks(reset,fail,callback=cb)
+        yield self.db['queue_reset_tasks'](reset, fail)
 
-        if cb.called is False:
-            raise Exception('multiple tasks (dict): callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('multiple tasks (dict): callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables2.keys())
         if (end_tables['task'][0]['status'] != 'reset' or
             end_tables['task'][1]['status'] != 'reset' or
             end_tables['task'][2]['status'] != 'failed' or
@@ -448,19 +520,13 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('multiple tasks (dict): reset with fail failed')
 
         # multiple tasks (list)
-        cb.called = False
         reset = ['asdf','gdf']
         fail = ['ertert']
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_reset_tasks(reset,fail,callback=cb)
+        yield self.db['queue_reset_tasks'](reset, fail)
 
-        if cb.called is False:
-            raise Exception('multiple tasks (list): callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('multiple tasks (list): callback ret == Exception')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables2.keys())
         if (end_tables['task'][0]['status'] != 'reset' or
             end_tables['task'][1]['status'] != 'reset' or
             end_tables['task'][2]['status'] != 'failed' or
@@ -477,40 +543,37 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('multiple tasks (list): reset with fail failed')
 
         # sql error in reset
-        cb.called = False
         reset = 'asdf'
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_reset_tasks(reset,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error in reset: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error in reset: callback ret != Exception')
+        try:
+            yield self.db['queue_reset_tasks'](reset)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
+        self.assertEqual(end_tables['task'], tables['task'])
 
         # sql error in fail
-        cb.called = False
         reset = None
         fail = 'asdf'
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_reset_tasks(reset,fail,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error in fail: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error in fail: callback ret != Exception')
+        try:
+            yield self.db['queue_reset_tasks'](reset, fail)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
+        self.assertEqual(end_tables['task'], tables['task'])
 
     @unittest_reporter
-    def test_113_queue_get_task(self):
+    def test_040_queue_get_task(self):
         """Test queue_get_task"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         # single task
         now = dbmethods.nowstr()
         tables = {
@@ -522,49 +585,36 @@ class dbmethods_queue_test(dbmethods_base):
                  'task_rel_id':None},
             ],
         }
-        cb.called = False
         task_id = 'asdf'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_get_task(task_id,callback=cb)
+        ret = yield self.db['queue_get_task'](task_id)
 
-        if cb.called is False:
-            raise Exception('normal task: callback not called')
-        ret_should_be = tables['task'][0].copy()
-        ret_should_be['status_changed'] = dbmethods.str2datetime(now)
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('normal task: callback ret != task')
-        end_tables = self.mock.get(tables.keys())
+        ret_should_be = {t['task_id']:t.copy() for t in tables['task']}
+        for d in ret_should_be.values():
+            d['status_changed'] = dbmethods.str2datetime(now)
+        self.assertEqual(ret, ret_should_be)
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             raise Exception('tables were modified')
 
         # no tasks
-        cb.called = False
-        self.mock.setup({'task':[]})
+        yield self.set_tables({'task':[]})
 
-        self._db.queue_get_task(task_id,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no task: callback not called')
-        if cb.ret != None:
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no task: callback ret != None')
+        ret = yield self.db['queue_get_task'](task_id)
+        if ret:
+            raise Exception('returned task when there are none')
 
         # no task_id
-        cb.called = False
         task_id = None
+        yield self.set_tables(tables)
 
         try:
-            self._db.queue_get_task(task_id,callback=cb)
+            yield self.db['queue_get_task'](task_id)
         except:
             pass
         else:
-            raise Exception('no task_id: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no task_id: callback called, but not supposed to be')
+            raise Exception('did not raise Exception')
 
         # several tasks
         tables2 = {
@@ -587,45 +637,33 @@ class dbmethods_queue_test(dbmethods_base):
             ],
         }
 
-        cb.called = False
         task_id = [t['task_id'] for t in tables2['task']]
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_get_task(task_id,callback=cb)
+        ret = yield self.db['queue_get_task'](task_id)
 
-        if cb.called is False:
-            raise Exception('several tasks: callback not called')
         ret_should_be = {t['task_id']:t.copy() for t in tables2['task']}
         for d in ret_should_be.values():
             d['status_changed'] = dbmethods.str2datetime(now)
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('several tasks: callback ret != task task2 task3')
-        end_tables = self.mock.get(tables2.keys())
+        self.assertEqual(ret, ret_should_be)
+        end_tables = yield self.get_tables(tables2.keys())
         if not cmp_dict(tables2,end_tables):
-            raise Exception('several tasks: tables were modified')
+            raise Exception('tables were modified')
 
         # sql error
-        cb.called = False
-        self.mock.setup({'task':[]})
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_get_task(task_id,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
+        try:
+            yield self.db['queue_get_task'](task_id)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
     @unittest_reporter
-    def test_114_queue_get_task_by_grid_queue_id(self):
+    def test_050_queue_get_task_by_grid_queue_id(self):
         """Test queue_get_task_by_grid_queue_id"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         # single task
         now = dbmethods.nowstr()
         tables = {
@@ -637,50 +675,36 @@ class dbmethods_queue_test(dbmethods_base):
                  'task_rel_id':None},
             ],
         }
-        cb.called = False
         task_id = 'lkn'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
+        ret = yield self.db['queue_get_task_by_grid_queue_id'](task_id)
 
-        if cb.called is False:
-            raise Exception('normal task: callback not called')
-        ret_should_be = tables['task'][0].copy()
-        ret_should_be['status_changed'] = dbmethods.str2datetime(now)
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('normal task: callback ret != task')
-        end_tables = self.mock.get(tables.keys())
+        ret_should_be = {t['task_id']:t.copy() for t in tables['task']}
+        for d in ret_should_be.values():
+            d['status_changed'] = dbmethods.str2datetime(now)
+        self.assertEqual(ret, ret_should_be)
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             raise Exception('tables were modified')
 
         # no tasks
-        cb.called = False
-        self.mock.setup({'task':[]})
+        yield self.set_tables({'task':[]})
 
-        self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no task: callback not called')
-        if cb.ret != None:
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no task: callback ret != None')
+        ret = yield self.db['queue_get_task_by_grid_queue_id'](task_id)
+        if ret:
+            raise Exception('returned task when there are none')
 
         # no task_id
-        cb.called = False
         task_id = None
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
         try:
-            self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
+            yield self.db['queue_get_task_by_grid_queue_id'](task_id)
         except:
             pass
         else:
-            raise Exception('no task_id: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no task_id: callback called, but not supposed to be')
+            raise Exception('did not raise Exception')
 
         # several tasks
         tables2 = {
@@ -702,45 +726,36 @@ class dbmethods_queue_test(dbmethods_base):
                  'task_rel_id':None},
             ],
         }
-        cb.called = False
         task_id = [t['grid_queue_id'] for t in tables2['task']]
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
+        ret = yield self.db['queue_get_task_by_grid_queue_id'](task_id)
 
-        if cb.called is False:
-            raise Exception('several tasks: callback not called')
         ret_should_be = {t['task_id']:t.copy() for t in tables2['task']}
         for d in ret_should_be.values():
             d['status_changed'] = dbmethods.str2datetime(now)
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('several tasks: callback ret != task task2 task3')
-        end_tables = self.mock.get(tables2.keys())
+        self.assertEqual(ret, ret_should_be)
+        end_tables = yield self.get_tables(tables2.keys())
         if not cmp_dict(tables2,end_tables):
             raise Exception('tables were modified')
 
         # sql error
-        cb.called = False
-        self.mock.setup(tables2)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_get_task_by_grid_queue_id(task_id,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
+        try:
+            yield self.db['queue_get_task_by_grid_queue_id'](task_id)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            raise Exception('tables were modified')
 
     @unittest_reporter
-    def test_115_queue_set_submit_dir(self):
+    def test_060_queue_set_submit_dir(self):
         """Test queue_set_submit_dir"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         # single task
         now = dbmethods.nowstr()
         tables = {
@@ -752,60 +767,48 @@ class dbmethods_queue_test(dbmethods_base):
                  'task_rel_id':None},
             ],
         }
-        cb.called = False
         task = 'asdf'
         submit_dir = '/test/submit'
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
+        yield self.db['queue_set_submit_dir'](task, submit_dir)
 
-        if cb.called is False:
-            raise Exception('single task: callback not called')
-        if cb.ret is not None:
-            raise Exception('single task: callback ret != None')
-        end_tables = self.mock.get(tables.keys())
+        end_tables = yield self.get_tables(tables.keys())
         if end_tables['task'][0]['submit_dir'] != submit_dir:
             raise Exception('submit_dir not set')
 
         # no task
-        cb.called = False
         task = None
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
         try:
-            self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
+            yield self.db['queue_set_submit_dir'](task, submit_dir)
         except:
             pass
         else:
-            raise Exception('no task: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no task: callback called')
-        end_tables = self.mock.get(tables.keys())
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             raise Exception('tables were modified')
 
         # sql error
-        cb.called = False
         task = 'asdf'
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_set_submit_dir(task,submit_dir,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
+        try:
+            yield self.db['queue_set_submit_dir'](task, submit_dir)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            raise Exception('tables were modified')
 
     @unittest_reporter
-    def test_119_queue_buffer_jobs_tasks(self):
+    def test_100_queue_buffer_jobs_tasks(self):
         """Test queue_buffer_jobs_tasks"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         gridspec = 'msdfiner'
         now = dbmethods.nowstr()
         tables = {
@@ -825,19 +828,15 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_rel_id':'tr1','dataset_id':'d1','task_index':0,
                  'name':'task1','depends':'','requirements':''},
             ],
+            'job':[],'task':[],'search':[],
         }
 
         # single task
-        cb.called = False
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
         num = 10
-        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-        if cb.called is False:
-            raise Exception('buffer 1d,1j,1t: callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('buffer 1d,1j,1t: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 task')
@@ -849,13 +848,8 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('did not create 1 job')
 
         # check that it doesn't get resubmitted
-        cb.called = False
-        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-        if cb.called is False:
-            raise Exception('buffer resubmit: callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('buffer resubmit: exception returned %s'%cb.ret)
-        end_tables2 = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables2 = yield self.get_tables(['task','job','search'])
         if not cmp_dict(end_tables,end_tables2):
             logger.info('%r',end_tables)
             logger.info('%r',end_tables2)
@@ -881,15 +875,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-        if cb.called is False:
-            raise Exception('buffer 1d,2j,1t: callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('buffer 1d,2j,1t: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -932,16 +921,11 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables3)
+        yield self.set_tables(tables3)
 
         num = 10
-        self._db.queue_buffer_jobs_tasks([gridspec,gridspec+'a'],num,callback=cb)
-        if cb.called is False:
-            raise Exception('buffer 2d,1j,1t 2gs: callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('buffer 2d,1j,1t 2gs: exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -972,15 +956,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables4)
+        yield self.set_tables(tables4)
 
-        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 task')
@@ -1011,15 +990,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables4)
+        yield self.set_tables(tables4)
 
-        self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' in end_tables and end_tables['task']:
             logger.info('%r',end_tables)
             raise Exception('created more than 0 tasks')
@@ -1050,15 +1024,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables4)
+        yield self.set_tables(tables4)
 
-        self._db.queue_buffer_jobs_tasks(None,num,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 1 task')
@@ -1089,15 +1058,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables5)
+        yield self.set_tables(tables5)
 
-        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, num)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1132,15 +1096,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables5)
+        yield self.set_tables(tables5)
 
-        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, 10)
+        end_tables = yield self.get_tables(['task','job','search'])
         if any(end_tables.values()):
             logger.info('%r',end_tables)
             raise Exception('tables have changed')
@@ -1174,15 +1133,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables5)
+        yield self.set_tables(tables5)
 
-        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, 10)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1196,13 +1150,8 @@ class dbmethods_queue_test(dbmethods_base):
             logger.info('%r',end_tables['task'])
             raise Exception('task1 has a dependency')
 
-        cb.called = False
-        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, 10)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1246,15 +1195,10 @@ class dbmethods_queue_test(dbmethods_base):
             ],
             'job':[],'task':[],'search':[],
         }
-        cb.called = False
-        self.mock.setup(tables5)
+        yield self.set_tables(tables5)
 
-        self._db.queue_buffer_jobs_tasks(None,10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks'](None, 10)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 1:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1268,13 +1212,8 @@ class dbmethods_queue_test(dbmethods_base):
             logger.info('%r',end_tables['task'])
             raise Exception('task1 has a dependency')
 
-        cb.called = False
-        self._db.queue_buffer_jobs_tasks('blah',10,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            raise Exception('exception returned %s'%cb.ret)
-        end_tables = self.mock.get(['task','job','search'])
+        yield self.db['queue_buffer_jobs_tasks']('blah', 10)
+        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1289,28 +1228,24 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('task2 does not depend on task1')
 
         logger.warn('now testing SQL error handling')
-        for i in range(1,5):
-            cb.called = False
-            self.mock.setup(tables4)
-            self.mock.failures = i
-            self._db.queue_buffer_jobs_tasks(gridspec,num,callback=cb)
-            if cb.called is False:
-                raise Exception('callback not called')
-            if not isinstance(cb.ret,Exception):
-                raise Exception('exception not returned %s'%cb.ret)
-            end_tables = self.mock.get(['task','job','search'])
+        for i in range(3):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
+
+            try:
+                yield self.db['queue_buffer_jobs_tasks'](gridspec, num)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+            end_tables = yield self.get_tables(['task','job','search'])
             if any(end_tables.values()):
                 logger.info('%r',end_tables)
                 raise Exception('tables have changed')
 
     @unittest_reporter
-    def test_120_queue_get_queueing_datasets(self):
+    def test_200_queue_get_queueing_datasets(self):
         """Test queue_get_queueing_datasets"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         gridspec = 'lksdf.grid1'
         now = dbmethods.nowstr()
 
@@ -1333,63 +1268,51 @@ class dbmethods_queue_test(dbmethods_base):
         }
 
         # single dataset
-        cb.called = False
-        self.mock.setup(tables)
-
-        self._db.queue_get_queueing_datasets(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('single dataset: callback not called')
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_queueing_datasets'](gridspec)
         expected = {'d1':tables['dataset'][0]}
-        if cb.ret != expected:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',expected)
-            raise Exception('single dataset: callback ret != dataset')
-        end_tables = self.mock.get(tables.keys())
+        self.assertEqual(ret, expected)
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             logger.info('%r\n%r',tables,end_tables)
             raise Exception('tables modified')
 
         # no dataset
-        cb.called = False
-        self.mock.setup({'dataset':[],'search':[]})
+        yield self.set_tables({'dataset':[],'search':[]})
+        ret = yield self.db['queue_get_queueing_datasets'](gridspec)
+        self.assertEqual(ret, {})
+        end_tables = yield self.get_tables(tables.keys())
+        if not cmp_dict(tables,end_tables):
+            logger.info('%r\n%r',tables,end_tables)
+            raise Exception('tables modified')
 
-        self._db.queue_get_queueing_datasets(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no task: callback not called')
-        if cb.ret != {}:
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('no dataset: callback ret != {}')
-        end_tables = self.mock.get(tables.keys())
+        # no gridspec
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_queueing_datasets'](None)
+        expected = {'d1':tables['dataset'][0]}
+        self.assertEqual(ret, expected)
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             logger.info('%r\n%r',tables,end_tables)
             raise Exception('tables modified')
 
         # sql error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 1
-
-        self._db.queue_get_queueing_datasets(gridspec,callback=cb)
-
-        if cb.called is False:
-            raise Exception('sql error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            raise Exception('sql error: callback ret != Exception')
-        end_tables = self.mock.get(tables.keys())
+        yield self.set_tables(tables)
+        self.set_failures([True])
+        try:
+            yield self.db['queue_get_queueing_datasets'](gridspec)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             logger.info('%r\n%r',tables,end_tables)
             raise Exception('tables modified')
 
     @unittest_reporter
-    def test_121_queue_get_queueing_tasks(self):
+    def test_210_queue_get_queueing_tasks(self):
         """Test queue_get_queueing_tasks"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-        cb.called = False
-
         gridspec = 'ggg.g1'
         now = dbmethods.nowstr()
         tables = {
@@ -1450,107 +1373,64 @@ class dbmethods_queue_test(dbmethods_base):
         }
 
         # single dataset
-        cb.called = False
         dataset_prios = {'d1':1}
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
 
-        if cb.called is False:
-            raise Exception('single dataset: callback not called')
         ret_should_be = {'t1':dict(tables['search'][0])}
         ret_should_be['t1']['task_status'] = 'queued'
         ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
         ret_should_be['t1']['reqs'] = tables['task'][0]['requirements']
         ret_should_be['t1']['job'] = tables['job'][0]['job_index']
         ret_should_be['t1']['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('single dataset: callback ret != task')
+        self.assertEqual(ret, ret_should_be)
 
         # no tasks
-        cb.called = False
-        self.mock.setup({'search':[],'task':[]})
+        yield self.set_tables({'search':[],'task':[]})
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no task: callback not called')
-        ret_should_be = {}
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('no task: callback ret != {}')
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
+        self.assertEqual(ret, {})
 
         # no tasks sql error
-        cb.called = False
-        self.mock.setup({'search':[],'task':[]})
-        self.mock.failures = 1
+        yield self.set_tables({'search':[],'task':[]})
+        self.set_failures([True])
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1,callback=cb)
-
-        if cb.called is False:
-            raise Exception('_db_read error: callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.error('cb.ret = %r',cb.ret)
-            raise Exception('_db_read error: callback ret != Exception')
-        end_tables = self.mock.get(tables.keys())
+        try:
+            ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        end_tables = yield self.get_tables(tables.keys())
         if not cmp_dict(tables,end_tables):
             logger.info('%r\n%r',tables,end_tables)
             raise Exception('tables modified')
 
         # no dataset_prios
-        cb.called = False
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
+        self.set_failures(None)
 
         try:
-            self._db.queue_get_queueing_tasks(None,gridspec,1,callback=cb)
+            ret = yield self.db['queue_get_queueing_tasks'](None,gridspec,1)
         except:
             pass
         else:
-            raise Exception('no dataset_prios: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no dataset_prios: callback called, but not supposed to be')
-
-        # no callback
-        cb.called = False
-        self.mock.setup(tables)
-
-        try:
-            self._db.queue_get_queueing_tasks(dataset_prios,gridspec,1)
-        except:
-            pass
-        else:
-            raise Exception('no callback: exception not raised')
-
-        if cb.called is not False:
-            raise Exception('no callback: callback called, but not supposed to be')
-        end_tables = self.mock.get(tables.keys())
-        if not cmp_dict(tables,end_tables):
-            logger.info('%r\n%r',tables,end_tables)
-            raise Exception('tables modified')
+            raise Exception('did not raise Exception')
 
         # several tasks in same dataset
-        cb.called = False
-        self.mock.setup(tables)
+        yield self.set_tables(tables)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
 
-        if cb.called is False:
-            raise Exception('several tasks in same dataset: callback not called')
-        ret_should_be = {x['task_id']:dict(x) for x in tables['search'][:3]}
+        ret_should_be = {x['task_id']:dict(x) for x in tables['search'][:1]}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = tables['job'][0]['job_index']
             ret_should_be[k]['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('several tasks in same dataset: callback ret != task task2 task3')
+        self.assertEqual(ret, ret_should_be)
 
         # several tasks in diff dataset
         tables2 = {
@@ -1599,14 +1479,11 @@ class dbmethods_queue_test(dbmethods_base):
             'task':tables['task'],
             'task_rel':tables['task_rel'],
         }
-        cb.called = False
         dataset_prios = {'d1':1.1,'d2':1}
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
 
-        if cb.called is False:
-            raise Exception('several tasks in diff dataset: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't4'}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
@@ -1614,20 +1491,14 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
             ret_should_be[k]['jobs_submitted'] = tables2['dataset'][0]['jobs_submitted']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('several tasks in diff dataset: callback ret != task task2 task3')
+        self.assertEqual(ret, ret_should_be)
 
         # priority weighted towards one dataset
-        cb.called = False
         dataset_prios = {'d1':.2,'d2':.8}
-        self.mock.setup(tables2)
+        yield self.set_tables(tables2)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
 
-        if cb.called is False:
-            raise Exception('priority weighting dataset: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't3'}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
@@ -1635,10 +1506,7 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['reqs'] = ''
             ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
             ret_should_be[k]['jobs_submitted'] = tables2['dataset'][0]['jobs_submitted']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('priority weighting dataset: callback ret != task2 task3 task4')
+        self.assertEqual(ret, ret_should_be)
 
         # testing dependencies
         tables3 = {
@@ -1718,19 +1586,11 @@ class dbmethods_queue_test(dbmethods_base):
                 {'task_rel_id':'tr5','depends':'tr6','requirements':None},
             ],
         }
-        cb.called = False
         dataset_prios = {'d1':1}
-        self.mock.setup(tables3)
+        yield self.set_tables(tables3)
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,callback=cb)
-
-        if cb.called is False:
-            raise Exception('dependencies: callback not called')
-        ret_should_be = {}
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('dependencies: callback ret != {}')
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
+        self.assertEqual(ret, {})
 
         # testing resources
         tables4 = {
@@ -1763,16 +1623,13 @@ class dbmethods_queue_test(dbmethods_base):
                  'name':'nn', 'depends':None, 'requirements':'["cpu","gpu"]'},
             ],
         }
-        cb.called = False
         dataset_prios = {'d1':1}
-        self.mock.setup(tables4)
+        yield self.set_tables(tables4)
         resources = {'cpu':200,'gpu':10}
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
-                                          resources=resources,callback=cb)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3,
+                                                        resources=resources)
 
-        if cb.called is False:
-            raise Exception('resources: callback not called')
         ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
@@ -1780,65 +1637,59 @@ class dbmethods_queue_test(dbmethods_base):
             ret_should_be[k]['reqs'] = ["cpu","gpu"]
             ret_should_be[k]['job'] = tables['job'][0]['job_index']
             ret_should_be[k]['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('resources: callback ret')
+        self.assertEqual(ret, ret_should_be)
 
         # resources no match
-        cb.called = False
-        self.mock.setup(tables4)
+        yield self.set_tables(tables4)
         resources = {'none':None}
 
-        self._db.queue_get_queueing_tasks(dataset_prios,gridspec,3,
-                                          resources=resources,callback=cb)
-
-        if cb.called is False:
-            raise Exception('no resources: callback not called')
-        ret_should_be = {}
-        if cb.ret != ret_should_be:
-            logger.error('cb.ret = %r',cb.ret)
-            logger.error('ret should be = %r',ret_should_be)
-            raise Exception('no resources: callback ret != {}')
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3,
+                                                        resources=resources)
+        self.assertEqual(ret, {})
 
     @unittest_reporter
-    def test_125_queue_add_pilot(self):
-        """Test queue_add_pilot"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
+    def test_300_queue_new_pilot_ids(self):
+        """Test queue_new_pilot_ids"""
+        ret = yield self.db['queue_new_pilot_ids'](1)
+        self.assertEquals(len(ret), 1)
+        
+        ret2 = yield self.db['queue_new_pilot_ids'](1)
+        self.assertEquals(len(ret2), 1)
+        self.assertGreater(ret2, ret)
 
+        for i in range(100,5):
+            ret = yield self.db['queue_new_pilot_ids'](i)
+            self.assertEquals(len(ret), i)
+
+        try:
+            yield self.db['queue_new_pilot_ids']('blah')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_310_queue_add_pilot(self):
+        """Test queue_add_pilot"""
         submit_dir = os.path.join(self.test_dir,'submit')
         pilot = {'task_id':'pilot', 'name':'pilot', 'debug':False, 'reqs':{},
                  'submit_dir': submit_dir, 'grid_queue_id':'12345',
                  'pilot_ids': ['a']}
 
-        cb.called = False
-        self.mock.setup({'pilot':[]})
-        self._db.queue_add_pilot(pilot,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('callback returned Exception')
-        endtable = self.mock.get(['pilot'])['pilot']
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        endtable = (yield self.get_tables(['pilot']))['pilot']
         if (len(endtable) != 1 or endtable[0]['submit_dir'] != submit_dir or
             endtable[0]['grid_queue_id'] != '12345.0'):
             logger.info('table: %r',endtable)
             raise Exception('bad table state')
 
         # try 3 at once
-        cb.called = False
         pilot['num'] = 3
         pilot['pilot_ids'] = ['a', 'b', 'c']
-        self.mock.setup({'pilot':[]})
-        self._db.queue_add_pilot(pilot,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if isinstance(cb.ret,Exception):
-            logger.info('%r',cb.ret)
-            raise Exception('callback returned Exception')
-        endtable = self.mock.get(['pilot'])['pilot']
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        endtable = (yield self.get_tables(['pilot']))['pilot']
         if (len(endtable) != 3 or
             endtable[0]['submit_dir'] != submit_dir or
             endtable[0]['grid_queue_id'] != '12345.0' or
@@ -1849,24 +1700,112 @@ class dbmethods_queue_test(dbmethods_base):
             logger.info('table: %r',endtable)
             raise Exception('bad table state')
 
-        for i in range(1,2):
-            self.mock.setup({'pilot':[]})
-            self.mock.failures = i
-            cb.called = False
-            self._db.queue_add_pilot(pilot,callback=cb)
-            if cb.called is False:
-                raise Exception('callback not called')
-            if not isinstance(cb.ret,Exception):
-                logger.info('%r',cb.ret)
-                raise Exception('cb.ret is not Exception')
+        yield self.set_tables({'pilot':[]})
+        self.set_failures([True])
+        try:
+            yield self.db['queue_add_pilot'](pilot)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+        endtable = (yield self.get_tables(['pilot']))['pilot']
+        if endtable:
+            raise Exception('tables modified')
 
     @unittest_reporter
-    def test_130_queue_get_cfg_for_task(self):
-        """Test queue_get_cfg_for_task"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
+    def test_320_queue_get_pilot(self):
+        """Test queue_get_pilot"""
+        submit_dir = os.path.join(self.test_dir,'submit')
+        pilot = {'task_id':'pilot', 'name':'pilot', 'debug':False, 'reqs':{},
+                 'submit_dir': submit_dir, 'grid_queue_id':'12345',
+                 'pilot_ids': ['a']}
 
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        ret = yield self.db['queue_get_pilots']()
+        self.assertEqual(len(ret), 1)
+        self.assertEqual([x['pilot_id'] for x in ret], pilot['pilot_ids'])
+
+        # try 3 pilots
+        pilot['num'] = 3
+        pilot['pilot_ids'] = ['a', 'b', 'c']
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        ret = yield self.db['queue_get_pilots']()
+        self.assertEqual(len(ret), 3)
+        self.assertEqual([x['pilot_id'] for x in ret], pilot['pilot_ids'])
+
+        self.set_failures([True])
+        try:
+            yield self.db['queue_get_pilots'](pilot)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_330_queue_del_pilots(self):
+        """Test queue_del_pilots"""
+        submit_dir = os.path.join(self.test_dir,'submit')
+        pilot = {'task_id':'pilot', 'name':'pilot', 'debug':False, 'reqs':{},
+                 'submit_dir': submit_dir, 'grid_queue_id':'12345',
+                 'pilot_ids': ['a']}
+
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        yield self.db['queue_del_pilots']('a')
+        ret = yield self.get_tables(['pilot'])
+        if ret['pilot']:
+            raise Exception('did not delete pilot')
+
+        # try deleting 2, leaving 1
+        pilot['num'] = 3
+        pilot['pilot_ids'] = ['a', 'b', 'c']
+        yield self.set_tables({'pilot':[]})
+        yield self.db['queue_add_pilot'](pilot)
+        yield self.db['queue_del_pilots'](['a','b'])
+        ret = yield self.get_tables(['pilot'])
+        self.assertEqual([x['pilot_id'] for x in ret['pilot']], ['c'])
+
+        # reset task
+        tables = {'pilot':[
+                    {'pilot_id':'a', 'grid_queue_id':'', 'submit_time':'',
+                     'submit_dir':'', 'tasks': 't1'}
+                  ],
+                  'search':[
+                    {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                     'gridspec': '', 'name': '1', 'task_status': 'processing'},
+                  ],
+                  'task':[
+                    {'task_id':'t1', 'status':'processing', 'prev_status':'idle',
+                     'error_message':None, 'status_changed':'',
+                     'submit_dir':'', 'grid_queue_id':'',
+                     'failures':0, 'evictions':0, 'depends': None, 'requirements': '',
+                     'task_rel_id':'tr1'},
+                  ],
+                 }
+        yield self.set_tables(tables)
+        yield self.db['queue_del_pilots']('a')
+        ret = yield self.get_tables(['pilot','search'])
+        if ret['pilot']:
+            raise Exception('did not delete pilot')
+        self.assertEqual(ret['search'][0]['task_status'], 'reset')
+
+        # query error
+        for i in range(2):
+            yield self.set_tables({'pilot':[]})
+            yield self.db['queue_add_pilot'](pilot)
+            self.set_failures([False for _ in range(i)]+[True])
+            try:
+                yield self.db['queue_del_pilots']({'a','c'})
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_400_queue_get_cfg_for_task(self):
+        """Test queue_get_cfg_for_task"""
         config_data = """
 {"version":3,
  "parent_id":0,
@@ -1892,51 +1831,41 @@ class dbmethods_queue_test(dbmethods_base):
             ],
         }
 
-        cb.called = False
-        self.mock.setup(tables)
-
-        self._db.queue_get_cfg_for_task('t1',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if cb.ret != config_data:
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return config')
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_cfg_for_task']('t1')
+        self.assertEqual(ret, config_data)
 
         # sql error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_get_cfg_for_task('t1',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not raise exception')
+        try:
+            yield self.db['queue_get_cfg_for_task']('t1')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
         # bad task
-        self._db.queue_get_cfg_for_task('t32',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not raise exception')
+        self.set_failures(None)
+        try:
+            yield self.db['queue_get_cfg_for_task']('t32')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
         # bad task_id
         try:
-            self._db.queue_get_cfg_for_task(None,callback=cb)
-        except Exception:
+            yield self.db['queue_get_cfg_for_task'](None)
+        except:
             pass
         else:
-            raise Exception('did not raise exception')
+            raise Exception('did not raise Exception')
 
     @unittest_reporter
-    def test_131_queue_get_cfg_for_dataset(self):
+    def test_410_queue_get_cfg_for_dataset(self):
         """Test queue_get_cfg_for_dataset"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
-
         config_data = """
 {"version":3,
  "parent_id":0,
@@ -1958,186 +1887,115 @@ class dbmethods_queue_test(dbmethods_base):
             ],
         }
 
-        cb.called = False
-        self.mock.setup(tables)
-
-        self._db.queue_get_cfg_for_dataset('d1',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if cb.ret != config_data:
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return config')
+        yield self.set_tables(tables)
+        ret = yield self.db['queue_get_cfg_for_dataset']('d1')
+        self.assertEqual(ret, config_data)
 
         # sql error
-        cb.called = False
-        self.mock.setup(tables)
-        self.mock.failures = 1
+        yield self.set_tables(tables)
+        self.set_failures([True])
 
-        self._db.queue_get_cfg_for_dataset('d1',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not raise exception')
+        try:
+            yield self.db['queue_get_cfg_for_dataset']('d1')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
         # bad dataset
-        self._db.queue_get_cfg_for_dataset('d32',callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not raise exception')
+        self.set_failures(None)
+        try:
+            yield self.db['queue_get_cfg_for_dataset']('d32')
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
 
         # bad dataset_id
         try:
-            self._db.queue_get_cfg_for_dataset(None,callback=cb)
-        except Exception:
+            yield self.db['queue_get_cfg_for_dataset'](None)
+        except:
             pass
         else:
-            raise Exception('did not raise exception')
+            raise Exception('did not raise Exception')
 
     @unittest_reporter
-    def test_150_queue_set_site_queues(self):
-        """Test queue_set_site_queues"""
-        def cb(ret):
-            cb.called = True
-            cb.ret = ret
+    def test_500_queue_add_task_lookup(self):
+        """Test queue_add_task_lookup"""
+        r = Node_Resources.copy()
+        tasks = {'t1':r}
+        yield self.set_tables({'task_lookup':[]})
+        yield self.db['queue_add_task_lookup'](tasks)
+        ret = (yield self.get_tables(['task_lookup']))['task_lookup']
+        self.assertEqual(ret[0]['task_id'], 't1')
+        for k in r:
+            self.assertEqual(ret[0]['req_'+k], r[k])
 
-        now = dbmethods.nowstr()
+        # replacement
+        r[k] = 12345
+        yield self.db['queue_add_task_lookup'](tasks)
+        ret = (yield self.get_tables(['task_lookup']))['task_lookup']
+        self.assertEqual(ret[0]['task_id'], 't1')
+        for k in r:
+            self.assertEqual(ret[0]['req_'+k], r[k])
+
+        # query error
+        self.set_failures([True])
+        try:
+            yield self.db['queue_add_task_lookup'](tasks)
+        except:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+    @unittest_reporter
+    def test_510_queue_get_task_lookup(self):
+        """Test queue_get_task_lookup"""
+        r = Node_Resources.copy()
+        tasks = {'t1':r}
+
         tables = {
-            'site':[
-                {'site_id':'s1','name':'n','institution':'inst',
-                 'queues':'{}','auth_key':None,'website_url':'',
-                 'version':'2','last_update':now,'admin_name':'',
-                 'admin_email':''},
-            ],
+            'search':[
+                {'task_id':'t1', 'job_id': 'j1', 'dataset_id': 'd1',
+                 'gridspec': 'grid', 'name': '1', 'task_status': 'queued'},
+            ],'task_lookup':[],
         }
+        yield self.set_tables(tables)
+        yield self.db['queue_add_task_lookup'](tasks)
 
-        cb.called = False
-        self.mock.setup({})
-        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+        ret = yield self.db['queue_get_task_lookup']()
+        self.assertEqual(ret['t1'], r)
+        ret = (yield self.get_tables(['task_lookup']))['task_lookup']
+        if not ret:
+            raise Exception('task_lookup deleted')
 
-        self._db.queue_set_site_queues('s0',queues,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if cb.ret is not True:
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return True')
-        endtables = self.mock.get(['site'])
-        if ((not endtables['site']) or
-            endtables['site'][0]['site_id'] != 's0'):
-            raise Exception('did not set site')
-        expected = json_encode(queues)
-        if endtables['site'][0]['queues'] != expected:
-            logger.info('expected: %r',expected)
-            logger.info('received: %r',endtables['site'][0]['queues'])
-            raise Exception('did not set queues')
+        # now insert a bad task
+        tasks = {'t2':r}
+        yield self.set_tables(tables)
+        yield self.db['queue_add_task_lookup'](tasks)
+        
+        ret = yield self.db['queue_get_task_lookup']()
+        self.assertEqual(ret, {})
+        ret = (yield self.get_tables(['task_lookup']))['task_lookup']
+        if ret:
+            raise Exception('task_lookup not deleted')
 
-        # update no queue
-        cb.called = False
-        self.mock.setup(tables)
-        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
+        # query error
+        for i in range(3):
+            yield self.set_tables(tables)
+            yield self.db['queue_add_task_lookup'](tasks)
+            self.set_failures([False for _ in range(i)]+[True])
+            try:
+                yield self.db['queue_get_task_lookup'](tasks)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+            self.set_failures(False)
+            ret = (yield self.get_tables(['task_lookup']))['task_lookup']
+            if not ret:
+                raise Exception('task_lookup deleted')
 
-        self._db.queue_set_site_queues('s1',queues,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if cb.ret is not True:
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return True')
-        endtables = self.mock.get(['site'])
-        if ((not endtables['site']) or
-            endtables['site'][0]['site_id'] != 's1'):
-            raise Exception('did not set site')
-        expected = json_encode(queues)
-        if endtables['site'][0]['queues'] != expected:
-            logger.info('expected: %r',expected)
-            logger.info('received: %r',endtables['site'][0]['queues'])
-            raise Exception('did not set queues')
-
-        # update existing
-        tables2 = {
-            'site':[
-                {'site_id':'s1','name':'n','institution':'inst',
-                 'queues':'{"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}','auth_key':None,'website_url':'',
-                 'version':'2','last_update':now,'admin_name':'',
-                 'admin_email':''},
-            ],
-        }
-        cb.called = False
-        self.mock.setup(tables2)
-        queues = {"g1":{"type":"b","description":"desc","resources":{"disk":[20,10]}}}
-
-        self._db.queue_set_site_queues('s1',queues,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if cb.ret is not True:
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return True')
-        endtables = self.mock.get(['site'])
-        if ((not endtables['site']) or
-            endtables['site'][0]['site_id'] != 's1'):
-            raise Exception('did not set site')
-        expected = json_encode({"g1":{"type":"b","description":"desc","resources":{"mem":[20,10],"disk":[20,10]}}})
-        if endtables['site'][0]['queues'] != expected:
-            logger.info('expected: %r',expected)
-            logger.info('received: %r',endtables['site'][0]['queues'])
-            raise Exception('did not set queues')
-
-        # bad queue db info
-        tables3 = {
-            'site':[
-                {'site_id':'s0','name':'n','institution':'inst',
-                 'queues':'garbage','auth_key':None,'website_url':'',
-                 'version':'2','last_update':now,'admin_name':'',
-                 'admin_email':''},
-            ],
-        }
-        cb.called = False
-        self.mock.setup(tables3)
-        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
-
-        self._db.queue_set_site_queues('s0',queues,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return Exception')
-        endtables = self.mock.get(['site'])
-        if not cmp_dict(tables3,endtables):
-            raise Exception('tables modified')
-
-        # bad queue insert info
-        cb.called = False
-        self.mock.setup({'site':[]})
-        queues = lambda a:a+1 # something that can't be json
-
-        self._db.queue_set_site_queues('s0',queues,callback=cb)
-        if cb.called is False:
-            raise Exception('callback not called')
-        if not isinstance(cb.ret,Exception):
-            logger.info('ret: %r',cb.ret)
-            raise Exception('did not return Exception')
-        endtables = self.mock.get(['site'])
-        if not cmp_dict(tables3,endtables):
-            raise Exception('tables modified')
-
-        # sql error
-        queues = {"g1":{"type":"t","description":"desc","resources":{"mem":[20,10]}}}
-        for i in range(1,3):
-            cb.called = False
-            self.mock.setup({'site':[]})
-            self.mock.failures = i
-            logger.info('failure: %d',i)
-
-            self._db.queue_set_site_queues('s0',queues,callback=cb)
-            if cb.called is False:
-                raise Exception('callback not called')
-            if not isinstance(cb.ret,Exception):
-                logger.info('ret: %r',cb.ret)
-                raise Exception('did not raise exception')
-            endtables = self.mock.get(['site'])
-            if endtables['site']:
-                raise Exception('tables modified')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

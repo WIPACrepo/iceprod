@@ -50,10 +50,10 @@ class queue(_Methods_Base):
             site_id (str): The site id
             queues (dict): The new site queues
         """
-        with (yield self.db.acquire_lock('site')):
+        with (yield self.parent.db.acquire_lock('site')):
             sql = 'select * from site where site_id = ?'
             bindings = (site_id,)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if len(ret) > 0 and len(ret[0]) > 0:
                 # already a site entry, so just update
                 try:
@@ -83,12 +83,12 @@ class queue(_Methods_Base):
                     raise
                 sql = 'insert into site (site_id,queues) values (?,?)'
                 bindings = (site_id,queues)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('site',site_id,nowstr())
                 try:
-                    yield self.db.query(sql3, bindings3)
+                    yield self.parent.db.query(sql3, bindings3)
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -106,7 +106,7 @@ class queue(_Methods_Base):
         Returns:
             dict: {status:{task_id:task}}
         """
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select task_id from search where '
                 sql += 'task_status in ("waiting","queued","processing","reset","resume")'
@@ -115,17 +115,19 @@ class queue(_Methods_Base):
                     bindings = ('%'+gridspec+'%',)
                 else:
                     bindings = tuple()
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 tasks = set(row[0] for row in ret)
 
                 sql = 'select * from task where task_id in (%s)'
                 task_groups = {}
-                tasks = self._queue_get_task_from_ret(self._bulk_select(conn,sql,tasks))
-                for task_id in tasks:
-                    status = tasks[task_id]['status']
-                    if status not in task_groups:
-                        task_groups[status] = {}
-                    task_groups[status][task_id] = tasks[task_id]
+                for f in self._bulk_select(sql,tasks):
+                    ret = yield f
+                    tasks = self._queue_get_task_from_ret(ret)
+                    for task_id in tasks:
+                        status = tasks[task_id]['status']
+                        if status not in task_groups:
+                            task_groups[status] = {}
+                        task_groups[status][task_id] = tasks[task_id]
             except:
                 logger.info('error getting active tasks', exc_info=True)
                 raise
@@ -144,13 +146,13 @@ class queue(_Methods_Base):
         Returns:
             list: [(task_id, grid_queue_id, submit_time, and submit_dir)]
         """
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select task_id from search '
                 sql += 'where gridspec like ? '
                 sql += ' and task_status in ("queued","processing")'
                 bindings = ('%'+gridspec+'%',)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 tasks = set(row[0] for row in ret)
 
                 sql = 'select * from task where task_id in (%s)'
@@ -204,14 +206,14 @@ class queue(_Methods_Base):
                 sql2 += ' status = ?, status_changed = ? where task_id in ('+b+')'
                 bindings = (status,)+tuple(t)
                 bindings2 = (status,now)+tuple(t)
-                yield self.db.query([sql,sql2],[bindings,bindings2])
+                yield self.parent.db.query([sql,sql2],[bindings,bindings2])
                 
                 for tt in t:
                     if self._is_master():
                         sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         bindings3 = ('search',tt,now)
                         bindings4 = ('task',tt,now)
-                        yield self.db.query([sql3,sql3],[bindings3,bindings4])
+                        yield self.parent.db.query([sql3,sql3],[bindings3,bindings4])
                     else:
                         bindings = (status,tt)
                         bindings2 = (status,now,tt)
@@ -252,7 +254,7 @@ class queue(_Methods_Base):
         else:
             raise Exception('task_id is not a str or iterable')
 
-        ret = yield self.db.query(sql,bindings)
+        ret = yield self.parent.db.query(sql,bindings)
         raise tornado.gen.Return(self._queue_get_task_from_ret(ret))
 
     @tornado.gen.coroutine
@@ -278,7 +280,7 @@ class queue(_Methods_Base):
         else:
             raise Exception('grid_queue_id is not a str or iterable')
 
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(self._queue_get_task_from_ret(ret))
 
     @tornado.gen.coroutine
@@ -295,12 +297,12 @@ class queue(_Methods_Base):
         sql = 'update task set submit_dir = ? '
         sql += ' where task_id = ?'
         bindings = (submit_dir,task)
-        yield self.db.query(sql, bindings)
+        yield self.parent.db.query(sql, bindings)
         if self._is_master():
             sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
             bindings3 = ('task',task,nowstr())
             try:
-                yield self.db.query(sql3, bindings3)
+                yield self.parent.db.query(sql3, bindings3)
             except:
                 logger.info('error updating master_update_history',
                             exc_info=True)
@@ -318,7 +320,7 @@ class queue(_Methods_Base):
             num_tasks (int): Number of tasks to buffer (rounds up to buffer
                              a full job at once).
         """
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             now = nowstr()
 
             # get possible datasets to buffer from
@@ -338,7 +340,7 @@ class queue(_Methods_Base):
             elif gridspec:
                 logger.info('in buffer_jobs_tasks, unknown gridspec %r', gridspec)
                 raise Exception('unknown gridspec type')
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             need_to_buffer = {}
             for d, s, gs, js in ret:
                 logger.debug('gs=%r, gridspec=%r', gs, gridspec)
@@ -354,7 +356,7 @@ class queue(_Methods_Base):
             sql += ','.join(['?' for _ in need_to_buffer])
             sql += ')'
             bindings = tuple(need_to_buffer)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             already_buffered = {}
             for d, job_id in ret:
                 if d not in already_buffered:
@@ -371,7 +373,7 @@ class queue(_Methods_Base):
                 sql += 'where dataset_id in ('
                 sql += ','.join('?' for _ in need_to_buffer)+')'
                 bindings = tuple(need_to_buffer)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 for tr_id, dataset_id, index, name, deps in ret:
                     if 'task_rels' not in need_to_buffer[dataset_id]:
                         need_to_buffer[dataset_id]['task_rels'] = {}
@@ -424,13 +426,13 @@ class queue(_Methods_Base):
                                         sql = 'select dataset_id,task_index,depends from task_rel '
                                         sql += 'where task_rel_id = ?'
                                         bindings = (d,)
-                                        ret = yield self.db.query(sql, bindings)
+                                        ret = yield self.parent.db.query(sql, bindings)
                                         for dataset_id, index, deps in ret:
                                             task_rel_ids[d] = (dataset_id,index,deps)
                                     
                                     sql = 'select job_id, task_id from search where dataset_id = ?'
                                     bindings = (task_rel_ids[d][0],)
-                                    ret = yield self.db.query(sql, bindings)
+                                    ret = yield self.parent.db.query(sql, bindings)
                                     jobs = {}
                                     for j, t in ret:
                                         if j not in jobs:
@@ -441,7 +443,7 @@ class queue(_Methods_Base):
                                     sql += 'job_index = ? and job_id in ('
                                     sql += ','.join('?' for _ in jobs) + ')'
                                     bindings = (job_index,)+tuple(jobs)
-                                    ret = yield self.db.query(sql, bindings)
+                                    ret = yield self.parent.db.query(sql, bindings)
                                     if (not ret) or not ret[0]:
                                         raise Exception('job_index not found')
                                     tasks = sorted(jobs[ret[0][0]], key=lambda k: GlobalID.char2int(k))
@@ -452,7 +454,7 @@ class queue(_Methods_Base):
                             raise
 
                         # make job
-                        job_id = yield self.db.increment_id('job')
+                        job_id = yield self.parent.db.increment_id('job')
                         sql = 'insert into job (job_id, status, job_index, '
                         sql += 'status_changed) values (?,?,?,?)'
                         bindings = (job_id, 'processing', job_index, now)
@@ -460,7 +462,7 @@ class queue(_Methods_Base):
                         db_updates_bindings.append(bindings)
 
                         # make tasks
-                        task_ids = [(yield self.db.increment_id('task'))
+                        task_ids = [(yield self.parent.db.increment_id('task'))
                                     for _ in task_rels]
                         sql = 'insert into task (task_id,status,prev_status,'
                         sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
@@ -488,7 +490,7 @@ class queue(_Methods_Base):
                         num_tasks -= len(task_rels)
 
                     # write to database
-                    yield self.db.query(db_updates_sql, db_updates_bindings)
+                    yield self.parent.db.query(db_updates_sql, db_updates_bindings)
                     for i in range(len(db_updates_sql)):
                         sql = db_updates_sql[i]
                         bindings = db_updates_bindings[i]
@@ -496,7 +498,7 @@ class queue(_Methods_Base):
                             sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                             bindings3 = (sql.split()[2],bindings[0],now)
                             try:
-                                yield self.db.query(sql3, bindings3)
+                                yield self.parent.db.query(sql3, bindings3)
                             except:
                                 logger.info('error updating master_update_history',
                                             exc_info=True)
@@ -523,7 +525,7 @@ class queue(_Methods_Base):
             sql += ' and gridspec like ?'
             bindings.append('%'+gridspec+'%')
         bindings = tuple(bindings)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         datasets = {}
         for row in ret:
             d = self._list_to_dict('dataset',row)
@@ -553,7 +555,7 @@ class queue(_Methods_Base):
         logger.debug('queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r',
                      num, global_queueing, dataset_prios, gridspec, gridspec_assignment, resources)
         
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             # get all tasks for processing datasets so we can do dependency check
             try:
                 sql = 'select dataset_id, task_id, task_status '
@@ -563,7 +565,7 @@ class queue(_Methods_Base):
                 if gridspec:
                     sql += 'and gridspec = ? '
                     bindings += (gridspec,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 tasks = {}
                 for dataset, task_id, status in ret:
                     tasks[task_id] = {'dataset':dataset, 'status':status}
@@ -618,7 +620,7 @@ class queue(_Methods_Base):
                                 sql = 'select task_status from search where task_id = ?'
                                 bindings = (dep,)
                                 try:
-                                    ret = yield self.db.query(sql, bindings)
+                                    ret = yield self.parent.db.query(sql, bindings)
                                 except:
                                     logger.info('error getting depend task status for %s',
                                                 dep, exc_info=True)
@@ -698,7 +700,7 @@ class queue(_Methods_Base):
                 sql = 'select job_id,job_index from job where job_id in ('
                 sql += ','.join('?' for _ in job_ids)+')'
                 bindings = tuple(job_ids)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     logger.warn('failed to find job with known job_id')
                     raise Exception('no job_index')
@@ -728,14 +730,14 @@ class queue(_Methods_Base):
                 sql2 += ')'
                 bindings2.extend(tasks)
                 bindings2 = tuple(bindings2)
-                yield self.db.query([sql,sql2], [bindings,bindings2])
+                yield self.parent.db.query([sql,sql2], [bindings,bindings2])
                 if self._is_master():
                     for t in tasks:
                         sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                         bindings3 = ('search',t,now)
                         bindings4 = ('task',t,now)
                         try:
-                            yield self.db.query([sql3,sql3], [bindings3,bindings4])
+                            yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                         except:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
@@ -777,7 +779,7 @@ class queue(_Methods_Base):
             list: A list of pilot ids.
         """
         try:
-            ret = [(yield self.db.increment_id('pilot')) for _ in range(num)]
+            ret = [(yield self.parent.db.increment_id('pilot')) for _ in range(num)]
         except:
             logger.info('new pilot_ids error', exc_info=True)
             raise
@@ -802,7 +804,7 @@ class queue(_Methods_Base):
                 grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
                 sql.append(s)
                 bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
         except Exception as e:
             logger.debug('error adding pilot', exc_info=True)
             raise
@@ -817,7 +819,7 @@ class queue(_Methods_Base):
         """
         sql = 'select * from pilot'
         bindings = tuple()
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         pilots = []
         for row in ret:
             tmp = self._list_to_dict('pilot',row)
@@ -848,7 +850,7 @@ class queue(_Methods_Base):
                 sql = 'select tasks from pilot where pilot_id in ('
                 sql += ','.join('?' for _ in p)+')'
                 bindings = tuple(p)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 for row in ret:
                     tasks = row[0].strip()
                     if tasks:
@@ -857,12 +859,12 @@ class queue(_Methods_Base):
                 sql = 'delete from pilot where pilot_id in ('
                 sql += ','.join('?' for _ in p)+')'
                 bindings = tuple(p)
-                yield self.db.query(sql, bindings)
+                yield self.parent.db.query(sql, bindings)
         except:
             logger.debug('error deleting pilots', exc_info=True)
             raise
         if task_ids:
-            yield self.queue_set_task_status(task_ids,'reset',callback=callback)
+            yield self.queue_set_task_status(task_ids,'reset')
 
     @tornado.gen.coroutine
     def queue_get_cfg_for_task(self, task_id):
@@ -879,11 +881,12 @@ class queue(_Methods_Base):
             raise Exception('bad task_id')
         sql = 'select task_id,dataset_id from search where task_id = ?'
         bindings = (task_id,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if not ret or len(ret) < 1 or len(ret[0]) < 2:
             raise Exception('get_cfg_for_task did not return a dataset_id')
         else:
-            self.queue_get_cfg_for_dataset(ret[0][1])
+            ret = yield self.queue_get_cfg_for_dataset(ret[0][1])
+            raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
     def queue_get_cfg_for_dataset(self, dataset_id):
@@ -900,7 +903,7 @@ class queue(_Methods_Base):
             raise Exception('bad dataset_id')
         sql = 'select dataset_id,config_data from config where dataset_id = ?'
         bindings = (dataset_id,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if not ret or len(ret) < 1 or len(ret[0]) < 2:
             raise Exception('get_cfg_for_dataset did not return a config')
         else:
@@ -923,7 +926,7 @@ class queue(_Methods_Base):
         sql += ') values (?,'
         sql += ','.join('?' for k in tasks.values()[0])+')'
         bindings = [(task_id,)+tuple(tasks[task_id].values()) for task_id in tasks]
-        yield self.db.query([sql for _ in bindings], bindings)
+        yield self.parent.db.query([sql for _ in bindings], bindings)
 
     @tornado.gen.coroutine
     def queue_get_task_lookup(self):
@@ -933,11 +936,11 @@ class queue(_Methods_Base):
         Returns:
             dict: tasks
         """
-        with (yield self.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('queue')):
             # get tasks from lookup
             sql = 'select * from task_lookup'
             bindings = tuple()
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             task_ids = {}
             for row in ret:
                 row = self._list_to_dict('task_lookup',row)
@@ -952,7 +955,7 @@ class queue(_Methods_Base):
                 sql += ','.join('?' for _ in tids)
                 sql += ') and task_status = ?'
                 bindings = tuple(tids)+('queued',)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 valid = set()
                 for row in ret:
                     valid.add(row[0])
@@ -963,7 +966,8 @@ class queue(_Methods_Base):
                     sql = 'delete from task_lookup where task_id in ('
                     sql +=  ','.join('?' for _ in remove)+')'
                     bindings = tuple(remove)
-                    yield self.db.query(sql, bindings)
+                    yield self.parent.db.query(sql, bindings)
+                    yield self.queue_set_task_status(remove,'reset')
                 for tid in valid:
                     tasks[tid] = task_ids[tid]
                 task_ids = {t:task_ids[t] for t in task_ids if t not in tids}

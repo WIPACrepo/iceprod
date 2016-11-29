@@ -77,29 +77,29 @@ class website(module.module):
         self.statsd = None
 
     def stop(self):
-        """Stop thread"""
+        """Stop website"""
         # stop nginx
         try:
             if self.nginx:
                 self.nginx.stop()
-        except Exception as e:
-            logger.error('cannot stop Nginx: %r',e)
+        except:
+            logger.error('cannot stop Nginx', exc_info=True)
         # stop tornado
         try:
             if self.http_server:
                 self.http_server.stop()
-        except Exception as e:
-            logger.error('cannot stop tornado: %r',e)
+        except:
+            logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
 
     def kill(self):
-        """Kill thread"""
+        """Kill website"""
         # kill nginx
         try:
             if self.nginx:
                 self.nginx.kill()
-        except Exception as e:
-            logger.error('cannot kill Nginx: %r',e)
+        except:
+            logger.error('cannot kill Nginx', exc_info=True)
         super(website,self).kill()
 
     def logrotate(self):
@@ -111,7 +111,7 @@ class website(module.module):
                 self.nginx.logrotate()
             # tornado uses regular python logs, which rotate automatically
         except:
-            pass # ignore errors in favor of continuous running
+            logger.warn('error in logrotate', exc_info=True)
 
     def start(self):
         """Run the website"""
@@ -366,7 +366,7 @@ class MyHandler(tornado.web.RequestHandler):
         try:
             f = self.modules['db'][func_name](**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
-                f = yield tornado.gen.with_timeout(f)
+                f = yield tornado.gen.with_timeout(60,f)
         except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise

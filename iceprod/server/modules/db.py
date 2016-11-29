@@ -13,12 +13,14 @@ from itertools import izip
 from functools import partial
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable
+import inspect
 
 import tornado.locks
 from tornado.concurrent import run_on_executor
 
 from concurrent.futures import ThreadPoolExecutor
 
+import iceprod.server
 from iceprod.server import module
 from iceprod.server import dbmethods
 from iceprod.server import GlobalID, get_pkgdata_filename
@@ -42,13 +44,13 @@ class db(module.module):
             for m,obj in inspect.getmembers(c, callable):
                 if m.startswith('_'):
                     continue
-                if m in self.services:
+                if m in self.service:
                     logger.critical('duplicate method name in dbmethods: %s',m)
                     raise Exception('duplicate method name in dbmethods: %s'%m)
-                self.services[m] = obj
+                self.service[m] = obj
 
     def start(self):
-        """Start thread"""
+        """Start database"""
         super(db,self).start()
         try:
             t = self.cfg['db']['type']
@@ -62,7 +64,7 @@ class db(module.module):
                 raise Exception('Unknown database type: %s'%t)
         except Exception:
             logger.critical('failed to start db', exc_info=True)
-            self.modules['daemon'].stop()
+            self.modules['daemon']['stop']()
 
     def stop(self):
         self.db = None
@@ -144,7 +146,7 @@ class DBAPI(object):
         try:
             site_id = self.cfg['site_id']
             sql = 'select * from setting where setting_id = 0'
-            ret = self._db_read(conn, sql)
+            ret = self._db_read(conn, sql, tuple())
             if ret and len(ret) >= 1:
                 return
             # table is not initialized, so do so
@@ -182,7 +184,7 @@ class DBAPI(object):
         """
         if lock_name not in self.locks:
             self.locks[lock_name] = tornado.locks.Lock()
-        return self.locks[lock_name]
+        return self.locks[lock_name].acquire()
 
     @run_on_executor
     def increment_id(self, table_name):
@@ -195,11 +197,11 @@ class DBAPI(object):
         Returns:
             str: A table id
         """
-        conn = self.connections.pop()
+        conn = self._connections.pop()
         try:
             return self._increment_id_helper(conn, table_name)
         finally:
-            self.connections.append(conn)
+            self._connections.append(conn)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
@@ -217,14 +219,18 @@ class DBAPI(object):
         Returns:
             iterator or None
         """
-        conn = self.connections.pop()
+        if isinstance(sql, basestring):
+            reading = sql.lower().strip().startswith('select')
+        elif isinstance(sql, Iterable):
+            reading = any(s.lower().strip().startswith('select') for s in sql)
+        conn = self._connections.pop()
         try:
-            if sql.lower().startswith('select'):
-                return self._db_read(self, conn, sql, bindings)
+            if reading:
+                return self._db_read(conn, sql, bindings)
             else:
-                self._db_write(self, conn, sql, bindings)
+                self._db_write(conn, sql, bindings)
         finally:
-            self.connections.append(conn)
+            self._connections.append(conn)
 
     ### Functions that must be overwritten in subclasses ###
 
@@ -346,7 +352,7 @@ else:
                 return
             raise Exception('database busy/locked and timeout')
 
-        def _db_read(self, conn, sql, bindings):
+        def _db_read(self, conn, sql, bindings=None):
             ret = None
             try:
                 with conn as c:
@@ -361,7 +367,7 @@ else:
             logger.debug('_db_read returns %r', ret)
             return ret
 
-        def _db_write(self,conn,sql,bindings,archive_conn,archive_sql,archive_bindings):
+        def _db_write(self, conn, sql, bindings=None):
             try:
                 with conn as c:
                     cur = c.cursor()

@@ -40,14 +40,19 @@ class grid(object):
     # use only these grid states when defining grid status
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
-    def __init__(self,args):
-        if not isinstance(args,(list,tuple)) or len(args) < 4:
-            raise Exception('Bad args - not enough of them')
-        self.gridspec = args[0]
-        self.grid_id, self.name = self.gridspec.split('.', 1)
-        self.queue_cfg = args[1]
-        self.cfg = args[2]
-        self.modules = args[3]
+    def __init__(self, gridspec, queue_cfg, cfg, modules, io_loop, executor):
+        self.gridspec = gridspec
+        self.queue_cfg = queue_cfg
+        self.cfg = cfg
+        self.modules = modules
+        self.io_loop = io_loop
+        self.executor = executor
+
+        if self.gridspec:
+            self.grid_id, self.name = self.gridspec.split('.', 1)
+        else:
+            self.grid_id = self.cfg['site_id']
+            self.name = ''
 
         self.submit_dir = os.path.expanduser(os.path.expandvars(
                 self.cfg['queue']['submit_dir']))
@@ -565,7 +570,7 @@ class grid(object):
         passkey = ret
 
         # write cfg
-        cfg, filelist = self.write_cfg(task)
+        cfg, filelist = yield self.write_cfg(task)
 
         if task['task_id'] != 'pilot':
             # update DB

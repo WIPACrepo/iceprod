@@ -18,6 +18,8 @@ root_path = os.path.dirname( bin_dir )
 if not root_path in sys.path:
     sys.path.append(root_path)
 
+from tornado.ioloop import IOLoop
+
 import iceprod
 import iceprod.server
 import iceprod.core.logger
@@ -60,9 +62,9 @@ check_dependencies()
 def runner(stdout=False):
     # set logger
     if stdout:
-        iceprod.core.logger.setlogger('logfile')
+        iceprod.core.logger.setlogger()
     else:
-        iceprod.core.logger.setlogger('logfile', logfile='iceprod_server.log')
+        iceprod.core.logger.setlogger(logfile='iceprod_server.log')
         iceprod.core.logger.removestdout()
 
     # Change name of process for ps
@@ -78,9 +80,9 @@ def runner(stdout=False):
     def sig_handle(signum, frame):
         logging.warn('signal handler called for %r', signum)
         if signum == signal.SIGINT:
-            io_loop.add_callback_from_signal(s.stop, signum)
+            IOLoop.current().add_callback_from_signal(s.stop)
         else:
-            io_loop.add_callback_from_signal(s.kill, signum)
+            IOLoop.current().add_callback_from_signal(s.kill)
     signal.signal(signal.SIGINT, sig_handle)
     signal.signal(signal.SIGQUIT, sig_handle)
 

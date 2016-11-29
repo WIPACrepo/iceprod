@@ -33,14 +33,15 @@ class dbmethods_node_test(dbmethods_base):
     @unittest_reporter
     def test_01_node_update(self):
         """Test node_update"""
-        self.mock.setup({'node':[]})
+        yield self.set_tables({'node':[]})
+
         hostname = 'host'
         domain = 'domain'
         stats = {'stat1':1,'stat2':2}
 
-        self._db.node_update(hostname=hostname,domain=domain,**stats)
+        yield self.db['node_update'](hostname=hostname,domain=domain,**stats)
 
-        endtables = self.mock.get(['node'])
+        endtables = yield self.get_tables(['node'])
         if len(endtables['node']) != 1:
             logger.info('nodes: %r',endtables['node'])
             raise Exception('node table does not have 1 entry')
@@ -56,9 +57,9 @@ class dbmethods_node_test(dbmethods_base):
 
         # add more stats to same node
         morestats = {'stat2':4,'stat3':3}
-        self._db.node_update(hostname=hostname,domain=domain,**morestats)
+        yield self.db['node_update'](hostname=hostname,domain=domain,**morestats)
 
-        endtables = self.mock.get(['node'])
+        endtables = yield self.get_tables(['node'])
         if len(endtables['node']) != 1:
             logger.info('nodes: %r',endtables['node'])
             raise Exception('node table does not have 1 entry')
@@ -69,19 +70,41 @@ class dbmethods_node_test(dbmethods_base):
             logger.info('expecting: %r',retstats)
             raise Exception('bad more stats')
 
+        # combine stats
+        yield self.set_tables({'node':[]})
+        stats2 = {'a': {'stat1':1,'stat2':2} }
+        morestats2 = {'a': {'stat2':4,'stat3':3} }
+        yield self.db['node_update'](hostname=hostname,domain=domain,**stats2)
+        yield self.db['node_update'](hostname=hostname,domain=domain,**morestats2)
+
+        endtables = yield self.get_tables(['node'])
+        if len(endtables['node']) != 1:
+            logger.info('nodes: %r',endtables['node'])
+            raise Exception('node table does not have 1 entry')
+        retstats = {'a': {'stat1':1,'stat2':4,'stat3':3} }
+        if json_decode(endtables['node'][0]['stats']) != retstats:
+            logger.info('stats: %s',endtables['node'][0]['stats'])
+            logger.info('expecting: %r',retstats)
+            raise Exception('bad more stats')
+
         # failed updates
-        self.mock.setup({'node':[]})
-        self._db.node_update()
-        endtables = self.mock.get(['node'])
+        yield self.set_tables({'node':[]})
+        yield self.db['node_update']()
+        endtables = yield self.get_tables(['node'])
         if endtables['node']:
             raise Exception('node updated when nothing to update')
 
-        # failed updates
-        for i in range(1,3):
-            self.mock.setup({'node':[]})
-            self.mock.failures = i
-            self._db.node_update(hostname=hostname,domain=domain,**stats)
-            endtables = self.mock.get(['node'])
+        # failed query
+        for i in range(2):
+            yield self.set_tables({'node':[]})
+            self.set_failures([False for _ in range(i)]+[True])
+            try:
+                yield self.db['node_update'](hostname=hostname,domain=domain,**stats)
+            except:
+                pass
+            else:
+                raise Exception('did not raise Exception')
+            endtables = yield self.get_tables(['node'])
             if endtables['node']:
                 raise Exception('node updated when failure occurred')
 
@@ -105,10 +128,10 @@ class dbmethods_node_test(dbmethods_base):
             ],
         }
 
-        self.mock.setup(tables)
-        self._db.node_collate_resources(site_id)
+        yield self.set_tables(tables)
+        yield self.db['node_collate_resources'](site_id)
 
-        endtables = self.mock.get(['site'])
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -124,9 +147,9 @@ class dbmethods_node_test(dbmethods_base):
             raise Exception('memory != [4,4]')
 
         # test for no site_id
-        self.mock.setup(tables)
-        self._db.node_collate_resources()
-        endtables = self.mock.get(['site'])
+        yield self.set_tables(tables)
+        yield self.db['node_collate_resources']()
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -136,9 +159,9 @@ class dbmethods_node_test(dbmethods_base):
             raise Exception('site table modified')
 
         # test for no nodes
-        self.mock.setup({'site':tables['site'],'node':[]})
-        self._db.node_collate_resources(site_id)
-        endtables = self.mock.get(['site'])
+        yield self.set_tables({'site':tables['site'],'node':[]})
+        yield self.db['node_collate_resources'](site_id)
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -157,9 +180,9 @@ class dbmethods_node_test(dbmethods_base):
         }
 
         # test for 0 or false resources
-        self.mock.setup(tables2)
-        self._db.node_collate_resources(site_id)
-        endtables = self.mock.get(['site'])
+        yield self.set_tables(tables2)
+        yield self.db['node_collate_resources'](site_id)
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -187,9 +210,9 @@ class dbmethods_node_test(dbmethods_base):
         }
 
         # test for summing resources
-        self.mock.setup(tables3)
-        self._db.node_collate_resources(site_id)
-        endtables = self.mock.get(['site'])
+        yield self.set_tables(tables3)
+        yield self.db['node_collate_resources'](site_id)
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -214,9 +237,9 @@ class dbmethods_node_test(dbmethods_base):
         }
 
         # test for non-number resources
-        self.mock.setup(tables4)
-        self._db.node_collate_resources(site_id)
-        endtables = self.mock.get(['site'])
+        yield self.set_tables(tables4)
+        yield self.db['node_collate_resources'](site_id)
+        endtables = yield self.get_tables(['site'])
         if len(endtables['site']) != 1:
             logger.info('site: %r',endtables['site'])
             raise Exception('site table does not have 1 entry')
@@ -229,11 +252,12 @@ class dbmethods_node_test(dbmethods_base):
             raise Exception('gpu != ["gtx980",0]')
 
         # test for sql errors
-        for i in range(1,4):
-            self.mock.setup(tables)
-            self.mock.failures = i
-            self._db.node_collate_resources(site_id)
-            endtables = self.mock.get(['site'])
+        for i in range(3):
+            yield self.set_tables(tables)
+            self.set_failures([False for _ in range(i)]+[True])
+            yield self.db['node_collate_resources'](site_id)
+
+            endtables = yield self.get_tables(['site'])
             if len(endtables['site']) != 1:
                 logger.info('site: %r',endtables['site'])
                 raise Exception('site table does not have 1 entry')
@@ -258,35 +282,28 @@ class dbmethods_node_test(dbmethods_base):
             ],
         }
 
-        def cb(ret):
-            cb.ret = ret
-
-        self.mock.setup(tables)
-        cb.ret = False
-        self._db.node_get_site_resources(site_id,callback=cb)
-
-        if isinstance(cb.ret,Exception):
-            logger.info(cb.ret)
-            raise Exception('exception raised in get_site_resources')
+        yield self.set_tables(tables)
+        ret = yield self.db['node_get_site_resources'](site_id)
         ret_resources = {"memory":2,"cpu":6}
-        if cb.ret != ret_resources:
-            logger.info('expected: %r',ret_resources)
-            logger.info('got: %r',cb.ret)
-            raise Exception('did not get expected resources')
+        self.assertEqual(ret, ret_resources)
 
         # test no site_id
-        self.mock.setup(tables)
-        cb.ret = False
-        self._db.node_get_site_resources(callback=cb)
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
+        yield self.set_tables(tables)
+        try:
+            ret = yield self.db['node_get_site_resources']()
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
 
         # test no sites
-        self.mock.setup({'site':[]})
-        cb.ret = False
-        self._db.node_get_site_resources(site_id,callback=cb)
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
+        yield self.set_tables({'site':[]})
+        try:
+            ret = yield self.db['node_get_site_resources'](site_id)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
 
         # test no resources
         tables2 = {
@@ -298,15 +315,9 @@ class dbmethods_node_test(dbmethods_base):
                  'admin_name':'','admin_email':''},
             ],
         }
-        self.mock.setup(tables2)
-        cb.ret = False
-        self._db.node_get_site_resources(site_id,callback=cb)
-        if isinstance(cb.ret,Exception):
-            logger.info(cb.ret)
-            raise Exception('exception raised in get_site_resources')
-        if cb.ret != {}:
-            logger.info('got: %r',cb.ret)
-            raise Exception('did not no resources')
+        yield self.set_tables(tables2)
+        ret = yield self.db['node_get_site_resources'](site_id)
+        self.assertEqual(ret, {})
 
         # test multiple queues
         resources2 = '{"memory":[4,2],"gpu":["gtx980",0]}'
@@ -320,26 +331,39 @@ class dbmethods_node_test(dbmethods_base):
                  'admin_name':'','admin_email':''},
             ],
         }
-        self.mock.setup(tables)
-        cb.ret = False
-        self._db.node_get_site_resources(site_id,callback=cb)
-        if isinstance(cb.ret,Exception):
-            logger.info(cb.ret)
-            raise Exception('exception raised in get_site_resources')
+        yield self.set_tables(tables)
+        ret = yield self.db['node_get_site_resources'](site_id)
         ret_resources = {"memory":4,"cpu":6,"gpu":"gtx980"}
-        if cb.ret != ret_resources:
-            logger.info('expected: %r',ret_resources)
-            logger.info('got: %r',cb.ret)
-            raise Exception('did not get expected resources')
+        self.assertEqual(ret, ret_resources)
 
+        # query error
+        yield self.set_tables(tables)
+        self.set_failures(True)
+        try:
+            ret = yield self.db['node_get_site_resources'](site_id)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
 
-        # test sql error
-        self.mock.setup(tables)
-        self.mock.failures = 1
-        cb.ret = False
-        self._db.node_get_site_resources(site_id,callback=cb)
-        if not isinstance(cb.ret,Exception):
-            raise Exception('did not return exception')
+        # resource error
+        tables = {
+            'site':[
+                {'site_id':site_id,'name':'n','institution':'inst',
+                 'queues':'{"'+gridspec+'":{"type":"condor","description":"desc","resources":}}',
+                 'auth_key':None,'website_url':'','version':'2',
+                 'last_update':dbmethods.nowstr(),
+                 'admin_name':'','admin_email':''},
+            ],
+        }
+        self.set_failures(False)
+        yield self.set_tables(tables)
+        try:
+            ret = yield self.db['node_get_site_resources'](site_id)
+        except Exception:
+            pass
+        else:
+            raise Exception('did not raise exception')
 
 
 def load_tests(loader, tests, pattern):

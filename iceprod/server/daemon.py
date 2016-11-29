@@ -114,7 +114,7 @@ class Daemon(object):
         try:
             os.killpg(pid, sig)
             if waitfordeath:
-                for _ in xrange(5):
+                for _ in range(5):
                     time.sleep(1)
                     os.killpg(pid, sig)
                 return False

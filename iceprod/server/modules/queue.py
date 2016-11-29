@@ -19,7 +19,7 @@ from statsd import StatsClient
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
-from iceprod.server.gridftp import SiteGlobusProxy
+from iceprod.server.globus import SiteGlobusProxy
 import iceprod.core.functions
 
 class StopException(Exception):
@@ -38,6 +38,8 @@ class queue(module.module):
 
         self.proxy = None
         self.statsd = None
+
+        self.max_duration = 3600*12
 
     def start(self):
         """Start the queue"""
@@ -74,7 +76,7 @@ class queue(module.module):
         self.plugins = []
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
         plugin_cfg = [self.cfg['queue'][x] for x in plugin_names]
-        plugin_types = [x['type'] for x in self.plugin_cfg]
+        plugin_types = [x['type'] for x in plugin_cfg]
         logger.info('queueing plugins in cfg: %r',{x:y for x,y in izip(plugin_names,plugin_types)})
         if not plugin_names:
             logger.debug('%r',self.cfg['queue'])
@@ -113,7 +115,6 @@ class queue(module.module):
 
         # instantiate all plugins that are required
         gridspec_types = {}
-        self.max_duration = 0
         if 'max_task_queued_time' in self.cfg['queue']:
             self.max_duration += self.cfg['queue']['max_task_queued_time']
         if 'max_task_processing_time' in self.cfg['queue']:
@@ -122,9 +123,9 @@ class queue(module.module):
             logger.warn('queueing plugin found: %s = %s', p_name, p_cfg['type'])
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
-                    self.modules)
+                    self.modules, self.io_loop, self.executor)
             try:
-                self.plugins.append(iceprod.server.run_module(p,args))
+                self.plugins.append(iceprod.server.run_module(p,*args))
             except Exception as e:
                 logger.error('Error importing plugin',exc_info=True)
             else:
@@ -196,13 +197,10 @@ class queue(module.module):
 
             # do global queueing
             try:
+                plugin_cfg = self.plugins[0].cfg
+
                 # get num tasks to queue
-                tasks_on_queue = [1000, 100]
-                try:
-                    tasks_on_queue = self.cfg['queue'][self.plugins[0]]['tasks_on_queue']
-                except:
-                    logger.warn('failed to get tasks_on_queue from cfg',
-                                exc_info=True)
+                tasks_on_queue = plugin_cfg['tasks_on_queue']
                 num = min(tasks_on_queue[1] - num_queued, tasks_on_queue[0])
                 if num > 0:
                     # get priority factors
@@ -211,21 +209,21 @@ class queue(module.module):
                     qf_t = 1.0
                     if 'queueing_factor_priority' in self.cfg['queue']:
                         qf_p = self.cfg['queue']['queueing_factor_priority']
-                    elif plugin_cfg:
-                        qf_p = plugin_cfg[0]['queueing_factor_priority']
+                    elif 'queueing_factor_priority' in plugin_cfg:
+                        qf_p = plugin_cfg['queueing_factor_priority']
                     if 'queueing_factor_dataset' in self.cfg['queue']:
                         qf_d = self.cfg['queue']['queueing_factor_dataset']
-                    elif plugin_cfg:
-                        qf_d = plugin_cfg[0]['queueing_factor_dataset']
+                    elif 'queueing_factor_dataset' in plugin_cfg:
+                        qf_d = plugin_cfg['queueing_factor_dataset']
                     if 'queueing_factor_tasks' in self.cfg['queue']:
                         qf_t = self.cfg['queue']['queueing_factor_tasks']
-                    elif plugin_cfg:
-                        qf_t = plugin_cfg[0]['queueing_factor_tasks']
+                    elif 'queueing_factor_tasks' in plugin_cfg:
+                        qf_t = plugin_cfg['queueing_factor_tasks']
                     yield self.global_queueing(qf_p,qf_d,qf_t,num=num)
             except Exception:
                 logger.error('error in global queueing', exc_info=True)
 
-        except Exception as e:
+        except:
             logger.error('queue_loop stopped because of exception',
                         exc_info=True)
         else:
@@ -236,7 +234,7 @@ class queue(module.module):
                     timeout = 300
             else:
                 timeout = 300
-            self.io_loop.call_later(tiemout, self.queue_loop)
+            self.io_loop.call_later(timeout, self.queue_loop)
 
     @run_on_executor
     def check_proxy(self, duration=None):

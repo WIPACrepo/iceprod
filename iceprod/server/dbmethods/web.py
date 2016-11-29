@@ -52,7 +52,7 @@ class web(_Methods_Base):
             sql += ' search.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
         sql += ' group by search.task_status '
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         task_groups = {}
         for status,num in ret:
             task_groups[status] = num
@@ -63,10 +63,12 @@ class web(_Methods_Base):
         """
         Get the number of datasets in each state on this site and plugin.
 
+        Filters are specified as key=['match1','match2']
+
         Args:
             gridspec (str): grid and plugin id
             groups (iterable): Fields to group by
-            **filters (dict): Optional filters for the query
+            **filters (dict): (optional) filters for the query
 
         Returns:
             list: [{dataset}]
@@ -82,8 +84,8 @@ class web(_Methods_Base):
         if gridspec or any(filters.values()):
             sql += ' where '
         if gridspec:
-            sql += ' gridspec like "%?%" '
-            bindings.append(gridspec)
+            sql += ' gridspec like ? '
+            bindings.append('%'+gridspec+'%')
         for f in filters:
             if filters[f]:
                 sql += ' '+filtered_input(f)+' in ('
@@ -92,9 +94,9 @@ class web(_Methods_Base):
                 bindings.extend(filters[f])
         if groups:
             sql += ' group by ' + ','.join(groups)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
 
-        def grouper(self, data, groups, val):
+        def grouper(data, groups, val):
             if len(groups) == 1:
                 data[groups[0]] = val
             else:
@@ -104,9 +106,8 @@ class web(_Methods_Base):
 
         if groups:
             dataset_groups = {}
-            if ret and ret[0]:
-                for row in ret:
-                    grouper(dataset_groups,row[:-1],row[-1])
+            for row in ret:
+                grouper(dataset_groups,row[:-1],row[-1])
             ret = dataset_groups
         else:
             ret = [self._list_to_dict('dataset',x) for x in ret]
@@ -126,7 +127,7 @@ class web(_Methods_Base):
         Returns:
             dict: {status:num}
         """
-        sql = 'select dataset.* from dataset '
+        sql = 'select * from dataset '
         bindings = tuple()
         if dataset_id:
             sql += ' where dataset.dataset_id = ? '
@@ -145,7 +146,7 @@ class web(_Methods_Base):
                 sql += ' and '
             sql += ' dataset.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         datasets = {}
         for row in ret:
             tmp = self._list_to_dict('dataset',row)
@@ -192,7 +193,7 @@ class web(_Methods_Base):
                 sql += ' and '
             sql += ' search.gridspec like ? '
             bindings += ('%'+gridspec+'%',)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         tasks = {}
         for row in ret:
             tmp = self._list_to_dict(['search','task'],row)
@@ -213,7 +214,7 @@ class web(_Methods_Base):
         """
         sql = 'select * from task_log where task_id = ?'
         bindings = (task_id,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         logs = {}
         for row in ret:
             tmp = self._list_to_dict('task_log',row)
@@ -241,7 +242,7 @@ class web(_Methods_Base):
         """
         sql = 'select site_id,queues from site'
         bindings = tuple()
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         gridspecs = {}
         for site_id,queues in ret:
             try:
@@ -268,7 +269,7 @@ class web(_Methods_Base):
         """
         sql = 'select dataset_id from dataset where name = ?'
         bindings = (name,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if len(ret) == 1:
             raise tornado.gen.Return(ret[0][0])
         else:
@@ -286,4 +287,4 @@ class web(_Methods_Base):
         """
         sql = 'select name, requirements from task_rel where dataset_id = ?'
         bindings = (dataset_id,)
-        return self.db.query(sql, bindings)
+        return self.parent.db.query(sql, bindings)

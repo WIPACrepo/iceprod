@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 from pkgutil import get_loader
+import importlib
 
 try:
     # do a monkey patching of tornado json library
@@ -40,12 +41,11 @@ def listmodules(package_name=''):
             ret.append(package_name+'.'+tmp)
     return ret
 
-def run_module(name,args):
+def run_module(name,*args,**kwargs):
     """Import and start the module"""
     class_name = name.rsplit('.',1)[1]
-    #print "package = ",name," and class = ",class_name
-    x = __import__(name,globals(),locals(),[class_name])
-    return (getattr(x,class_name))(args)
+    x = importlib.import_module(name)
+    return (getattr(x,class_name))(*args,**kwargs)
 
 
 class GlobalID(object):

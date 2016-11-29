@@ -48,14 +48,14 @@ class node(_Methods_Base):
             return
         elif 'gridspec' not in kwargs:
             logger.debug('node_update(): missing gridspec')
-        with (yield self.db.acquire_lock('node')):
+        with (yield self.parent.db.acquire_lock('node')):
             now = nowstr()
             sql = 'select * from node where hostname = ? and domain = ?'
             bindings = (hostname,domain)
-            ret = yield self.db.query(sql, bindings)
+            ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or len(ret) < 1 or len(ret[0]) < 1:
                 # insert new row
-                node_id = self.db._increment_id_helper('node',conn)
+                node_id = yield self.parent.db.increment_id('node')
                 sql = 'insert into node (node_id,hostname,domain,last_update,stats)'
                 sql += ' values (?,?,?,?,?)'
                 bindings = (node_id,hostname,domain,now,json_encode(kwargs))
@@ -77,12 +77,12 @@ class node(_Methods_Base):
                     bindings = (now,json_encode(stats),node_id)
                 except Exception:
                     logger.warn('error in node_update()', exc_info=True)
-            yield self.db.query(sql, bindings)
+            yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                 bindings3 = ('node',node_id,now)
                 try:
-                    ret = yield self.db.query(sql3, bindings3)
+                    ret = yield self.parent.db.query(sql3, bindings3)
                 except:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
@@ -101,14 +101,14 @@ class node(_Methods_Base):
         """
         if not site_id:
             return
-        sql = 'select * from node where last_update > ?'
-        old_date = datetime.utcnow()-timedelta(days=node_include_age)
-        bindings = (datetime2str(old_date),)
-        ret = yield self.db.query(sql, bindings)
-        if not ret:
-            logger.debug('no results returned for node_collate_resources')
-            return
         try:
+            sql = 'select * from node where last_update > ?'
+            old_date = datetime.utcnow()-timedelta(days=node_include_age)
+            bindings = (datetime2str(old_date),)
+            ret = yield self.parent.db.query(sql, bindings)
+            if not ret:
+                logger.debug('no results returned for node_collate_resources')
+                return
             grid_resources = {}
             for row in ret:
                 row = self._list_to_dict('node',row)
@@ -128,10 +128,10 @@ class node(_Methods_Base):
             if not grid_resources:
                 return
 
-            with (yield self.db.acquire_lock('node')):
+            with (yield self.parent.db.acquire_lock('node')):
                 sql = 'select queues from site where site_id = ?'
                 bindings = (site_id,)
-                ret = yield self.db.query(sql, bindings)
+                ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
                     logger.debug('no site queues for site %r',site_id)
                     return
@@ -157,12 +157,12 @@ class node(_Methods_Base):
                             qq[r] = [0,0]
                 sql = 'update site set queues = ? where site_id = ?'
                 bindings = (json_encode(queues),site_id)
-                yield self.db.query(sql, bindings)
+                yield self.parent.db.query(sql, bindings)
                 if self._is_master():
                     sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     bindings3 = ('site',site_id,now)
                     try:
-                        yield self.db.query(sql3, bindings3)
+                        yield self.parent.db.query(sql3, bindings3)
                     except:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
@@ -187,7 +187,7 @@ class node(_Methods_Base):
             raise Exception('no site_id defined')
         sql = 'select queues from site where site_id = ?'
         bindings = (site_id,)
-        ret = yield self.db.query(sql, bindings)
+        ret = yield self.parent.db.query(sql, bindings)
         if (not ret) or not ret[0]:
             raise Exception('no queues found')
         index = 1 if empty_only else 0

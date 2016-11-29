@@ -39,17 +39,20 @@ class proxy(module.module):
     def start(self):
         """Start proxy if not already running"""
         super(proxy,self).start()
-        self.squid = Squid(**self._getargs())
-        self.squid.start()
+        if not self.squid:
+            self.squid = Squid(**self._getargs())
+            self.squid.start()
         
     def stop(self):
         """Stop proxy"""
         if self.squid:
             self.squid.stop()
+            self.squid = None
         super(proxy,self).stop()
     
     def kill(self):
         """Kill proxy"""
         if self.squid:
             self.squid.kill()
+            self.squid = None
         super(proxy,self).stop()
