@@ -44,9 +44,10 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
         for handler in rootLogger.handlers:
             if handler != fileHandler:
                 rootLogger.removeHandler(handler)
+        rootLogger.setLevel(setlevel[loglevel.upper()])
         rootLogger.info('fileHandler used')
     else:
-        logging.basicConfig(format=logformat)
+        logging.basicConfig(format=logformat, level=setlevel[loglevel.upper()])
         rootLogger.info('basicConfig used')
 
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
