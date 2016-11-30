@@ -26,7 +26,6 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
 
     rootLogger = logging.getLogger()
-    rootLogger.setLevel(setlevel[loglevel.upper()])
 
     if logfile.strip() != 'sys.stdout':
         if not logfile.startswith('/'):
