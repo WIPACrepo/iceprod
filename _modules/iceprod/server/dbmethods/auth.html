@@ -180,22 +180,16 @@
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="auth.auth_authorize_site"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_site">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Validate site and key for authorization.</span>
-
-<span class="sd">        Raises Exception if not valid.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Validate site and key for authorization.</span>
+<span class="sd">        Returns True/Exception&quot;&quot;&quot;</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth_get_site_auth</span><span class="p">(</span><span class="n">site_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="n">ret</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;key does not match&quot;</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="auth.auth_authorize_task"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.auth.auth.auth_authorize_task">[docs]</a>    <span class="k">def</span> <span class="nf">auth_authorize_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Validate key for authorization.</span>
-
-<span class="sd">        Raises Exception if not valid.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Validate key for authorization.</span>
+<span class="sd">        Returns True/Exception&quot;&quot;&quot;</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select auth_key,expire from passkey where auth_key = ?&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">key</span><span class="p">,)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
