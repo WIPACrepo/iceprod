@@ -30,6 +30,7 @@ import logging
 from contextlib import contextmanager
 from functools import partial, wraps
 from urlparse import urlparse
+from datetime import timedelta
 
 # override tornado json encoder and decoder so we can use dataclasses objects
 import iceprod.core.jsonUtil
@@ -366,7 +367,7 @@ class MyHandler(tornado.web.RequestHandler):
         try:
             f = self.modules['db'][func_name](**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
-                f = yield tornado.gen.with_timeout(60,f)
+                f = yield tornado.gen.with_timeout(timedelta(seconds=60),f)
         except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
