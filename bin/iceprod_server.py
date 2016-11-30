@@ -65,7 +65,6 @@ def runner(stdout=False):
         iceprod.core.logger.setlogger()
     else:
         iceprod.core.logger.setlogger(logfile='iceprod_server.log')
-        iceprod.core.logger.removestdout()
 
     # Change name of process for ps
     try:

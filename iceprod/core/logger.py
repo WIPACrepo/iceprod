@@ -25,9 +25,9 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
     """Add an output to the root logger"""
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
 
-    rootLogger = logging.getLogger('')
+    rootLogger = logging.getLogger()
     rootLogger.setLevel(setlevel[loglevel.upper()])
-    
+
     if logfile.strip() != 'sys.stdout':
         if not logfile.startswith('/'):
             if 'I3PROD' in os.environ:
@@ -41,10 +41,12 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
                                                            logsize, lognum)
         formatter = logging.Formatter(logformat)
         fileHandler.setFormatter(formatter)
+        for handler in rootLogger.handlers:
+            log.removeHandler(handler)
         rootLogger.addHandler(fileHandler)
     else:
-        logging.basicConfig()
-    
+        logging.basicConfig(format=logformat)
+
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
                     loglevel, logfile, logsize, lognum)
 
