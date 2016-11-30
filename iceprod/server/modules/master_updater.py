@@ -92,7 +92,8 @@ class master_updater(module.module):
                 self.io_loop.call_later(60, self._send)
             else:
                 # remove data we just successfully sent
-                self.buffer.popleft()
+                if self.buffer:
+                    self.buffer.popleft()
                 yield self._save()
                 self.io_loop.add_callback(self._send)
         else:

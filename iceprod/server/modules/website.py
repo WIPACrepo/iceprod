@@ -363,7 +363,7 @@ class MyHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def db_call(self,func_name,**kwargs):
         """Make a database call, returning the result"""
-        logger.debug('db_call for %s',func_name)
+        logger.info('db_call for %s',func_name)
         try:
             f = self.modules['db'][func_name](**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
@@ -475,7 +475,9 @@ class JSONRPCHandler(MyHandler):
                              'data':str(ret)}, status=500, id=id)
         else:
             # return response
+            logger.info('jsonrpc response: %r', ret)
             self.write({'jsonrpc':'2.0','result':ret,'id':id})
+            self.finish()
 
     def json_error(self,error,status=400,id=None):
         """Create a proper jsonrpc error message"""
