@@ -269,16 +269,14 @@ class grid(object):
             # TODO: this should also flush any caches
             #       but how to do that is in question
             ret = yield self.modules['db']['queue_set_task_status'](task={t['task_id'] for t in idle_tasks},
-                                                status='idle',
-                                                async=False)
+                                                status='idle')
             if isinstance(ret,Exception):
                 raise ret
 
         if waiting_tasks:
             # change status to waiting
             ret = yield self.modules['db']['queue_set_task_status'](task={t['task_id'] for t in waiting_tasks},
-                                                status='waiting',
-                                                async=False)
+                                                status='waiting')
             if isinstance(ret,Exception):
                 raise ret
 
@@ -328,7 +326,7 @@ class grid(object):
 
         # get tasks from iceprod
         if pilots:
-            tasks = yield self.modules['db']['queue_get_pilots'](async=False)
+            tasks = yield self.modules['db']['queue_get_pilots']()
         else:
             tasks = yield self.modules['db']['queue_get_grid_tasks'](gridspec=self.gridspec)
         if isinstance(tasks,Exception):
@@ -414,10 +412,10 @@ class grid(object):
         if reset_tasks:
             logger.info('reset %r',reset_tasks)
             if pilots:
-                ret = yield self.modules['db']['queue_del_pilots'](pilots=reset_tasks, async=False)
+                ret = yield self.modules['db']['queue_del_pilots'](pilots=reset_tasks)
             else:
                 ret = yield self.modules['db']['queue_set_task_status'](task=reset_tasks,
-                                                    status='reset', async=False)
+                                                    status='reset')
             if isinstance(ret,Exception):
                 raise ret
 

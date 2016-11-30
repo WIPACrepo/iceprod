@@ -112,13 +112,13 @@ var Submission = (function( $ ) {
         },
         submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            RPCclient('submit_dataset',{passkey:data.passkey,data:data.submit_data,njobs:num_jobs,gridspec:gridspec,description:description},callback=function(return_data){
+            RPCclient('submit_dataset',{passkey:data.passkey,config:data.submit_data,njobs:num_jobs,gridspec:gridspec,description:description},callback=function(return_data){
                 $('#error').html('success');
             });
         },
         update : function() {
             private_methods.clean_json();
-            RPCclient('update_dataset_config',{passkey:data.passkey,data:data.submit_data,dataset_id:data.dataset.dataset_id},callback=function(return_data){
+            RPCclient('update_dataset_config',{passkey:data.passkey,config:data.submit_data,dataset_id:data.dataset.dataset_id},callback=function(return_data){
                 $('#error').html('success');
             });
         },
