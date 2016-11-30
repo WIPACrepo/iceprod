@@ -142,23 +142,24 @@ class misc(_Methods_Base):
                 if row2['categoryvalue_ids']:
                     for cv_id in row2['categoryvalue_ids'].split(','):
                         categoryvalue_ids.add(cv_id)
-                if row2['group_id']:
+                if 'groupd_id' in row2 and row2['group_id']:
                     group_ids.add(row2['group_id'])
                 if not keys:
                     keys = row2.keys()
             tables['dataset'] = {'keys':keys,'values':ret}
 
-        sql = 'select * from groups where group_ids in ('
-        sql += ','.join('?' for _ in group_ids) + ')'
-        bindings = tuple(group_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if ret:
-            keys = []
-            for row in ret:
-                if not keys:
-                    keys = self._list_to_dict('groups',row).keys()
-                    break
-            tables['groups'] = {'keys':keys,'values':ret}
+        if group_ids:
+            sql = 'select * from groups where group_ids in ('
+            sql += ','.join('?' for _ in group_ids) + ')'
+            bindings = tuple(group_ids)
+            ret = yield self.parent.db.query(sql, bindings)
+            if ret:
+                keys = []
+                for row in ret:
+                    if not keys:
+                        keys = self._list_to_dict('groups',row).keys()
+                        break
+                tables['groups'] = {'keys':keys,'values':ret}
 
         sql = 'select * from task_rel where dataset_id in ('
         sql += ','.join('?' for _ in dataset_ids)

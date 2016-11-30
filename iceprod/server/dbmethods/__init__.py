@@ -147,7 +147,7 @@ class _Methods_Base():
     def _send_to_master(self, updates, callback=None):
         """Send an update to the master"""
         try:
-            yield self.parent.modules['master_updater']['add'](arg=updates)
+            yield self.parent.modules['master_updater']['add'](updates)
         except Exception:
             logger.warn('_send_to_master() error',exc_info=True)
 
