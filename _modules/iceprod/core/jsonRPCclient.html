@@ -161,6 +161,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Client.close"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;close jsonrpc http session&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
     <span class="nd">@classmethod</span>
@@ -175,7 +176,7 @@
         <span class="sd">&quot;&quot;&quot;Send request to RPC Server&quot;&quot;&quot;</span>
         <span class="c"># check method name for bad characters</span>
         <span class="k">if</span> <span class="n">methodname</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;_&#39;</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;cannot use RPC for private methods&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;cannot use RPC for private methods&#39;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot use RPC for private methods&#39;</span><span class="p">)</span>
 
         <span class="c"># translate request to json</span>
@@ -189,8 +190,9 @@
                         <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s">&#39;application/json-rpc&#39;</span><span class="p">})</span>
                 <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
                 <span class="n">data</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">content</span>
+                <span class="k">break</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request for %s&#39;</span><span class="p">,</span> <span class="n">methodname</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error making jsonrpc request for %s&#39;</span><span class="p">,</span> <span class="n">methodname</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="c"># try restarting connection</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -200,14 +202,16 @@
 
         <span class="c"># translate response from json</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;request returned empty string&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="k">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json data: %r&#39;</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;json data: %r&#39;</span><span class="p">,</span><span class="n">data</span><span class="p">)</span>
             <span class="k">raise</span>
 
         <span class="k">if</span> <span class="s">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error: %r&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;error&#39;</span><span class="p">])</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Error %r: %r    %r&#39;</span><span class="o">%</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;error&#39;</span><span class="p">])</span>
             <span class="k">except</span><span class="p">:</span>
@@ -215,6 +219,7 @@
         <span class="k">if</span> <span class="s">&#39;result&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;result&#39;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;result not in data: %r&#39;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
             <span class="k">return</span> <span class="k">None</span></div></div>
 
 <span class="k">class</span> <span class="nc">MetaJSONRPC</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
