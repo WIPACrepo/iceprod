@@ -56,16 +56,22 @@ class auth(_Methods_Base):
 
     @tornado.gen.coroutine
     def auth_authorize_site(self, site_id, key):
-        """Validate site and key for authorization.
-        Returns True/Exception"""
+        """
+        Validate site and key for authorization.
+
+        Raises Exception if not valid.
+        """
         ret = yield self.auth_get_site_auth(site_id)
         if key != ret:
             raise Exception("key does not match")
 
     @tornado.gen.coroutine
     def auth_authorize_task(self, key):
-        """Validate key for authorization.
-        Returns True/Exception"""
+        """
+        Validate key for authorization.
+
+        Raises Exception if not valid.
+        """
         sql = 'select auth_key,expire from passkey where auth_key = ?'
         bindings = (key,)
         ret = yield self.parent.db.query(sql, bindings)

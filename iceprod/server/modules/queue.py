@@ -197,7 +197,7 @@ class queue(module.module):
 
             # do global queueing
             try:
-                plugin_cfg = self.plugins[0].cfg
+                plugin_cfg = self.plugins[0].queue_cfg
 
                 # get num tasks to queue
                 tasks_on_queue = plugin_cfg['tasks_on_queue']

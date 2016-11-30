@@ -438,14 +438,16 @@ class JSONRPCHandler(MyHandler):
                 return
             passkey = params.pop('passkey')
 
-            if 'site_id' in params:
-                # authorize site
-                site_id = params.pop('site_id')
-                auth = yield self.db_call('auth_authorize_site',site=site_id,key=passkey)
-            else:
-                # authorize task
-                auth = yield self.db_call('auth_authorize_task',key=passkey)
-            if isinstance(auth,Exception) or auth is not True:
+            try:
+                if 'site_id' in params:
+                    # authorize site
+                    site_id = params.pop('site_id')
+                    yield self.db_call('auth_authorize_site',site_id=site_id,key=passkey)
+                else:
+                    # authorize task
+                    yield self.db_call('auth_authorize_task',key=passkey)
+            except:
+                logger.info('auth error', exc_info=True)
                 self.json_error({'code':403,'message':'Not Authorized',
                                  'data':'passkey invalid'})
                 return
@@ -741,8 +743,8 @@ class Dataset(PublicHandler):
                 task_info2.append([t[0], type, q, r])
             if isinstance(tasks,Exception):
                 raise tasks
-            self.render_handle('dataset_detail.html',dataset_id=dataset_id,
-                               dataset=dataset,tasks=tasks,task_info=task_info2)
+            self.render('dataset_detail.html',dataset_id=dataset_id,
+                        dataset=dataset,tasks=tasks,task_info=task_info2)
         else:
             datasets = yield self.db_call('web_get_datasets',**filter_results)
             if isinstance(datasets,Exception):
