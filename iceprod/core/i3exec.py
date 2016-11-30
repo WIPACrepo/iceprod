@@ -36,13 +36,11 @@ import iceprod.core.exe_json
 import iceprod.core.pilot
 
 import iceprod.core.logger
-logging.basicConfig()
-logger = None
 
 def handler(signum, frame):
     """Signal handler. Exit on SIGQUIT or SIGINT."""
-    logger.warn('Signal handler called with signal %s' % signum)
-    logger.warn('Exiting...')
+    logging.warn('Signal handler called with signal %s' % signum)
+    logging.warn('Exiting...')
     os._exit(0)
 
 def load_config(cfgfile):
@@ -64,21 +62,20 @@ def load_config(cfgfile):
     elif isinstance(cfgfile,dict):
         config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
     else:
-        logger.warn('cfgfile: %r',cfgfile)
+        logging.warn('cfgfile: %r',cfgfile)
         raise Exception('cfgfile is not a str or a Job')
     return config
 
 def main(cfgfile=None, logfile=None, url=None, debug=False,
          passkey='', pilot_id=None, offline=False):
     """Main task runner for iceprod"""
-    global logger
     # set up logger
     if debug:
         logl = 'INFO'
     else:
         logl = 'WARNING'
     if logfile:
-        logf = os.path.abspath(logfile)
+        logf = os.path.abspath(os.path.expandvars(logfile))
     else:
         logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
     iceprod.core.logger.setlogger(loglevel=logl,
@@ -141,8 +138,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logger.warn('finished running normally; exiting...')
 
-def runner(config,url,debug=False,offline=False):
+def runner(config, url, debug=False, offline=False):
     """Run a config"""
+    logger = logging.getLogger('i3exec_runner')
+    
     # set logging verbosity
     if 'debug' not in config['options']:
         config['options']['debug'] = debug
@@ -152,8 +151,8 @@ def runner(config,url,debug=False,offline=False):
     if ('loglevel' in config['options'] and
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
-            logging.getLogger().setLevel(iceprod.core.logger.setlevel[config['options']['loglevel'].upper()])
-        except Exception:
+            iceprod.core.logger.set_log_level(config['options']['loglevel'])
+        except:
             logger.warn('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
