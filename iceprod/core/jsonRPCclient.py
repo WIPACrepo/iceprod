@@ -37,6 +37,7 @@ class Client(object):
             self.__session.verify = self.__kwargs['cacert']
 
     def close(self):
+        logger.warn('close jsonrpc http session')
         self.__session.close()
 
     @classmethod
@@ -51,7 +52,7 @@ class Client(object):
         """Send request to RPC Server"""
         # check method name for bad characters
         if methodname[0] == '_':
-            logging.warning('cannot use RPC for private methods')
+            logger.warning('cannot use RPC for private methods')
             raise Exception('Cannot use RPC for private methods')
 
         # translate request to json
@@ -65,8 +66,9 @@ class Client(object):
                         data=body, headers={'Content-Type': 'application/json-rpc'})
                 r.raise_for_status()
                 data = r.content
+                break
             except:
-                logging.warn('error making jsonrpc request for %s', methodname)
+                logger.warn('error making jsonrpc request for %s', methodname)
                 if i < 2:
                     # try restarting connection
                     self.close()
@@ -76,14 +78,16 @@ class Client(object):
 
         # translate response from json
         if not data:
+            logger.warn('request returned empty string')
             return None
         try:
             data = json_decode(data)
         except:
-            logging.info('json data: %r',data)
+            logger.info('json data: %r',data)
             raise
 
         if 'error' in data:
+            logger.warn('error: %r', data['error'])
             try:
                 raise Exception('Error %r: %r    %r'%data['error'])
             except:
@@ -91,6 +95,7 @@ class Client(object):
         if 'result' in data:
             return data['result']
         else:
+            logger.info('result not in data: %r', data)
             return None
 
 class MetaJSONRPC(type):

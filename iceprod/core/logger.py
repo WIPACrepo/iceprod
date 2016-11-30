@@ -41,44 +41,52 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
                                                            logsize, lognum)
         formatter = logging.Formatter(logformat)
         fileHandler.setFormatter(formatter)
-        for handler in rootLogger.handlers:
-            log.removeHandler(handler)
         rootLogger.addHandler(fileHandler)
+        for handler in rootLogger.handlers:
+            if handler != fileHandler:
+                rootLogger.removeHandler(handler)
+        rootLogger.info('fileHandler used')
     else:
         logging.basicConfig(format=logformat)
+        rootLogger.info('basicConfig used')
 
     rootLogger.info('loglevel %s, logfile %s, logsize %d, lognum %d',
                     loglevel, logfile, logsize, lognum)
 
 def set_log_level(loglevel='INFO'):
-    rootLogger = logging.getLogger('')
+    rootLogger = logging.getLogger()
     rootLogger.setLevel(setlevel[loglevel.upper()])
 
 def new_file(filename):
     """Write logging to a new file"""
     log = logging.getLogger()
+    handlers = False
     for handler in log.handlers:
         if isinstance(handler, logging.handlers.RotatingFileHandler):
             new_handler = logging.handlers.RotatingFileHandler(filename, 'a',
                                                                handler.maxBytes,
                                                                handler.backupCount)
             new_handler.setFormatter(handler.formatter)
-            log.removeHandler(handler)
             log.addHandler(new_handler)
-    logging.info('loggers=%s' % str(log.handlers))
+            log.removeHandler(handler)
+            handlers = True
+    if not handlers:
+        setlogger(filename)
+    logging.info('loggers=%r', log.handlers)
 
 def removestdout():
     """Remove the stdout log output from the root logger"""
     log = logging.getLogger()
+    logging.info('removestdout(): loggers=%s', log.handlers)
     for handler in log.handlers:
         if isinstance(handler,logging.StreamHandler):
             log.removeHandler(handler)
-    logging.info('loggers=%s' % str(log.handlers))
+    logging.info('loggers=%s', log.handlers)
 
 def rotate():
     """Rotate the file in the root logger"""
     log = logging.getLogger()
+    logging.info('rotate() loggers=%s', log.handlers)
     for handler in log.handlers:
         if isinstance(handler,logging.handlers.RotatingFileHandler):
             handler.doRollover()
-    logging.info('loggers=%s' % str(log.handlers))

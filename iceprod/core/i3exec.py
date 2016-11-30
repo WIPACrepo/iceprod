@@ -82,7 +82,6 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                   logfile=logf,
                                   logsize=67108864,
                                   lognum=1)
-    iceprod.core.logger.removestdout()
     logger = logging.getLogger('i3exec')
     logger.warn('starting...%s ' % logger.name)
 
