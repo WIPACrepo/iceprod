@@ -901,8 +901,15 @@ class Login(PublicHandler):
             self.set_secure_cookie('user', 'admin', expires_days=1)
             self.redirect(n)
 
+    @catch_error
     def post(self):
-        self.get()
+         n = self.get_argument('next', default='/')
+         if ('password' in self.cfg['webserver'] and
+             self.get_argument('pwd') == self.cfg['webserver']['password']):
+             self.set_secure_cookie('user', 'admin', expires_days=1)
+             self.redirect(n)
+         else:
+             self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):
     @catch_error
