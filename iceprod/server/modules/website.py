@@ -361,11 +361,11 @@ class MyHandler(tornado.web.RequestHandler):
         self.statsd = statsd
 
     @tornado.gen.coroutine
-    def db_call(self,func_name,**kwargs):
+    def db_call(self,func_name,*args,**kwargs):
         """Make a database call, returning the result"""
         logger.info('db_call for %s',func_name)
         try:
-            f = self.modules['db'][func_name](**kwargs)
+            f = self.modules['db'][func_name](*args,**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
                 f = yield tornado.gen.with_timeout(timedelta(seconds=60),f)
         except Exception:
@@ -441,7 +441,8 @@ class JSONRPCHandler(MyHandler):
             passkey = params.pop('passkey') if isinstance(params,dict) else params.pop(0)
 
             try:
-                if (isinstance(params,dict) and 'site_id' in params) or params:
+                if ((isinstance(params,dict) and 'site_id' in params) or
+                    isinstance(params,(tuple,list))):
                     # authorize site
                     site_id = params.pop('site_id') if isinstance(params,dict) else params.pop(0)
                     yield self.db_call('auth_authorize_site',site_id=site_id,key=passkey)

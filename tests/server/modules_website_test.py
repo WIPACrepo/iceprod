@@ -202,6 +202,16 @@ class modules_website_test(module_test):
             try:
                 ret = iceprod.core.jsonRPCclient.JSONRPC.test()
                 self.assertEqual(ret, 'testing')
+                
+                ret = iceprod.core.jsonRPCclient.JSONRPC.test(1,2,3)
+                self.assertEqual(self.modules.called[-1][2], (1,2,3))
+                
+                ret = iceprod.core.jsonRPCclient.JSONRPC.test(a=1,b=2)
+                self.assertEqual(self.modules.called[-1][3], {'a':1,'b':2})
+                
+                ret = iceprod.core.jsonRPCclient.JSONRPC.test(1,2,c=3)
+                self.assertEqual(self.modules.called[-1][2], (1,2))
+                self.assertEqual(self.modules.called[-1][3], {'c':3})
 
                 self.modules.ret['db']['rpc_test'] = Exception()
                 try:
