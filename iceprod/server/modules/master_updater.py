@@ -16,6 +16,8 @@ import tornado.gen
 from tornado.concurrent import run_on_executor
 from tornado.locks import Lock
 
+import requests
+
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
@@ -36,6 +38,7 @@ class master_updater(module.module):
         self.buffer = deque()
         self.send_in_progress = False
         self.save_lock = Lock()
+        self.session = requests.Session()
 
     def start(self):
         """Start master updater"""
@@ -89,7 +92,8 @@ class master_updater(module.module):
             data = self.buffer[0]
             params = {'updates':[data]}
             try:
-                yield send_master(self.cfg, 'master_update', **params)
+                yield send_master(self.cfg, 'master_update',
+                                  session=self.session, **params)
             except:
                 logger.warn('error sending to master', exc_info=True)
                 # If the problem is server side, give it a minute.

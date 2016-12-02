@@ -5,16 +5,19 @@ An interface to communicate with the master asyncronously.
 import os
 import logging
 
+# requre certifi for TLS cert verification
 import certifi
 
-from iceprod.core.jsonUtil import json_encode, json_decode
-from tornado.httpclient import AsyncHTTPClient
+from requests_futures.sessions import FuturesSession
 import tornado.gen
+
+from iceprod.core.jsonUtil import json_encode, json_decode
 
 logger = logging.getLogger('master_communication')
 
+
 @tornado.gen.coroutine
-def send_master(cfg,method,**kwargs):
+def send_master(cfg, method, session=None, **kwargs):
     """
     Send an asyncronous request to the master.
 
@@ -39,12 +42,8 @@ def send_master(cfg,method,**kwargs):
         if 'site_id' not in kwargs and 'site_id' in cfg:
             kwargs['site_id'] = cfg['site_id']
 
-    args = {'method': 'POST',
-            'connect_timeout': 30,
-            'request_timeout': 120,
-            'validate_cert': True,
-            'ca_certs': certifi.where()}
-    http_client = AsyncHTTPClient()
+    session = FuturesSession(session=session)
+
     url = cfg['master']['url']
     if url.endswith('/'):
         url += 'jsonrpc'
@@ -53,11 +52,12 @@ def send_master(cfg,method,**kwargs):
     body = json_encode({'jsonrpc':'2.0',
                         'method':method,
                         'params':kwargs,'id':1})
-    args['body'] = body
 
-    response = yield http_client.fetch(url,**args)
-    response.rethrow()
-    ret = json_decode(response.body)
+    logger.info('calling method %s on master', method)
+    response = yield session.post(url, timeout=30, data=body,
+                                  headers={'Content-Type': 'application/json-rpc'})
+    response.raise_for_status()
+    ret = json_decode(response.content)
     if 'error' in ret:
         logger.warn('error receiving: %r',ret['error'])
         raise Exception('error: %r'%ret['error'])
