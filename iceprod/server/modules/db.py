@@ -477,7 +477,8 @@ if MySQLdb:
                             addcols = []
                             for x in cols:
                                 if x not in curcols:
-                                    t = '`'+self.tables[table_name][x]+'`'
+                                    t = self.tables[table_name][x]
+                                    x = '`'+x+'`'
                                     if t == 'str':
                                         x += ' VARBINARY(255) NOT NULL '
                                     elif t == 'int':
@@ -500,7 +501,8 @@ if MySQLdb:
                                 full_sql += ', '
                             if rmcols:
                                 full_sql += 'DROP COLUMN '
-                                full_sql += ', DROP COLUMN '.join(col for col in rmcols)
+                                full_sql += ', DROP COLUMN '.join('`'+col+'`' for col in rmcols)
+                            logger.info('%s', full_sql)
                             cur.execute(full_sql)
                         else:
                             # table is good
