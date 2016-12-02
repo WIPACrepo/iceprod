@@ -56,12 +56,14 @@ class master_updater(module.module):
 
     def _load(self):
         """Load from cache file"""
-        self.buffer = pickle.load(open(self.filename))
+        with open(self.filename) as f:
+            self.buffer = pickle.load(f)
 
     @run_on_executor
     def _save(self):
         """Save to cache file"""
-        pickle.dump(self.buffer, open(self.filename+'_new', 'wb'), -1)
+        with open(self.filename+'_new', 'wb') as f:
+            pickle.dump(self.buffer, f, -1)
         os.rename(self.filename+'_new', self.filename)
 
     @tornado.gen.coroutine

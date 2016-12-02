@@ -305,7 +305,7 @@ else:
                             keepcols = curcols & scols
 
                             full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
-                            full_sql += 'insert into '+table_name+'_backup select '+','.join(keepcols)+' from '+table_name+';'
+                            full_sql += 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name+';'
                             full_sql += 'drop table '+table_name+';'
                             full_sql += 'create table '+table_name+sql_create+';'
                             full_sql += 'insert into '+table_name+' select '+sql_select+' from '+table_name+'_backup;'
