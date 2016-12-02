@@ -138,6 +138,7 @@
 
 <span class="kn">import</span> <span class="nn">tornado.gen</span>
 <span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
+<span class="kn">from</span> <span class="nn">tornado.locks</span> <span class="k">import</span> <span class="n">Lock</span>
 
 <span class="kn">import</span> <span class="nn">iceprod.server</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
@@ -158,6 +159,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="s">&#39;.master_updater_queue&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="n">deque</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">send_in_progress</span> <span class="o">=</span> <span class="k">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
 
 <div class="viewcode-block" id="master_updater.start"><a class="viewcode-back" href="../../../../server/modules/master_updater.html#iceprod.server.modules.master_updater.master_updater.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Start master updater&quot;&quot;&quot;</span>
@@ -195,9 +197,10 @@
         <span class="sd">&quot;&quot;&quot;Add obj to queue&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save</span><span class="p">()</span>
+            <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()):</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_in_progress</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;failed to add %r to buffer&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
             <span class="k">raise</span></div>
@@ -218,9 +221,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c"># remove data we just successfully sent</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
-                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">popleft</span><span class="p">()</span>
+                <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()):</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">send_in_progress</span> <span class="o">=</span> <span class="k">False</span></div>
