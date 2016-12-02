@@ -14,6 +14,7 @@ from collections import deque
 
 import tornado.gen
 from tornado.concurrent import run_on_executor
+from tornado.locks import Lock
 
 import iceprod.server
 from iceprod.server import module
@@ -34,6 +35,7 @@ class master_updater(module.module):
         self.filename = '.master_updater_queue'
         self.buffer = deque()
         self.send_in_progress = False
+        self.save_lock = Lock()
 
     def start(self):
         """Start master updater"""
@@ -71,9 +73,10 @@ class master_updater(module.module):
         """Add obj to queue"""
         try:
             self.buffer.append(obj)
-            yield self._save()
+            with (yield self.save_lock.acquire()):
+                yield self._save()
             if not self.send_in_progress:
-                self.io_loop.add_callback(self._send)
+                yield self._send()
         except Exception:
             logger.error('failed to add %r to buffer', obj, exc_info=True)
             raise
@@ -94,9 +97,9 @@ class master_updater(module.module):
                 self.io_loop.call_later(60, self._send)
             else:
                 # remove data we just successfully sent
-                if self.buffer:
-                    self.buffer.popleft()
-                yield self._save()
+                self.buffer.popleft()
+                with (yield self.save_lock.acquire()):
+                    yield self._save()
                 self.io_loop.add_callback(self._send)
         else:
             self.send_in_progress = False
