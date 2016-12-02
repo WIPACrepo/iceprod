@@ -454,7 +454,7 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('task_log',task_log_id,nowstr(),sql,bindings))
 
     @tornado.gen.coroutine
-    def rpc_stillrunning(self, task):
+    def rpc_stillrunning(self, task_id):
         """
         Check that the task is still in a running state.
 
@@ -462,19 +462,18 @@ class rpc(_Methods_Base):
         of possible race conditions around changing status to processing.
 
         Args:
-            task: task id
+            task_id: task id
 
         Returns:
             bool: True or False
         """
-        sql = 'select task_id,status from task where task_id = ?'
-        bindings = (task,)
+        sql = 'select status from task where task_id = ?'
+        bindings = (task_id,)
         ret = yield self.parent.db.query(sql, bindings)
-        for task_id, status in ret:
-            if status in ('queued','processing'):
-                raise tornado.gen.Return(True)
-            else:
-                raise tornado.gen.Return(False)
+        if not ret:
+            raise Exception('task %s does not exist'%(task_id,))
+        ret = ret[0][0] in ('queued','processing')
+        raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
     def rpc_update_pilot(self, pilot_id, **kwargs):

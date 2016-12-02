@@ -82,7 +82,8 @@ def finishtask(cfg, stats={}):
         # filter stats
         stat_keys = set(json_decode(cfg.config['options']['stats']))
         outstats = {k:stats[k] for k in stats if k in stat_keys}
-    ret = JSONRPC.finish_task(task=cfg.config['options']['task_id'],stats=outstats)
+    ret = JSONRPC.finish_task(task_id=cfg.config['options']['task_id'],
+                              stats=outstats)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -92,7 +93,7 @@ def stillrunning(cfg):
     if 'task_id' not in cfg.config['options']:
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot finish task')
-    ret = JSONRPC.stillrunning(task=cfg.config['options']['task_id'])
+    ret = JSONRPC.stillrunning(task_id=cfg.config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
