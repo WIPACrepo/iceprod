@@ -492,15 +492,15 @@ if MySQLdb:
                                         x += ' MEDIUMTEXT NOT NULL DEFAULT "" '
                                     addcols.append(x)
 
-                            full_sql = 'alter table '+table_name+' '
+                            full_sql = 'ALTER TABLE '+table_name+' '
                             if addcols:
-                                full_sql += 'add column '
-                                full_sql += ', add column '.join(col for col in addcols)
+                                full_sql += 'ADD COLUMN '
+                                full_sql += ', ADD COLUMN '.join(col for col in addcols)
                             if addcols and rmcols:
                                 full_sql += ', '
                             if rmcols:
-                                full_sql += 'drop column '
-                                full_sql += ', drop column '.join('`'+col+'`' for col in rmcols)
+                                full_sql += 'DROP COLUMN '
+                                full_sql += ', DROP COLUMN '.join(col for col in rmcols)
                             cur.execute(full_sql)
                         else:
                             # table is good
