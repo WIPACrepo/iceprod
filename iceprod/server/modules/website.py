@@ -474,7 +474,7 @@ class JSONRPCHandler(MyHandler):
             self.json_error({'code':-32000,'message':'Server error'},
                             status=500, request_id=request_id)
         else:
-            if request_id:
+            if request_id is not None:
                 logger.info('jsonrpc response: %r', ret)
                 self.write({'jsonrpc':'2.0', 'result':ret, 'id':request_id})
 
@@ -486,7 +486,7 @@ class JSONRPCHandler(MyHandler):
         if isinstance(error,Exception):
             error = str(error)
         logger.info('json_error: %r',error)
-        if request_id:
+        if request_id is not None:
             self.write({'jsonrpc':'2.0', 'error':error, 'id':request_id})
 
 class LibHandler(MyHandler):
