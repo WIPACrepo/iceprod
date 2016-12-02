@@ -170,12 +170,12 @@ class rpc(_Methods_Base):
         return self.parent.service['queue_set_task_status'](task, 'processing')
 
     @tornado.gen.coroutine
-    def rpc_finish_task(self, task, stats):
+    def rpc_finish_task(self, task_id, stats):
         """
         Do task completion operations.
 
         Args:
-            task (str): task_id
+            task_id (str): task_id
             stats (dict): statistics from task
         """
         stats = json_encode(stats)
@@ -186,8 +186,8 @@ class rpc(_Methods_Base):
             sql += ' where task_id = ?'
             sql2 = 'update task set prev_status = status, '
             sql2 += ' status = ?, status_changed = ? where task_id = ?'
-            bindings = ('complete',task)
-            bindings2 = ('complete',now,task)
+            bindings = ('complete',task_id)
+            bindings2 = ('complete',now,task_id)
             yield self.parent.db.query([sql,sql2],[bindings,bindings2])
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
@@ -199,12 +199,12 @@ class rpc(_Methods_Base):
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
-                yield self._send_to_master(('search',task,now,sql,bindings))
-                yield self._send_to_master(('task',task,now,sql2,bindings2))
+                yield self._send_to_master(('search',task_id,now,sql,bindings))
+                yield self._send_to_master(('task',task_id,now,sql2,bindings2))
 
             # update task statistics
             sql = 'select task_stat_id,task_id from task_stat where task_id = ?'
-            bindings = (task,)
+            bindings = (task_id,)
             ret = yield self.parent.db.query(sql, bindings)
             task_stat_id = None
             for ts,t in ret:
@@ -218,7 +218,7 @@ class rpc(_Methods_Base):
                 task_stat_id = yield self.parent.db.increment_id('task_stat')
                 sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
                 sql += ' (?, ?, ?)'
-                bindings = (task_stat_id,task,stats)
+                bindings = (task_stat_id,task_id,stats)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
@@ -236,7 +236,7 @@ class rpc(_Methods_Base):
             sql += ' from search '
             sql += ' join dataset on search.dataset_id = dataset.dataset_id '
             sql += ' where task_id = ?'
-            bindings = (task,)
+            bindings = (task_id,)
             ret = yield self.parent.db.query(sql, bindings)
             dataset_id = None
             job_id = None
