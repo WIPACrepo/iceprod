@@ -399,7 +399,8 @@ class JSONRPCHandler(MyHandler):
         try:
             request = tornado.escape.json_decode(self.request.body)
         except Exception as e:
-            raise tornado.web.HTTPError(400,'POST request is not valid json')
+            self.json_error({'code':-32700,'message':'Parse Error',
+                             'data':'invalid json'})
 
         # check for all parts of jsonrpc 2.0 spec
         if 'jsonrpc' not in request or (request['jsonrpc'] != '2.0' and
@@ -426,22 +427,23 @@ class JSONRPCHandler(MyHandler):
         else:
             params = {}
         if 'id' in request:
-            id = request['id']
+            request_id = request['id']
         else:
-            id = None
+            request_id = None
 
         if not method.startswith("rpc_public"):
             # check for auth
-            if 'passkey' not in params:
+            if (isinstance(params,dict) and 'passkey' not in params) or (not params):
                 self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'missing passkey'})
+                                 'data':'missing passkey'},
+                                request_id=request_id)
                 return
-            passkey = params.pop('passkey')
+            passkey = params.pop('passkey') if isinstance(params,dict) else params.pop(0)
 
             try:
-                if 'site_id' in params:
+                if (isinstance(params,dict) and 'site_id' in params) or params:
                     # authorize site
-                    site_id = params.pop('site_id')
+                    site_id = params.pop('site_id') if isinstance(params,dict) else params.pop(0)
                     yield self.db_call('auth_authorize_site',site_id=site_id,key=passkey)
                 else:
                     # authorize task
@@ -449,37 +451,34 @@ class JSONRPCHandler(MyHandler):
             except:
                 logger.info('auth error', exc_info=True)
                 self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'passkey invalid'})
+                                 'data':'passkey invalid'},
+                                request_id=request_id)
                 return
 
         # check for args and kwargs
-        if 'args' in params:
-            args = params.pop('args')
+        if isinstance(params,dict):
+            args = params.pop('args') if 'args' in params else []
         else:
-            args = []
+            args = params
+            params = {}
 
         # call method on DB if exists
         try:
             ret = yield self.db_call(method,*args,**params)
-
-        except AttributeError:
-            self.json_error({'code':-32601,'message':'Method not found'})
-            return
+        except KeyError:
+            logger.info('DB method not found: %r', method)
+            self.json_error({'code':-32601,'message':'Method not found'},
+                            request_id=request_id)
         except Exception:
-            logger.info('error in DB method',exc_info=True)
+            logger.info('error in DB method', exc_info=True)
             self.json_error({'code':-32000,'message':'Server error'},
-                            status=500, id=id)
-            return
-        if isinstance(ret,Exception):
-            self.json_error({'code':-32000,'message':'Server error',
-                             'data':str(ret)}, status=500, id=id)
+                            status=500, request_id=request_id)
         else:
-            # return response
-            logger.info('jsonrpc response: %r', ret)
-            self.write({'jsonrpc':'2.0','result':ret,'id':id})
-            self.finish()
+            if request_id:
+                logger.info('jsonrpc response: %r', ret)
+                self.write({'jsonrpc':'2.0', 'result':ret, 'id':request_id})
 
-    def json_error(self,error,status=400,id=None):
+    def json_error(self,error,status=400,request_id=None):
         """Create a proper jsonrpc error message"""
         if self.statsd:
             self.statsd.incr('jsonrpc_error')
@@ -487,8 +486,8 @@ class JSONRPCHandler(MyHandler):
         if isinstance(error,Exception):
             error = str(error)
         logger.info('json_error: %r',error)
-        self.write({'jsonrpc':'2.0','error':error,'id':id})
-        self.finish()
+        if request_id:
+            self.write({'jsonrpc':'2.0', 'error':error, 'id':request_id})
 
 class LibHandler(MyHandler):
     """Handler for iceprod library downloads.
