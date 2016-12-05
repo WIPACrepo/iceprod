@@ -262,7 +262,19 @@ def get_local_ip_address():
 
 def gethostname():
     """Get hostname of this computer."""
-    return socket.getfqdn()
+    ret = socket.getfqdn()
+    if len(ret.split('.')) > 1:
+        return ret
+    try:
+        resp = requests.get('http://simprod.icecube.wisc.edu/downloads/getip.php')
+        resp.raise_for_status()
+        logger.info('getip: %r', resp.text)
+        ret2 = resp.text.split(' ')[-1]
+        if len(ret2.split('.')) > 1:
+            ret = '.'.join(ret.split('.')[:1]+ret2.split('.')[1:])
+    except:
+        logger.info('error getting global ip', exc_info=True)
+    return ret
 
 def download(url, local, cache=False, options={}):
     """Download a file, checksumming if possible"""

@@ -630,21 +630,25 @@ class functions_test(unittest.TestCase):
         for e in eth:
             logging.info('%s',e)
 
+    @patch('socket.getfqdn')
+    @requests_mock.mock()
     @unittest_reporter
-    def test_301_gethostname(self):
-        """Test the gethostname function"""
-        # get hostname
+    def test_301_gethostname(self, fqdn, http_mock):
+        fqdn.return_value = 'myhost'
+        http_mock.get('/downloads/getip.php', text='123 myhost')
         host = iceprod.core.functions.gethostname()
-        logging.info('hostname = %r', host)
+        self.assertEqual(host, 'myhost')
+        self.assertEqual(http_mock.call_count, 1)
 
-        # get external hostname
-        ext_host = socket.getfqdn().strip()
+        http_mock.get('/downloads/getip.php', text='123 dyn.test.com')
+        host = iceprod.core.functions.gethostname()
+        self.assertEqual(host, 'myhost.test.com')
+        self.assertEqual(http_mock.call_count, 2)
 
-        if (not host) and ext_host:
-            raise Exception('no hostname returned. host is %r'%ext_host)
-        if host not in ext_host and ext_host not in host:
-            raise Exception('hostnames not equal. expected %s and got %s'%
-                            (ext_host, host))
+        fqdn.return_value = 'myhost.foo.bar'
+        host = iceprod.core.functions.gethostname()
+        self.assertEqual(host, 'myhost.foo.bar')
+        self.assertEqual(http_mock.call_count, 2)
 
     @unittest_reporter
     def test_302_isurl(self):
