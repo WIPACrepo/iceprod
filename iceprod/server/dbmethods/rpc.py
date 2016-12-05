@@ -159,15 +159,15 @@ class rpc(_Methods_Base):
             config['options']['resources'] = newtask['resources']
             raise tornado.gen.Return(config)
 
-    def rpc_set_processing(self, task):
+    def rpc_set_processing(self, task_id):
         """
         Set a task to the processing status
 
         Args:
-            task (str): task_id
+            task_id (str): task_id
         """
-        logger.info('rpc_set_processing for %r', task)
-        return self.parent.service['queue_set_task_status'](task, 'processing')
+        logger.info('rpc_set_processing for %r', task_id)
+        return self.parent.service['queue_set_task_status'](task_id, 'processing')
 
     @tornado.gen.coroutine
     def rpc_finish_task(self, task_id, stats):

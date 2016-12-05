@@ -39,7 +39,7 @@ def processing(task_id):
 
     Only used for single task config, not for pilots.
     """
-    ret = JSONRPC.set_processing(task=task_id)
+    ret = JSONRPC.set_processing(task_id=task_id)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
@@ -122,7 +122,7 @@ def taskerror(cfg, start_time=None):
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
-    ret = JSONRPC.task_error(task=cfg.config['options']['task_id'],
+    ret = JSONRPC.task_error(task_id=cfg.config['options']['task_id'],
                              error_info=error_info)
     if isinstance(ret,Exception):
         # an error occurred
