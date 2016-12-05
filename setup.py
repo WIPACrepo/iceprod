@@ -51,7 +51,7 @@ except Exception:
 
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
-    install_requires = ['certifi','tornado>=4.2', 'pyzmq', 'setproctitle',
+    install_requires = ['certifi','tornado>=4.2', 'setproctitle',
                         'pyOpenSSL', 'pyasn1', 'jsonschema',
                         'psutil>=4.0.0', 'cryptography', 'requests',
                         'requests_toolbelt', 'requests-futures', 'statsd']
