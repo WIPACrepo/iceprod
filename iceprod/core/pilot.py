@@ -313,6 +313,10 @@ class Pilot(object):
                                 self.resources[r] = self.resources[r].split(',')
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
 
+                if not any(self.resources.values()):
+                    logger.info('no resources left, so wait for tasks to finish')
+                    break
+
             # wait until we can queue more tasks
             while running or self.tasks:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
