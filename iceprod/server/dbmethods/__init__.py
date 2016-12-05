@@ -146,10 +146,11 @@ class _Methods_Base():
     @tornado.gen.coroutine
     def _send_to_master(self, updates, callback=None):
         """Send an update to the master"""
-        try:
-            yield self.parent.modules['master_updater']['add'](updates)
-        except Exception:
-            logger.warn('_send_to_master() error',exc_info=True)
+        if 'master_updater' in self.parent.modules:
+            try:
+                yield self.parent.modules['master_updater']['add'](updates)
+            except Exception:
+                logger.warn('_send_to_master() error',exc_info=True)
 
     def _is_master(self):
         """Test if this is the master"""
