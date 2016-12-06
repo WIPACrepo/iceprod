@@ -187,7 +187,7 @@ class rpc(_Methods_Base):
             sql2 += ' status = ?, status_changed = ?'
             bindings = ('complete',task_id)
             bindings2 = ['complete',now]
-            if 'time_used' in stats:
+            if 'time_used' in stats and stats['time_used']:
                 logger.info('time_used: %r', stats['time_used'])
                 try:
                     sql2 += ', walltime = ? '
@@ -195,8 +195,7 @@ class rpc(_Methods_Base):
                 except:
                     logger.warn('bad time_used', exc_info=True)
             sql2 += ' where task_id = ?'
-            bindings2.append(task_id)
-            bindings2 = tuple(bindings2)
+            bindings2 = tuple(bindings2+[task_id])
             yield self.parent.db.query([sql,sql2],[bindings,bindings2])
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
