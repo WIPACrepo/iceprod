@@ -319,6 +319,7 @@ class web(_Methods_Base):
             raise tornado.gen.Return({})
 
         # get task name/type
+        logger.info('get task name/type')
         task_rel = {}
         task_rel_index = {}
         sql = 'select task_rel_id, task_index, name, requirements '
@@ -332,6 +333,7 @@ class web(_Methods_Base):
         task_rel_ids = [task_rel_index[x] for x in sorted(task_rel_index)]
 
         # get time from stats
+        logger.info('get time from stats')
         sql = 'select task_id,stat from task_stat where task_id in (%s)'
         task_stats = {}
         for f in self._bulk_select(sql,task_ids):
@@ -350,6 +352,7 @@ class web(_Methods_Base):
                         task_stats[task_id][1] = stat['time_used']
 
         # get status numbers
+        logger.info('get status numbers')
         sql = 'select task_id,status,task_rel_id from task where task_id in (%s)'
         task_groups = {trid:[0,0,0,[],[]] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
@@ -365,6 +368,7 @@ class web(_Methods_Base):
                         task_groups[trid][3].append(task_stats[tid][0])
                         task_groups[trid][4].append(task_stats[tid][1])
 
+        logger.info('make stats')
         stats = OrderedDict()
         for trid in task_rel_ids:
             if task_groups[trid][4]:

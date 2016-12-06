@@ -289,9 +289,12 @@ class rpc(_Methods_Base):
                             ret = yield self.parent.db.query(sql, bindings)
                             job = ret[0][0]
                             dagtemp = os.path.join(temp_dir, dataset, job)
+                            logger.info('cleaning site_temp %r', dagtemp)
                             functions.delete(dagtemp)
                         except Exception as e:
                             logger.warn('failed to clean site_temp', exc_info=True)
+
+                    # TODO: if not master, delete tasks
 
     @tornado.gen.coroutine
     def rpc_task_error(self, task_id, error_info=None):
