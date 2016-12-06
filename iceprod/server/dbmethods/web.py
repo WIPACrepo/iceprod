@@ -335,10 +335,10 @@ class web(_Methods_Base):
 
         # get status numbers
         logger.info('get status numbers')
-        sql = 'select count(*), status, sum(walltime), sum(walltime_err),
+        sql = 'select count(*), status, sum(walltime), sum(walltime_err), '
         sql += 'sum(walltime_err_n), max(walltime), min(walltime), task_rel_id '
         sql += 'from task where task_id in (%s) group by task_rel_id,status'
-        task_groups = {trid:[0,0,0,0.0,0,None,None] for trid in task_rel}
+        task_groups = {trid:[0,0,0,0.0,0.0,0,0,0] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
             ret = yield f
             for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
