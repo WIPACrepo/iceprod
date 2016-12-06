@@ -70,20 +70,26 @@ def downloadtask(gridspec, resources=None):
             raise
     return task
 
-def finishtask(cfg, stats={}):
+def finishtask(cfg, stats={}, start_time=None):
     """Finish a task"""
     if 'task_id' not in cfg.config['options']:
         raise Exception('config["options"]["task_id"] not specified, '
                         'so cannot finish task')
     if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
         return # don't finish task on a DB kill
-    outstats = stats
     if 'stats' in cfg.config['options']:
-        # filter stats
+        # filter task stats
         stat_keys = set(json_decode(cfg.config['options']['stats']))
-        outstats = {k:stats[k] for k in stats if k in stat_keys}
+        stats = {k:stats[k] for k in stats if k in stat_keys}
+
+    hostname = functions.gethostname()
+    if start_time:
+        t = time.time() - start_time
+    else:
+        t = None
+    stats = {'hostname':hostname, 'time_used': t, 'task_stats':stats}
     ret = JSONRPC.finish_task(task_id=cfg.config['options']['task_id'],
-                              stats=outstats)
+                              stats=stats)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret

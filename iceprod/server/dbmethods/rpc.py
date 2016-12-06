@@ -203,22 +203,11 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('task',task_id,now,sql2,bindings2))
 
             # update task statistics
-            sql = 'select task_stat_id,task_id from task_stat where task_id = ?'
-            bindings = (task_id,)
-            ret = yield self.parent.db.query(sql, bindings)
-            task_stat_id = None
-            for ts,t in ret:
-                task_stat_id = ts
-            if task_stat_id:
-                logger.debug('replace previous task_stat')
-                sql = 'update task_stat set stat = ? where task_stat_id = ?'
-                bindings = (stats,task_stat_id)
-            else:
-                logger.debug('insert new task_stat')
-                task_stat_id = yield self.parent.db.increment_id('task_stat')
-                sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
-                sql += ' (?, ?, ?)'
-                bindings = (task_stat_id,task_id,stats)
+            logger.debug('insert new task_stat')
+            task_stat_id = yield self.parent.db.increment_id('task_stat')
+            sql = 'insert into task_stat (task_stat_id,task_id,stat) values '
+            sql += ' (?, ?, ?)'
+            bindings = (task_stat_id,task_id,stats)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'

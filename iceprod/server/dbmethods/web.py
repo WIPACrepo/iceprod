@@ -288,3 +288,87 @@ class web(_Methods_Base):
         sql = 'select name, requirements from task_rel where dataset_id = ?'
         bindings = (dataset_id,)
         return self.parent.db.query(sql, bindings)
+
+    @tornado.gen.coroutine
+    def web_get_task_completion_stats(self, dataset_id):
+        """
+        Get the task completion stats for a dataset.
+
+        Columns:
+            task_name
+            task_type
+            num_queued
+            num_running
+            num_completions
+            avg_runtime
+            max_runtime
+            min_runtime
+            efficiency
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {task_name: {column: num} }
+        """
+        sql = 'select task_id from search where dataset_id = ?'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        task_ids = set([row[0] for row in ret])
+        if not task_ids:
+            raise tornado.gen.Return({})
+
+        task_rel = {}
+        sql = 'select task_rel_id, name, requirements from task_rel where dataset_id = ?'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        for trid, name, req in ret:
+            task_rel[trid] = ('GPU' if 'gpu' in req.lower() else 'CPU'], name)
+
+        sql = 'select task_id,stat from task_stat where task_id in (%s)'
+        task_stats = {}
+        for f in self._bulk_select(sql,task_ids):
+            ret = yield f
+            for task_id,stat in ret:
+                try:
+                    stat = json_decode(stat)
+                except:
+                    logger.info('could not decode stat', exc_info=True)
+                if 'time_used' in stat and stat['time_used']:
+                    if task_id in task_stats:
+                        task_stats[task_id][0] += stat['time_used']
+                    else:
+                        task_stats[task_id] = [stat['time_used'],0]
+                    if 'task_stats' in stat: # complete time
+                        task_stats[task_id][1] = stat['time_used']
+
+        sql = 'select task_id,status,task_rel_id from task where task_id in (%s)'
+        task_groups = {trid:(0,0,0,[],[]) for trid in task_rel}
+        for f in self._bulk_select(sql,task_ids):
+            ret = yield f
+            for tid,status,trid in ret:
+                if status == 'queued':
+                    task_groups[trid][0] += 1
+                elif status == 'processing':
+                    task_groups[trid][1] += 1
+                elif status == 'complete':
+                    task_groups[trid][2] += 1
+                    if tid in task_stats and task_stats[tid][1] > 0:
+                        task_groups[trid][3].append(task_stats[tid][0])
+                        task_groups[trid][4].append(task_stats[tid][1])
+
+        stats = {}
+        for trid in task_groups:
+            stats[trid] = {
+                'task_name': task_stats[trid][1],
+                'task_type': task_stats[trid][0],
+                'num_queued': task_groups[trid][0],
+                'num_running': task_groups[trid][1],
+                'num_completions': task_groups[trid][2],
+                'avg_runtime': sum(task_groups[trid][4])*1.0/len(task_groups[trid][4]),
+                'max_runtime': max(task_groups[trid][4]),
+                'min_runtime': min(task_groups[trid][4]),
+                'efficiency': int(sum(task_groups[trid][4])*100/sum(task_groups[trid][3])),
+            }
+
+        raise tornado.gen.Return(stats)
