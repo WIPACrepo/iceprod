@@ -924,8 +924,12 @@ class rpc(_Methods_Base):
         self.parent.config.load_string(config_text)
         self.parent.modules['daemon']['reload']()
 
+    @tornado.gen.coroutine
     def rpc_reset_task(self, task):
-        return self.parent.service['queue_set_task_status'](task=task, status='reset')
+        yield self.parent.service['queue_set_task_status'](task=task, status='reset')
+        sql = 'update task set failures=0 where task_id = ?'
+        bindings = (task,)
+        yield self.parent.db.query(sql,bindings)
 
     def rpc_resume_task(self, task):
         return self.parent.service['queue_set_task_status'](task=task, status='resume')
