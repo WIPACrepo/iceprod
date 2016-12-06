@@ -45,14 +45,19 @@ class Server(object):
 
         for mod_name in self.cfg['modules']:
             if self.cfg['modules'][mod_name]:
-                m = importlib.import_module('iceprod.server.modules.'+mod_name)
-                mod = getattr(m, mod_name)(cfg=self.cfg,
-                                           io_loop=self.io_loop,
-                                           executor=self.executor,
-                                           modules=self.services)
-                self.modules[mod_name] = mod
-                self.services[mod_name] = mod.service
-                mod.start()
+                try:
+                    m = importlib.import_module('iceprod.server.modules.'+mod_name)
+                    mod = getattr(m, mod_name)(cfg=self.cfg,
+                                               io_loop=self.io_loop,
+                                               executor=self.executor,
+                                               modules=self.services)
+                    self.modules[mod_name] = mod
+                    self.services[mod_name] = mod.service
+                    mod.start()
+                except:
+                    logger.critical('cannot start module', exc_info=True)
+                    self.kill()
+                    raise
 
     def run(self):
         try:
