@@ -208,12 +208,14 @@
 <li>task_id : str</li>
 <li>status : str  <span class="gray"># possible statuses: idle, waiting, queued, processing, complete, suspended, failed, resume, reset</span></li>
 <li>prev_status : str</li>
-<li>error_message : Text</li>
 <li>status_changed : str  <span class="gray"># datetime</span></li>
 <li>submit_dir : Text</li>
 <li>grid_queue_id : str</li>
 <li>failures : int</li>
 <li>evictions : int</li>
+<li>walltime : float  <span class="gray"># good walltime used by this task</span></li>
+<li>walltime_err : float  <span class="gray"># bad walltime used by this task</span></li>
+<li>walltime_err_n : int  <span class="gray"># number of additions to bad walltime</span></li>
 <li>depends : Text  <span class="gray"># csv list of task_ids</span></li>
 <li>requirements : Text  <span class="gray"># json of {name:value}. overrides task_rel requirements</span></li>
 <li>task_rel_id : str</li>

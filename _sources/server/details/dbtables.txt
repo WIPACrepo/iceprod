@@ -97,12 +97,14 @@ Tables
 * task_id : str
 * status : str  :gray:`# possible statuses: idle, waiting, queued, processing, complete, suspended, failed, resume, reset`
 * prev_status : str
-* error_message : Text
 * status_changed : str  :gray:`# datetime`
 * submit_dir : Text
 * grid_queue_id : str
 * failures : int
 * evictions : int
+* walltime : float  :gray:`# good walltime used by this task`
+* walltime_err : float  :gray:`# bad walltime used by this task`
+* walltime_err_n : int  :gray:`# number of additions to bad walltime`
 * depends : Text  :gray:`# csv list of task_ids`
 * requirements : Text  :gray:`# json of {name:value}. overrides task_rel requirements`
 * task_rel_id : str
