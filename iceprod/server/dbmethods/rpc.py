@@ -383,7 +383,7 @@ class rpc(_Methods_Base):
                 if 'time_used' in error_info:
                     logger.info('time_used: %r', error_info['time_used'])
                     try:
-                        sql2 += ', walltime = walltime + ?, walltime_n = walltime_n + 1 '
+                        sql2 += ', walltime_err = walltime_err + ?, walltime_err_n = walltime_err_n + 1 '
                         bindings2.append(float(error_info['time_used']))
                     except:
                         logger.warn('bad time_used', exc_info=True)
