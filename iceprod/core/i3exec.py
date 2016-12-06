@@ -274,8 +274,6 @@ def runner(config, url, debug=False, offline=False):
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
-    if not offline:
-        iceprod.core.exe_json.finishtask(cfg, stats)
     logger.warn('finished without error')
 
 
