@@ -55,7 +55,11 @@ class Server(object):
                 mod.start()
 
     def run(self):
-        self.io_loop.start()
+        try:
+            self.io_loop.start()
+        except:
+            logger.critical('exception not caught', exc_info=True)
+            self.kill()
 
     def restart(self):
         env = os.environ.copy()
