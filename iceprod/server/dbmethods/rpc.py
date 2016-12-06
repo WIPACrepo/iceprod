@@ -672,30 +672,30 @@ class rpc(_Methods_Base):
                 raise
 
     @tornado.gen.coroutine
-    def rpc_update_dataset_config(self, dataset_id, data):
+    def rpc_update_dataset_config(self, dataset_id, config):
         """
         Update a dataset config
 
         Args:
             dataset_id (str): dataset id
-            data (str or dict): config
+            config (str or dict): config
         """
-        if isinstance(data,dict):
+        if isinstance(config,dict):
             try:
-                data = serialization.dict_to_dataclasses(data)
+                config = serialization.dict_to_dataclasses(config)
             except:
-                logger.info('error converting config: %r', data,
+                logger.info('error converting config: %r', config,
                             exc_info=True)
                 raise
             try:
-                data = serialization.serialize_json.dumps(data)
+                config = serialization.serialize_json.dumps(config)
             except:
-                logger.info('error serializing config: %r', data,
+                logger.info('error serializing config: %r', config,
                             exc_info=True)
                 raise
 
         sql = 'update config set config_data = ? where dataset_id = ?'
-        bindings = (data,dataset_id)
+        bindings = (config,dataset_id)
         yield self.parent.db.query(sql, bindings)
         if self._is_master():
             sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
