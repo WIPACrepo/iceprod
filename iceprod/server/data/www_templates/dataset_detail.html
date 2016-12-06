@@ -50,7 +50,7 @@
             <th><sup>max</sup>/<sub>min</sub></th>
             <th>Efficiency</th>
         </tr>
-        {% for t in sorted(task_info) %}
+        {% for t in task_info %}
         <tr>
             <td>{{ task_info[t]['task_name'] }}</td>
             <td>{{ task_info[t]['task_type'] }}</td>

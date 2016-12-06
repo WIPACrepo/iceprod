@@ -318,13 +318,20 @@ class web(_Methods_Base):
         if not task_ids:
             raise tornado.gen.Return({})
 
+        # get task name/type
         task_rel = {}
-        sql = 'select task_rel_id, name, requirements from task_rel where dataset_id = ?'
+        task_rel_index = {}
+        sql = 'select task_rel_id, task_index, name, requirements '
+        sql += ' from task_rel where dataset_id = ?'
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
-        for trid, name, req in ret:
+        for trid, index, name, req in ret:
             task_rel[trid] = ('GPU' if 'gpu' in req.lower() else 'CPU', name)
+            task_rel_index[index] = trid
+        # get sorted order for task_rel_ids
+        task_rel_ids = [task_rel_index[x] for x in sorted(task_rel_index)]
 
+        # get time from stats
         sql = 'select task_id,stat from task_stat where task_id in (%s)'
         task_stats = {}
         for f in self._bulk_select(sql,task_ids):
@@ -342,6 +349,7 @@ class web(_Methods_Base):
                     if 'task_stats' in stat: # complete time
                         task_stats[task_id][1] = stat['time_used']
 
+        # get status numbers
         sql = 'select task_id,status,task_rel_id from task where task_id in (%s)'
         task_groups = {trid:[0,0,0,[],[]] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
@@ -357,8 +365,8 @@ class web(_Methods_Base):
                         task_groups[trid][3].append(task_stats[tid][0])
                         task_groups[trid][4].append(task_stats[tid][1])
 
-        stats = {}
-        for trid in task_groups:
+        stats = OrderedDict()
+        for trid in task_rel_ids:
             if task_groups[trid][4]:
                 avg = round(sum(task_groups[trid][4])*1.0/len(task_groups[trid][4]),2)
                 mx = max(task_groups[trid][4])
