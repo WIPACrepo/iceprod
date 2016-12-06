@@ -178,16 +178,25 @@ class rpc(_Methods_Base):
             task_id (str): task_id
             stats (dict): statistics from task
         """
-        stats = json_encode(stats)
         with (yield self.parent.db.acquire_lock('queue')):
             # update task status
             now = nowstr()
             sql = 'update search set task_status = ? '
             sql += ' where task_id = ?'
             sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, status_changed = ? where task_id = ?'
+            sql2 += ' status = ?, status_changed = ?'
             bindings = ('complete',task_id)
-            bindings2 = ('complete',now,task_id)
+            bindings2 = ['complete',now]
+            if 'time_used' in stats:
+                logger.info('time_used: %r', stats['time_used'])
+                try:
+                    sql2 += ', walltime = ? '
+                    bindings2.append(float(stats['time_used']))
+                except:
+                    logger.warn('bad time_used', exc_info=True)
+            sql2 += ' where task_id = ?'
+            bindings2.append(task_id)
+            bindings2 = tuple(bindings2)
             yield self.parent.db.query([sql,sql2],[bindings,bindings2])
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
@@ -205,9 +214,9 @@ class rpc(_Methods_Base):
             # update task statistics
             logger.debug('insert new task_stat')
             task_stat_id = yield self.parent.db.increment_id('task_stat')
-            sql = 'insert into task_stat (task_stat_id,task_id,stat) values '
+            sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
             sql += ' (?, ?, ?)'
-            bindings = (task_stat_id,task_id,stats)
+            bindings = (task_stat_id, task_id, json_encode(stats))
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
@@ -221,23 +230,27 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('task_stat',task_stat_id,now,sql,bindings))
 
             # check if whole job is finished
-            sql = 'select search.dataset_id,job_id,jobs_submitted,tasks_submitted '
-            sql += ' from search '
-            sql += ' join dataset on search.dataset_id = dataset.dataset_id '
-            sql += ' where task_id = ?'
+            sql = 'select dataset_id, job_id from search where task_id = ?'
             bindings = (task_id,)
             ret = yield self.parent.db.query(sql, bindings)
             dataset_id = None
             job_id = None
-            total_jobs = None
-            total_tasks = None
-            for d_id,j_id,njobs,ntasks in ret:
+            for d_id,j_id in ret:
                 dataset_id = d_id
                 job_id = j_id
+            if (not dataset_id) or (not job_id):
+                raise Exception('cannot find dataset or job id')
+            sql = 'select jobs_submitted,tasks_submitted from dataset '
+            sql += 'where dataset_id = ?'
+            bindings = (dataset_id,)
+            ret = yield self.parent.db.query(sql, bindings)
+            total_jobs = None
+            total_tasks = None
+            for njobs,ntasks in ret:
                 total_jobs = njobs
                 total_tasks = ntasks
-            if not dataset_id or not job_id or not total_jobs or not total_tasks:
-                raise Exception('cannot find dataset or job id')
+            if (not total_jobs) or (not total_tasks):
+                raise Exception('cannot find total_jobs or total_tasks')
 
             tasks_per_job = int(total_tasks/total_jobs)
             sql = 'select task_id,task_status from search where job_id = ?'
@@ -305,6 +318,8 @@ class rpc(_Methods_Base):
             task_id (str): task id
             error_info (dict): error information
         """
+        if not error_info:
+            error_info = {}
         with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select failures, requirements, task_rel_id from task '
@@ -365,7 +380,14 @@ class rpc(_Methods_Base):
                 sql2 = 'update task set prev_status = status, '
                 sql2 += ' status = ?, failures = ?, status_changed = ? '
                 bindings2 = [status,failures,now]
-                if error_info and 'resources' in error_info:
+                if 'time_used' in error_info:
+                    logger.info('time_used: %r', error_info['time_used'])
+                    try:
+                        sql2 += ', walltime = walltime + ?, walltime_n = walltime_n + 1 '
+                        bindings2.append(float(error_info['time_used']))
+                    except:
+                        logger.warn('bad time_used', exc_info=True)
+                if 'resources' in error_info:
                     logger.info('error_resources: %r', error_info['resources'])
                     logger.info('old task_reqs: %r', task_reqs)
                     # update requirements
@@ -391,8 +413,9 @@ class rpc(_Methods_Base):
                 sql3 = 'replace into task_stat (task_stat_id, task_id, stat) '
                 sql3 += 'values (?,?,?)'
                 task_stat_id = yield self.parent.db.increment_id('task_stat')
-                stat = {'error_'+now: error_info}
-                bindings3 = (task_stat_id, task_id, json_encode(stat))
+                error_info['error'] = True
+                error_info['time'] = now
+                bindings3 = (task_stat_id, task_id, json_encode(error_info))
                 yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
                 if self._is_master():
                     msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'

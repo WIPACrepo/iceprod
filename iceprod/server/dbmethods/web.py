@@ -303,6 +303,7 @@ class web(_Methods_Base):
             avg_runtime
             max_runtime
             min_runtime
+            error_count
             efficiency
 
         Args:
@@ -332,54 +333,39 @@ class web(_Methods_Base):
         # get sorted order for task_rel_ids
         task_rel_ids = [task_rel_index[x] for x in sorted(task_rel_index)]
 
-        # get time from stats
-        logger.info('get time from stats')
-        sql = 'select task_id,stat from task_stat where task_id in (%s)'
-        task_stats = {}
-        for f in self._bulk_select(sql,task_ids):
-            ret = yield f
-            for task_id,stat in ret:
-                try:
-                    stat = json_decode(stat)
-                except:
-                    logger.info('could not decode stat', exc_info=True)
-                if 'time_used' in stat and stat['time_used']:
-                    if task_id in task_stats:
-                        task_stats[task_id][0] += stat['time_used']
-                    else:
-                        task_stats[task_id] = [stat['time_used'],0]
-                    if 'task_stats' in stat: # complete time
-                        task_stats[task_id][1] = stat['time_used']
-
         # get status numbers
         logger.info('get status numbers')
-        sql = 'select task_id,status,task_rel_id from task where task_id in (%s)'
-        task_groups = {trid:[0,0,0,[],[]] for trid in task_rel}
+        sql = 'select count(*), status, sum(walltime), sum(walltime_err),
+        sql += 'sum(walltime_err_n), max(walltime), min(walltime), task_rel_id '
+        sql += 'from task where task_id in (%s) group by task_rel_id,status'
+        task_groups = {trid:[0,0,0,0.0,0,None,None] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
             ret = yield f
-            for tid,status,trid in ret:
+            for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
                 if status == 'queued':
-                    task_groups[trid][0] += 1
+                    task_groups[trid][0] += n
                 elif status == 'processing':
-                    task_groups[trid][1] += 1
+                    task_groups[trid][1] += n
                 elif status == 'complete':
-                    task_groups[trid][2] += 1
-                    if tid in task_stats and task_stats[tid][1] > 0:
-                        task_groups[trid][3].append(task_stats[tid][0])
-                        task_groups[trid][4].append(task_stats[tid][1])
+                    task_groups[trid][2] += n
+                    task_groups[trid][3] += wall
+                    task_groups[trid][4] += wall+wall_e
+                    task_groups[trid][5] += wall_en
+                    if ((not task_groups[trid][6]) or
+                        task_groups[trid][6] < wall_max):
+                        task_groups[trid][6] = wall_max
+                    if ((not task_groups[trid][7]) or
+                        task_groups[trid][7] > wall_min):
+                        task_groups[trid][7] = wall_min
 
         logger.info('make stats')
         stats = OrderedDict()
         for trid in task_rel_ids:
             if task_groups[trid][4]:
-                avg = round(sum(task_groups[trid][4])*1.0/len(task_groups[trid][4]),2)
-                mx = max(task_groups[trid][4])
-                mn = min(task_groups[trid][4])
-                eff = int(sum(task_groups[trid][4])*100/sum(task_groups[trid][3]))
+                avg = round(task_groups[trid][3]/task_groups[trid][2],2)
+                eff = int(task_groups[trid][3]*100/task_groups[trid][4])
             else:
                 avg = 0
-                mx = 0
-                mn = 0
                 eff = 0
             stats[trid] = {
                 'task_name': task_rel[trid][1],
@@ -388,8 +374,9 @@ class web(_Methods_Base):
                 'num_running': task_groups[trid][1],
                 'num_completions': task_groups[trid][2],
                 'avg_runtime': avg,
-                'max_runtime': mx,
-                'min_runtime': mn,
+                'max_runtime': task_groups[trid][6],
+                'min_runtime': task_groups[trid][7],
+                'error_count': task_groups[trid][5],
                 'efficiency': eff,
             }
 

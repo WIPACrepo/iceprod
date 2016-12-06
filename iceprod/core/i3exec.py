@@ -181,6 +181,8 @@ def runner(config, url, debug=False, offline=False):
         config['options']['local_temp'] = os.path.join(os.getcwd(),'local_temp')
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
+    if 'upload' not in config['options']:
+        config['options']['upload'] = 'logging'
 
     if not config['steering']:
         # make sure steering exists in the config
@@ -244,6 +246,8 @@ def runner(config, url, debug=False, offline=False):
                         iceprod.core.exe_json.taskerror(cfg, start_time=start_time)
                     except Exception as e:
                         logger.error(e)
+                    # forcibly turn on logging, so we can see the error
+                    config['options']['upload'] = 'logging'
                 raise
     
     finally:

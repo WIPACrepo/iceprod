@@ -117,14 +117,10 @@ def taskerror(cfg, start_time=None):
     try:
         error_info = {
             'hostname': functions.gethostname(),
-            'error_summary':'',
             'time_used':None,
         }
         if start_time:
             error_info['time_used'] = time.time() - start_time
-        if os.path.exists('stderr'):
-            with open('stderr') as f:
-                error_info['error_summary'] = json_compressor.compress(f.read())
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None

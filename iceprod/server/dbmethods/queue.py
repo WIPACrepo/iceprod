@@ -465,9 +465,10 @@ class queue(_Methods_Base):
                         task_ids = [(yield self.parent.db.increment_id('task'))
                                     for _ in task_rels]
                         sql = 'insert into task (task_id,status,prev_status,'
-                        sql += 'error_message,status_changed,submit_dir,grid_queue_id,'
-                        sql += 'failures,evictions,depends,requirements,task_rel_id) values '
-                        sql += '(?,?,?,?,?,?,?,?,?,?,?,?)'
+                        sql += 'status_changed,submit_dir,grid_queue_id,'
+                        sql += 'failures,evictions,walltime,walltime_err,walltime_err_n,'
+                        sql += 'depends,requirements,task_rel_id) values '
+                        sql += '(?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                         sql2 = 'insert into search (task_id,job_id,dataset_id,gridspec,'
                         sql2 += 'name,task_status) values (?,?,?,?,?,?)'
                         for index, task_rel_id in enumerate(sorted_task_rels):
@@ -475,8 +476,9 @@ class queue(_Methods_Base):
                             deps.extend(depends[index][1])
 
                             # task table
-                            bindings = (task_ids[index], 'idle', 'idle', '', now,
-                                        '', '', 0, 0, ','.join(deps), '', task_rel_id)
+                            bindings = (task_ids[index], 'idle', 'idle', now,
+                                        '', '', 0, 0, 0.0, 0.0, 0,
+                                        ','.join(deps), '', task_rel_id)
                             db_updates_sql.append(sql)
                             db_updates_bindings.append(bindings)
 
