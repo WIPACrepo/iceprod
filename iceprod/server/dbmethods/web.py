@@ -323,7 +323,7 @@ class web(_Methods_Base):
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
         for trid, name, req in ret:
-            task_rel[trid] = ('GPU' if 'gpu' in req.lower() else 'CPU'], name)
+            task_rel[trid] = ('GPU' if 'gpu' in req.lower() else 'CPU', name)
 
         sql = 'select task_id,stat from task_stat where task_id in (%s)'
         task_stats = {}
@@ -359,16 +359,26 @@ class web(_Methods_Base):
 
         stats = {}
         for trid in task_groups:
+            if task_groups[trid][4]:
+                avg = round(sum(task_groups[trid][4])*1.0/len(task_groups[trid][4]),2)
+                mx = max(task_groups[trid][4])
+                mn = min(task_groups[trid][4])
+                eff = int(sum(task_groups[trid][4])*100/sum(task_groups[trid][3]))
+            else:
+                avg = 0
+                mx = 0
+                mn = 0
+                eff = 0
             stats[trid] = {
-                'task_name': task_stats[trid][1],
-                'task_type': task_stats[trid][0],
+                'task_name': task_rel[trid][1],
+                'task_type': task_rel[trid][0],
                 'num_queued': task_groups[trid][0],
                 'num_running': task_groups[trid][1],
                 'num_completions': task_groups[trid][2],
-                'avg_runtime': sum(task_groups[trid][4])*1.0/len(task_groups[trid][4]),
-                'max_runtime': max(task_groups[trid][4]),
-                'min_runtime': min(task_groups[trid][4]),
-                'efficiency': int(sum(task_groups[trid][4])*100/sum(task_groups[trid][3])),
+                'avg_runtime': avg,
+                'max_runtime': mx,
+                'min_runtime': mn,
+                'efficiency': eff,
             }
 
         raise tornado.gen.Return(stats)
