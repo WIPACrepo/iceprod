@@ -343,7 +343,7 @@ class web(_Methods_Base):
                         task_stats[task_id][1] = stat['time_used']
 
         sql = 'select task_id,status,task_rel_id from task where task_id in (%s)'
-        task_groups = {trid:(0,0,0,[],[]) for trid in task_rel}
+        task_groups = {trid:[0,0,0,[],[]] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
             ret = yield f
             for tid,status,trid in ret:
