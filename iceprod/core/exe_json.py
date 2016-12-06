@@ -115,16 +115,16 @@ def taskerror(cfg, start_time=None):
     if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
         return # don't change status on a DB kill
     try:
-        hostname = functions.gethostname()
+        error_info = {
+            'hostname': functions.gethostname(),
+            'error_summary':'',
+            'time_used':None,
+        }
         if start_time:
-            t = time.time() - start_time
-        else:
-            t = None
+            error_info['time_used'] = time.time() - start_time
         if os.path.exists('stderr'):
-            log = json_compressor.compress(open('stderr').read())
-        else:
-            log = ''
-        error_info = {'hostname':hostname, 'time_used': t, 'error_summary':log}
+            with open('stderr') as f:
+                error_info['error_summary'] = json_compressor.compress(f.read())
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
@@ -137,9 +137,13 @@ def taskerror(cfg, start_time=None):
 def task_kill(task_id, resources=None, reason=None):
     """Tell the server that we killed a task"""
     try:
-        error_info = {'hostname': functions.gethostname()}
+        error_info = {
+            'hostname': functions.gethostname(),
+            'error_summary':'',
+            'time_used':None,
+        }
         if resources and 'time' in resources:
-            error_info['time_used'] = resources.pop('time',0)
+            error_info['time_used'] = resources['time']
         if resources:
             error_info['resources'] = resources
         if reason:
@@ -147,7 +151,7 @@ def task_kill(task_id, resources=None, reason=None):
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
-    ret = JSONRPC.task_error(task=task_id, error_info=error_info)
+    ret = JSONRPC.task_error(task_id=task_id, error_info=error_info)
     if isinstance(ret, Exception):
         # an error occurred
         raise ret
