@@ -596,38 +596,50 @@
                             <span class="c"># table not the same</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;modify table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="p">)</span>
 
-                            <span class="c"># differences</span>
-                            <span class="n">rmcols</span> <span class="o">=</span> <span class="n">curcols</span> <span class="o">-</span> <span class="n">scols</span>
-                            <span class="n">addcols</span> <span class="o">=</span> <span class="p">[]</span>
-                            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
-                                <span class="k">if</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">curcols</span><span class="p">:</span>
-                                    <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">table_name</span><span class="p">][</span><span class="n">x</span><span class="p">]</span>
-                                    <span class="n">x</span> <span class="o">=</span> <span class="s">&#39;`&#39;</span><span class="o">+</span><span class="n">x</span><span class="o">+</span><span class="s">&#39;`&#39;</span>
-                                    <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;str&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; VARBINARY(255) NOT NULL &#39;</span>
-                                    <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;int&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; INT NOT NULL DEFAULT 0 &#39;</span>
-                                    <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;bool&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; BOOL NOT NULL DEFAULT 0 &#39;</span>
-                                    <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;float&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; DOUBLE NOT NULL DEFAULT 0.0 &#39;</span>
-                                    <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;Text&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; TEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
-                                    <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;MediumText&#39;</span><span class="p">:</span>
-                                        <span class="n">x</span> <span class="o">+=</span> <span class="s">&#39; MEDIUMTEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
-                                    <span class="n">addcols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                            <span class="c"># get similar cols</span>
+                            <span class="n">keepcols</span> <span class="o">=</span> <span class="n">curcols</span> <span class="o">&amp;</span> <span class="n">scols</span>
 
-                            <span class="n">full_sql</span> <span class="o">=</span> <span class="s">&#39;ALTER TABLE &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; &#39;</span>
-                            <span class="k">if</span> <span class="n">addcols</span><span class="p">:</span>
-                                <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;ADD COLUMN &#39;</span>
-                                <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;, ADD COLUMN &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">addcols</span><span class="p">)</span>
-                            <span class="k">if</span> <span class="n">addcols</span> <span class="ow">and</span> <span class="n">rmcols</span><span class="p">:</span>
-                                <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;, &#39;</span>
-                            <span class="k">if</span> <span class="n">rmcols</span><span class="p">:</span>
-                                <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;DROP COLUMN &#39;</span>
-                                <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;, DROP COLUMN &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;`&#39;</span><span class="o">+</span><span class="n">col</span><span class="o">+</span><span class="s">&#39;`&#39;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">rmcols</span><span class="p">)</span>
-                            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;%s&#39;</span><span class="p">,</span> <span class="n">full_sql</span><span class="p">)</span>
+                            <span class="n">full_sql</span> <span class="o">=</span> <span class="s">&#39;create temporary table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup &#39;</span><span class="o">+</span><span class="n">sql_create</span><span class="o">+</span><span class="s">&#39;;&#39;</span>
+                            <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;insert into &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup (&#39;</span><span class="o">+</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keepcols</span><span class="p">))</span><span class="o">+</span><span class="s">&#39;) select &#39;</span><span class="o">+</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keepcols</span><span class="p">)</span><span class="o">+</span><span class="s">&#39; from &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;;&#39;</span>
+                            <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;drop table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;;&#39;</span>
+                            <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;create table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="n">sql_create</span><span class="o">+</span><span class="s">&#39;;&#39;</span>
+                            <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;insert into &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; select &#39;</span><span class="o">+</span><span class="n">sql_select</span><span class="o">+</span><span class="s">&#39; from &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup;&#39;</span>
+                            <span class="n">full_sql</span> <span class="o">+=</span> <span class="s">&#39;drop table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup;&#39;</span>
                             <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">full_sql</span><span class="p">)</span>
+
+                            <span class="c"># differences</span>
+                            <span class="c">#~ rmcols = curcols - scols</span>
+                            <span class="c">#~ addcols = []</span>
+                            <span class="c">#~ for x in cols:</span>
+                                <span class="c">#~ if x not in curcols:</span>
+                                    <span class="c">#~ t = self.tables[table_name][x]</span>
+                                    <span class="c">#~ x = &#39;`&#39;+x+&#39;`&#39;</span>
+                                    <span class="c">#~ if t == &#39;str&#39;:</span>
+                                        <span class="c">#~ x += &#39; VARBINARY(255) NOT NULL &#39;</span>
+                                    <span class="c">#~ elif t == &#39;int&#39;:</span>
+                                        <span class="c">#~ x += &#39; INT NOT NULL DEFAULT 0 &#39;</span>
+                                    <span class="c">#~ elif t == &#39;bool&#39;:</span>
+                                        <span class="c">#~ x += &#39; BOOL NOT NULL DEFAULT 0 &#39;</span>
+                                    <span class="c">#~ elif t == &#39;float&#39;:</span>
+                                        <span class="c">#~ x += &#39; DOUBLE NOT NULL DEFAULT 0.0 &#39;</span>
+                                    <span class="c">#~ elif t == &#39;Text&#39;:</span>
+                                        <span class="c">#~ x += &#39; TEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
+                                    <span class="c">#~ elif t == &#39;MediumText&#39;:</span>
+                                        <span class="c">#~ x += &#39; MEDIUMTEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
+                                    <span class="c">#~ addcols.append(x)</span>
+
+
+                            <span class="c">#~ full_sql = &#39;ALTER TABLE &#39;+table_name+&#39; &#39;</span>
+                            <span class="c">#~ if addcols:</span>
+                                <span class="c">#~ full_sql += &#39;ADD COLUMN &#39;</span>
+                                <span class="c">#~ full_sql += &#39;, ADD COLUMN &#39;.join(col for col in addcols)</span>
+                            <span class="c">#~ if addcols and rmcols:</span>
+                                <span class="c">#~ full_sql += &#39;, &#39;</span>
+                            <span class="c">#~ if rmcols:</span>
+                                <span class="c">#~ full_sql += &#39;DROP COLUMN &#39;</span>
+                                <span class="c">#~ full_sql += &#39;, DROP COLUMN &#39;.join(&#39;`&#39;+col+&#39;`&#39; for col in rmcols)</span>
+                            <span class="c">#~ logger.info(&#39;%s&#39;, full_sql)</span>
+                            <span class="c">#~ cur.execute(full_sql)</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="c"># table is good</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; already exists&#39;</span><span class="p">)</span>
