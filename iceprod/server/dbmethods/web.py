@@ -330,18 +330,18 @@ class web(_Methods_Base):
         
         # get status numbers
         logger.info('get status numbers')
-        sql = 'select count(*), status, task_rel_id '
-        sql += 'from task where task_id in (%s) group by task_rel_id,status'
+        sql = 'select status, task_rel_id '
+        sql += 'from task where task_id in (%s)'
         task_groups = {trid:[0,0,0] for trid in task_rel}
         for f in self._bulk_select(sql,task_ids):
             ret = yield f
-            for n,status,trid in ret:
+            for status,trid in ret:
                 if status == 'queued':
-                    task_groups[trid][0] += n
+                    task_groups[trid][0] += 1
                 elif status == 'processing':
-                    task_groups[trid][1] += n
+                    task_groups[trid][1] += 1
                 elif status == 'complete':
-                    task_groups[trid][2] += n
+                    task_groups[trid][2] += 1
 
         logger.info('make stats')
         stats = OrderedDict()
