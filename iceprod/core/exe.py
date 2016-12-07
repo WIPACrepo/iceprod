@@ -39,7 +39,7 @@ from iceprod.core import util
 from iceprod.core import dataclasses
 from iceprod.core import util
 from iceprod.core import functions
-from iceprod.core.exe_json import stillrunning, finishtask
+from iceprod.core.exe_json import stillrunning
 import iceprod.core.parser
 from iceprod.core.jsonUtil import json_encode,json_decode
 
@@ -480,15 +480,6 @@ def runtask(cfg, globalenv, task):
                     stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
                     stats[tray['name']] = tmpstat[tmpstat.keys()[0]]
-
-        # finish task
-        if ('offline' in cfg.config['options'] and
-            not cfg.config['options']['offline']):
-            try:
-                finishtask(cfg, stats)
-            except Exception as e:
-                logger.error('cannot finish task: %r',e,exc_info=True)
-
     finally:
         # destroy task temp
         try:

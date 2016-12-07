@@ -231,6 +231,10 @@ def runner(config, url, debug=False, offline=False):
                         logger.critical('task specified in options is %r, but no task found',
                                         name)
                         raise Exception('cannot find specified task')
+                    # finish task
+                    if not offline:
+                        iceprod.core.exe_json.finishtask(cfg, stats,
+                                                         start_time=start_time)
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
@@ -249,6 +253,7 @@ def runner(config, url, debug=False, offline=False):
                     # forcibly turn on logging, so we can see the error
                     config['options']['upload'] = 'logging'
                 raise
+            else:
     
     finally:
         # upload log files to server
