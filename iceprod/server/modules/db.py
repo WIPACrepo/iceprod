@@ -307,9 +307,7 @@ else:
                             full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
                             full_sql += 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name+';'
                             full_sql += 'drop table '+table_name+';'
-                            full_sql += 'create table '+table_name+sql_create+';'
-                            full_sql += 'insert into '+table_name+' select '+sql_select+' from '+table_name+'_backup;'
-                            full_sql += 'drop table '+table_name+'_backup;'
+                            full_sql += 'alter table '+table_name+'_backup rename to '+table_name;
                             cur.execute(full_sql)
                         else:
                             # table is good
@@ -478,44 +476,8 @@ if MySQLdb:
                             full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
                             full_sql += 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name+';'
                             full_sql += 'drop table '+table_name+';'
-                            full_sql += 'create table '+table_name+sql_create+';'
-                            full_sql += 'insert into '+table_name+' select '+sql_select+' from '+table_name+'_backup;'
-                            full_sql += 'drop table '+table_name+'_backup;'
+                            full_sql += 'alter table '+table_name+'_backup rename to '+table_name;
                             cur.execute(full_sql)
-
-                            # differences
-                            #~ rmcols = curcols - scols
-                            #~ addcols = []
-                            #~ for x in cols:
-                                #~ if x not in curcols:
-                                    #~ t = self.tables[table_name][x]
-                                    #~ x = '`'+x+'`'
-                                    #~ if t == 'str':
-                                        #~ x += ' VARBINARY(255) NOT NULL '
-                                    #~ elif t == 'int':
-                                        #~ x += ' INT NOT NULL DEFAULT 0 '
-                                    #~ elif t == 'bool':
-                                        #~ x += ' BOOL NOT NULL DEFAULT 0 '
-                                    #~ elif t == 'float':
-                                        #~ x += ' DOUBLE NOT NULL DEFAULT 0.0 '
-                                    #~ elif t == 'Text':
-                                        #~ x += ' TEXT NOT NULL DEFAULT "" '
-                                    #~ elif t == 'MediumText':
-                                        #~ x += ' MEDIUMTEXT NOT NULL DEFAULT "" '
-                                    #~ addcols.append(x)
-
-
-                            #~ full_sql = 'ALTER TABLE '+table_name+' '
-                            #~ if addcols:
-                                #~ full_sql += 'ADD COLUMN '
-                                #~ full_sql += ', ADD COLUMN '.join(col for col in addcols)
-                            #~ if addcols and rmcols:
-                                #~ full_sql += ', '
-                            #~ if rmcols:
-                                #~ full_sql += 'DROP COLUMN '
-                                #~ full_sql += ', DROP COLUMN '.join('`'+col+'`' for col in rmcols)
-                            #~ logger.info('%s', full_sql)
-                            #~ cur.execute(full_sql)
                         else:
                             # table is good
                             logger.info('table '+table_name+' already exists')
