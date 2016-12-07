@@ -391,6 +391,9 @@ class rpc(_Methods_Base):
                     logger.info('old task_reqs: %r', task_reqs)
                     # update requirements
                     for req in error_info['resources']:
+                        if req not in Node_Resources:
+                            logger.info('skipping update for req %r', req)
+                            continue
                         req_value = error_info['resources'][req]
                         if isinstance(req_value, dataclasses.Number):
                             if isinstance(Node_Resources[req], int):
