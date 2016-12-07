@@ -290,6 +290,73 @@ class web(_Methods_Base):
         return self.parent.db.query(sql, bindings)
 
     @tornado.gen.coroutine
+    def web_get_tasks_by_name(self, dataset_id):
+        """
+        Group tasks for a dataset by name.
+        
+        Values:
+            task_name
+            task_type
+            num_queued
+            num_running
+            num_completions
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {task_name: {column: num} }
+        """
+        sql = 'select task_id from search where dataset_id = ?'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        task_ids = set([row[0] for row in ret])
+        if not task_ids:
+            raise tornado.gen.Return({})
+
+        # get task name/type
+        logger.info('get task name/type')
+        task_rel = {}
+        task_rel_index = {}
+        sql = 'select task_rel_id, task_index, name, requirements '
+        sql += ' from task_rel where dataset_id = ?'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        for trid, index, name, req in ret:
+            task_rel[trid] = ('GPU' if 'gpu' in req.lower() else 'CPU', name)
+            task_rel_index[index] = trid
+        # get sorted order for task_rel_ids
+        task_rel_ids = [task_rel_index[x] for x in sorted(task_rel_index)]
+        
+        # get status numbers
+        logger.info('get status numbers')
+        sql = 'select count(*), status, task_rel_id '
+        sql += 'from task where task_id in (%s) group by task_rel_id,status'
+        task_groups = {trid:[0,0,0] for trid in task_rel}
+        for f in self._bulk_select(sql,task_ids):
+            ret = yield f
+            for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
+                if status == 'queued':
+                    task_groups[trid][0] += n
+                elif status == 'processing':
+                    task_groups[trid][1] += n
+                elif status == 'complete':
+                    task_groups[trid][2] += n
+
+        logger.info('make stats')
+        stats = OrderedDict()
+        for trid in task_rel_ids:
+            stats[trid] = {
+                'task_name': task_rel[trid][1],
+                'task_type': task_rel[trid][0],
+                'num_queued': task_groups[trid][0],
+                'num_running': task_groups[trid][1],
+                'num_completions': task_groups[trid][2],
+            }
+
+        raise tornado.gen.Return(stats)
+
+    @tornado.gen.coroutine
     def web_get_task_completion_stats(self, dataset_id):
         """
         Get the task completion stats for a dataset.

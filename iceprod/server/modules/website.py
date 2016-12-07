@@ -733,7 +733,7 @@ class Dataset(PublicHandler):
             else:
                 dataset = None
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-            task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
+            task_info = yield self.db_call('web_get_tasks_by_name', dataset_id=dataset_id)
             self.render('dataset_detail.html',dataset_id=dataset_id,
                         dataset=dataset,tasks=tasks,task_info=task_info)
         else:
