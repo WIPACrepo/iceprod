@@ -372,13 +372,6 @@ class web(_Methods_Base):
         Returns:
             dict: {task_name: {column: num} }
         """
-        sql = 'select task_id from search where dataset_id = ?'
-        bindings = (dataset_id,)
-        ret = yield self.parent.db.query(sql, bindings)
-        task_ids = set([row[0] for row in ret])
-        if not task_ids:
-            raise tornado.gen.Return({})
-
         # get task name/type
         logger.info('get task name/type')
         task_rel = {}
@@ -397,9 +390,9 @@ class web(_Methods_Base):
         logger.info('get status numbers')
         sql = 'select count(*), status, sum(walltime), sum(walltime_err), '
         sql += 'sum(walltime_err_n), max(walltime), min(walltime), task_rel_id '
-        sql += 'from task where task_id in (%s) group by task_rel_id,status'
+        sql += 'from task where task_rel_id in (%s) group by task_rel_id,status'
         task_groups = {trid:[0,0,0,0.0,0.0,0,0,0] for trid in task_rel}
-        for f in self._bulk_select(sql,task_ids):
+        for f in self._bulk_select(sql,task_rel_ids):
             ret = yield f
             for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
                 if status == 'queued':
