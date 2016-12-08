@@ -372,3 +372,8 @@ div.logs div.log_body {
 {
     margin-top: 15px
 }
+
+.align_right
+{
+    text-align: right;
+}
