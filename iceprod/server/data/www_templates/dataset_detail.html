@@ -41,11 +41,11 @@
     <h2>Task Completions by Task Name</h2>
     <table>
         <tr>
-            <th>Task Name</th>
-            <th>Task Type</th>
-            <th># Q</th>
-            <th># R</th>
-            <th># Completions</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Queued</th>
+            <th>Running</th>
+            <th>Complete</th>
             <th>Avg (hours)</th>
             <th><sup>max</sup>/<sub>min</sub> (hours)</th>
             <th>Eff</th>
@@ -57,9 +57,9 @@
             <td>{{ task_info[t]['num_queued'] }}</td>
             <td>{{ task_info[t]['num_running'] }}</td>
             <td>{{ task_info[t]['num_completions'] }}</td>
-            <td>{{ task_info[t]['avg_runtime'] }}</td>
-            <td><sup>{{ task_info[t]['max_runtime'] }}</sup>/<sub>{{ task_info[t]['min_runtime'] }}</sub></td>
-            <td>{{ task_info[t]['efficiency'] }}%</td>
+            <td>{{ '{:.2f}'.format(task_info[t]['avg_runtime']) }}</td>
+            <td><sup>{{ '{:0.2f}'.format(task_info[t]['max_runtime']) }}</sup>/<sub>{{ '{:0.2f}'.format(task_info[t]['min_runtime']) }}</sub></td>
+            <td>{{ '{:d}'.format(int(task_info[t]['efficiency']*100)) }}%</td>
         </tr>
         {% end %}
     </table>

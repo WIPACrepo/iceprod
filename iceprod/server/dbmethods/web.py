@@ -341,8 +341,8 @@ class web(_Methods_Base):
         stats = OrderedDict()
         for trid in task_rel_ids:
             if task_groups[trid][4]:
-                avg = round(task_groups[trid][3]/task_groups[trid][2]/3600,2)
-                eff = int(task_groups[trid][3]*100/task_groups[trid][4])
+                avg = task_groups[trid][3]/task_groups[trid][2]
+                eff = task_groups[trid][3]/task_groups[trid][4]
             else:
                 avg = 0
                 eff = 0
@@ -353,8 +353,8 @@ class web(_Methods_Base):
                 'num_running': task_groups[trid][1],
                 'num_completions': task_groups[trid][2],
                 'avg_runtime': avg,
-                'max_runtime': round(task_groups[trid][6]/3600,2),
-                'min_runtime': round(task_groups[trid][7]/3600,2),
+                'max_runtime': task_groups[trid][6],
+                'min_runtime': task_groups[trid][7],
                 'error_count': task_groups[trid][5],
                 'efficiency': eff,
             }
