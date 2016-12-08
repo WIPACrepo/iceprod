@@ -59,7 +59,7 @@
             <td>{{ task_info[t]['num_completions'] }}</td>
             <td>{{ '{:.2f}'.format(task_info[t]['avg_runtime']/3600) }}</td>
             <td><sup>{{ '{:0.2f}'.format(task_info[t]['max_runtime']/3600) }}</sup>/<sub>{{ '{:0.2f}'.format(task_info[t]['min_runtime']/3600) }}</sub></td>
-            <td>{{ '{:d}'.format(int(task_info[t]['efficiency']*100/3600)) }}%</td>
+            <td>{{ '{:d}'.format(int(task_info[t]['efficiency']*100)) }}%</td>
         </tr>
         {% end %}
     </table>
