@@ -253,7 +253,6 @@ def runner(config, url, debug=False, offline=False):
                     # forcibly turn on logging, so we can see the error
                     config['options']['upload'] = 'logging'
                 raise
-            else:
     
     finally:
         # upload log files to server
