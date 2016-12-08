@@ -441,6 +441,7 @@ class rpc(_Methods_Base):
     def rpc_upload_logfile(self,task,name,data,callback=None):
         """Uploading of a logfile from a task"""
         with (yield self.parent.db.acquire_lock('logfile')):
+            logger.info('uploading logfile')
             sql = 'select task_log_id,task_id from task_log where '
             sql += ' task_id = ? and name = ?'
             bindings = (task,name)
@@ -449,12 +450,12 @@ class rpc(_Methods_Base):
             for ts,t in ret:
                 task_log_id = ts
             if task_log_id:
-                logger.debug('replace previous task_log')
+                logger.debug('replace previous task_log: %r', task_log_id)
                 sql = 'update task_log set data = ? where task_log_id = ?'
                 bindings = (data,task_log_id)
             else:
-                logger.debug('insert new task_log')
                 task_log_id = yield self.parent.db.increment_id('task_log')
+                logger.info('insert new task_log: %r', task_log_id)
                 sql = 'insert into task_log (task_log_id,task_id,name,data) '
                 sql += ' values (?,?,?,?)'
                 bindings = (task_log_id,task,name,data)
@@ -469,6 +470,7 @@ class rpc(_Methods_Base):
                                 exc_info=True)
             else:
                 yield self._send_to_master(('task_log',task_log_id,nowstr(),sql,bindings))
+            logger.info('finished uploading logfile')
 
     @tornado.gen.coroutine
     def rpc_stillrunning(self, task_id):

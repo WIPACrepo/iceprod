@@ -16,6 +16,9 @@ import shutil
 import tempfile
 import signal
 import unittest
+from functools import partial
+
+import tornado.gen
 
 import iceprod.core.logger
 from iceprod.core import functions
@@ -30,7 +33,7 @@ class modules_db_test(module_test):
         try:
             self.cfg = {'db':{'type':'sqlite',
                               'name':'test',
-                              'nthreads':1},
+                              'nthreads':3},
                         'site_id':'abcd',
                        }
             self.executor = {}
@@ -86,6 +89,34 @@ class modules_db_test(module_test):
         else:
             raise Exception('did not raise Exception')
 
+    @unittest_reporter
+    def test_30_acquire_lock(self):
+        self.db.start()
+        values = []
+        ids = []
+
+        @tornado.gen.coroutine
+        def test_lock(iterable):
+            with (yield self.db.db.acquire_lock('blah')):
+                for i in iterable:
+                    values.append(i)
+                    ret = yield self.db.db.increment_id('task_log')
+                    ids.append(ret)
+
+        self.io_loop.add_callback(partial(test_lock,range(0,7)))
+        self.io_loop.add_callback(partial(test_lock,range(7,14)))
+        self.io_loop.add_callback(partial(test_lock,range(14,20)))
+        self.io_loop.add_callback(partial(test_lock,range(20,26)))
+        self.io_loop.add_callback(partial(test_lock,range(26,31)))
+        try:
+            self.wait(timeout=0.1)
+        except:
+            pass
+
+        logger.info('values: %r',values)
+        logger.info('ids: %r',ids)
+        self.assertEqual(values,range(0,31))
+        self.assertEqual(len(set(ids)),len(ids))
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
