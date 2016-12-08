@@ -363,6 +363,7 @@ div.logs div.log_body {
 .task_completion th, .task_completion td
 {
     padding: 5px 10px;
+    text-align: center;
 }
 .task_completion th
 {
@@ -372,8 +373,6 @@ div.logs div.log_body {
 {
     margin-top: 15px
 }
-
-.align_right
-{
-    text-align: right;
+.task_completion td:first-child {
+    text-align: left;
 }

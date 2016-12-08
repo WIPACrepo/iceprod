@@ -48,7 +48,7 @@
             <th># Completions</th>
             <th>Avg (hours)</th>
             <th><sup>max</sup>/<sub>min</sub> (hours)</th>
-            <th>Efficiency</th>
+            <th>Eff</th>
         </tr>
         {% for t in task_info %}
         <tr>
@@ -59,7 +59,7 @@
             <td>{{ task_info[t]['num_completions'] }}</td>
             <td>{{ task_info[t]['avg_runtime'] }}</td>
             <td><sup>{{ task_info[t]['max_runtime'] }}</sup>/<sub>{{ task_info[t]['min_runtime'] }}</sub></td>
-            <td class="align_right">{{ task_info[t]['efficiency'] }}%</td>
+            <td>{{ task_info[t]['efficiency'] }}%</td>
         </tr>
         {% end %}
     </table>
