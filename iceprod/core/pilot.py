@@ -185,7 +185,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 0.2 # check every X seconds
+            sleep_time = 1.0 # check every X seconds
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
@@ -263,7 +263,7 @@ class Pilot(object):
                         self.lock.notify()
 
                 duration = time.time()-start_time
-                logger.debug('sleep_time %d, duration %d',sleep_time,duration)
+                logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
                 if duration < sleep_time:
                     yield self.lock.wait(timeout=timedelta(seconds=sleep_time-duration))
         except Exception:
