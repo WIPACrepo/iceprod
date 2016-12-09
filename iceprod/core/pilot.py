@@ -136,9 +136,11 @@ class Pilot(object):
                     try:
                         processes = [task.process]+task.process.children()
                         for p in processes:
-                            used_resources['cpu'] += p.cpu_percent()/100.0
-                            used_resources['memory'] += p.memory_info().rss/1000000000.0
-                        used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                            with p.oneshot():
+                                used_resources['cpu'] += p.cpu_percent()/100.0
+                                used_resources['memory'] += p.memory_info().rss/1000000000.0
+                                if not used_resources['time']:
+                                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
                         used_resources['disk'] = du(task.tmpdir)/1000000000.0
                         logger.debug('task %r used %r',task_id,used_resources)
                     except:
@@ -183,7 +185,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 0.1 # check every X seconds
+            sleep_time = 0.2 # check every X seconds
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
@@ -267,6 +269,7 @@ class Pilot(object):
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
+        logger.info('pilot monitor exiting')
 
     @gen.coroutine
     def run(self):
@@ -328,7 +331,7 @@ class Pilot(object):
             while running or self.tasks:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
                 ret = yield self.lock.wait(timeout=self.run_timeout)
-                logger.info('yield returned %r',ret)
+                logger.debug('yield returned %r',ret)
                 # check if any processes have died
                 for task_id in list(self.tasks):
                     if not self.tasks[task_id].p.is_alive():
@@ -431,6 +434,7 @@ def du(path):
     Returns:
         int: bytes used
     """
+    logger.info('du of %s', path)
     total = 0
     for root,dirs,files in os.walk(path):
         for d in list(dirs):
@@ -441,4 +445,5 @@ def du(path):
             p = os.path.join(root,f)
             if not os.path.islink(p):
                 total += os.path.getsize(p)
+    logger.info('du of %s finished: %r', path, total)
     return total
