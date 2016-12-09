@@ -40,7 +40,7 @@ except ImportError:
     def setproctitle(name):
         pass
 
-Task = namedtuple('Task', ['p','process','resources','tmpdir'])
+Task = namedtuple('Task', ['p','process','resources','used_resources','tmpdir'])
 
 def process_wrapper(func, title):
     """
@@ -185,7 +185,9 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 1.0 # check every X seconds
+            mem_sleep_time = 1.0 # check every X seconds
+            cpu_sleep_time = 10.0
+            cpu_start_time = time.time()
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
@@ -198,15 +200,22 @@ class Pilot(object):
                         self.lock.notify()
                         continue
 
-                    used_resources = {r:0 for r in task.resources}
+                    used_resources = task.used_resources
                     try:
+                        logger.debug('start resource collection')
                         processes = [task.process]+task.process.children()
+                        mem = 0
+                        cpu = 0
+                        do_cpu = start_time - disk_start_time > cpu_sleep_time
                         for p in processes:
-                            with p.oneshot():
-                                used_resources['cpu'] += p.cpu_percent()/100.0
-                                used_resources['memory'] += p.memory_info().rss/1000000000.0
-                                if not used_resources['time']:
-                                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                            mem += p.memory_info().rss/1000000000.0
+                            if do_cpu:
+                                cpu += p.cpu_percent()/100.0
+                        used_resources['memory'] = mem
+                        if do_cpu:
+                            cpu_start_time = start_time
+                            used_resources['cpu'] = cpu
+                            used_resources['time'] = (start_time - task.process.create_time())/3600.0
                         if start_time - disk_start_time > disk_sleep_time:
                             disk_start_time = start_time
                             used_resources['disk'] = du(task.tmpdir)/1000000000.0
@@ -398,8 +407,9 @@ class Pilot(object):
             else:
                 ps = None
             r = config['options']['resources']
+            ur = {k:0 for k in r}
             self.tasks[task_id] = Task(p=p, process=ps, resources=r,
-                                       tmpdir=tmpdir)
+                                       used_resources=ur, tmpdir=tmpdir)
         except:
             logger.error('error creating task', exc_info=True)
         finally:
