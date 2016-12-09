@@ -52,7 +52,7 @@ def process_wrapper(func, title):
     """
     try:
         setproctitle(title)
-    except Exception:
+    except:
         pass
 
     iceprod.core.logger.new_file(constants['stdlog'])
@@ -79,6 +79,11 @@ class Pilot(object):
         self.pilot_id = pilot_id
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
+
+        try:
+            setproctitle('iceprod2_pilot({})'.format(pilot_id))
+        except:
+            pass
 
         # set up resources for pilot
         self.lock = Condition()
@@ -195,9 +200,11 @@ class Pilot(object):
                     try:
                         processes = [task.process]+task.process.children()
                         for p in processes:
-                            used_resources['cpu'] += p.cpu_percent()/100.0
-                            used_resources['memory'] += p.memory_info().rss/1000000000.0
-                        used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                            with p.oneshot():
+                                used_resources['cpu'] += p.cpu_percent()/100.0
+                                used_resources['memory'] += p.memory_info().rss/1000000000.0
+                                if not used_resources['time']:
+                                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
                         if start_time - disk_start_time > disk_sleep_time:
                             disk_start_time = start_time
                             used_resources['disk'] = du(task.tmpdir)/1000000000.0
