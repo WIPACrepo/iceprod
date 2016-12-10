@@ -185,9 +185,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            mem_sleep_time = 1.0 # check every X seconds
-            cpu_sleep_time = 10.0
-            cpu_start_time = time.time()
+            sleep_time = 1.0 # check every X seconds
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
@@ -204,18 +202,20 @@ class Pilot(object):
                     try:
                         logger.debug('start resource collection')
                         processes = [task.process]+task.process.children()
+                        logger.debug('have children')
                         mem = 0
                         cpu = 0
-                        do_cpu = start_time - disk_start_time > cpu_sleep_time
+                        t = 0
                         for p in processes:
-                            mem += p.memory_info().rss/1000000000.0
-                            if do_cpu:
-                                cpu += p.cpu_percent()/100.0
-                        used_resources['memory'] = mem
-                        if do_cpu:
-                            cpu_start_time = start_time
-                            used_resources['cpu'] = cpu
-                            used_resources['time'] = (start_time - task.process.create_time())/3600.0
+                            logger.info('analysing process')
+                            with p.oneshot():
+                                mem += p.memory_info().rss
+                                cpu += p.cpu_percent()
+                                if not t:
+                                    t = p.create_time()
+                        used_resources['memory'] = mem/1000000000.0
+                        used_resources['cpu'] = cpu/100.
+                        used_resources['time'] = (start_time - t)/3600.0
                         if start_time - disk_start_time > disk_sleep_time:
                             disk_start_time = start_time
                             used_resources['disk'] = du(task.tmpdir)/1000000000.0
@@ -272,9 +272,9 @@ class Pilot(object):
                         self.lock.notify()
 
                 duration = time.time()-start_time
-                logger.debug('sleep_time %.2f, duration %.2f',mem_sleep_time,duration)
-                if duration < mem_sleep_time:
-                    yield self.lock.wait(timeout=timedelta(seconds=mem_sleep_time-duration))
+                logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
+                if duration < sleep_time:
+                    yield self.lock.wait(timeout=timedelta(seconds=sleep_time-duration))
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
