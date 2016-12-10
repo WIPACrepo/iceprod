@@ -135,7 +135,7 @@ class Pilot(object):
                 else:
                     try:
                         if task.processes:
-                            processes = [task.processes[0]]+task.process.children(task.processes[0], recursive=True)
+                            processes = [task.processes[0]]+task.processes[0].children(recursive=True)
                         else:
                             logger.warn('no processes for task %r',task_id)
                             continue
@@ -189,25 +189,24 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 1.0 # check every X seconds
+            sleep_time = 0.1 # check every X seconds
             child_check_time = 10
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
-                logger.info('pilot monitor - checking resource usage')
+                logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
                 for task_id in list(self.tasks):
                     task = self.tasks[task_id]
                     if not task.p.is_alive():
-                        logger.info('not alive, so notify')
+                        logger.info('pilot monitor - task not alive, so notify')
                         self.lock.notify()
                         continue
 
                     used_resources = task.used_resources
                     try:
-                        logger.debug('start resource collection')
                         if task.processes and int(time.time())%child_check_time == 0:
-                            processes = [task.processes[0]]+task.process.children(task.processes[0], recursive=True)
+                            processes = [task.processes[0]]+task.processes[0].children(recursive=True)
                             task.processes = processes
                             logger.debug('have children')
                         else:
@@ -216,7 +215,6 @@ class Pilot(object):
                         cpu = 0
                         t = 0
                         for p in processes:
-                            logger.info('analysing process')
                             with p.oneshot():
                                 mem += p.memory_info().rss
                                 cpu += p.cpu_percent()
@@ -287,7 +285,7 @@ class Pilot(object):
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
-        logger.info('pilot monitor exiting')
+        logger.warn('pilot monitor exiting')
 
     @gen.coroutine
     def run(self):
