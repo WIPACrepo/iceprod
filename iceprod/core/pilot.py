@@ -272,9 +272,9 @@ class Pilot(object):
                         self.lock.notify()
 
                 duration = time.time()-start_time
-                logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
-                if duration < sleep_time:
-                    yield self.lock.wait(timeout=timedelta(seconds=sleep_time-duration))
+                logger.debug('sleep_time %.2f, duration %.2f',mem_sleep_time,duration)
+                if duration < mem_sleep_time:
+                    yield self.lock.wait(timeout=timedelta(seconds=mem_sleep_time-duration))
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
