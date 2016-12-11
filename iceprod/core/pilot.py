@@ -189,7 +189,7 @@ class Pilot(object):
     def monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 0.1 # check every X seconds
+            sleep_time = 0.5 # check every X seconds
             child_check_time = 10
             disk_sleep_time = 180
             disk_start_time = time.time()
