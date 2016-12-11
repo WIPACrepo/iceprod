@@ -40,7 +40,8 @@ except ImportError:
     def setproctitle(name):
         pass
 
-Task = namedtuple('Task', ['p','processes','resources','used_resources','tmpdir'])
+Task = namedtuple('Task', ['p','process','children','resources',
+                           'used_resources','tmpdir'])
 
 def process_wrapper(func, title):
     """
@@ -134,8 +135,8 @@ class Pilot(object):
                     logger.info('%r not alive', task_id)
                 else:
                     try:
-                        if task.processes:
-                            processes = [task.processes[0]]+task.processes[0].children(recursive=True)
+                        if task.process:
+                            processes = [task.process]+task.process.children(recursive=True)
                         else:
                             logger.warn('no processes for task %r',task_id)
                             continue
@@ -190,7 +191,8 @@ class Pilot(object):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
             sleep_time = 0.5 # check every X seconds
-            child_check_time = 10
+            child_sleep_time = 20
+            child_start_time = time.time()
             disk_sleep_time = 180
             disk_start_time = time.time()
             while True:
@@ -205,12 +207,11 @@ class Pilot(object):
 
                     used_resources = task.used_resources
                     try:
-                        if task.processes and int(time.time())%child_check_time == 0:
-                            processes = [task.processes[0]]+task.processes[0].children(recursive=True)
-                            task.processes = processes
+                        if start_time - child_start_time > child_sleep_time:
+                            child_start_time = start_time
+                            task.children[:] = task.process.children(recursive=True)
                             logger.debug('have children')
-                        else:
-                            processes = task.processes
+                        processes = [task.process]+task.children
                         mem = 0
                         cpu = 0
                         t = 0
@@ -409,14 +410,15 @@ class Pilot(object):
                                        'iceprod_task_{}'.format(task_id)))
             p.start()
             if psutil:
-                ps = [psutil.Process(p.pid)]
-                ps[0].nice(psutil.Process().nice()+1)
+                ps = psutil.Process(p.pid)
+                ps.nice(psutil.Process().nice()+1)
             else:
-                ps = []
+                ps = None
             r = config['options']['resources']
             ur = {k:0 for k in r}
-            self.tasks[task_id] = Task(p=p, processes=ps, resources=r,
-                                       used_resources=ur, tmpdir=tmpdir)
+            self.tasks[task_id] = Task(p=p, process=ps, children=[],
+                                       resources=r, used_resources=ur,
+                                       tmpdir=tmpdir)
         except:
             logger.error('error creating task', exc_info=True)
         finally:
