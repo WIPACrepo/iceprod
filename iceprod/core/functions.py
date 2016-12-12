@@ -338,6 +338,8 @@ def download(url, local, cache=False, options={}):
         logger.info('checking checksum with type %s for %s', checksum_type,
                     local)
         if not check_cksm(local, checksum_type, local+ending):
+            removedirs(local)
+            removedirs(local+ending)
             raise Exception('checksum failed')
 
     if cache:
@@ -454,6 +456,8 @@ def _wget(url, local, options):
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
         logger.info('gsiftp from %s to %s', url, local)
         if not GridFTP.get(url, filename=local):
+            if os.path.exists(local):
+                removedirs(local)
             raise Exception('gridftp generic failure')
     else:
         raise Exception("unsupported protocol %s" % url)
