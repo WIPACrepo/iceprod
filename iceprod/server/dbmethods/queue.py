@@ -573,34 +573,27 @@ class queue(_Methods_Base):
                     tasks[task_id] = {'dataset':dataset, 'status':status}
                 if not tasks:
                     raise tornado.gen.Return({})
-                sql = 'select task_id, depends, requirements, task_rel_id '
-                sql += 'from task where task_id in (%s)'
-                datasets = {k:OrderedDict() for k in dataset_prios}
                 task_rel_ids = {}
-                for f in self._bulk_select(sql, tasks):
+                sql = 'select task_rel_id, requirements from task_rel '
+                sql += 'where dataset_id in (%s)'
+                for f in self._bulk_select(sql, dataset_prios):
+                    for task_rel_id, reqs in (yield f):
+                        task_rel_ids[task_rel_id] = reqs
+                sql = 'select task_id, depends, requirements, task_rel_id '
+                sql += 'from task where task_rel_id in (%s)'
+                datasets = {k:OrderedDict() for k in dataset_prios}
+                for f in self._bulk_select(sql, task_rel_ids):
                     for task_id, depends, reqs, task_rel_id in (yield f):
                         dataset = tasks[task_id]['dataset']
                         status = tasks[task_id]['status']
-                        tasks[task_id]['task_rel_id'] = task_rel_id
-                        if reqs:
-                            reqs = json_decode(reqs)
                         if (status == 'idle' or
                             ((not global_queueing) and status == 'waiting')):
+                            reqs = None
+                            if reqs:
+                                reqs = json_decode(reqs)
+                            elif task_rel_ids[task_rel_id]:
+                                reqs = json_decode(task_rel_ids[task_rel_id])
                             datasets[dataset][task_id] = [depends,reqs]
-                        if not reqs:
-                            task_rel_ids[task_rel_id] = None
-                sql = 'select task_rel_id, requirements from task_rel '
-                sql += 'where task_rel_id in (%s)'
-                for f in self._bulk_select(sql, task_rel_ids):
-                    for task_rel_id, reqs in (yield f):
-                        task_rel_ids[task_rel_id] = reqs
-                for d in datasets:
-                    for task_id in datasets[d]:
-                        task_rel_reqs = task_rel_ids[tasks[task_id]['task_rel_id']]
-                        if task_rel_reqs and (not datasets[d][task_id][1]):
-                            if task_rel_reqs:
-                                task_rel_reqs = json_decode(task_rel_reqs)
-                            datasets[d][task_id][1] = task_rel_reqs
             except:
                 logger.debug('error getting processing tasks', exc_info=True)
                 raise
