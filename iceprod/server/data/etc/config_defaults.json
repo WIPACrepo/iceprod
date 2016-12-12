@@ -34,6 +34,7 @@
     "db":{
         "type":"sqlite",
         "name":"db",
+        "name_setting":"db_setting",
         "nthreads":1
     },
     "webserver":{

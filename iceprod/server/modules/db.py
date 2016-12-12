@@ -16,6 +16,7 @@ from collections import OrderedDict, Iterable
 import inspect
 
 import tornado.locks
+import tornado.gen
 from tornado.concurrent import run_on_executor
 
 from concurrent.futures import ThreadPoolExecutor
@@ -127,6 +128,7 @@ class DBAPI(object):
         nthreads = self.cfg['db']['nthreads']
         self.executor = ThreadPoolExecutor(nthreads)
         self._connections = [self._dbsetup() for _ in range(nthreads)]
+        self._inc_id_connection = self._dbsetup('setting')
 
         # indexes
         self.indexes = {}
@@ -142,7 +144,7 @@ class DBAPI(object):
         """
         Initialize the settings table, if necessary.
         """
-        conn = self._dbsetup()
+        conn = self._inc_id_connection
         try:
             site_id = self.cfg['site_id']
             sql = 'select * from setting where setting_id = 0'
@@ -186,7 +188,7 @@ class DBAPI(object):
             self.locks[lock_name] = tornado.locks.Lock()
         return self.locks[lock_name].acquire()
 
-    @run_on_executor
+    @tornado.gen.coroutine
     def increment_id(self, table_name):
         """
         Increment the id of a table, returning the old value.
@@ -197,11 +199,9 @@ class DBAPI(object):
         Returns:
             str: A table id
         """
-        conn = self._connections.pop()
-        try:
-            return self._increment_id_helper(conn, table_name)
-        finally:
-            self._connections.append(conn)
+        with (yield self.acquire_lock('increment_id')):
+            ret = self._increment_id_helper(self._inc_id_connection, table_name)
+            raise tornado.gen.Return(ret)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
@@ -238,7 +238,7 @@ class DBAPI(object):
         """Set up tables if they are not present"""
         raise NotImplementedError()
 
-    def _dbsetup(self):
+    def _dbsetup(self, dbname=None):
         """Set up database connection"""
         raise NotImplementedError()
 
@@ -287,7 +287,7 @@ else:
                         sep = ', '
                 sql_create += ')'
                 scols = set(cols)
-                with conn as c:
+                with (conn if table_name != 'setting' else self._inc_id_connection) as c:
                     cur = c.cursor()
                     try:
                         curcols = set()
@@ -317,13 +317,16 @@ else:
                         logger.warn('setup tables error', exc_info=True)
                         raise
 
-        def _dbsetup(self):
+        def _dbsetup(self, dbname=None):
             logger.debug('_dbsetup()')
             kwargs = {}
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
                 kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
-            conn = apsw.Connection(self.cfg['db']['name'], **kwargs)
+            name = 'name'
+            if dbname:
+                name += '_'+dbname
+            conn = apsw.Connection(self.cfg['db'][name], **kwargs)
             conn.cursor().execute('PRAGMA journal_mode = WAL')
             conn.cursor().execute('PRAGMA synchronous = OFF')
             conn.setbusytimeout(100)
@@ -494,7 +497,7 @@ if MySQLdb:
                 else:
                     conn.commit()
 
-        def _dbsetup(self):
+        def _dbsetup(self, dbname=None):
             name = self.cfg['db']['name']
             mysql_address = self.cfg['db']['mysql_address']
             mysql_port = None

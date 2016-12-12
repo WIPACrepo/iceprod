@@ -32,7 +32,8 @@ def get_tables(test_dir):
     tables = {
         'task':[
                 {'task_id':task_id, 'status':'queued', 'prev_status':'waiting',
-                 'error_message':None, 'status_changed':now,
+                 'status_changed':now,
+                 'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'submit_dir':test_dir, 'grid_queue_id':'lkn',
                  'failures':0, 'evictions':0, 'task_rel_id':'a'},
                 ],
@@ -154,9 +155,9 @@ class dbmethods_rpc_test(dbmethods_base):
         endtables = yield self.get_tables(tables)
         self.assertEqual(endtables['search'][0]['task_status'], 'reset')
         stat = json_decode(endtables['task_stat'][-1]['stat'])
-        if not stat.keys()[0].startswith('error_'):
+        if 'error' not in stat:
             raise Exception('bad stat name')
-        self.assertEqual(stat.values()[0], {'a':1})
+        self.assertEqual(stat['a'], 1)
 
         # update requirements
         tables['task_rel'][0]['requirements'] = '{"cpu":1}'
@@ -167,10 +168,10 @@ class dbmethods_rpc_test(dbmethods_base):
         endtables = yield self.get_tables(tables)
         self.assertEqual(endtables['search'][0]['task_status'], 'reset')
         stat = json_decode(endtables['task_stat'][-1]['stat'])
-        self.assertIn('resources', stat.values()[0])
+        self.assertIn('resources', stat)
         self.assertIsNotNone(endtables['task'][0]['requirements'])
         end_taskreq = json_decode(endtables['task'][0]['requirements'])
-        self.assertEqual(end_taskreq.keys(), reqs.keys())
+        self.assertEqual(end_taskreq.keys(), ['cpu','memory'])
 
         # failure
         tables['task'][0]['failures'] = 9

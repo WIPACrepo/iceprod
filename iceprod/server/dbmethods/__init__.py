@@ -144,7 +144,7 @@ class _Methods_Base():
         return ret
 
     @tornado.gen.coroutine
-    def _send_to_master(self, updates, callback=None):
+    def _send_to_master(self, updates):
         """Send an update to the master"""
         if 'master_updater' in self.parent.modules:
             try:

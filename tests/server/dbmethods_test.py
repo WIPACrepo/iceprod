@@ -100,6 +100,7 @@ class dbmethods_base(AsyncTestCase):
             # set config
             self.cfg = {'db':{'type':'sqlite',
                               'name':'test',
+                              'name_setting':'test_setting',
                               'nthreads':1},
                         'site_id':'abcd',
                        }
@@ -127,6 +128,8 @@ class dbmethods_base(AsyncTestCase):
             tables (dict): table entries
         """
         for t in tables:
+            if t == 'setting':
+                continue
             yield self.mock.db.query('delete from %s'%t)
             for row in tables[t]:
                 sql = ('insert into %s ('%t)+','.join('"'+k+'"' for k in row.keys())
@@ -259,8 +262,8 @@ class dbmethods_test(dbmethods_base):
             raise Exception('did not call master_updater')
         if self.services.called[0][1] != 'add':
             raise Exception('did not call master_updater.add')
-        if ('arg' not in self.services.called[0][3] or
-            self.services.called[0][3]['arg'] != arg):
+        if ((not self.services.called[0][2]) or
+            self.services.called[0][2][0] != arg):
             raise Exception('did not call with arg')
 
         self.services.ret['master_updater']['add'] = Exception()

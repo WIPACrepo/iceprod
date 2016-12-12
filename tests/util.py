@@ -127,6 +127,8 @@ class services_mock(dict):
         f = Future()
         f.set_result(ret)
         return f
+    def __contains__(self, name):
+        return name in self.ret
     def __missing__(self, name):
         class Service(dict):
             def __init__(self, name, request):

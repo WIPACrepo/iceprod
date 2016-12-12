@@ -588,7 +588,7 @@ class queue(_Methods_Base):
                         status = tasks[task_id]['status']
                         if (status == 'idle' or
                             ((not global_queueing) and status == 'waiting')):
-                            reqs = None
+                            reqs = ''
                             if reqs:
                                 reqs = json_decode(reqs)
                             elif task_rel_ids[task_rel_id]:
