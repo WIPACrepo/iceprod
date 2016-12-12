@@ -268,7 +268,7 @@
         <span class="k">return</span> <span class="n">ret</span>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-    <span class="k">def</span> <span class="nf">_send_to_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_send_to_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updates</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Send an update to the master&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s">&#39;master_updater&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>

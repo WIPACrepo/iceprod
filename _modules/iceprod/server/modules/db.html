@@ -140,6 +140,7 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 
 <span class="kn">import</span> <span class="nn">tornado.locks</span>
+<span class="kn">import</span> <span class="nn">tornado.gen</span>
 <span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
 
 <span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="k">import</span> <span class="n">ThreadPoolExecutor</span>
@@ -251,6 +252,7 @@
         <span class="n">nthreads</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;nthreads&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">nthreads</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nthreads</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">(</span><span class="s">&#39;setting&#39;</span><span class="p">)</span>
 
         <span class="c"># indexes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">indexes</span> <span class="o">=</span> <span class="p">{}</span>
@@ -266,7 +268,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the settings table, if necessary.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">site_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from setting where setting_id = 0&#39;</span>
@@ -310,7 +312,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">[</span><span class="n">lock_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">locks</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">[</span><span class="n">lock_name</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
 
-    <span class="nd">@run_on_executor</span>
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="DBAPI.increment_id"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.DBAPI.increment_id">[docs]</a>    <span class="k">def</span> <span class="nf">increment_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Increment the id of a table, returning the old value.</span>
@@ -321,11 +323,9 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            str: A table id</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span></div>
+        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;increment_id&#39;</span><span class="p">)):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
 
     <span class="nd">@run_on_executor</span>
 <div class="viewcode-block" id="DBAPI.query"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.DBAPI.query">[docs]</a>    <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="o">=</span><span class="nb">tuple</span><span class="p">()):</span>
@@ -362,7 +362,7 @@
         <span class="sd">&quot;&quot;&quot;Set up tables if they are not present&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dbname</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set up database connection&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
 
@@ -411,7 +411,7 @@
                         <span class="n">sep</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span>
                 <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
                 <span class="n">scols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
-                <span class="k">with</span> <span class="n">conn</span> <span class="k">as</span> <span class="n">c</span><span class="p">:</span>
+                <span class="k">with</span> <span class="p">(</span><span class="n">conn</span> <span class="k">if</span> <span class="n">table_name</span> <span class="o">!=</span> <span class="s">&#39;setting&#39;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span><span class="p">)</span> <span class="k">as</span> <span class="n">c</span><span class="p">:</span>
                     <span class="n">cur</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
                     <span class="k">try</span><span class="p">:</span>
                         <span class="n">curcols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
@@ -441,13 +441,16 @@
                         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;setup tables error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                         <span class="k">raise</span>
 
-        <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dbname</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;_dbsetup()&#39;</span><span class="p">)</span>
             <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="p">(</span><span class="s">&#39;db&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;sqlite_cachesize&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">]</span> <span class="ow">and</span>
                 <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;sqlite_cachesize&#39;</span><span class="p">],</span><span class="nb">int</span><span class="p">)):</span>
                 <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;statementcachesize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;sqlite_cachesize&#39;</span><span class="p">]</span>
-            <span class="n">conn</span> <span class="o">=</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;name&#39;</span>
+            <span class="k">if</span> <span class="n">dbname</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">+=</span> <span class="s">&#39;_&#39;</span><span class="o">+</span><span class="n">dbname</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&#39;PRAGMA journal_mode = WAL&#39;</span><span class="p">)</span>
             <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&#39;PRAGMA synchronous = OFF&#39;</span><span class="p">)</span>
             <span class="n">conn</span><span class="o">.</span><span class="n">setbusytimeout</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
@@ -618,7 +621,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_dbsetup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dbname</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
             <span class="n">mysql_address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;mysql_address&#39;</span><span class="p">]</span>
             <span class="n">mysql_port</span> <span class="o">=</span> <span class="k">None</span>
