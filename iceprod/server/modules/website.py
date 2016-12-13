@@ -368,7 +368,7 @@ class MyHandler(tornado.web.RequestHandler):
             f = self.modules['db'][func_name](*args,**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
                 f = yield tornado.gen.with_timeout(timedelta(seconds=60),f)
-        except Exception:
+        except:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
         raise tornado.gen.Return(f)
@@ -471,7 +471,7 @@ class JSONRPCHandler(MyHandler):
             self.json_error({'code':-32601,'message':'Method not found'},
                             request_id=request_id)
         except Exception:
-            logger.info('error in DB method', exc_info=True)
+            logger.info('error in DB method: %r', method, exc_info=True)
             self.json_error({'code':-32000,'message':'Server error'},
                             status=500, request_id=request_id)
         else:
