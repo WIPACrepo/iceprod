@@ -188,7 +188,7 @@ class DBAPI(object):
             self.locks[lock_name] = tornado.locks.Lock()
         return self.locks[lock_name].acquire()
 
-    @tornado.gen.coroutine
+    @run_on_executor
     def increment_id(self, table_name):
         """
         Increment the id of a table, returning the old value.
@@ -199,9 +199,9 @@ class DBAPI(object):
         Returns:
             str: A table id
         """
-        with (yield self.acquire_lock('increment_id')):
-            ret = self._increment_id_helper(self._inc_id_connection, table_name)
-            raise tornado.gen.Return(ret)
+        #with (yield self.acquire_lock('increment_id')):
+        ret = self._increment_id_helper(self._inc_id_connection, table_name)
+        raise tornado.gen.Return(ret)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
