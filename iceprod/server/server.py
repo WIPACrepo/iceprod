@@ -44,7 +44,7 @@ class Server(object):
         set_log_level(self.cfg['logging']['level'])
 
         if 'blocking_threshold' in self.cfg['logging']:
-            IOLoop.set_blocking_log_threshold(self.cfg['logging']['blocking_threshold'])
+            self.io_loop.set_blocking_log_threshold(self.cfg['logging']['blocking_threshold'])
 
         for mod_name in self.cfg['modules']:
             if self.cfg['modules'][mod_name]:
