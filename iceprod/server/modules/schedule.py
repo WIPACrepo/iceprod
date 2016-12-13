@@ -65,8 +65,8 @@ class schedule(module.module):
                 self.modules['db']['cron_dataset_completion'])
 
         # mark jobs complete
-        self.scheduler.schedule('every 31 minutes',
-                self.modules['db']['cron_job_completion'])
+        #self.scheduler.schedule('every 31 minutes',
+        #        self.modules['db']['cron_job_completion'])
 
         # collate node resources
         self.scheduler.schedule('every 1 hours',
