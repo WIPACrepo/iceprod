@@ -2,6 +2,7 @@
 Cron database methods
 """
 
+import os
 import logging
 from datetime import datetime, timedelta
 from functools import partial
@@ -169,10 +170,10 @@ class cron(_Methods_Base):
             if 'site_temp' in self.parent.cfg['queue']:
                 temp_dir = self.parent.cfg['queue']['site_temp']
                 dataset = GlobalID.localID_ret(dataset_id, type='int')
-                sql = 'select job_index from job where job_id = ?'
+                sql2 = 'select job_index from job where job_id = ?'
                 bindings = (job_id,)
                 try:
-                    ret = yield self.parent.db.query(sql, bindings)
+                    ret = yield self.parent.db.query(sql2, bindings)
                     job = ret[0][0]
                     dagtemp = os.path.join(temp_dir, dataset, job)
                     logger.info('cleaning site_temp %r', dagtemp)
