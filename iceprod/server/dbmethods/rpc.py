@@ -300,7 +300,7 @@ class rpc(_Methods_Base):
                         try:
                             ret = yield self.parent.db.query(sql, bindings)
                             job = ret[0][0]
-                            dagtemp = os.path.join(temp_dir, dataset, job)
+                            dagtemp = os.path.join(temp_dir, str(dataset), str(job))
                             logger.info('cleaning site_temp %r', dagtemp)
                             functions.delete(dagtemp)
                         except Exception as e:
