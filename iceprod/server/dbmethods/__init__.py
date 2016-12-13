@@ -109,15 +109,12 @@ class _Methods_Base():
         else:
             raise Exception('bad table type')
 
-        ret = OrderedDict()
         try:
-            for i,k in enumerate(keys):
-                ret[k] = input_row[i]
+            return OrderedDict(zip(keys,input_row))
         except:
             logger.warn('error making table %s dict from return values %r',
                          table,input_row)
             raise
-        return ret
 
     def _bulk_select(self, sql, bindings):
         """
