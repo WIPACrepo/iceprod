@@ -117,6 +117,66 @@ class cron(_Methods_Base):
 
                 # TODO: consolidate dataset statistics
 
+    @tornado.gen.coroutine
+    def cron_job_completion(self):
+        """Check for newly completed jobs and mark them as such"""
+        sql = 'select dataset_id,jobs_submitted,tasks_submitted '
+        sql += ' from dataset where status = ? '
+        bindings = ('processing',)
+        ret = yield self.parent.db.query(sql, bindings)
+        datasets = {}
+        for dataset_id,njobs,ntasks in ret:
+            datasets[dataset_id] = ntasks//njobs
+        if not datasets:
+            return
+
+        sql = 'select dataset_id, job_id, count(*) from search '
+        sql += ' where task_status = "complete" and dataset_id in ('
+        sql += ','.join(['?' for _ in datasets])
+        sql += ') group by job_id'
+        bindings = tuple(datasets)
+        ret = yield self.parent.db.query(sql, bindings)
+
+        jobs = set()
+        for dataset_id,job_id,num in ret:
+            if datasets[dataset_id] <= num:
+                jobs.add(job_id)
+
+        now = nowstr()
+        sql = 'update job set status = "complete", status_changed = ? '
+        sql += ' where job_id = ?'
+        for job_id in jobs:
+            # update job status
+            logger.info('job %s marked as complete',job_id)
+            bindings = (now,job_id)
+            yield self.parent.db.query(sql, bindings)
+            if self._is_master():
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings3 = ('job',job_id,now)
+                try:
+                    yield self.parent.db.query(sql3, bindings3)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
+            else:
+                yield self._send_to_master(('job',job_id,now,sql,bindings))
+
+            # TODO: collate task stats
+
+            # clean dagtemp
+            if 'site_temp' in self.parent.cfg['queue']:
+                temp_dir = self.parent.cfg['queue']['site_temp']
+                dataset = GlobalID.localID_ret(dataset_id, type='int')
+                sql = 'select job_index from job where job_id = ?'
+                bindings = (job_id,)
+                try:
+                    ret = yield self.parent.db.query(sql, bindings)
+                    job = ret[0][0]
+                    dagtemp = os.path.join(temp_dir, dataset, job)
+                    logger.info('cleaning site_temp %r', dagtemp)
+                    functions.delete(dagtemp)
+                except Exception as e:
+                    logger.warn('failed to clean site_temp', exc_info=True)
 
     def cron_remove_old_passkeys(self):
         now = nowstr()
