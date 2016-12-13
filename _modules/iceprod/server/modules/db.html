@@ -324,8 +324,8 @@
 <span class="sd">            str: A table id</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c">#with (yield self.acquire_lock(&#39;increment_id&#39;)):</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_increment_id_helper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span><span class="p">,</span> <span class="n">table_name</span><span class="p">)</span></div>
+        <span class="c">#raise tornado.gen.Return(ret)</span>
 
     <span class="nd">@run_on_executor</span>
 <div class="viewcode-block" id="DBAPI.query"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.DBAPI.query">[docs]</a>    <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="o">=</span><span class="nb">tuple</span><span class="p">()):</span>
