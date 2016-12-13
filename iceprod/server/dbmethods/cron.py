@@ -140,15 +140,17 @@ class cron(_Methods_Base):
         bindings = tuple(datasets)
         ret = yield self.parent.db.query(sql, bindings)
 
-        jobs = set()
+        jobs = {}
         for dataset_id,job_id,num in ret:
             if datasets[dataset_id] <= num:
-                jobs.add(job_id)
+                jobs[job_id] = dataset_id
 
         now = nowstr()
         sql = 'update job set status = "complete", status_changed = ? '
         sql += ' where job_id = ?'
         for job_id in jobs:
+            dataset_id = jobs[job_id]
+
             # update job status
             logger.info('job %s marked as complete',job_id)
             bindings = (now,job_id)
