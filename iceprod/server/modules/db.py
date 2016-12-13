@@ -200,8 +200,8 @@ class DBAPI(object):
             str: A table id
         """
         #with (yield self.acquire_lock('increment_id')):
-        ret = self._increment_id_helper(self._inc_id_connection, table_name)
-        raise tornado.gen.Return(ret)
+        return self._increment_id_helper(self._inc_id_connection, table_name)
+        #raise tornado.gen.Return(ret)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
