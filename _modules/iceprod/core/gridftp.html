@@ -294,10 +294,10 @@
             <span class="n">timeout</span> <span class="o">=</span> <span class="mi">300</span>
         <span class="n">_cmd_async</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="o">-</span><span class="mf">0.1</span><span class="p">)</span>
         <span class="n">e</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Request timed out&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Request failed&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span>
     <span class="k">def</span> <span class="nf">_cmd_output_async</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">wrap</span><span class="p">():</span>
@@ -336,10 +336,10 @@
             <span class="n">timeout</span> <span class="o">=</span> <span class="mi">300</span>
         <span class="n">_cmd_output_async</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="n">cb</span><span class="p">,</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="o">-</span><span class="mf">0.1</span><span class="p">)</span>
         <span class="n">e</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Request timed out&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Request failed&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span>
 
     <span class="k">class</span> <span class="nc">GridFTP</span><span class="p">(</span><span class="n">_gridftp_common</span><span class="p">):</span>
