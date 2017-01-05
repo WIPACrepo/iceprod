@@ -170,10 +170,10 @@ except ImportError:
             timeout = 300
         _cmd_async(cmd,callback=cb,timeout=timeout-0.1)
         e.wait(timeout)
-        if not cb.ret:
-            raise Exception('Request timed out')
-        elif isinstance(cb.ret,Exception):
+        if isinstance(cb.ret,Exception):
             raise cb.ret
+        elif not cb.ret:
+            raise Exception('Request failed')
         return cb.ret
     def _cmd_output_async(cmd,type=None,callback=None,timeout=None):
         def wrap():
@@ -212,10 +212,10 @@ except ImportError:
             timeout = 300
         _cmd_output_async(cmd,type=type,callback=cb,timeout=timeout-0.1)
         e.wait(timeout)
-        if not cb.ret:
-            raise Exception('Request timed out')
-        elif isinstance(cb.ret,Exception):
+        if isinstance(cb.ret,Exception):
             raise cb.ret
+        elif not cb.ret:
+            raise Exception('Request failed')
         return cb.ret
 
     class GridFTP(_gridftp_common):
