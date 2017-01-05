@@ -509,7 +509,7 @@ def delete(url, options={}):
             removedirs(url)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
         logger.info('delete gsiftp: %r', url)
-        if not GridFTP.delete(url):
+        if not GridFTP.rmtree(url):
             raise Exception('gridftp generic failure')
     else:
         raise Exception("unsupported protocol %s" % url)

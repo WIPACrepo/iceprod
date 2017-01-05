@@ -383,7 +383,7 @@ except ImportError:
                 raise Exception('address type not supported for address %s'%str(address))
 
             listify = partial(cls.listify,details=details,dotfiles=dotfiles)
-            cmd = ['uberftp','-ls',address]
+            cmd = ['uberftp','-retry','5','-ls',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -432,7 +432,7 @@ except ImportError:
             except Exception:
                 pass
 
-            cmd = ['uberftp','-mkdir',address]
+            cmd = ['uberftp','-retry','5','-mkdir',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -457,7 +457,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-rmdir',address]
+            cmd = ['uberftp','-retry','5','-rmdir',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -482,7 +482,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-rm',address]
+            cmd = ['uberftp','-retry','5','-rm',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -507,7 +507,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-rm','-r',address]
+            cmd = ['uberftp','-retry','5','-rm','-r',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -534,7 +534,7 @@ except ImportError:
             if not cls.supported_address(dest):
                 raise Exception('address type not supported for dest %s'%str(dest))
 
-            cmd = ['uberftp','-rename',src,cls.address_split(dest)[-1]]
+            cmd = ['uberftp','-retry','5','-rename',src,cls.address_split(dest)[-1]]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -559,7 +559,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-size',address]
+            cmd = ['uberftp','-retry','5','-size',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -583,7 +583,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-chmod',mode,address]
+            cmd = ['uberftp','-retry','5','-chmod',mode,address]
 
             if request_timeout is None:
                 timeout = cls._timeout
@@ -608,7 +608,7 @@ except ImportError:
             if not cls.supported_address(address):
                 raise Exception('address type not supported for address %s'%str(address))
 
-            cmd = ['uberftp','-size',address]
+            cmd = ['uberftp','-retry','5','-size',address]
 
             if request_timeout is None:
                 timeout = cls._timeout
