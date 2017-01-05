@@ -507,7 +507,7 @@
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
             <span class="n">listify</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">listify</span><span class="p">,</span><span class="n">details</span><span class="o">=</span><span class="n">details</span><span class="p">,</span><span class="n">dotfiles</span><span class="o">=</span><span class="n">dotfiles</span><span class="p">)</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-ls&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-ls&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -556,7 +556,7 @@
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">pass</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-mkdir&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-mkdir&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -581,7 +581,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-rmdir&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-rmdir&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -606,7 +606,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-rm&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-rm&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -631,7 +631,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-rm&#39;</span><span class="p">,</span><span class="s">&#39;-r&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-rm&#39;</span><span class="p">,</span><span class="s">&#39;-r&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -658,7 +658,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for dest %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">dest</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-rename&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">cls</span><span class="o">.</span><span class="n">address_split</span><span class="p">(</span><span class="n">dest</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-rename&#39;</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">cls</span><span class="o">.</span><span class="n">address_split</span><span class="p">(</span><span class="n">dest</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -683,7 +683,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-size&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-size&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -707,7 +707,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-chmod&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-chmod&#39;</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
@@ -732,7 +732,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">cls</span><span class="o">.</span><span class="n">supported_address</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;address type not supported for address %s&#39;</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">address</span><span class="p">))</span>
 
-            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-size&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;uberftp&#39;</span><span class="p">,</span><span class="s">&#39;-retry&#39;</span><span class="p">,</span><span class="s">&#39;5&#39;</span><span class="p">,</span><span class="s">&#39;-size&#39;</span><span class="p">,</span><span class="n">address</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">request_timeout</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
                 <span class="n">timeout</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_timeout</span>
