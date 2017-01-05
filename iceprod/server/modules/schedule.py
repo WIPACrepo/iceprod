@@ -64,10 +64,6 @@ class schedule(module.module):
         self.scheduler.schedule('every 1 hours',
                 self.modules['db']['cron_dataset_completion'])
 
-        # mark jobs complete
-        #self.scheduler.schedule('every 31 minutes',
-        #        self.modules['db']['cron_job_completion'])
-
         # collate node resources
         self.scheduler.schedule('every 1 hours',
                 partial(self.modules['db']['node_collate_resources'],
@@ -91,4 +87,8 @@ class schedule(module.module):
         master_grid = grid(*args)
 
         self.scheduler.schedule('every 1 minutes', master_grid.check_iceprod)
+
+        # mark jobs complete
+        self.scheduler.schedule('every 31 minutes',
+                self.modules['db']['cron_job_completion'])
 
