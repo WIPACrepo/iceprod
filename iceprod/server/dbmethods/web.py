@@ -322,7 +322,7 @@ class web(_Methods_Base):
             ret = yield f
             for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
                 if status == 'waiting':
-                    task_groups[trid][0]
+                    task_groups[trid][0] += n
                 elif status == 'queued':
                     task_groups[trid][1] += n
                 elif status == 'processing':
