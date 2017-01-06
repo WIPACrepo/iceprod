@@ -376,6 +376,6 @@ div.logs div.log_body {
 .task_completion td:first-child {
     text-align: left;
 }
-.task_completion td:last-child {
+.task_completion table:last-child td:last-child {
     text-align: right;
 }

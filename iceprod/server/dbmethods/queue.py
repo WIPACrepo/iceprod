@@ -554,7 +554,7 @@ class queue(_Methods_Base):
         """
         if dataset_prios is None or not isinstance(dataset_prios,dict):
             raise Exception('dataset_prios not a dict')
-        logger.debug('queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r',
+        logger.info('queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r',
                      num, global_queueing, dataset_prios, gridspec, gridspec_assignment, resources)
         
         with (yield self.parent.db.acquire_lock('queue')):
@@ -595,7 +595,7 @@ class queue(_Methods_Base):
                                 reqs = json_decode(task_rel_ids[task_rel_id])
                             datasets[dataset][task_id] = [depends,reqs]
             except:
-                logger.debug('error getting processing tasks', exc_info=True)
+                logger.info('error getting processing tasks', exc_info=True)
                 raise
 
             # get actual tasks

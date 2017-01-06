@@ -46,8 +46,8 @@
             <th>Waiting</th>
             <th>Queued</th>
             <th>Running</th>
-            <th>Error</th>
             <th>Complete</th>
+            <th>Error</th>
         </tr>
         {% for t in task_info %}
         <tr>
@@ -56,8 +56,8 @@
             <td>{{ task_info[t]['num_waiting'] }}</td>
             <td>{{ task_info[t]['num_queued'] }}</td>
             <td>{{ task_info[t]['num_running'] }}</td>
-            <td>{{ task_info[t]['num_error'] }}</td>
             <td>{{ task_info[t]['num_completions'] }}</td>
+            <td>{{ task_info[t]['num_error'] }}</td>
         </tr>
         {% end %}
     </table>
