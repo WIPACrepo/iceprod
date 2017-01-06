@@ -678,7 +678,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">dataset_prios</span> <span class="ow">is</span> <span class="k">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset_prios</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;dataset_prios not a dict&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r&#39;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r&#39;</span><span class="p">,</span>
                      <span class="n">num</span><span class="p">,</span> <span class="n">global_queueing</span><span class="p">,</span> <span class="n">dataset_prios</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">,</span> <span class="n">gridspec_assignment</span><span class="p">,</span> <span class="n">resources</span><span class="p">)</span>
         
         <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
@@ -719,7 +719,7 @@
                                 <span class="n">reqs</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">task_rel_ids</span><span class="p">[</span><span class="n">task_rel_id</span><span class="p">])</span>
                             <span class="n">datasets</span><span class="p">[</span><span class="n">dataset</span><span class="p">][</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">depends</span><span class="p">,</span><span class="n">reqs</span><span class="p">]</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;error getting processing tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting processing tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                 <span class="k">raise</span>
 
             <span class="c"># get actual tasks</span>
