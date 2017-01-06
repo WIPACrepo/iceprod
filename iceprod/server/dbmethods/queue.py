@@ -604,7 +604,7 @@ class queue(_Methods_Base):
                 limit = int(math.ceil(dataset_prios[dataset]*num))
                 logger.debug('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
-                for task_id in datasets[dataset]:
+                for task_id in sorted(datasets[dataset]):
                     depends, reqs = datasets[dataset][task_id]
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
