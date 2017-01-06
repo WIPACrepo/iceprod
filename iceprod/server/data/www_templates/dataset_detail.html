@@ -38,14 +38,33 @@
 {% end %}
 </div>
 <div class="task_completion">
-    <h2>Task Completions by Task Name</h2>
+    <h2>Task Status by Task Name</h2>
     <table>
         <tr>
             <th>Name</th>
             <th>Type</th>
+            <th>Waiting</th>
             <th>Queued</th>
             <th>Running</th>
+            <th>Error</th>
             <th>Complete</th>
+        </tr>
+        {% for t in task_info %}
+        <tr>
+            <td>{{ task_info[t]['task_name'] }}</td>
+            <td>{{ task_info[t]['task_type'] }}</td>
+            <td>{{ task_info[t]['num_waiting'] }}</td>
+            <td>{{ task_info[t]['num_queued'] }}</td>
+            <td>{{ task_info[t]['num_running'] }}</td>
+            <td>{{ task_info[t]['num_error'] }}</td>
+            <td>{{ task_info[t]['num_completions'] }}</td>
+        </tr>
+        {% end %}
+    </table>
+    <h3>Completion Statistics</h3>
+    <table>
+        <tr>
+            <th>Name</th>
             <th>Avg (hours)</th>
             <th><sup>max</sup>/<sub>min</sub> (hours)</th>
             <th>Eff</th>
@@ -53,10 +72,6 @@
         {% for t in task_info %}
         <tr>
             <td>{{ task_info[t]['task_name'] }}</td>
-            <td>{{ task_info[t]['task_type'] }}</td>
-            <td>{{ task_info[t]['num_queued'] }}</td>
-            <td>{{ task_info[t]['num_running'] }}</td>
-            <td>{{ task_info[t]['num_completions'] }}</td>
             <td>{{ '{:.2f}'.format(task_info[t]['avg_runtime']/3600) }}</td>
             <td><sup>{{ '{:0.2f}'.format(task_info[t]['max_runtime']/3600) }}</sup>/<sub>{{ '{:0.2f}'.format(task_info[t]['min_runtime']/3600) }}</sub></td>
             <td>{{ '{:d}'.format(int(task_info[t]['efficiency']*100)) }}%</td>

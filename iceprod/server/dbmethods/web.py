@@ -317,45 +317,51 @@ class web(_Methods_Base):
         sql = 'select count(*), status, sum(walltime), sum(walltime_err), '
         sql += 'sum(walltime_err_n), max(walltime), min(walltime), task_rel_id '
         sql += 'from task where task_rel_id in (%s) group by task_rel_id,status'
-        task_groups = {trid:[0,0,0,0.0,0.0,0,0,0] for trid in task_rel}
+        task_groups = {trid:[0,0,0,0,0,0.0,0.0,0,0,0] for trid in task_rel}
         for f in self._bulk_select(sql,task_rel_ids):
             ret = yield f
             for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
-                if status == 'queued':
-                    task_groups[trid][0] += n
-                elif status == 'processing':
+                if status == 'waiting':
+                    task_groups[trid][0]
+                elif status == 'queued':
                     task_groups[trid][1] += n
-                elif status == 'complete':
+                elif status == 'processing':
                     task_groups[trid][2] += n
-                    task_groups[trid][3] += wall
-                    task_groups[trid][4] += wall+wall_e
-                    task_groups[trid][5] += wall_en
-                    if ((not task_groups[trid][6]) or
-                        task_groups[trid][6] < wall_max):
-                        task_groups[trid][6] = wall_max
-                    if ((not task_groups[trid][7]) or
-                        task_groups[trid][7] > wall_min):
-                        task_groups[trid][7] = wall_min
+                elif status in ('resume','reset','failed'):
+                    task_groups[trid][3] += n
+                elif status == 'complete':
+                    task_groups[trid][4] += n
+                    task_groups[trid][5] += wall
+                    task_groups[trid][6] += wall+wall_e
+                    task_groups[trid][7] += wall_en
+                    if ((not task_groups[trid][8]) or
+                        task_groups[trid][8] < wall_max):
+                        task_groups[trid][8] = wall_max
+                    if ((not task_groups[trid][9]) or
+                        task_groups[trid][9] > wall_min):
+                        task_groups[trid][9] = wall_min
 
         logger.info('make stats')
         stats = OrderedDict()
         for trid in task_rel_ids:
-            if task_groups[trid][4]:
-                avg = task_groups[trid][3]/task_groups[trid][2]
-                eff = task_groups[trid][3]/task_groups[trid][4]
+            if task_groups[trid][6]:
+                avg = task_groups[trid][5]/task_groups[trid][4]
+                eff = task_groups[trid][5]/task_groups[trid][6]
             else:
                 avg = 0
                 eff = 0
             stats[trid] = {
-                'task_name': task_rel[trid][1],
-                'task_type': task_rel[trid][0],
-                'num_queued': task_groups[trid][0],
-                'num_running': task_groups[trid][1],
-                'num_completions': task_groups[trid][2],
+                'task_name': task_rel[trid][2],
+                'task_type': task_rel[trid][1],
+                'num_waiting': task_groups[trid][0],
+                'num_queued': task_groups[trid][1],
+                'num_running': task_groups[trid][2],
+                'num_error': task_groups[trid][3],
+                'num_completions': task_groups[trid][4],
                 'avg_runtime': avg,
-                'max_runtime': task_groups[trid][6],
-                'min_runtime': task_groups[trid][7],
-                'error_count': task_groups[trid][5],
+                'max_runtime': task_groups[trid][8],
+                'min_runtime': task_groups[trid][9],
+                'error_count': task_groups[trid][7],
                 'efficiency': eff,
             }
 
