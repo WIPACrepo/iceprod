@@ -351,8 +351,8 @@ class web(_Methods_Base):
                 avg = 0
                 eff = 0
             stats[trid] = {
-                'task_name': task_rel[trid][2],
-                'task_type': task_rel[trid][1],
+                'task_name': task_rel[trid][1],
+                'task_type': task_rel[trid][0],
                 'num_waiting': task_groups[trid][0],
                 'num_queued': task_groups[trid][1],
                 'num_running': task_groups[trid][2],
