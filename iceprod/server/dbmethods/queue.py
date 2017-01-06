@@ -605,7 +605,7 @@ class queue(_Methods_Base):
                 logger.debug('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
                 for task_id in sorted(datasets[dataset], key=lambda k:datasets[dataset][k][-1], reverse=True):
-                    depends, reqs = datasets[dataset][task_id]
+                    depends, reqs = datasets[dataset][task_id][:2]
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
                         satisfied = False
