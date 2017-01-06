@@ -593,7 +593,7 @@ class queue(_Methods_Base):
                                 reqs = json_decode(reqs)
                             elif task_rel_ids[task_rel_id]:
                                 reqs = json_decode(task_rel_ids[task_rel_id])
-                            datasets[dataset][task_id] = [depends,reqs]
+                            datasets[dataset][task_id] = [depends,reqs,task_rel_id]
             except:
                 logger.info('error getting processing tasks', exc_info=True)
                 raise
@@ -604,7 +604,7 @@ class queue(_Methods_Base):
                 limit = int(math.ceil(dataset_prios[dataset]*num))
                 logger.debug('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
-                for task_id in sorted(datasets[dataset]):
+                for task_id in sorted(datasets[dataset],key=lambda k:(datasets[dataset][k][-1],k)):
                     depends, reqs = datasets[dataset][task_id]
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
