@@ -134,7 +134,8 @@ class cron(_Methods_Base):
             return
 
         sql = 'select dataset_id, job_id, count(*) from search '
-        sql += ' where task_status = "complete" and dataset_id in ('
+        sql += ' where job_status = "processing" and '
+        sql += ' task_status = "complete" and dataset_id in ('
         sql += ','.join(['?' for _ in datasets])
         sql += ') group by job_id'
         bindings = tuple(datasets)
