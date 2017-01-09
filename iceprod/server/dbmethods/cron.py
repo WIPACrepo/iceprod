@@ -134,8 +134,7 @@ class cron(_Methods_Base):
             return
 
         sql = 'select dataset_id, job_id, count(*) from search '
-        sql += ' where job_status = "processing" and '
-        sql += ' task_status = "complete" and dataset_id in ('
+        sql += ' where task_status = "complete" and dataset_id in ('
         sql += ','.join(['?' for _ in datasets])
         sql += ') group by job_id'
         bindings = tuple(datasets)
@@ -146,10 +145,16 @@ class cron(_Methods_Base):
             if datasets[dataset_id] <= num:
                 jobs[job_id] = dataset_id
 
+        sql = 'select job_id from job where status = "processing" and job_id in (%s)'
+        job_ids = set()
+        for f in self._bulk_select(sql, jobs):
+            for row in (yield f):
+                job_ids.add(row[0])
+
         now = nowstr()
         sql = 'update job set status = "complete", status_changed = ? '
         sql += ' where job_id = ?'
-        for job_id in jobs:
+        for job_id in job_ids:
             dataset_id = jobs[job_id]
 
             # update job status
