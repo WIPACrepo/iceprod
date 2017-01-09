@@ -138,6 +138,7 @@
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">timedelta</span>
 
 <span class="kn">import</span> <span class="nn">tornado.locks</span>
 <span class="kn">import</span> <span class="nn">tornado.gen</span>
@@ -310,7 +311,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">lock_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">[</span><span class="n">lock_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">locks</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">[</span><span class="n">lock_name</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">locks</span><span class="p">[</span><span class="n">lock_name</span><span class="p">]</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">50</span><span class="p">))</span></div>
 
     <span class="nd">@run_on_executor</span>
 <div class="viewcode-block" id="DBAPI.increment_id"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.DBAPI.increment_id">[docs]</a>    <span class="k">def</span> <span class="nf">increment_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">):</span>
