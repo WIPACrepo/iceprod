@@ -185,6 +185,7 @@ class DBAPI(object):
         Args:
             lock_name (str): The name of the task
         """
+        logger.info('acquire_lock(%s)', lock_name)
         if lock_name not in self.locks:
             self.locks[lock_name] = tornado.locks.Lock()
         return self.locks[lock_name].acquire(timeout=timedelta(seconds=50))
