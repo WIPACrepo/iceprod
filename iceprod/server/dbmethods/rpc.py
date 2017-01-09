@@ -67,7 +67,7 @@ class rpc(_Methods_Base):
                     reqs[k] = Node_Resources[k]
             logger.info('new task for resources: %r', reqs)
 
-            while True:
+            for _ in range(100):
                 sql = 'select * from task_lookup '
                 if reqs:
                     sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
@@ -86,7 +86,7 @@ class rpc(_Methods_Base):
                         resources[k.replace('req_','')] = row[k]
                 if not task_id:
                     logger.info('no tasks found matching resources available')
-                    return
+                    raise tornado.gen.Return(None)
                 sql = 'select * from search where task_id = ? and task_status = ?'
                 bindings = (task_id,'queued')
                 ret = yield self.parent.db.query(sql, bindings)
@@ -98,25 +98,28 @@ class rpc(_Methods_Base):
                     yield self.parent.db.query(sql, bindings)
                 else:
                     break # we found a valid task
+            else:
+                logger.warn('100 iterations searching for new_task')
+                raise tornado.gen.Return(None)
 
             newtask = self._list_to_dict('search',ret[0])
             if not newtask:
                 logger.info('error: no task to allocate')
-                return
+                raise tornado.gen.Return(None)
             sql = 'select job_index from job where job_id = ?'
             bindings = (newtask['job_id'],)
             ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 logger.warn('failed to find job with known job_id %r',
                             newtask['job_id'])
-                return
+                raise tornado.gen.Return(None)
             newtask['job'] = ret[0][0]
             sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
             bindings = (newtask['dataset_id'],)
             ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 logger.warn('failed to find dataset with known dataset_id')
-                return
+                raise tornado.gen.Return(None)
             for js, debug in ret:
                 newtask['jobs_submitted'] = js
                 newtask['debug'] = bool(debug)
@@ -146,20 +149,20 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
                 yield self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
 
-            ret = yield self.parent.service['queue_get_cfg_for_dataset'](newtask['dataset_id'])
+        ret = yield self.parent.service['queue_get_cfg_for_dataset'](newtask['dataset_id'])
 
-            # now make the job config
-            config = json_decode(ret)
-            if 'options' not in config:
-                config['options'] = {}
-            config['options']['task_id'] = newtask['task_id']
-            config['options']['task'] = newtask['name']
-            config['options']['dataset_id'] = newtask['dataset_id']
-            config['options']['job'] = newtask['job']
-            config['options']['jobs_submitted'] = newtask['jobs_submitted']
-            config['options']['debug'] = newtask['debug']
-            config['options']['resources'] = newtask['resources']
-            raise tornado.gen.Return(config)
+        # now make the job config
+        config = json_decode(ret)
+        if 'options' not in config:
+            config['options'] = {}
+        config['options']['task_id'] = newtask['task_id']
+        config['options']['task'] = newtask['name']
+        config['options']['dataset_id'] = newtask['dataset_id']
+        config['options']['job'] = newtask['job']
+        config['options']['jobs_submitted'] = newtask['jobs_submitted']
+        config['options']['debug'] = newtask['debug']
+        config['options']['resources'] = newtask['resources']
+        raise tornado.gen.Return(config)
 
     def rpc_set_processing(self, task_id):
         """

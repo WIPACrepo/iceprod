@@ -14,6 +14,7 @@ from functools import partial
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable
 import inspect
+from datetime import timedelta
 
 import tornado.locks
 import tornado.gen
@@ -186,7 +187,7 @@ class DBAPI(object):
         """
         if lock_name not in self.locks:
             self.locks[lock_name] = tornado.locks.Lock()
-        return self.locks[lock_name].acquire()
+        return self.locks[lock_name].acquire(timeout=timedelta(seconds=50))
 
     @run_on_executor
     def increment_id(self, table_name):
