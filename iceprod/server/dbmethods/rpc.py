@@ -55,7 +55,9 @@ class rpc(_Methods_Base):
         args.update(kwargs)
         yield self.parent.service['node_update'](**args)
 
+        logger.info('acquiring queue lock')
         with (yield self.parent.db.acquire_lock('queue')):
+            logger.info('queue lock granted')
             # check resource requirements
             reqs = {}
             for k in Node_Resources:
