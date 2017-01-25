@@ -230,33 +230,34 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {status:{task_id:task}}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search where &#39;</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;task_status in (&quot;waiting&quot;,&quot;queued&quot;,&quot;processing&quot;,&quot;reset&quot;,&quot;resume&quot;)&#39;</span>
-                <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
-                    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and gridspec like ?&#39;</span>
-                    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-                <span class="n">tasks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">)</span>
-
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (%s)&#39;</span>
-                <span class="n">task_groups</span> <span class="o">=</span> <span class="p">{}</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">tasks</span><span class="p">):</span>
-                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
-                    <span class="n">tasks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_get_task_from_ret</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
-                        <span class="n">status</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">]</span>
-                        <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_groups</span><span class="p">:</span>
-                            <span class="n">task_groups</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-                        <span class="n">task_groups</span><span class="p">[</span><span class="n">status</span><span class="p">][</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting active tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="k">raise</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search where &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;task_status in (&quot;waiting&quot;,&quot;queued&quot;,&quot;processing&quot;,&quot;reset&quot;,&quot;resume&quot;)&#39;</span>
+            <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
+                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and gridspec like ?&#39;</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">task_groups</span><span class="p">)</span></div>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="n">tasks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">)</span>
+
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (%s)&#39;</span>
+            <span class="n">task_groups</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">tasks</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
+                <span class="n">tasks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_get_task_from_ret</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+                    <span class="n">status</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;waiting&quot;</span><span class="p">,</span><span class="s">&quot;queued&quot;</span><span class="p">,</span><span class="s">&quot;processing&quot;</span><span class="p">,</span><span class="s">&quot;reset&quot;</span><span class="p">,</span><span class="s">&quot;resume&quot;</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_groups</span><span class="p">:</span>
+                        <span class="n">task_groups</span><span class="p">[</span><span class="n">status</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">task_groups</span><span class="p">[</span><span class="n">status</span><span class="p">][</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">tasks</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting active tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">task_groups</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="queue.queue_get_grid_tasks"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_get_grid_tasks">[docs]</a>    <span class="k">def</span> <span class="nf">queue_get_grid_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">):</span>
@@ -270,31 +271,32 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            list: [(task_id, grid_queue_id, submit_time, and submit_dir)]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search &#39;</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where gridspec like ? &#39;</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and task_status in (&quot;queued&quot;,&quot;processing&quot;)&#39;</span>
-                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-                <span class="n">tasks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where gridspec like ? &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and task_status in (&quot;queued&quot;,&quot;processing&quot;)&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="n">tasks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">)</span>
 
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (%s)&#39;</span>
-                <span class="n">task_ret</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">tasks</span><span class="p">):</span>
-                    <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_get_task_from_ret</span><span class="p">((</span><span class="k">yield</span> <span class="n">f</span><span class="p">))</span>
-                    <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-                        <span class="n">task_ret</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                            <span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="n">task_id</span><span class="p">,</span>
-                            <span class="s">&#39;grid_queue_id&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;grid_queue_id&#39;</span><span class="p">],</span>
-                            <span class="s">&#39;submit_time&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;status_changed&#39;</span><span class="p">],</span>
-                            <span class="s">&#39;submit_dir&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;submit_dir&#39;</span><span class="p">],</span>
-                        <span class="p">})</span>
-            <span class="k">except</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting grid tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="k">raise</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">task_ret</span><span class="p">)</span></div>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (%s)&#39;</span>
+            <span class="n">task_ret</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">tasks</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue_get_task_from_ret</span><span class="p">((</span><span class="k">yield</span> <span class="n">f</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">task_id</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;queued&quot;</span><span class="p">,</span><span class="s">&quot;processing&quot;</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                    <span class="n">task_ret</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="n">task_id</span><span class="p">,</span>
+                        <span class="s">&#39;grid_queue_id&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;grid_queue_id&#39;</span><span class="p">],</span>
+                        <span class="s">&#39;submit_time&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;status_changed&#39;</span><span class="p">],</span>
+                        <span class="s">&#39;submit_dir&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">[</span><span class="n">task_id</span><span class="p">][</span><span class="s">&#39;submit_dir&#39;</span><span class="p">],</span>
+                    <span class="p">})</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting grid tasks&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">task_ret</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="queue.queue_set_task_status"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_set_task_status">[docs]</a>    <span class="k">def</span> <span class="nf">queue_set_task_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
@@ -444,36 +446,35 @@
 <span class="sd">            num_tasks (int): Number of tasks to buffer (rounds up to buffer</span>
 <span class="sd">                             a full job at once).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="c"># get possible datasets to buffer from</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, status, gridspec, jobs_submitted &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;from dataset where status = ? &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">String</span><span class="p">):</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;and gridspec like ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
+            <span class="n">gridspec</span> <span class="o">=</span> <span class="p">[</span><span class="n">gridspec</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gridspec</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;in buffer_jobs_tasks, no gridspec %r&#39;</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no gridspec defined&#39;</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;and (&#39;</span><span class="o">+</span><span class="p">(</span><span class="s">&#39; or &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;gridspec like ?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">gridspec</span><span class="p">]))</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+            <span class="n">bindings</span> <span class="o">+=</span> <span class="nb">tuple</span><span class="p">([</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">g</span><span class="o">+</span><span class="s">&#39;%&#39;</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">gridspec</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">gridspec</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;in buffer_jobs_tasks, unknown gridspec %r&#39;</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown gridspec type&#39;</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">need_to_buffer</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">js</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;gs=%r, gridspec=%r&#39;</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
+            <span class="n">need_to_buffer</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gridspec&#39;</span><span class="p">:</span><span class="n">gs</span><span class="p">,</span><span class="s">&#39;jobs&#39;</span><span class="p">:</span><span class="n">js</span><span class="p">,</span><span class="s">&#39;job_index&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">need_to_buffer</span><span class="p">:</span>
+            <span class="c"># nothing to buffer</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;nothing to buffer&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
-            <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
-
-            <span class="c"># get possible datasets to buffer from</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, status, gridspec, jobs_submitted &#39;</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;from dataset where status = ? &#39;</span>
-            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">String</span><span class="p">):</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;and gridspec like ?&#39;</span>
-                <span class="n">bindings</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">,)</span>
-                <span class="n">gridspec</span> <span class="o">=</span> <span class="p">[</span><span class="n">gridspec</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gridspec</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gridspec</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;in buffer_jobs_tasks, no gridspec %r&#39;</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no gridspec defined&#39;</span><span class="p">)</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;and (&#39;</span><span class="o">+</span><span class="p">(</span><span class="s">&#39; or &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;gridspec like ?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">gridspec</span><span class="p">]))</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
-                <span class="n">bindings</span> <span class="o">+=</span> <span class="nb">tuple</span><span class="p">([</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">g</span><span class="o">+</span><span class="s">&#39;%&#39;</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">gridspec</span><span class="p">])</span>
-            <span class="k">elif</span> <span class="n">gridspec</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;in buffer_jobs_tasks, unknown gridspec %r&#39;</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown gridspec type&#39;</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-            <span class="n">need_to_buffer</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">js</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;gs=%r, gridspec=%r&#39;</span><span class="p">,</span> <span class="n">gs</span><span class="p">,</span> <span class="n">gridspec</span><span class="p">)</span>
-                <span class="n">need_to_buffer</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gridspec&#39;</span><span class="p">:</span><span class="n">gs</span><span class="p">,</span><span class="s">&#39;jobs&#39;</span><span class="p">:</span><span class="n">js</span><span class="p">,</span><span class="s">&#39;job_index&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">}</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">need_to_buffer</span><span class="p">:</span>
-                <span class="c"># nothing to buffer</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;nothing to buffer&#39;</span><span class="p">)</span>
-                <span class="k">return</span>
-
             <span class="c"># remove already buffered jobs</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id,job_id from search &#39;</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id in (&#39;</span>
@@ -877,12 +878,13 @@
                         <span class="n">bindings2</span> <span class="o">=</span> <span class="p">(</span><span class="n">new_status</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
                         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
                         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">bindings2</span><span class="p">))</span>
-                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
-                    <span class="n">tasks</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;task_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_status</span>
-                    <span class="k">if</span> <span class="n">gridspec_assignment</span><span class="p">:</span>
-                        <span class="n">tasks</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;gridspec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gridspec_assignment</span>
 
-            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span></div>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+            <span class="n">tasks</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;task_status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_status</span>
+            <span class="k">if</span> <span class="n">gridspec_assignment</span><span class="p">:</span>
+                <span class="n">tasks</span><span class="p">[</span><span class="n">t</span><span class="p">][</span><span class="s">&#39;gridspec&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gridspec_assignment</span>
+
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="queue.queue_new_pilot_ids"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.queue.queue.queue_new_pilot_ids">[docs]</a>    <span class="k">def</span> <span class="nf">queue_new_pilot_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="p">):</span>
