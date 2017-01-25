@@ -340,7 +340,7 @@ class Pilot(object):
                                 self.resources[r] = self.resources[r].split(',')
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
 
-                if not any(self.resources.values()):
+                if self.resources['cpu'] < 1 or self.resources['memory'] < 1:
                     logger.info('no resources left, so wait for tasks to finish')
                     break
 
