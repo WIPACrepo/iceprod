@@ -106,33 +106,34 @@ class queue(_Methods_Base):
         Returns:
             dict: {status:{task_id:task}}
         """
-        with (yield self.parent.db.acquire_lock('queue')):
-            try:
-                sql = 'select task_id from search where '
-                sql += 'task_status in ("waiting","queued","processing","reset","resume")'
-                if gridspec:
-                    sql += ' and gridspec like ?'
-                    bindings = ('%'+gridspec+'%',)
-                else:
-                    bindings = tuple()
-                ret = yield self.parent.db.query(sql, bindings)
-                tasks = set(row[0] for row in ret)
-
-                sql = 'select * from task where task_id in (%s)'
-                task_groups = {}
-                for f in self._bulk_select(sql,tasks):
-                    ret = yield f
-                    tasks = self._queue_get_task_from_ret(ret)
-                    for task_id in tasks:
-                        status = tasks[task_id]['status']
-                        if status not in task_groups:
-                            task_groups[status] = {}
-                        task_groups[status][task_id] = tasks[task_id]
-            except:
-                logger.info('error getting active tasks', exc_info=True)
-                raise
+        try:
+            sql = 'select task_id from search where '
+            sql += 'task_status in ("waiting","queued","processing","reset","resume")'
+            if gridspec:
+                sql += ' and gridspec like ?'
+                bindings = ('%'+gridspec+'%',)
             else:
-                raise tornado.gen.Return(task_groups)
+                bindings = tuple()
+            ret = yield self.parent.db.query(sql, bindings)
+            tasks = set(row[0] for row in ret)
+
+            sql = 'select * from task where task_id in (%s)'
+            task_groups = {}
+            for f in self._bulk_select(sql,tasks):
+                ret = yield f
+                tasks = self._queue_get_task_from_ret(ret)
+                for task_id in tasks:
+                    status = tasks[task_id]['status']
+                    if status not in ("waiting","queued","processing","reset","resume"):
+                        continue
+                    if status not in task_groups:
+                        task_groups[status] = {}
+                    task_groups[status][task_id] = tasks[task_id]
+        except:
+            logger.info('error getting active tasks', exc_info=True)
+            raise
+        else:
+            raise tornado.gen.Return(task_groups)
 
     @tornado.gen.coroutine
     def queue_get_grid_tasks(self, gridspec):
@@ -146,31 +147,32 @@ class queue(_Methods_Base):
         Returns:
             list: [(task_id, grid_queue_id, submit_time, and submit_dir)]
         """
-        with (yield self.parent.db.acquire_lock('queue')):
-            try:
-                sql = 'select task_id from search '
-                sql += 'where gridspec like ? '
-                sql += ' and task_status in ("queued","processing")'
-                bindings = ('%'+gridspec+'%',)
-                ret = yield self.parent.db.query(sql, bindings)
-                tasks = set(row[0] for row in ret)
+        try:
+            sql = 'select task_id from search '
+            sql += 'where gridspec like ? '
+            sql += ' and task_status in ("queued","processing")'
+            bindings = ('%'+gridspec+'%',)
+            ret = yield self.parent.db.query(sql, bindings)
+            tasks = set(row[0] for row in ret)
 
-                sql = 'select * from task where task_id in (%s)'
-                task_ret = []
-                for f in self._bulk_select(sql,tasks):
-                    ret = self._queue_get_task_from_ret((yield f))
-                    for task_id in ret:
-                        task_ret.append({
-                            'task_id': task_id,
-                            'grid_queue_id': ret[task_id]['grid_queue_id'],
-                            'submit_time': ret[task_id]['status_changed'],
-                            'submit_dir': ret[task_id]['submit_dir'],
-                        })
-            except:
-                logger.info('error getting grid tasks', exc_info=True)
-                raise
-            else:
-                raise tornado.gen.Return(task_ret)
+            sql = 'select * from task where task_id in (%s)'
+            task_ret = []
+            for f in self._bulk_select(sql,tasks):
+                ret = self._queue_get_task_from_ret((yield f))
+                for task_id in ret:
+                    if ret[task_id]['status'] not in ("queued","processing"):
+                        continue
+                    task_ret.append({
+                        'task_id': task_id,
+                        'grid_queue_id': ret[task_id]['grid_queue_id'],
+                        'submit_time': ret[task_id]['status_changed'],
+                        'submit_dir': ret[task_id]['submit_dir'],
+                    })
+        except:
+            logger.info('error getting grid tasks', exc_info=True)
+            raise
+        else:
+            raise tornado.gen.Return(task_ret)
 
     @tornado.gen.coroutine
     def queue_set_task_status(self, task, status):
@@ -320,36 +322,35 @@ class queue(_Methods_Base):
             num_tasks (int): Number of tasks to buffer (rounds up to buffer
                              a full job at once).
         """
+        now = nowstr()
+        # get possible datasets to buffer from
+        sql = 'select dataset_id, status, gridspec, jobs_submitted '
+        sql += 'from dataset where status = ? '
+        bindings = ('processing',)
+        if isinstance(gridspec, String):
+            sql += 'and gridspec like ?'
+            bindings += ('%'+gridspec+'%',)
+            gridspec = [gridspec]
+        elif isinstance(gridspec, Iterable):
+            if len(gridspec) < 1:
+                logger.info('in buffer_jobs_tasks, no gridspec %r', gridspec)
+                raise Exception('no gridspec defined')
+            sql += 'and ('+(' or '.join(['gridspec like ?' for _ in gridspec]))+')'
+            bindings += tuple(['%'+g+'%' for g in gridspec])
+        elif gridspec:
+            logger.info('in buffer_jobs_tasks, unknown gridspec %r', gridspec)
+            raise Exception('unknown gridspec type')
+        ret = yield self.parent.db.query(sql, bindings)
+        need_to_buffer = {}
+        for d, s, gs, js in ret:
+            logger.debug('gs=%r, gridspec=%r', gs, gridspec)
+            need_to_buffer[d] = {'gridspec':gs,'jobs':js,'job_index':0}
+        if not need_to_buffer:
+            # nothing to buffer
+            logger.info('nothing to buffer')
+            return
+
         with (yield self.parent.db.acquire_lock('queue')):
-            now = nowstr()
-
-            # get possible datasets to buffer from
-            sql = 'select dataset_id, status, gridspec, jobs_submitted '
-            sql += 'from dataset where status = ? '
-            bindings = ('processing',)
-            if isinstance(gridspec, String):
-                sql += 'and gridspec like ?'
-                bindings += ('%'+gridspec+'%',)
-                gridspec = [gridspec]
-            elif isinstance(gridspec, Iterable):
-                if len(gridspec) < 1:
-                    logger.info('in buffer_jobs_tasks, no gridspec %r', gridspec)
-                    raise Exception('no gridspec defined')
-                sql += 'and ('+(' or '.join(['gridspec like ?' for _ in gridspec]))+')'
-                bindings += tuple(['%'+g+'%' for g in gridspec])
-            elif gridspec:
-                logger.info('in buffer_jobs_tasks, unknown gridspec %r', gridspec)
-                raise Exception('unknown gridspec type')
-            ret = yield self.parent.db.query(sql, bindings)
-            need_to_buffer = {}
-            for d, s, gs, js in ret:
-                logger.debug('gs=%r, gridspec=%r', gs, gridspec)
-                need_to_buffer[d] = {'gridspec':gs,'jobs':js,'job_index':0}
-            if not need_to_buffer:
-                # nothing to buffer
-                logger.info('nothing to buffer')
-                return
-
             # remove already buffered jobs
             sql = 'select dataset_id,job_id from search '
             sql += ' where dataset_id in ('
@@ -753,12 +754,13 @@ class queue(_Methods_Base):
                         bindings2 = (new_status,now,t)
                         yield self._send_to_master(('search',t,now,sql,bindings))
                         yield self._send_to_master(('task',t,now,sql2,bindings2))
-                for t in tasks:
-                    tasks[t]['task_status'] = new_status
-                    if gridspec_assignment:
-                        tasks[t]['gridspec'] = gridspec_assignment
 
-            raise tornado.gen.Return(tasks)
+        for t in tasks:
+            tasks[t]['task_status'] = new_status
+            if gridspec_assignment:
+                tasks[t]['gridspec'] = gridspec_assignment
+
+        raise tornado.gen.Return(tasks)
 
     @tornado.gen.coroutine
     def queue_new_pilot_ids(self, num):

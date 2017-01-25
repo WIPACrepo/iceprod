@@ -215,103 +215,103 @@ class rpc(_Methods_Base):
                 yield self._send_to_master(('search',task_id,now,sql,bindings))
                 yield self._send_to_master(('task',task_id,now,sql2,bindings2))
 
-            # update task statistics
-            logger.debug('insert new task_stat')
-            task_stat_id = yield self.parent.db.increment_id('task_stat')
-            sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
-            sql += ' (?, ?, ?)'
-            bindings = (task_stat_id, task_id, json_encode(stats))
+        # update task statistics
+        logger.debug('insert new task_stat')
+        task_stat_id = yield self.parent.db.increment_id('task_stat')
+        sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
+        sql += ' (?, ?, ?)'
+        bindings = (task_stat_id, task_id, json_encode(stats))
+        yield self.parent.db.query(sql, bindings)
+        if self._is_master():
+            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+            bindings3 = ('task_stat',task_stat_id,now)
+            try:
+                yield self.parent.db.query(sql3, bindings3)
+            except:
+                logger.info('error updating master_update_history',
+                            exc_info=True)
+        else:
+            yield self._send_to_master(('task_stat',task_stat_id,now,sql,bindings))
+
+        # check if whole job is finished
+        sql = 'select dataset_id, job_id from search where task_id = ?'
+        bindings = (task_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        dataset_id = None
+        job_id = None
+        for d_id,j_id in ret:
+            dataset_id = d_id
+            job_id = j_id
+        if (not dataset_id) or (not job_id):
+            raise Exception('cannot find dataset or job id')
+        sql = 'select jobs_submitted,tasks_submitted from dataset '
+        sql += 'where dataset_id = ?'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        total_jobs = None
+        total_tasks = None
+        for njobs,ntasks in ret:
+            total_jobs = njobs
+            total_tasks = ntasks
+        if (not total_jobs) or (not total_tasks):
+            raise Exception('cannot find total_jobs or total_tasks')
+
+        tasks_per_job = int(total_tasks/total_jobs)
+        sql = 'select task_id,task_status from search where job_id = ?'
+        bindings = (job_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        task_statuses = set()
+        if ret and len(ret) == tasks_per_job:
+            logger.debug('tasks_per_job = %d, len(ret) = %d',tasks_per_job,len(ret))
+            # require that all tasks for this job are in our db
+            # means that distributed jobs can only complete at the master
+            for t,s in ret:
+                task_statuses.add(s)
+        job_status = None
+        if task_statuses and not task_statuses&{'waiting','queued','processing','resume','reset'}:
+            if not task_statuses-{'complete'}:
+                job_status = 'complete'
+            elif not task_statuses-{'complete','failed'}:
+                job_status = 'errors'
+            elif not task_statuses-{'complete','failed','suspended'}:
+                job_status = 'suspended'
+        if job_status:
+            # update job status
+            logger.info('job %s marked as %s',job_id,job_status)
+            sql = 'update job set status = ?, status_changed = ? '
+            sql += ' where job_id = ?'
+            bindings = (job_status,now,job_id)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('task_stat',task_stat_id,now)
+                bindings3 = ('job',job_id,now)
                 try:
                     yield self.parent.db.query(sql3, bindings3)
-                except:
+                except Exception as e:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
-                yield self._send_to_master(('task_stat',task_stat_id,now,sql,bindings))
+                yield self._send_to_master(('job',job_id,now,sql,bindings))
 
-            # check if whole job is finished
-            sql = 'select dataset_id, job_id from search where task_id = ?'
-            bindings = (task_id,)
-            ret = yield self.parent.db.query(sql, bindings)
-            dataset_id = None
-            job_id = None
-            for d_id,j_id in ret:
-                dataset_id = d_id
-                job_id = j_id
-            if (not dataset_id) or (not job_id):
-                raise Exception('cannot find dataset or job id')
-            sql = 'select jobs_submitted,tasks_submitted from dataset '
-            sql += 'where dataset_id = ?'
-            bindings = (dataset_id,)
-            ret = yield self.parent.db.query(sql, bindings)
-            total_jobs = None
-            total_tasks = None
-            for njobs,ntasks in ret:
-                total_jobs = njobs
-                total_tasks = ntasks
-            if (not total_jobs) or (not total_tasks):
-                raise Exception('cannot find total_jobs or total_tasks')
+            if job_status == 'complete':
+                # TODO: collate task stats
 
-            tasks_per_job = int(total_tasks/total_jobs)
-            sql = 'select task_id,task_status from search where job_id = ?'
-            bindings = (job_id,)
-            ret = yield self.parent.db.query(sql, bindings)
-            task_statuses = set()
-            if ret and len(ret) == tasks_per_job:
-                logger.debug('tasks_per_job = %d, len(ret) = %d',tasks_per_job,len(ret))
-                # require that all tasks for this job are in our db
-                # means that distributed jobs can only complete at the master
-                for t,s in ret:
-                    task_statuses.add(s)
-            job_status = None
-            if task_statuses and not task_statuses&{'waiting','queued','processing','resume','reset'}:
-                if not task_statuses-{'complete'}:
-                    job_status = 'complete'
-                elif not task_statuses-{'complete','failed'}:
-                    job_status = 'errors'
-                elif not task_statuses-{'complete','failed','suspended'}:
-                    job_status = 'suspended'
-            if job_status:
-                # update job status
-                logger.info('job %s marked as %s',job_id,job_status)
-                sql = 'update job set status = ?, status_changed = ? '
-                sql += ' where job_id = ?'
-                bindings = (job_status,now,job_id)
-                yield self.parent.db.query(sql, bindings)
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('job',job_id,now)
+                # clean dagtemp
+                if 'site_temp' in self.parent.cfg['queue']:
+                    temp_dir = self.parent.cfg['queue']['site_temp']
+                    dataset = GlobalID.localID_ret(dataset_id, type='int')
+                    sql = 'select job_index from job where job_id = ?'
+                    bindings = (job_id,)
                     try:
-                        yield self.parent.db.query(sql3, bindings3)
+                        ret = yield self.parent.db.query(sql, bindings)
+                        job = ret[0][0]
+                        dagtemp = os.path.join(temp_dir, str(dataset), str(job))
+                        logger.info('cleaning site_temp %r', dagtemp)
+                        functions.delete(dagtemp)
                     except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+                        logger.warn('failed to clean site_temp', exc_info=True)
 
-                if job_status == 'complete':
-                    # TODO: collate task stats
-
-                    # clean dagtemp
-                    if 'site_temp' in self.parent.cfg['queue']:
-                        temp_dir = self.parent.cfg['queue']['site_temp']
-                        dataset = GlobalID.localID_ret(dataset_id, type='int')
-                        sql = 'select job_index from job where job_id = ?'
-                        bindings = (job_id,)
-                        try:
-                            ret = yield self.parent.db.query(sql, bindings)
-                            job = ret[0][0]
-                            dagtemp = os.path.join(temp_dir, str(dataset), str(job))
-                            logger.info('cleaning site_temp %r', dagtemp)
-                            functions.delete(dagtemp)
-                        except Exception as e:
-                            logger.warn('failed to clean site_temp', exc_info=True)
-
-                    # TODO: if not master, delete tasks
+                # TODO: if not master, delete tasks
 
     @tornado.gen.coroutine
     def rpc_task_error(self, task_id, error_info=None):
@@ -757,7 +757,7 @@ class rpc(_Methods_Base):
             user (str): user_id for authorization
             groups (dict): groups to update
         """
-        with (yield self.parent.db.acquire_lock('dataset')):
+        with (yield self.parent.db.acquire_lock('groups')):
             try:
                 # check user authorization to set groups
 
