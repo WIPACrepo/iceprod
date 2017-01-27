@@ -36,7 +36,7 @@ class master_updater(module.module):
         self.service['add'] = self.add
 
         self.filename = '.master_updater_queue'
-        self.buffer = deque()
+        self.buffer = []
         self.send_in_progress = False
         self.session = requests.Session()
 
@@ -95,8 +95,8 @@ class master_updater(module.module):
         """Send an update to the master"""
         if self.buffer:
             self.send_in_progress = True
-            data = self.buffer[0]
-            params = {'updates':[data]}
+            data = self.buffer[:1000]
+            params = {'updates':data}
             try:
                 yield send_master(self.cfg, 'master_update',
                                   session=self.session, **params)
@@ -107,7 +107,7 @@ class master_updater(module.module):
                 self.io_loop.call_later(60, self._send)
             else:
                 # remove data we just successfully sent
-                self.buffer.popleft()
+                self.buffer = self.buffer[1000:]
                 self._save()
                 self.io_loop.add_callback(self._send)
         else:
