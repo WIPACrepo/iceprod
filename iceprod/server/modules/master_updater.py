@@ -6,6 +6,7 @@ the local instance.
 
 import os
 import logging
+import tempfile
 try:
     import cPickle as pickle
 except ImportError:
@@ -37,7 +38,6 @@ class master_updater(module.module):
         self.filename = '.master_updater_queue'
         self.buffer = deque()
         self.send_in_progress = False
-        self.save_lock = Lock()
         self.session = requests.Session()
 
     def start(self):
@@ -64,22 +64,28 @@ class master_updater(module.module):
         with open(self.filename) as f:
             self.buffer = pickle.load(f)
 
-    @run_on_executor
     def _save(self):
         """Save to cache file"""
-        with open(self.filename+'_new', 'wb') as f:
-            pickle.dump(self.buffer, f, -1)
-        os.rename(self.filename+'_new', self.filename)
+        p = os.path.basename(self.filename)
+        d = os.path.dirname(os.path.abspath(self.filename))
+        fd,fname = tempfile.mkstemp(prefix=p, dir=d)
+        try:
+            with os.fdopen(fd, 'wb') as f:
+                pickle.dump(self.buffer, f, -1)
+            os.rename(fname, self.filename)
+        except:
+            logger.warn('did not save cache file', exc_info=True)
+            os.remove(fname)
 
     @tornado.gen.coroutine
     def add(self, obj):
         """Add obj to queue"""
         try:
             self.buffer.append(obj)
-            with (yield self.save_lock.acquire()):
-                yield self._save()
+            self._save()
             if not self.send_in_progress:
-                yield self._send()
+                self.send_in_progress = True
+                self.io_loop.add_callback(self._send)
         except Exception:
             logger.error('failed to add %r to buffer', obj, exc_info=True)
             raise
@@ -102,8 +108,7 @@ class master_updater(module.module):
             else:
                 # remove data we just successfully sent
                 self.buffer.popleft()
-                with (yield self.save_lock.acquire()):
-                    yield self._save()
+                self._save()
                 self.io_loop.add_callback(self._send)
         else:
             self.send_in_progress = False

@@ -40,7 +40,7 @@ class modules_master_updater_test(module_test):
         super(modules_master_updater_test,self).setUp()
 
         try:
-            self.cfg = {'master_updater':{ } }
+            self.cfg = {'master_updater':{'filename':'queue'} }
             self.executor = TestExecutor()
             self.modules = services_mock()
             
@@ -55,37 +55,38 @@ class modules_master_updater_test(module_test):
 
     @unittest_reporter
     def test_10_start_stop(self):
-        self.cfg['master_updater']['filename'] = 'queue'
         self.up.start()
         self.assertEqual(self.up.filename, self.cfg['master_updater']['filename'])
-
         self.up.stop()
 
     @unittest_reporter
     def test_11_start_kill(self):
         self.up.start()
-
         self.up.kill()
 
     @unittest_reporter
     def test_20_add(self):
+        self.up._send = lambda: None
         yield self.up.add('foobar')
         self.assertEquals(self.up.buffer[0], 'foobar')
 
     @unittest_reporter(name='add() start/stop')
     def test_21_add_stop_start(self):
+        self.up._send = lambda: None
         self.up.start()
         yield self.up.add('foobar')
         self.up.stop()
-
-        self.up = master_updater(self.cfg, self.io_loop, self.executor, self.modules)
-        self.up.start()
         self.assertEquals(self.up.buffer[0], 'foobar')
 
+        self.up = master_updater(self.cfg, self.io_loop, self.executor, self.modules)
+        self.up._send = lambda: None
+        self.up.start()
+        self.assertEquals(self.up.buffer[0], 'foobar')
     
     @patch('iceprod.server.modules.master_updater.master_updater._save')
     @unittest_reporter(name='add() error')
     def test_23_add_error(self, save):
+        self.up._send = lambda: None
         save.side_effect = IOError('error')
         try:
             yield self.up.add('foobar')
