@@ -141,6 +141,7 @@
 <span class="kn">import</span> <span class="nn">iceprod.server</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
 <span class="kn">from</span> <span class="nn">iceprod.server.schedule</span> <span class="k">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">iceprod.server.globus</span> <span class="k">import</span> <span class="n">SiteGlobusProxy</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;modules_schedule&#39;</span><span class="p">)</span>
 
@@ -209,6 +210,13 @@
         <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="k">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;*&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">]</span>
         <span class="n">master_grid</span> <span class="o">=</span> <span class="n">grid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c"># make sure the gridftp proxy is set up</span>
+        <span class="n">proxy_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]:</span>
+            <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
+        <span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
+        <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 minutes&#39;</span><span class="p">,</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span>
 
