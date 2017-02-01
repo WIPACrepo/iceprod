@@ -241,7 +241,7 @@ class queue(module.module):
         """Check the x509 proxy"""
         try:
             if duration:
-                self.proxy.set_duration(duration)
+                self.proxy.set_duration(duration//3600)
             self.proxy.update_proxy()
             self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
         except Exception:
