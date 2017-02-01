@@ -17,6 +17,7 @@ import tornado.gen
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.schedule import Scheduler
+from iceprod.server.globus import SiteGlobusProxy
 
 logger = logging.getLogger('modules_schedule')
 
@@ -85,6 +86,13 @@ class schedule(module.module):
         args = [None, self.cfg['queue']['*'], self.cfg, self.modules,
                 self.io_loop, self.executor]
         master_grid = grid(*args)
+
+        # make sure the gridftp proxy is set up
+        proxy_kwargs = {}
+        if 'gridftp_cfgfile' in self.cfg['queue']:
+            proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
+        proxy = SiteGlobusProxy(**proxy_kwargs)
+        proxy.update_proxy()
 
         self.scheduler.schedule('every 1 minutes', master_grid.check_iceprod)
 
