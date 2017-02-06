@@ -395,13 +395,13 @@ class grid_test(AsyncTestCase):
         now = datetime.utcnow()
 
         # call normally
-        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
-        grid_tasks = {0:{'status':'queued','submit_dir':''},
-                      1:{'status':'processing','submit_dir':''}}
+        grid_tasks = {0:{'status':'queued','submit_dir':'x'},
+                      1:{'status':'processing','submit_dir':'y'}}
         self.services.ret['db']['queue_get_grid_tasks'] = active_tasks
         self.services.ret['db']['queue_reset_tasks'] = True
         self.services.ret['db']['queue_set_task_status'] = True
@@ -422,9 +422,9 @@ class grid_test(AsyncTestCase):
             raise Exception('called queue_set_task_status when nothing to reset')
 
         # queued error
-        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=1500)},
-                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
         self.services.ret['db']['queue_get_grid_tasks'] = active_tasks
@@ -442,9 +442,9 @@ class grid_test(AsyncTestCase):
             raise Exception('did not call queue_set_task_status')
 
         # processing error
-        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'task_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=1500)},
                        ]
         self.services.ret['db']['queue_get_grid_tasks'] = active_tasks
@@ -462,14 +462,14 @@ class grid_test(AsyncTestCase):
             raise Exception('did not call queue_set_task_status')
 
         # grid error
-        active_tasks2 = [{'task_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks2 = [{'task_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'task_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'task_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
-        grid_tasks2 = {0:{'status':'queued','submit_dir':''},
-                      1:{'status':'processing','submit_dir':''},
-                      2:{'status':'processing','submit_dir':''}}
+        grid_tasks2 = {0:{'status':'queued','submit_dir':'x'},
+                      1:{'status':'processing','submit_dir':'y'},
+                      2:{'status':'processing','submit_dir':'z'}}
         f = Future()
         f.set_result(grid_tasks2)
         get_grid_status.return_value = f
@@ -557,13 +557,13 @@ class grid_test(AsyncTestCase):
         now = datetime.utcnow()
 
         # call normally
-        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
-        grid_tasks = {0:{'status':'queued','submit_dir':''},
-                      1:{'status':'processing','submit_dir':''}}
+        grid_tasks = {0:{'status':'queued','submit_dir':'x'},
+                      1:{'status':'processing','submit_dir':'y'}}
         self.services.ret['db']['queue_get_pilots'] = active_tasks
         self.services.ret['db']['queue_del_pilots'] = True
         f = Future()
@@ -583,9 +583,9 @@ class grid_test(AsyncTestCase):
             raise Exception('called queue_del_pilots when nothing to reset')
 
         # queued error
-        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=1500)},
-                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
         self.services.ret['db']['queue_get_pilots'] = active_tasks
@@ -604,9 +604,9 @@ class grid_test(AsyncTestCase):
             raise Exception('did not call queue_del_pilots')
 
         # processing error
-        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'',
+        active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'x',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=1500)},
                        ]
         self.services.ret['db']['queue_get_pilots'] = active_tasks
@@ -669,11 +669,11 @@ class grid_test(AsyncTestCase):
         # mixup between grid and iceprod
         active_tasks = [{'pilot_id':1,'grid_queue_id':0,'submit_dir':'foo',
                          'submit_time':now-timedelta(seconds=150)},
-                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+                        {'pilot_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
-        grid_tasks = {0:{'status':'queued','submit_dir':'bar'},
-                      1:{'status':'processing','submit_dir':''}}
+        grid_tasks = {0:{'status':'queued','submit_dir':'x'},
+                      1:{'status':'processing','submit_dir':'y'}}
         self.services.ret['db']['queue_get_pilots'] = active_tasks
         self.services.ret['db']['queue_del_pilots'] = True
         self.services.called = []
@@ -693,11 +693,11 @@ class grid_test(AsyncTestCase):
             raise Exception('did not call queue_del_pilots')
 
         # old pilots on queue
-        active_tasks = [{'pilot_id':2,'grid_queue_id':1,'submit_dir':'',
+        active_tasks = [{'pilot_id':2,'grid_queue_id':1,'submit_dir':'y',
                          'submit_time':now-timedelta(seconds=150)},
                        ]
-        grid_tasks = {0:{'status':'queued','submit_dir':''},
-                      1:{'status':'processing','submit_dir':''}}
+        grid_tasks = {0:{'status':'queued','submit_dir':'x'},
+                      1:{'status':'processing','submit_dir':'y'}}
         self.services.ret['db']['queue_get_pilots'] = active_tasks
         self.services.called = []
         get_grid_status.reset_mock()
@@ -745,7 +745,7 @@ class grid_test(AsyncTestCase):
         # bad submit dirs
         os.makedirs(os.path.join(submit_dir,'s_0'))
         os.makedirs(os.path.join(submit_dir,'secure'))
-        old_time = time.time()-1500
+        old_time = time.time()-3500
         os.utime(os.path.join(submit_dir,'s_0'), (old_time,old_time))
         os.utime(os.path.join(submit_dir,'secure'), (old_time,old_time))
         grid_tasks = {1:{'status':'processing','submit_dir':os.path.join(submit_dir,'s_2')}}

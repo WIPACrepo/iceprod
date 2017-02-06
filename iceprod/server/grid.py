@@ -357,15 +357,17 @@ class grid(object):
                 submit_dir = None
             if grid_queue_id in tasks:
                 # iceprod knows about this one
-                if submit_dir and submit_dir != tasks[grid_queue_id]['submit_dir']:
-                    # mixup - delete both
-                    remove_grid_tasks.add(grid_queue_id)
+                if ((not submit_dir) or
+                    now - tasks[grid_queue_id]['submit_time'] > time_dict[status]):
+                    # grid doesn't know
+                    submit_dir = tasks[grid_queue_id]['submit_dir']
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
-                elif (grid_queue_id not in grid_tasks or
-                      now - tasks[grid_queue_id]['submit_time'] > time_dict[status]):
+                elif submit_dir != tasks[grid_queue_id]['submit_dir']:
+                    # mixup - delete both
+                    remove_grid_tasks.add(grid_queue_id)
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
                     else:
@@ -376,9 +378,10 @@ class grid(object):
                 # what iceprod doesn't know must be killed
                 if status in ('queued','processing','unknown'):
                     remove_grid_tasks.add(grid_queue_id)
-            # queueing systems don't like deleteing directories they know
-            # about, so put them on a list of "don't touch"
-            prechecked_dirs.add(submit_dir)
+            if submit_dir:
+                # queueing systems don't like deleteing directories they know
+                # about, so put them on a list of "don't touch"
+                prechecked_dirs.add(submit_dir)
         self.grid_idle = grid_idle
         self.grid_processing = len(tasks)-len(reset_tasks)-grid_idle
 
@@ -390,7 +393,9 @@ class grid(object):
             if os.path.isdir(d) and '_' in x:
                 logger.debug('found submit_dir %s',d)
                 mtime = datetime.utcfromtimestamp(os.path.getmtime(d))
-                if now-mtime < suspend_time:
+                # use all_time instead of suspend_time because the
+                # dir will have the submit time, not the last time
+                if now-mtime < all_time:
                     logger.debug('skip submit_dir for recent suspended task')
                     continue # skip for suspended or failed tasks
                 delete_dirs.add(d)
