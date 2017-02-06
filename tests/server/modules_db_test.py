@@ -33,11 +33,13 @@ class modules_db_test(module_test):
         try:
             self.cfg = {'db':{'type':'sqlite',
                               'name':'test',
+                              'name_setting':'test_setting',
                               'nthreads':3},
                         'site_id':'abcd',
                        }
             self.executor = {}
             self.modules = services_mock()
+            self.modules.ret['daemon']['stop'] = True
             
             self.db = db.db(self.cfg, self.io_loop, self.executor, self.modules)
         except:
@@ -63,12 +65,8 @@ class modules_db_test(module_test):
     @unittest_reporter
     def test_12_bad_db(self):
         self.cfg['db']['type'] = 'blah'
-        try:
-            self.db.start()
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        self.db.start()
+        self.assertEqual(self.modules.called[-1][:2], ('daemon','stop'))
 
     @unittest_reporter
     def test_20_read_db_conf(self):

@@ -76,6 +76,9 @@ class db(module.module):
         self.db = None
         super(db,self).kill()
 
+class DBResetError(Exception):
+    pass
+
 def read_db_conf(field_name=None):
     """
     Read the DB conf data from file.
@@ -231,6 +234,15 @@ class DBAPI(object):
                 return self._db_read(conn, sql, bindings)
             else:
                 self._db_write(conn, sql, bindings)
+        except DBResetError:
+            # connection needs a reset
+            conn.close()
+            conn = self._dbsetup()
+            # retry query
+            if reading:
+                return self._db_read(conn, sql, bindings)
+            else:
+                self._db_write(conn, sql, bindings)
         finally:
             self._connections.append(conn)
 
@@ -350,8 +362,8 @@ else:
                     logger.warn('database busy/locked, backoff %f', backoff)
                     time.sleep(backoff)
                     continue
-                except apsw.Error:
-                    raise # just kill for other db errors
+                except apsw.Error as e:
+                    raise DBResetError(str(e))
                 return
             raise Exception('database busy/locked and timeout')
 
@@ -542,6 +554,9 @@ if MySQLdb:
                     con.execute(sql, bindings)
                 else:
                     con.execute(sql)
+            except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
+                    MySQLdb.InternalError) as e:
+                raise DBResetError(str(e))
             except MySQLdb.MySQLError:
                 raise # just kill for other db errors
 
