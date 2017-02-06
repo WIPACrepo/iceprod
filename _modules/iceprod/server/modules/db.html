@@ -200,6 +200,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="k">None</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">db</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span></div></div>
 
+<div class="viewcode-block" id="DBResetError"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.DBResetError">[docs]</a><span class="k">class</span> <span class="nc">DBResetError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
 <div class="viewcode-block" id="read_db_conf"><a class="viewcode-back" href="../../../../server/modules/db.html#iceprod.server.modules.db.read_db_conf">[docs]</a><span class="k">def</span> <span class="nf">read_db_conf</span><span class="p">(</span><span class="n">field_name</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Read the DB conf data from file.</span>
@@ -355,6 +358,15 @@
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">DBResetError</span><span class="p">:</span>
+            <span class="c"># connection needs a reset</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dbsetup</span><span class="p">()</span>
+            <span class="c"># retry query</span>
+            <span class="k">if</span> <span class="n">reading</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db_read</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_db_write</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span></div>
 
@@ -474,8 +486,8 @@
                     <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;database busy/locked, backoff %f&#39;</span><span class="p">,</span> <span class="n">backoff</span><span class="p">)</span>
                     <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">backoff</span><span class="p">)</span>
                     <span class="k">continue</span>
-                <span class="k">except</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="c"># just kill for other db errors</span>
+                <span class="k">except</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DBResetError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">return</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;database busy/locked and timeout&#39;</span><span class="p">)</span>
 
@@ -666,6 +678,9 @@
                     <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">MySQLdb</span><span class="o">.</span><span class="n">InterfaceError</span><span class="p">,</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">,</span>
+                    <span class="n">MySQLdb</span><span class="o">.</span><span class="n">InternalError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DBResetError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="k">except</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">MySQLError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="c"># just kill for other db errors</span>
 
