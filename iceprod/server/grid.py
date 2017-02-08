@@ -317,8 +317,10 @@ class grid(object):
         except:
             suspend_time = timedelta(seconds=86400)
         all_time = queued_time + processing_time + suspend_time
-        time_dict = {'queued': queued_time, 'processing': processing_time,
-                     'completed': all_time, 'error': all_time,
+        time_dict = {'queued': queued_time,
+                     'processing': queued_time+processing_time,
+                     'completed': all_time,
+                     'error': all_time,
                      'unknown': all_time}
         for t in time_dict:
             logger.debug("time limit: %s - %r",t,time_dict[t])
