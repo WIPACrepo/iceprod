@@ -11,15 +11,27 @@
 
 {% block page_title %}Submit{% end %}
 
-{% block body %}
-<div class = "sidebox">
-<h3>Macro Legend</h3>
-<ul>
-    <li>$(job) - The job index</li>
-    <li>$(jobs_submitted) - number of jobs submitted</li>
-    <li>$(dataset) - the dataset_id</li>
-</ul>
+{% block sidebar %}
+<div class="section macro_box">
+    <h3>Macros</h3>
+    <ul>
+        <li>
+            <h4>$(job)</h4>
+            <p class="macro_desc">The job index</p>
+        </li>
+        <li>
+            <h4>$(jobs_submitted)</h4>
+            <p class="macro_desc">Number of jobs submitted</p>
+        </li>
+        <li>
+            <h4>$(dataset)</h4>
+            <p class="macro_desc">The dataset ID</p>
+        </li>
+    </ul>
 </div>
+{% end %}
+
+{% block body %}
 <div id="submit_area">Enable javsascript to submit datasets.</div>
 
 <div id="error"></div>
