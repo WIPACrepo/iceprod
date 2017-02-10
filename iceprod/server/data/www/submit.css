@@ -1,3 +1,28 @@
+.macro_box
+{
+    background: #fff;
+    padding-top: 5px;
+    padding-bottom: 10px;
+}
+.macro_box li
+{
+    margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 5px;
+    padding-top: 5px;
+    border-top: solid #999 1px;
+}
+.macro_box h4
+{
+    font-weight: bold;
+    font-size: 14px;
+}
+.macro_desc
+{
+    font-size: 13px;
+    margin-top: 5px;
+}
+
 #submit_box
 {
     font-family: monospace;
