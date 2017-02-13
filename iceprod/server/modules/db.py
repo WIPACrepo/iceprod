@@ -236,6 +236,7 @@ class DBAPI(object):
                 self._db_write(conn, sql, bindings)
         except DBResetError:
             # connection needs a reset
+            logger.warn('resetting db connection')
             conn.close()
             conn = self._dbsetup()
             # retry query
