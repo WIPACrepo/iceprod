@@ -565,7 +565,7 @@ var Submission = (function( $ ) {
                     try {
                         data.submit_data = JSON.parse(text);
                     } catch (e) {
-                        $('#error').text('Failed to parse json');
+                        $('#error').text('Failed to parse json: ' + e);
                         return;
                     }
                 }
