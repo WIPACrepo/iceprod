@@ -501,18 +501,18 @@ var Submission = (function( $ ) {
             var html = '<div><button id="basic_button">Basic View</button><button id="advanced_button">Advanced View</button> <button id="expert_button">Expert View</button></div></div>';
             html += '<div id="basic_submit">';
             html += '<form class="table_form">';
-		    html += '<p><label for="script_url">Script Url</label><input id="script_url" type="text"></p>';
-            html += '<p><label for="arguments">Arguments</label><input id="arguments" type="text"></p>';
-            html += '<p><label for="data_input">Data Input</label><input id="data_input" type="text"></p>';
-            html += '<p><label for="data_output">Data Output</label><input id="data_output" type="text"></p>';
-            html += '<p><label for="env_shell">Env Shell</label><input id="env_shell" type="text"></p>';
+		    html += '<textarea id="script_url" placeholder="Script URL"></textarea>';
+		    html += '<textarea id="arguments" placeholder="Arguments"></textarea>';
+		    html += '<textarea id="data_input" placeholder="Data Input"></textarea>';
+		    html += '<textarea id="data_output" placeholder="Data Output"></textarea>';
+		    html += '<textarea id="env_shell" placeholder="Env Shell"></textarea>';
 	        html += '</form>';
             html += '</div>';
             html += '<div id="advanced_submit" style="display:none">advanced</div>';
-            html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="width:90%;min-height:400px">'
+            html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="min-height:400px">'
             html += '</textarea></div>';
             if (data.dataset == null) {
-                html += '<div>Number of jobs: <input id="number_jobs" value="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57" /> <select id="gridspec" style="margin-left:10px">';
+                html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
                 html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
                     html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
@@ -565,7 +565,7 @@ var Submission = (function( $ ) {
                     try {
                         data.submit_data = JSON.parse(text);
                     } catch (e) {
-                        $('#error').text('Failed to parse json');
+                        $('#error').text('Failed to parse json: ' + e);
                         return;
                     }
                 }
