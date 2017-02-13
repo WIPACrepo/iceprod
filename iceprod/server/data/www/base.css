@@ -102,24 +102,24 @@ a:hover {
 }
 
 /* page layout */
-body {
-    background-color: #ccc;
-}
+
 div.page {
-    background-color: #eee;
-    margin: 1em;
     min-width: 34em;
-    box-shadow: 0 0 1em rgba(0, 0, 0, 0.1);
 }
 header {
     width: 100%;
-    height: 3.5em;
+    height: 44px;
     z-index: 100;
+    background: #333;
+    background: #189cc4;
 }
+
 header .title {
-    font: 2em/2em sans-serif;
+    font: 35px sans-serif;
     color: #189cc4;
+    color:  #fff;
     padding: 0 .6em;
+    line-height: 44px;
 }
 header a:hover
 {
@@ -129,20 +129,20 @@ header a:hover
 div.body {
     min-height: 400px;
     width: 100%;
-    padding: 0.5em;
+    padding: 0 0.5em;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
 }
 div.sidebar {
     width: 10em;
-    float: left;
+    float: right;
 }
 div.sidebar, div.contents {
     vertical-align: top;
 }
 div.sidebar .section {
-    margin: .2em 0 .8em;
+    margin: 0 0 .8em;
 }
 div.sidebar .indent {
     margin-left: .5em;
@@ -151,13 +151,21 @@ div.sidebar button {
     margin: .5em 0 .2em;
 }
 div.contents {
-    margin-left: 10.5em;
+    margin-right: 10.5em;
+    padding: 10px 10px;
+    border-right: solid #777 1px;
+    min-height: 400px;
 }
-footer {
+
+
+footer 
+{
+    border-top: solid #999 1px;
     padding: .2em .4em;
     text-align:right;
-    color: #999;
+    color: #666;
     clear: both;
+    font-size: 12px;
 }
 #page_title {
     margin-bottom: .3em;
@@ -166,7 +174,7 @@ footer {
 /* menu */
 nav.menu  {
     float: right;
-    margin: 1em;
+    margin: 0 1em;
 }
 nav.menu ul {
     list-style: none;
@@ -176,25 +184,25 @@ nav.menu li {
 }
 nav.menu li a {
     display: inline-block;
-    font: 1.2em/1.2em Arial,serif menu;
-    padding: .2em .6em;
+    font: 16px Arial,serif menu;
+    padding: 0 .6em;
     text-decoration: none;
-    background-color: #fffffc;
-    color: #16a854;
+    color: #fff;
+    line-height: 44px;
 }
 nav.menu li a:hover, nav.menu li a:active,
 nav.menu li.current a,
 nav.menu li.master a:hover, nav.menu li.master a:active {
-    color: #fffffc;
+    color: #fff;
 }
 nav.menu li.current a, nav.menu li.current a:hover {
-    background-color: #16a854;
+    color: #ccc;
 }
 nav.menu li a:hover {
-    background-color: #46ce83;
+    color: #ccc;
 }
 nav.menu li a:active {
-    background-color: #1fe874;
+    color: #ccc;
 }
 nav.menu li.master {
     margin-left: 3em;
@@ -203,7 +211,7 @@ nav.menu li.master a {
     color: #3bcc07;
 }
 nav.menu li.master a:hover, nav.menu li.master a:active {
-    background-color: #3bcc07;
+    color: #ccc;
 }
 
 /* misc */
@@ -379,3 +387,5 @@ div.logs div.log_body {
 .task_completion table:last-child td:last-child {
     text-align: right;
 }
+
+
