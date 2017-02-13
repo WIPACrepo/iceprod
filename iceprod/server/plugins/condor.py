@@ -101,7 +101,7 @@ class condor(grid.grid):
                 p('skip_filechecks = True')
                 p('should_transfer_files = always')
                 p('when_to_transfer_output = ON_EXIT_OR_EVICT')
-                p('spool_on_evict = False')
+                p('+SpoolOnEvict = False')
             p('transfer_output_files = iceprod_log, iceprod_out, iceprod_err')
             if 'num' in task:
                 p('transfer_output_remaps = "iceprod_log=iceprod_log_$(Process)'
