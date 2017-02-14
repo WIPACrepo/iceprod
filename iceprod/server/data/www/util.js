@@ -67,7 +67,6 @@ function stringify(v, indent)
             {
                 var k = keys[i];
                 if (k.startsWith('jQuery')) continue; // HACK removes trash
-
                 s += indent + '  "' + k +'": ';
 
                 var v2 = v[k];
@@ -81,7 +80,7 @@ function stringify(v, indent)
     }
     else
     {
-        if (typeof v == 'string') s += '"' + v + '"';
+        if (typeof v == 'string') s += '"' + v.split('"').join('\\"') + '"';
         //else if (v instanceof Function) return s;
         else s += v;
     }

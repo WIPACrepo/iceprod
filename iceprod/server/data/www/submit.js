@@ -498,7 +498,15 @@ var Submission = (function( $ ) {
                 data.submit_data = private_methods.new_dataclass('Job')
             private_methods.clean_json();
 
-            var html = '<div><button id="basic_button">Basic View</button><button id="advanced_button">Advanced View</button> <button id="expert_button">Expert View</button></div></div>';
+            
+
+            var html = '';
+            html += '<ul class="tab_bar">';
+            html += '<li><button id="basic_button" class="active" >Basic View</button></li>';
+            html += '<li><button id="advanced_button">Advanced View</button></li>';
+            html += '<li><button id="expert_button">Expert View</button></li>';
+            html += '</ul>';    
+            html += '<div class="submit_contents">';
             html += '<div id="basic_submit">';
             html += '<form class="table_form">';
 		    html += '<textarea id="script_url" placeholder="Script URL"></textarea>';
@@ -511,23 +519,27 @@ var Submission = (function( $ ) {
             html += '<div id="advanced_submit" style="display:none">advanced</div>';
             html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="min-height:400px">'
             html += '</textarea></div>';
+            html += '<textarea id="description" placeholder="Description"></textarea>';
+
             if (data.dataset == null) {
-                html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
+                html += '<div>Number of jobs: <input id="number_jobs" value="1" type="number" min="1", step="1"/> <select id="gridspec" style="margin-left:10px">';
                 html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
                     html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
                 }
-                html += '</select></div>';
-                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em"></textarea>';
-                html += '<button id="submit_action" style="padding:1em;margin:1em">Submit</button>';
+                html += '</select>';
+                html += '<button id="submit_action">Submit</button></div>';
             } else {
                 html += '<span>Grids: '+data.dataset.gridspec+'</span>';
-                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
+                //html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
                 html += data.dataset.description + '</textarea>';
                 if (data.edit) {
-                    html += '<button id="submit_action" style="padding:1em;margin:1em">Update</button>';
+                    html += '<button id="submit_action">Update</button>';
                 }
             }
+            html += '</div>';
+
+
             $(data.element).html(html);
             $('#submit_box').val(pprint_json(data.submit_data));
 
@@ -581,9 +593,18 @@ var Submission = (function( $ ) {
             });
             var show_unique = function(tab_name){
                 var tabs = ['#basic_submit', '#expert_submit', '#advanced_submit'];
+                var buttons = ['#basic_button', '#expert_button', '#advanced_button'];
                 for(var i = 0; i < tabs.length; i++)
-                    if (tabs[i] == tab_name) $(tabs[i]).show();
-                    else $(tabs[i]).hide();
+                    if (tabs[i] == tab_name) 
+                    {
+                        $(tabs[i]).show();
+                        $(buttons[i]).attr('class', 'active');
+                    }
+                    else 
+                    {
+                        $(tabs[i]).hide();
+                        $(buttons[i]).attr('class', '');
+                    }
             };
             var goto_basic = function(){
                 if (data.state != 'basic') {
