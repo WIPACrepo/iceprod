@@ -604,7 +604,12 @@ class queue(_Methods_Base):
                 limit = int(math.ceil(dataset_prios[dataset]*num))
                 logger.debug('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
-                for task_id in sorted(datasets[dataset], key=lambda k:datasets[dataset][k][-1], reverse=True):
+                def sort_key(k):
+                    if datasets[dataset][k][0]:
+                        return datasets[dataset][k][-1]
+                    else:
+                        return ''
+                for task_id in sorted(datasets[dataset], key=sort_key, reverse=True):
                     depends, reqs = datasets[dataset][task_id][:2]
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
