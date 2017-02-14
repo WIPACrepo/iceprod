@@ -498,7 +498,15 @@ var Submission = (function( $ ) {
                 data.submit_data = private_methods.new_dataclass('Job')
             private_methods.clean_json();
 
-            var html = '<div><button id="basic_button">Basic View</button><button id="advanced_button">Advanced View</button> <button id="expert_button">Expert View</button></div></div>';
+            
+
+            var html = '';
+            html += '<ul class="tab_bar">';
+            html += '<li><button id="basic_button" class="active" >Basic View</button></li>';
+            html += '<li><button id="advanced_button">Advanced View</button></li>';
+            html += '<li><button id="expert_button">Expert View</button></li>';
+            html += '</ul>';    
+            html += '<div class="submit_contents">';
             html += '<div id="basic_submit">';
             html += '<form class="table_form">';
 		    html += '<textarea id="script_url" placeholder="Script URL"></textarea>';
@@ -529,6 +537,9 @@ var Submission = (function( $ ) {
                     html += '<button id="submit_action">Update</button>';
                 }
             }
+            html += '</div>';
+
+
             $(data.element).html(html);
             $('#submit_box').val(pprint_json(data.submit_data));
 
@@ -582,9 +593,18 @@ var Submission = (function( $ ) {
             });
             var show_unique = function(tab_name){
                 var tabs = ['#basic_submit', '#expert_submit', '#advanced_submit'];
+                var buttons = ['#basic_button', '#expert_button', '#advanced_button'];
                 for(var i = 0; i < tabs.length; i++)
-                    if (tabs[i] == tab_name) $(tabs[i]).show();
-                    else $(tabs[i]).hide();
+                    if (tabs[i] == tab_name) 
+                    {
+                        $(tabs[i]).show();
+                        $(buttons[i]).attr('class', 'active');
+                    }
+                    else 
+                    {
+                        $(tabs[i]).hide();
+                        $(buttons[i]).attr('class', '');
+                    }
             };
             var goto_basic = function(){
                 if (data.state != 'basic') {
