@@ -881,9 +881,6 @@ class rpc(_Methods_Base):
         qf_p = queueing_factor_priority
         qf_d = queueing_factor_dataset
         qf_t = queueing_factor_tasks
-        
-        # buffer tasks before queueing
-        yield self.parent.service['queue_buffer_jobs_tasks']()
 
         datasets = yield self.parent.service['queue_get_queueing_datasets']()
         if not datasets:
@@ -906,8 +903,15 @@ class rpc(_Methods_Base):
         if not isinstance(tasks,dict):
             raise Exception('queue_get_queueing_tasks() did not return a dict')
         elif not tasks:
-            logger.debug('rpc_queue_master(): tasks: %r',tasks)
-            raise tornado.gen.Return({})
+            # buffer tasks and try again
+            yield self.parent.service['queue_buffer_jobs_tasks'](num_tasks=num)
+            tasks = yield self.parent.service['queue_get_queueing_tasks'](
+                    dataset_prios, num=num, resources=resources,
+                    global_queueing=True)
+            if not isinstance(tasks,dict):
+                raise Exception('queue_get_queueing_tasks() did not return a dict')
+            elif not tasks:
+                raise tornado.gen.Return({})
         logger.debug('rpc_queue_master(): tasks: %r',tasks)
 
         tables = yield self.parent.service['misc_get_tables_for_task'](tasks)
