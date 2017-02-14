@@ -385,9 +385,8 @@ class queue(_Methods_Base):
                 raise
 
             # buffer for each dataset
-            # for now, do the stupid thing and just buffer in order
             # TODO: use priorities to do this better
-            for dataset in need_to_buffer:
+            for dataset in random.sample(need_to_buffer,len(need_to_buffer)):
                 try:
                     job_index = need_to_buffer[dataset]['job_index']
                     total_jobs = need_to_buffer[dataset]['jobs']
