@@ -509,9 +509,8 @@
                 <span class="k">raise</span>
 
             <span class="c"># buffer for each dataset</span>
-            <span class="c"># for now, do the stupid thing and just buffer in order</span>
             <span class="c"># TODO: use priorities to do this better</span>
-            <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">need_to_buffer</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">need_to_buffer</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">need_to_buffer</span><span class="p">)):</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">job_index</span> <span class="o">=</span> <span class="n">need_to_buffer</span><span class="p">[</span><span class="n">dataset</span><span class="p">][</span><span class="s">&#39;job_index&#39;</span><span class="p">]</span>
                     <span class="n">total_jobs</span> <span class="o">=</span> <span class="n">need_to_buffer</span><span class="p">[</span><span class="n">dataset</span><span class="p">][</span><span class="s">&#39;jobs&#39;</span><span class="p">]</span>
