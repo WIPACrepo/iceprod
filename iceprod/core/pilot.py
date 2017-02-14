@@ -23,7 +23,6 @@ from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
 
 logger = logging.getLogger('pilot')
-logger.setLevel(logging.DEBUG)
 
 from tornado import gen
 from tornado.ioloop import IOLoop
@@ -80,6 +79,11 @@ class Pilot(object):
         self.pilot_id = pilot_id
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
+
+        if self.debug:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
 
         try:
             setproctitle('iceprod2_pilot({})'.format(pilot_id))
