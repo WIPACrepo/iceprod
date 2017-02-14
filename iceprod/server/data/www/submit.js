@@ -511,21 +511,22 @@ var Submission = (function( $ ) {
             html += '<div id="advanced_submit" style="display:none">advanced</div>';
             html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="min-height:400px">'
             html += '</textarea></div>';
+            html += '<textarea id="description" placeholder="Description"></textarea>';
+
             if (data.dataset == null) {
-                html += '<div>Number of jobs: <input id="number_jobs" value="1" /> <select id="gridspec" style="margin-left:10px">';
+                html += '<div>Number of jobs: <input id="number_jobs" value="1" type="number" min="1", step="1"/> <select id="gridspec" style="margin-left:10px">';
                 html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
                     html += '<option value="'+g+'">'+args.grids[g]['description']+'</option>';
                 }
-                html += '</select></div>';
-                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em"></textarea>';
-                html += '<button id="submit_action" style="padding:1em;margin:1em">Submit</button>';
+                html += '</select>';
+                html += '<button id="submit_action">Submit</button></div>';
             } else {
                 html += '<span>Grids: '+data.dataset.gridspec+'</span>';
-                html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
+                //html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
                 html += data.dataset.description + '</textarea>';
                 if (data.edit) {
-                    html += '<button id="submit_action" style="padding:1em;margin:1em">Update</button>';
+                    html += '<button id="submit_action">Update</button>';
                 }
             }
             $(data.element).html(html);

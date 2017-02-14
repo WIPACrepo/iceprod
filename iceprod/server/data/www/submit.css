@@ -173,14 +173,38 @@ span.hide {
     line-height: 150%;
 }
 
-#submit_area textarea
+#submit_area textarea, #submit_area input, #submit_area button
 {
     font-size: 13px;
-    width:100%;
-    resize: vertical;
-    border-radius: 5px;
+    background-color: #fff;
     border: solid #777 1px;
     border: none;
+    border-radius: 5px;
+}
+#submit_area button, #submit_area input
+{
+    padding: 5px 10px;
+}
+#submit_area button#submit_action
+{
+    background: #189abf;
+    color: white;
+}
+#submit_area button#submit_action:active
+{
+    color: black;
+    background-color: #fff;
+}
+#number_jobs
+{
+    width:5em;
+}
+
+
+#submit_area textarea
+{
+    width:100%;
+    resize: vertical;
     height: 4em;
     margin-bottom: 10px;
 }
