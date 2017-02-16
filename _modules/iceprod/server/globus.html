@@ -1,0 +1,244 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>iceprod.server.globus &mdash; IceProd master documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
+        <link rel="up" title="iceprod.server" href="../server.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                master
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div style="float:right">
+            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
+          </div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for iceprod.server.globus</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Tools to help manage Globus proxies</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.server.config</span> <span class="k">import</span> <span class="n">IceProdConfig</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;globus&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SiteGlobusProxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy">[docs]</a><span class="k">class</span> <span class="nc">SiteGlobusProxy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Manage site-wide globus proxy</span>
+
+<span class="sd">    :param cfgfile: cfgfile location (optional)</span>
+<span class="sd">    :param duration: proxy duration (optional, default 72 hours)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfgfile</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cfgfile</span><span class="p">:</span>
+            <span class="n">cfgfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;globus_proxy.json&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="o">=</span> <span class="n">IceProdConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">cfgfile</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
+                                 <span class="n">validate</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">duration</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">duration</span>
+        <span class="k">elif</span> <span class="s">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">72</span>
+
+<div class="viewcode-block" id="SiteGlobusProxy.set_passphrase"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_passphrase">[docs]</a>    <span class="k">def</span> <span class="nf">set_passphrase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the passphrase&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;passphrase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span></div>
+
+<div class="viewcode-block" id="SiteGlobusProxy.set_duration"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.set_duration">[docs]</a>    <span class="k">def</span> <span class="nf">set_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the duration&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span></div>
+
+<div class="viewcode-block" id="SiteGlobusProxy.update_proxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.update_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">update_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the proxy&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s">&#39;passphrase&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;passphrase missing&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;duration&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;duration missing&#39;</span><span class="p">)</span>
+        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;duration: %r&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s">&#39;-e&#39;</span><span class="p">,</span>
+                            <span class="s">&#39;-valid&#39;</span><span class="p">,</span><span class="s">&#39;%d:0&#39;</span><span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">],</span>
+                           <span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">FNULL</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">):</span>
+            <span class="c"># proxy needs updating</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s">&#39;grid-proxy-init&#39;</span><span class="p">,</span><span class="s">&#39;-pwstdin&#39;</span><span class="p">,</span>
+                                  <span class="s">&#39;-valid&#39;</span><span class="p">,</span><span class="s">&#39;%d:0&#39;</span><span class="o">%</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
+                                 <span class="p">],</span> <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;passphrase&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;grid-proxy-init failed&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SiteGlobusProxy.get_proxy"><a class="viewcode-back" href="../../../server/globus.html#iceprod.server.globus.SiteGlobusProxy.get_proxy">[docs]</a>    <span class="k">def</span> <span class="nf">get_proxy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the proxy location&quot;&quot;&quot;</span>
+        <span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">&#39;grid-proxy-info&#39;</span><span class="p">,</span><span class="s">&#39;-path&#39;</span><span class="p">],</span>
+                                       <span class="n">stderr</span><span class="o">=</span><span class="n">FNULL</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'master',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

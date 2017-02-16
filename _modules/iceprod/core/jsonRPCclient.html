@@ -119,7 +119,25 @@
             
   <h1>Source code for iceprod.core.jsonRPCclient</h1><div class="highlight"><pre>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">A simple jsonrpc client using `requests` for the http connection</span>
+<span class="sd">A simple `JSON-RPC`_ client using `requests`_ for the http connection.</span>
+
+<span class="sd">.. _JSON-RPC: http://www.jsonrpc.org/specification</span>
+<span class="sd">.. _requests: http://docs.python-requests.org</span>
+
+<span class="sd">The RPC protocol is built on http(s), with the body containing</span>
+<span class="sd">a json-encoded dictionary:</span>
+
+<span class="sd">Request Object:</span>
+
+<span class="sd">* method (string) - Name of the method to be invoked.</span>
+<span class="sd">* params (dict) - Keyword arguments to the method.</span>
+
+<span class="sd">Response Object:</span>
+
+<span class="sd">* result (object) - The returned result from the method. This is REQUIRED on</span>
+<span class="sd">  success, and MUST NOT exist if there was an error.</span>
+<span class="sd">* error (object) - A description of the error, likely an Exception object.</span>
+<span class="sd">  This is REQUIRED on error and MUST NOT exist on success.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">RLock</span>
@@ -144,6 +162,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="c"># start session</span>
 
 <div class="viewcode-block" id="Client.open"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Open the http session&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;establish http session for jsonrpc&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
         <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">:</span>
@@ -157,16 +176,17 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__kwargs</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Client.close"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Close the http session&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;close jsonrpc http session&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
     <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="Client.newid"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.newid">[docs]</a>    <span class="k">def</span> <span class="nf">newid</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">newid</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
         <span class="n">cls</span><span class="o">.</span><span class="n">idlock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
         <span class="nb">id</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">id</span>
         <span class="n">cls</span><span class="o">.</span><span class="n">id</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="n">cls</span><span class="o">.</span><span class="n">idlock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
-        <span class="k">return</span> <span class="nb">id</span></div>
+        <span class="k">return</span> <span class="nb">id</span>
 
 <div class="viewcode-block" id="Client.request"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.Client.request">[docs]</a>    <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">methodname</span><span class="p">,</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Send request to RPC Server&quot;&quot;&quot;</span>
@@ -273,11 +293,9 @@
 
 <div class="viewcode-block" id="JSONRPC"><a class="viewcode-back" href="../../../core/jsonRPCclient.html#iceprod.core.jsonRPCclient.JSONRPC">[docs]</a><span class="k">class</span> <span class="nc">JSONRPC</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    JSONRPC client connection.</span>
+<span class="sd">    `JSON-RPC`_ client connection.</span>
 
-<span class="sd">    Call JSON-RPC functions as regular function calls.</span>
-
-<span class="sd">    JSON-RPC spec: http://www.jsonrpc.org/specification</span>
+<span class="sd">    Call RPC functions as regular function calls.</span>
 
 <span class="sd">    Example::</span>
 

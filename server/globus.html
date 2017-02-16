@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Server &mdash; IceProd master documentation</title>
+  <title>Globus &mdash; IceProd master documentation</title>
   
 
   
@@ -32,8 +32,8 @@
   
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
         <link rel="up" title="IceProd Server" href="index.html"/>
-        <link rel="next" title="Squid" href="squid.html"/>
-        <link rel="prev" title="Schedule" href="schedule.html"/> 
+        <link rel="next" title="Grid Queueing" href="grid.html"/>
+        <link rel="prev" title="File IO" href="file_io.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -98,14 +98,14 @@
 <li class="toctree-l2"><a class="reference internal" href="config.html">Detailed Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dbmethods.html">DB Methods</a></li>
 <li class="toctree-l2"><a class="reference internal" href="file_io.html">File IO</a></li>
-<li class="toctree-l2"><a class="reference internal" href="globus.html">Globus</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Globus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="grid.html">Grid Queueing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="init.html">Server Init</a></li>
 <li class="toctree-l2"><a class="reference internal" href="module.html">Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx.html">Nginx</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pool.html">Pool</a></li>
 <li class="toctree-l2"><a class="reference internal" href="schedule.html">Schedule</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server.html">Server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="squid.html">Squid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
@@ -141,37 +141,48 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="module-iceprod.server.server"><span id="server-server"></span><span id="index-0"></span></span><div class="section" id="server">
-<h1>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h1>
-<p>Run the iceprod server.</p>
+  <div class="section" id="module-iceprod.server.globus">
+<span id="globus"></span><h1>Globus<a class="headerlink" href="#module-iceprod.server.globus" title="Permalink to this headline">¶</a></h1>
+<p>Tools to help manage Globus proxies</p>
 <dl class="class">
-<dt id="iceprod.server.server.Server">
-<em class="property">class </em><code class="descclassname">iceprod.server.server.</code><code class="descname">Server</code><a class="reference internal" href="../_modules/iceprod/server/server.html#Server"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server" title="Permalink to this definition">¶</a></dt>
-<dd><p>The actual server.</p>
+<dt id="iceprod.server.globus.SiteGlobusProxy">
+<em class="property">class </em><code class="descclassname">iceprod.server.globus.</code><code class="descname">SiteGlobusProxy</code><span class="sig-paren">(</span><em>cfgfile=None</em>, <em>duration=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manage site-wide globus proxy</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfgfile</strong> &#8211; cfgfile location (optional)</li>
+<li><strong>duration</strong> &#8211; proxy duration (optional, default 72 hours)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
-<dt id="iceprod.server.server.Server.run">
-<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/server.html#Server.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server.run" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="iceprod.server.globus.SiteGlobusProxy.set_passphrase">
+<code class="descname">set_passphrase</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_passphrase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_passphrase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the passphrase</p>
+</dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.server.Server.restart">
-<code class="descname">restart</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/server.html#Server.restart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server.restart" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="iceprod.server.globus.SiteGlobusProxy.set_duration">
+<code class="descname">set_duration</code><span class="sig-paren">(</span><em>d</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.set_duration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.set_duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the duration</p>
+</dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.server.Server.reload">
-<code class="descname">reload</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/server.html#Server.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server.reload" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="iceprod.server.globus.SiteGlobusProxy.update_proxy">
+<code class="descname">update_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.update_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.update_proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the proxy</p>
+</dd></dl>
 
 <dl class="method">
-<dt id="iceprod.server.server.Server.stop">
-<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/server.html#Server.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server.stop" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="iceprod.server.server.Server.kill">
-<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/server.html#Server.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.server.Server.kill" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="iceprod.server.globus.SiteGlobusProxy.get_proxy">
+<code class="descname">get_proxy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/globus.html#SiteGlobusProxy.get_proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.globus.SiteGlobusProxy.get_proxy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the proxy location</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -184,10 +195,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="squid.html" class="btn btn-neutral float-right" title="Squid" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="grid.html" class="btn btn-neutral float-right" title="Grid Queueing" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="schedule.html" class="btn btn-neutral" title="Schedule" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="file_io.html" class="btn btn-neutral" title="File IO" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

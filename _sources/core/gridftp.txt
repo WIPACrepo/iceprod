@@ -1,7 +1,3 @@
-.. index:: GridFTP
-.. _GridFTP:
-
-
 GridFTP
 =======
 

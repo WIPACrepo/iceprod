@@ -789,7 +789,7 @@
 
 <span class="k">else</span><span class="p">:</span>
     <span class="c"># TODO: make gridftpClient use CFFI. move this class there?</span>
-<div class="viewcode-block" id="GridFTP"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP">[docs]</a>    <span class="k">class</span> <span class="nc">GridFTP</span><span class="p">(</span><span class="n">_gridftp_common</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP">[docs]</a>    <span class="k">class</span> <span class="nc">GridFTP</span><span class="p">(</span><span class="n">_gridftp_common</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Asyncronous GridFTP interface using python bindings to C library.</span>
 <span class="sd">           Designed to hide the complex stuff and mimic tornado http downloads.</span>
 
@@ -801,7 +801,7 @@
         <span class="n">__buffersize</span> <span class="o">=</span> <span class="mi">1048576</span> <span class="c"># 1MB default buffer size</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.get"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.get">[docs]</a>        <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">streaming_callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.get"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.get">[docs]</a>        <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">streaming_callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Do a GridFTP get request, asyncronously if a callback is defined.</span>
 <span class="sd">               streaming_callback or filename may be defined.</span>
 
@@ -919,7 +919,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._get_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.put"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.put">[docs]</a>        <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">streaming_callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.put"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.put">[docs]</a>        <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">streaming_callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Do a GridFTP put request, asyncronously if a callback is defined.</span>
 <span class="sd">               Either streaming_callback, data, or filename must be defined.</span>
 
@@ -1065,7 +1065,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._put_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.list"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.list">[docs]</a>        <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">details</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
+<div class="viewcode-block" id="GridFTP.list"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.list">[docs]</a>        <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">details</span><span class="o">=</span><span class="k">False</span><span class="p">,</span>
                  <span class="n">dotfiles</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Do a GridFTP list request, asyncronously if a callback is defined.</span>
 
@@ -1173,7 +1173,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._list_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.popen"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.popen">[docs]</a>        <span class="k">def</span> <span class="nf">popen</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">cmd</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.popen"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.popen">[docs]</a>        <span class="k">def</span> <span class="nf">popen</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">cmd</span><span class="p">,</span><span class="n">args</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Call popen on the ftp server</span>
 <span class="sd">                  cmd should be the program to execute</span>
 <span class="sd">                  args should be a list of arguments</span>
@@ -1236,7 +1236,7 @@
                     <span class="k">return</span> <span class="k">False</span></div>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.mkdir"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.mkdir">[docs]</a>        <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">parents</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.mkdir"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.mkdir">[docs]</a>        <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">parents</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Make a directory on the ftp server</span>
 
 <span class="sd">               parents - no error if existing, make parent directories as needed</span>
@@ -1331,7 +1331,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._mkdir_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.rmdir"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.rmdir">[docs]</a>        <span class="k">def</span> <span class="nf">rmdir</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.rmdir"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.rmdir">[docs]</a>        <span class="k">def</span> <span class="nf">rmdir</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Remove a directory on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1385,7 +1385,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._rmdir_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.delete"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.delete">[docs]</a>        <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.delete"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.delete">[docs]</a>        <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Delete a file on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1439,7 +1439,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._delete_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.rmtree"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.rmtree">[docs]</a>        <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.rmtree"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.rmtree">[docs]</a>        <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Delete a file or directory on the ftp server (like rm -rf)</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1532,7 +1532,7 @@
                 <span class="k">return</span> <span class="n">cb</span><span class="o">.</span><span class="n">ret</span></div>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.move"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.move">[docs]</a>        <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.move"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.move">[docs]</a>        <span class="k">def</span> <span class="nf">move</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">src</span><span class="p">,</span><span class="n">dest</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Move a file on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1588,7 +1588,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._move_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.exists"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.exists">[docs]</a>        <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.exists"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.exists">[docs]</a>        <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Check if a file exists on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1641,7 +1641,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._exists_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.chmod"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.chmod">[docs]</a>        <span class="k">def</span> <span class="nf">chmod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.chmod"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.chmod">[docs]</a>        <span class="k">def</span> <span class="nf">chmod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">mode</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Chmod a file on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>
@@ -1695,7 +1695,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Error in GridFTP._chmod_callback: callback is not defined&#39;</span><span class="p">)</span>
 
         <span class="nd">@classmethod</span>
-<div class="viewcode-block" id="GridFTP.size"><a class="viewcode-back" href="../../../server/gridftp.html#iceprod.core.gridftp.GridFTP.size">[docs]</a>        <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="GridFTP.size"><a class="viewcode-back" href="../../../core/gridftp.html#iceprod.core.gridftp.GridFTP.size">[docs]</a>        <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span><span class="n">address</span><span class="p">,</span><span class="n">callback</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">request_timeout</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Get the size of a file on the ftp server</span>
 
 <span class="sd">               callback should be of type callback(result)</span>

@@ -31,7 +31,7 @@
 
   
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
-        <link rel="next" title="Dataclasses" href="dataclasses.html"/>
+        <link rel="next" title="I3Exec" href="i3exec.html"/>
         <link rel="prev" title="JSON-RPC Interface" href="../guide/jsonrpc.html"/> 
 
   
@@ -86,18 +86,18 @@
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">IceProd Core</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="dataclasses.html">Dataclasses</a></li>
-<li class="toctree-l2"><a class="reference internal" href="exe.html">Execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="i3exec.html">I3Exec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exe.html">Execution Functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="exe_helper.html">Execution Helpers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="exe_json.html">JSONRPC Calls</a></li>
-<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gridftp.html">GridFTP</a></li>
-<li class="toctree-l2"><a class="reference internal" href="i3exec.html">i3exec</a></li>
-<li class="toctree-l2"><a class="reference internal" href="init.html">Core Init</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonRPCclient.html">JSON-RPC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jsonRPCclient.html">JSON-RPC Client</a></li>
 <li class="toctree-l2"><a class="reference internal" href="jsonUtil.html">JSON Utilities</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parser.html">Config File Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="init.html">Core Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dataclasses.html">Dataclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parser.html">Meta-Language Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="serialization.html">Serialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gridftp.html">GridFTP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="util.html">Utilities</a></li>
 </ul>
 </li>
@@ -134,34 +134,30 @@
            <div itemprop="articleBody">
             
   <div class="section" id="iceprod-core">
-<span id="iceprodcore"></span><span id="index-0"></span><h1>IceProd Core<a class="headerlink" href="#iceprod-core" title="Permalink to this headline">¶</a></h1>
+<h1>IceProd Core<a class="headerlink" href="#iceprod-core" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="i3exec.html">I3Exec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exe.html">Execution Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="exe.html#environment-functions">Environment Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exe.html#run-functions">Run Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exe.html#object-setup">Object Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="exe_helper.html">Execution Helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jsonRPCclient.html">JSON-RPC Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jsonUtil.html">JSON Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="init.html">Core Init</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dataclasses.html">Dataclasses</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="dataclasses.html#configuration-objects">Configuration Objects</a></li>
 <li class="toctree-l2"><a class="reference internal" href="dataclasses.html#metadata-objects">Metadata Objects</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="exe.html">Execution</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="exe.html#environment-functions">Environment Functions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="exe.html#object-setup">Object Setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="exe.html#run-functions">Run Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="exe_helper.html">Execution Helpers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="exe_json.html">JSONRPC Calls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parser.html">Meta-Language Parser</a></li>
 <li class="toctree-l1"><a class="reference internal" href="functions.html">Functions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="gridftp.html">GridFTP</a></li>
-<li class="toctree-l1"><a class="reference internal" href="i3exec.html">i3exec</a></li>
-<li class="toctree-l1"><a class="reference internal" href="init.html">Core Init</a></li>
-<li class="toctree-l1"><a class="reference internal" href="jsonRPCclient.html">JSON-RPC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="jsonRPCclient.html#json-rpc-message-protocol">JSON-RPC Message Protocol</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonRPCclient.html#module-iceprod.core.jsonRPCclient">JSON-RPC Client</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="jsonUtil.html">JSON Utilities</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parser.html">Config File Meta-Language Parser</a></li>
 <li class="toctree-l1"><a class="reference internal" href="serialization.html">Serialization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gridftp.html">GridFTP</a></li>
 <li class="toctree-l1"><a class="reference internal" href="util.html">Utilities</a></li>
 </ul>
 </div>
@@ -174,7 +170,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="dataclasses.html" class="btn btn-neutral float-right" title="Dataclasses" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="i3exec.html" class="btn btn-neutral float-right" title="I3Exec" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../guide/jsonrpc.html" class="btn btn-neutral" title="JSON-RPC Interface" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
