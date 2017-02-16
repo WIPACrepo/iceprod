@@ -18,7 +18,20 @@ copyright = '2016, IceCube Collaboration'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-version = release = iceprod.__version__
+is_master = False
+try:
+    with open('../.git/HEAD') as f:
+        is_master = 'master' in f.read()
+except:
+    raise
+if is_master:
+    release = 'master'
+    parts = list(iceprod.version_info[:3])
+    parts[-1] -= 1
+    version = '%d.%d.%d'%tuple(parts)
+else:
+    release = '%d.%d'%iceprod.version_info[:2]
+    version = iceprod.__version__
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -113,19 +126,6 @@ latex_documents = [
    u'David Schultz', 'manual'),
 ]
 
-# HACK: sphinx has limited support for substitutions with the |version|
-# variable, but there doesn't appear to be any way to use this in a link
-# target.
-# http://stackoverflow.com/questions/1227037/substitutions-inside-links-in-rest-sphinx
-# The extlink extension can be used to do link substitutions, but it requires a
-# portion of the url to be literally contained in the document. Therefore,
-# this link must be referenced as :current_tarball:`z`
-extlinks = {
-    'current_tarball': (
-'https://pypi.python.org/packages/source/t/tornado/tornado-%s.tar.g%%s' % version,
-        'tornado-%s.tar.g' % version),
-    }
-
 intersphinx_mapping = {
-    'python': ('http://python.readthedocs.org/en/latest/', None),
+    'python': ('https://docs.python.org/3.6/', None),
     }
