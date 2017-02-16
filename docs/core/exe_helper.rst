@@ -1,6 +1,3 @@
-.. index:: ExeHelper
-.. _ExeHelper:
-
 Execution Helpers
 =================
 

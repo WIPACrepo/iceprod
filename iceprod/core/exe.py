@@ -1,7 +1,27 @@
 """
 The core execution functions for running on a node.
+These are all called from :any:`iceprod.core.i3exec`.
 
-These are all called from `i3exec`.
+The fundamental design of the core is to run a task composed of trays and
+modules.  The general heirarchy looks like::
+
+    task
+    |
+    |- tray1
+       |
+       |- module1
+       |
+       |- module2
+    |
+    |- tray2
+       |
+       |- module3
+       |
+       |- module4
+
+Parameters can be defined at every level, and each level is treated as a
+scope (such that inner scopes inherit from outer scopes).  This is
+accomplished via an internal evironment for each scope.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -80,7 +100,56 @@ class Config:
 
 @contextmanager
 def setupenv(cfg, obj, oldenv={}):
-    """Set up an environment to run things in"""
+    """
+    The internal environment (env) is a dictionary composed of several objects:
+
+    parameters
+        Parameters are defined directly as an object, or as a string pointing
+        to another object.  They can use the IceProd meta-language to be
+        defined in relation to other parameters specified in inherited
+        scopes, or as eval or sprinf functions.
+
+    resources
+        \ 
+
+    data
+        Resources and data are similar in that they handle extra files that
+        modules may create or use.  The difference is that resources are only
+        for reading, such as pre-built lookup tables, while data can be input
+        and/or output. Compression can be automatically handled by IceProd.
+        Both resources and data are defined in the environment as strings to
+        their file location.
+        
+    classes
+        This is where external software gets added.  The software can be an
+        already downloaded resource or just a url to download.  All python
+        files get added to the python path and binary libraries get symlinked
+        into a directory on the LD_LIBRARY_PATH.  Note that if there is more
+        than one copy of the same shared library file, only the most recent
+        one is in scope.  Classes are defined in the environment as strings
+        to their file location.
+
+    deletions
+        These are files that should be deleted when the scope ends.
+
+    uploads
+        These are files that should be uploaded when the scope ends.
+        Mostly Data objects that are used as output.
+    
+    shell environment
+        An environment to reset to when exiting the context manager.
+
+    To keep the scope correct a new dictionary is created for every level, then
+    the inheritable objects are shallow copied (to 1 level) into the new env.
+    The deletions are not inheritable (start empty for each scope), and the shell
+    environment is set at whatever the previous scope currently has.
+
+    Args:
+        cfg (:py:class:`Config`): Config object
+        obj (dict): A dict-like object from :py:mod:`iceprod.core.dataclasses`
+                    such as :py:class:`iceprod.core.dataclasses.Steering`.
+        oldenv (dict): (optional) env that we are running inside
+    """
     try:
         # start with empty env
         env = {}
@@ -574,7 +643,22 @@ def runmodule(cfg, globalenv, module, stats={}):
                 stats.update(new_stats)
 
 def run_module(cfg, env, module):
-    """Helper to runmodule. Returns a running subprocess."""
+    """
+    Modules are run in a forked process to prevent segfaults from killing IceProd.
+    Their stdout and stderr is dumped into the log file with prefixes on each
+    line to designate its source.  Any error or the return value is returned to
+    the main process via a Queue.
+
+    If a module defines a src, that is assumed to be a Class which should be
+    added to the env.  The running_class is where the exact script or binary
+    is chosen.  It can match several things:
+
+    * A fully defined python module.class import (also takes module.function)
+    * A python class defined in the src provided
+    * A regular python script
+    * An executable of some type (this is run in a subprocess with shell
+      execution disabled)
+    """
     module_src = None
     if module['src']:
         # get script to run

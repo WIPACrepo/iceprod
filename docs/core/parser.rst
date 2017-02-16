@@ -1,8 +1,5 @@
-.. index:: parser
-.. _parser:
-
-Config File Meta-Language Parser
-================================
+Meta-Language Parser
+====================
 
 .. automodule:: iceprod.core.parser
     :no-members:

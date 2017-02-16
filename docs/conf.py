@@ -23,7 +23,7 @@ try:
     with open('../.git/HEAD') as f:
         is_master = 'master' in f.read()
 except:
-    raise
+    pass
 if is_master:
     release = 'master'
     parts = list(iceprod.version_info[:3])

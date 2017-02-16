@@ -1,7 +1,3 @@
-.. index:: Dataclasses
-.. _Dataclasses:
-
-
 Dataclasses
 ===========
 

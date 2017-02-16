@@ -1,6 +1,3 @@
-.. index:: Util
-.. _Util:
-
 Utilities
 =========
 

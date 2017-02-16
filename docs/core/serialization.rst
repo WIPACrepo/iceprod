@@ -1,6 +1,3 @@
-.. index:: Serialization
-.. _Serialization:
-
 Serialization
 =============
 

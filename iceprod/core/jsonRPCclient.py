@@ -1,5 +1,23 @@
 """
-A simple jsonrpc client using `requests` for the http connection
+A simple `JSON-RPC`_ client using `requests`_ for the http connection.
+
+.. _JSON-RPC: http://www.jsonrpc.org/specification
+.. _requests: http://docs.python-requests.org
+
+The RPC protocol is built on http(s), with the body containing
+a json-encoded dictionary:
+
+Request Object:
+
+* method (string) - Name of the method to be invoked.
+* params (dict) - Keyword arguments to the method.
+
+Response Object:
+
+* result (object) - The returned result from the method. This is REQUIRED on
+  success, and MUST NOT exist if there was an error.
+* error (object) - A description of the error, likely an Exception object.
+  This is REQUIRED on error and MUST NOT exist on success.
 """
 import logging
 from threading import RLock
@@ -24,6 +42,7 @@ class Client(object):
         self.open() # start session
 
     def open(self):
+        """Open the http session"""
         logger.warn('establish http session for jsonrpc')
         self.__session = requests.Session()
         if 'username' in self.__kwargs and 'password' in self.__kwargs:
@@ -37,6 +56,7 @@ class Client(object):
             self.__session.verify = self.__kwargs['cacert']
 
     def close(self):
+        """Close the http session"""
         logger.warn('close jsonrpc http session')
         self.__session.close()
 
@@ -153,11 +173,9 @@ class MetaJSONRPC(type):
 
 class JSONRPC(object):
     """
-    JSONRPC client connection.
+    `JSON-RPC`_ client connection.
 
-    Call JSON-RPC functions as regular function calls.
-
-    JSON-RPC spec: http://www.jsonrpc.org/specification
+    Call RPC functions as regular function calls.
 
     Example::
 

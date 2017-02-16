@@ -1,7 +1,4 @@
-.. index:: i3exec
-.. _i3exec:
-
-i3exec
+I3Exec
 ======
 
 .. automodule:: iceprod.core.i3exec

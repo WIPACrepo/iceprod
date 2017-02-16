@@ -138,7 +138,29 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     logger.warn('finished running normally; exiting...')
 
 def runner(config, url, debug=False, offline=False):
-    """Run a config"""
+    """Run a config.
+
+    #. Set some default options if not set in configuration.
+    #. Set up global env based on the configuration.
+    #. Run tasks
+       * If a task is specified in the configuration options:
+
+         If the task is specified by name or number, run only that task.
+         If there is a problem finding the task specified, raise a
+         critical error.
+
+       * Otherwise, run all tasks in the configuration in the order
+         they were written.
+
+    #. Destroy the global env, uploading and deleting files as needed.
+    #. Upload the log, error, and output files if specified in options.
+
+    Args:
+        config (`iceprod.core.dataclasses.Job`): Dataset configuration
+        url (str): URL to server
+        debug (bool): (optional) turn on debug logging
+        offline (bool): (optional) enable offline mode
+    """
     logger = logging.getLogger('i3exec_runner')
     
     # set logging verbosity
