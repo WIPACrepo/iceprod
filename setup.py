@@ -56,7 +56,7 @@ if setuptools is not None:
                         'psutil>=5.0.0', 'cryptography', 'requests',
                         'requests_toolbelt', 'requests-futures', 'statsd']
     extras_require = {
-        'docs': ['sphinx'],
+        'docs': ['sphinx>=1.4'],
         'tests': ['coverage', 'flexmock']
     }
     if sys.version_info < (3, 2):
