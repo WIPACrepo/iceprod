@@ -289,7 +289,6 @@ class queue(module.module):
     def buffer_jobs_tasks(self,gridspecs):
         """Make sure active datasets have jobs and tasks defined"""
         buffer = self.cfg['queue']['task_buffer']
-        if buffer <= 0:
-            buffer = 200
-        yield self.modules['db']['queue_buffer_jobs_tasks'](gridspec=gridspecs,
-                                                            num_tasks=buffer)
+        if buffer > 0:
+            yield self.modules['db']['queue_buffer_jobs_tasks'](gridspec=gridspecs,
+                                                                num_tasks=buffer)
