@@ -83,16 +83,12 @@
             
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-</ul>
-<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="details.html">Technical Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -122,26 +118,45 @@
            <div itemprop="articleBody">
             
   <div class="section" id="iceprod">
-<span id="index-0"></span><span id="id1"></span><h1>IceProd<a class="headerlink" href="#iceprod" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="overview.html#core">Core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="overview.html#server">Server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="overview.html#modules">Modules</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="quickstart.html#tl-dr">tl;dr</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quickstart.html#getting-started">Getting Started</a></li>
-</ul>
-</li>
-</ul>
+<h1>IceProd<a class="headerlink" href="#iceprod" title="Permalink to this headline">¶</a></h1>
+<p>IceProd is a Python framework for distributed management of batch jobs.
+It runs as a layer on top of other batch middleware, such as HTCondor,
+and can pool together resources from different batch systems. The primary
+purpose is to coordinate and administer many large sets of jobs at once,
+keeping a history of the entire job lifecycle.</p>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Most users will not need to install IceProd, as they will use an already
+running instance.  For advanced users and administrators, you can install
+with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
+<pre class="literal-block">
+pip install https://github.com/WIPACrepo/iceprod/archive/v2.1.1.tar.gz
+</pre>
+<p><strong>Optional dependencies</strong>: Nginx, Globus toolkit, MySQL</p>
+<div class="icecube admonition note">
+<p class="first admonition-title">Note</p>
+<blockquote class="last">
+<div><p>For IceCube users with CVMFS access, IceProd is already installed. To load
+the environment execute:</p>
+<div class="highlight-bash"><div class="highlight"><pre>/cvmfs/icecube.wisc.edu/iceprod/latest/env-shell.sh
+</pre></div>
 </div>
-<div class="section" id="projects">
-<h2>Projects<a class="headerlink" href="#projects" title="Permalink to this headline">¶</a></h2>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guide/login.html">Login</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/submission.html">Dataset Submission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/datasets.html">Dataset Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/tasks.html">Task Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide/jsonrpc.html">JSON-RPC Interface</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="core/dataclasses.html">Dataclasses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core/exe.html">Execution</a></li>
@@ -158,56 +173,37 @@
 <li class="toctree-l2"><a class="reference internal" href="core/util.html">Utilities</a></li>
 </ul>
 </li>
-</ul>
-</div>
-<div class="toctree-wrapper compound">
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="server/index.html#modules">Modules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/db.html">Database Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/master_updater.html">Master Updater Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/proxy.html">Proxy Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/queue.html">Queueing Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/schedule.html">Schedule Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/modules/website.html">Website Module</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="server/index.html#plugins">Plugins</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="server/plugins/condor.html">Condor Plugin</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="server/index.html#regular-classes">Regular Classes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="server/config.html">Detailed Configuration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/dbmethods.html">DB Methods</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/file_io.html">File IO</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/grid.html">Grid Queueing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/gridftp.html">Asynchronous GridFTP</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/init.html">Server Init</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/module.html">Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/nginx.html">Nginx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/pool.html">Pool</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/schedule.html">Schedule</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/server.html">Server</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/squid.html">Squid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/db.html">Database Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/master_updater.html">Master Updater Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/proxy.html">Proxy Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/queue.html">Queueing Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/schedule.html">Schedule Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/modules/website.html">Website Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/plugins/condor.html">Condor Plugin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/config.html">Detailed Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/dbmethods.html">DB Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/file_io.html">File IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/grid.html">Grid Queueing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/gridftp.html">Asynchronous GridFTP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/init.html">Server Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/module.html">Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/nginx.html">Nginx</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/pool.html">Pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/schedule.html">Schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/server.html">Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/squid.html">Squid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
-<div class="section" id="dev-notes">
-<h2>Dev Notes<a class="headerlink" href="#dev-notes" title="Permalink to this headline">¶</a></h2>
-<p>Low-level details for developers.</p>
+<div class="section" id="admin-notes">
+<h2>Admin Notes<a class="headerlink" href="#admin-notes" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="details.html">Technical Details</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="core/details/index.html">IceProd Core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="server/details/index.html">IceProd Server Details</a></li>
-<li class="toctree-l2"><a class="reference internal" href="extra_details.html">Extras</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 </div>
 </div>

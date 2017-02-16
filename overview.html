@@ -31,7 +31,7 @@
 
   
     <link rel="top" title="IceProd 2.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Quickstart" href="quickstart.html"/>
+        <link rel="next" title="User’s Guide" href="guide/index.html"/>
         <link rel="prev" title="IceProd" href="index.html"/> 
 
   
@@ -83,26 +83,13 @@
             
             
                 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#core">Core</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#single-task-mode">Single Task Mode</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#many-task-mode">Many Task Mode</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#server">Server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#modules">Modules</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-</ul>
-<ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="details.html">Technical Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -132,24 +119,26 @@
            <div itemprop="articleBody">
             
   <div class="section" id="overview">
-<span id="index-0"></span><span id="id1"></span><h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
-<p>IceProd is broken up into three main parts:</p>
-<ol class="arabic simple">
-<li>Core</li>
-<li>Server</li>
-<li>Modules</li>
-</ol>
+<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
+<p>IceProd is broken up into two main parts, the core and server.</p>
 <div class="section" id="core">
 <h2>Core<a class="headerlink" href="#core" title="Permalink to this headline">¶</a></h2>
-<p>The core of IceProd is what actually runs on compute nodes.  It is capable of running in two different modes:</p>
+<p>The core of IceProd is what actually runs on compute nodes.  It is capable of
+running in two different modes:</p>
 <div class="section" id="single-task-mode">
 <h3>Single Task Mode<a class="headerlink" href="#single-task-mode" title="Permalink to this headline">¶</a></h3>
-<p>In this mode, IceProd is given a config file at startup.  It will only run that task, then exit.  This is the standard mode.</p>
+<p>In this mode, IceProd is given a config file at startup.  It will only run
+that task, then exit.  This is the legacy mode.</p>
 </div>
 <div class="section" id="many-task-mode">
 <h3>Many Task Mode<a class="headerlink" href="#many-task-mode" title="Permalink to this headline">¶</a></h3>
-<p>In this mode, IceProd downloads task config files from the server.  It will download a task, process it, then download another until the server tells it to stop.  This is a good mode for groups of tasks that have the same large dependencies; the dependency can be downloaded once and used multiple times.</p>
-<p>This mode can also be called &#8220;Pilot Mode&#8221; since it calls back to the server with the resources available, only matching those jobs that can likely run there.</p>
+<p>In this mode, IceProd downloads task config files from the server.  It will
+download a task, process it, then download another until the server tells it
+to stop.  This is a good mode for groups of tasks that have the same large
+dependencies; the dependency can be downloaded once and used multiple times.</p>
+<p>This mode can also be called &#8220;Pilot Mode&#8221; since it calls back to the server
+with the resources available, only matching those jobs that can likely run
+there.</p>
 </div>
 </div>
 <div class="section" id="server">
@@ -158,16 +147,10 @@
 <ul class="simple">
 <li>Queue tasks onto grids</li>
 <li>Store all info in local DB</li>
-<li>Host website for DB info</li>
+<li>Host website for users</li>
 <li>Communicate securely with running tasks</li>
 <li>Communicate securely with other IceProd sites</li>
-<li>(master only) Queue multi-site datasets to individual sites at task level</li>
-<li>(master only) Store all DB info for connected sites</li>
 </ul>
-</div>
-<div class="section" id="modules">
-<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
-<p>The modules part of IceProd contains a library of standard modules that can be run by tasks.  They are more fully featured than a simple script because they obtain the full working environment of the IceProd core, containing module parameters and general settings.  These are designed to be base classes which can be subclassed by other scripts, though some can be used standalone.</p>
 </div>
 </div>
 
@@ -178,7 +161,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quickstart" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="guide/index.html" class="btn btn-neutral float-right" title="User’s Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="index.html" class="btn btn-neutral" title="IceProd" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Dev Notes &mdash; IceProd 2.1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/style.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="IceProd 2.1.1 documentation" href="index.html"/>
+        <link rel="prev" title="SSL/TLS Certificate Utilities" href="server/ssl_cert.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Dev Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div style="float:right">
+            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
+          </div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="dev-notes">
+<h1>Dev Notes<a class="headerlink" href="#dev-notes" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="server">
+<h2>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-to-run-the-server">
+<h3>How to Run the Server<a class="headerlink" href="#how-to-run-the-server" title="Permalink to this headline">¶</a></h3>
+<p>To run the server:</p>
+<div class="highlight-default"><div class="highlight"><pre>$ python bin/iceprod_server.py
+</pre></div>
+</div>
+</div>
+<div class="section" id="disabling-ssl">
+<h3>Disabling SSL<a class="headerlink" href="#disabling-ssl" title="Permalink to this headline">¶</a></h3>
+<p>To disable SSL support (if you don&#8217;t have <cite>nginx</cite> installed),
+modify <cite>iceprod_config.json</cite> with the following option:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;system&quot;</span><span class="p">:{</span><span class="s">&quot;ssl&quot;</span><span class="p">:</span><span class="n">false</span><span class="p">}}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setting-the-website-password">
+<h3>Setting the website password<a class="headerlink" href="#setting-the-website-password" title="Permalink to this headline">¶</a></h3>
+<p>To edit the website password for admin pages,
+modify <cite>iceprod_config.json</cite> with the following option:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;webserver&quot;</span><span class="p">:{</span><span class="s">&quot;password&quot;</span><span class="p">:</span><span class="s">&quot;my-secret-password-here&quot;</span><span class="p">}}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="server/ssl_cert.html" class="btn btn-neutral" title="SSL/TLS Certificate Utilities" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
