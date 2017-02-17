@@ -254,6 +254,10 @@ form
     margin: 0;
     padding: 10px;
 }
+#submit_area .tab_bar button:hover
+{
+    cursor: pointer;
+}
 #submit_area .tab_bar li:first-child button
 {
     border-radius: 5px 0 0 0;
