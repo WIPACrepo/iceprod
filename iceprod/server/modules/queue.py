@@ -14,8 +14,6 @@ import tornado.gen
 from tornado.concurrent import run_on_executor
 import certifi
 
-from statsd import StatsClient
-
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
@@ -37,21 +35,12 @@ class queue(module.module):
         super(queue,self).__init__(*args,**kwargs)
 
         self.proxy = None
-        self.statsd = None
 
         self.max_duration = 3600*12
 
     def start(self):
         """Start the queue"""
         super(queue,self).start()
-
-        if 'statsd' in self.cfg and self.cfg['statsd']:
-            try:
-                self.statsd = StatsClient(self.cfg['statsd'],
-                                          prefix=self.cfg['site_id']+'.queue')
-            except:
-                logger.warn('failed to connect to statsd: %r',
-                            self.cfg['statsd'], exc_info=True)
 
         # set up x509 proxy
         proxy_kwargs = {}
@@ -123,7 +112,7 @@ class queue(module.module):
             logger.warn('queueing plugin found: %s = %s', p_name, p_cfg['type'])
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
-                    self.modules, self.io_loop, self.executor)
+                    self.modules, self.io_loop, self.executor, self.statsd)
             try:
                 self.plugins.append(iceprod.server.run_module(p,*args))
             except Exception as e:

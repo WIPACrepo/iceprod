@@ -14,8 +14,6 @@ from datetime import datetime,timedelta
 from collections import namedtuple, Counter
 import itertools
 
-from statsd import StatsClient
-
 import tornado.gen
 from tornado.concurrent import run_on_executor
 
@@ -40,13 +38,14 @@ class grid(object):
     # use only these grid states when defining grid status
     GRID_STATES = ('queued','processing','completed','error','unknown')
 
-    def __init__(self, gridspec, queue_cfg, cfg, modules, io_loop, executor):
+    def __init__(self, gridspec, queue_cfg, cfg, modules, io_loop, executor, statsd):
         self.gridspec = gridspec
         self.queue_cfg = queue_cfg
         self.cfg = cfg
         self.modules = modules
         self.io_loop = io_loop
         self.executor = executor
+        self.statsd = statsd
 
         if self.gridspec:
             self.grid_id, self.name = self.gridspec.split('.', 1)
@@ -67,15 +66,6 @@ class grid(object):
         self.tasks_processing = 0
         self.grid_processing = 0
         self.grid_idle = 0
-
-        self.statsd = None
-        if 'statsd' in self.cfg and self.cfg['statsd']:
-            try:
-                self.statsd = StatsClient(self.cfg['statsd'],
-                                          prefix=self.grid_id+'.grid.'+self.name)
-            except:
-                logger.warn('failed to connect to statsd: %r',
-                            self.cfg['statsd'], exc_info=True)
 
     ### Public Functions ###
 
@@ -113,8 +103,7 @@ class grid(object):
                                min_tasks - self.tasks_queued)
             change = min(change,num_to_queue)
         logger.info('can queue up to %d tasks', change)
-        if self.statsd:
-            self.statsd.gauge('can_queue', change)
+        self.statsd.gauge('can_queue', change)
 
         # get queueing datasets from database
         datasets = yield self.modules['db']['queue_get_queueing_datasets']()
@@ -155,8 +144,7 @@ class grid(object):
             if not isinstance(tasks,dict):
                 raise Exception('db.queue_get_queueing_tasks(%s) did not return a dict'%self.gridspec)
 
-        if self.statsd:
-            self.statsd.gauge('did_queue', len(tasks) if tasks else 0)
+        self.statsd.gauge('did_queue', len(tasks) if tasks else 0)
 
         if tasks:
             if pilots:
@@ -256,13 +244,12 @@ class grid(object):
         logger.info('%d ->idle',len(idle_tasks))
         logger.info('%d ->waiting',len(waiting_tasks))
         logger.info('%d ->reset',len(reset_tasks))
-        if self.statsd:
-            self.statsd.gauge('processing_tasks', self.tasks_processing)
-            self.statsd.gauge('queued_tasks', self.tasks_queued)
-            self.statsd.gauge('waiting_tasks', tasks_waiting)
-            self.statsd.incr('idle_tasks', len(idle_tasks))
-            self.statsd.incr('waiting_tasks', len(waiting_tasks))
-            self.statsd.incr('reset_tasks', len(reset_tasks))
+        self.statsd.gauge('processing_tasks', self.tasks_processing)
+        self.statsd.gauge('queued_tasks', self.tasks_queued)
+        self.statsd.gauge('waiting_tasks', tasks_waiting)
+        self.statsd.incr('idle_tasks', len(idle_tasks))
+        self.statsd.incr('waiting_tasks', len(waiting_tasks))
+        self.statsd.incr('reset_tasks', len(reset_tasks))
 
         if idle_tasks:
             # change status to idle
@@ -408,12 +395,11 @@ class grid(object):
             logger.info('%d ->reset', len(reset_tasks))
             logger.info('%d ->grid remove', len(remove_grid_tasks))
             logger.info('%d ->submit clean', len(delete_dirs))
-            if self.statsd:
-                self.statsd.gauge('processing_pilots', self.grid_processing)
-                self.statsd.gauge('queued_pilots', self.grid_idle)
-                self.statsd.incr('reset_pilots', len(reset_tasks))
-                self.statsd.incr('grid_remove', len(remove_grid_tasks))
-                self.statsd.incr('clean_dirs', len(delete_dirs))
+            self.statsd.gauge('processing_pilots', self.grid_processing)
+            self.statsd.gauge('queued_pilots', self.grid_idle)
+            self.statsd.incr('reset_pilots', len(reset_tasks))
+            self.statsd.incr('grid_remove', len(remove_grid_tasks))
+            self.statsd.incr('clean_dirs', len(delete_dirs))
 
         # reset tasks
         if reset_tasks:
@@ -474,8 +460,7 @@ class grid(object):
         for task_id, resources in task_iter:
             task_reqs[task_id] = resources._asdict()
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
-        if self.statsd:
-            self.statsd.incr('add_to_task_lookup', len(task_reqs))
+        self.statsd.incr('add_to_task_lookup', len(task_reqs))
         ret = yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
         if isinstance(ret,Exception):
             logger.error('error add_task_lookup')
@@ -504,8 +489,7 @@ class grid(object):
         queue_num = max(0,min(len(tasks) - self.grid_idle, queue_tot_max,
                               queue_idle_max, queue_interval_max))
         logger.info('queueing %d pilots', queue_num)
-        if self.statsd:
-            self.statsd.incr('queueing_pilots', queue_num)
+        self.statsd.incr('queueing_pilots', queue_num)
 
         # select at least one from each resource group
         groups2 = Counter()
@@ -521,9 +505,8 @@ class grid(object):
             logger.info('submitting %d pilots for resource %r',
                         groups2[resources], resources)
             r = resources._asdict()
-            if self.statsd:
-                for name in r:
-                    self.statsd.incr('pilot_resources.'+name, r[name])
+            for name in r:
+                self.statsd.incr('pilot_resources.'+name, r[name])
             pilot = {'task_id': 'pilot',
                      'name': 'pilot',
                      'debug': debug,

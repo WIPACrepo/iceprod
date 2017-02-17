@@ -51,12 +51,13 @@ def downloadtask(gridspec, resources=None):
     except:
         platform = functions.platform()
     hostname = functions.gethostname()
+    domain = '.'.join(hostname.split('.')[-2:])
     ifaces = functions.getInterfaces()
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
     if not resources:
         resources = get_node_resources()
     task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
-                            hostname=hostname, ifaces=ifaces,
+                            hostname=hostname, domain=domain, ifaces=ifaces,
                             python_unicode=python_unicode,
                             **resources)
     if isinstance(task,Exception):
@@ -83,11 +84,13 @@ def finishtask(cfg, stats={}, start_time=None):
         stats = {k:stats[k] for k in stats if k in stat_keys}
 
     hostname = functions.gethostname()
+    domain = '.'.join(hostname.split('.')[-2:])
     if start_time:
         t = time.time() - start_time
     else:
         t = None
-    stats = {'hostname':hostname, 'time_used': t, 'task_stats':stats}
+    stats = {'hostname': hostname, 'domain': domain,
+             'time_used': t, 'task_stats': stats}
     ret = JSONRPC.finish_task(task_id=cfg.config['options']['task_id'],
                               stats=stats)
     if isinstance(ret,Exception):
@@ -115,9 +118,11 @@ def taskerror(cfg, start_time=None):
     if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
         return # don't change status on a DB kill
     try:
+        hostname = functions.gethostname()
+        domain = '.'.join(hostname.split('.')[-2:])
         error_info = {
-            'hostname': functions.gethostname(),
-            'time_used':None,
+            'hostname': hostname, 'domain': domain,
+            'time_used': None,
         }
         if start_time:
             error_info['time_used'] = time.time() - start_time
@@ -133,8 +138,10 @@ def taskerror(cfg, start_time=None):
 def task_kill(task_id, resources=None, reason=None):
     """Tell the server that we killed a task"""
     try:
+        hostname = functions.gethostname()
+        domain = '.'.join(hostname.split('.')[-2:])
         error_info = {
-            'hostname': functions.gethostname(),
+            'hostname': hostname, 'domain': domain,
             'error_summary':'',
             'time_used':None,
         }
