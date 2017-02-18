@@ -11,7 +11,7 @@ from statsd import StatsClient
 logger = logging.getLogger('module')
 
 class FakeStatsClient(object):
-    def __init__(self, *args, *kwargs):
+    def __init__(self, *args, **kwargs):
         self._prefix = ''
     def __getattr__(self, name):
         def foo(*args, **kwargs):

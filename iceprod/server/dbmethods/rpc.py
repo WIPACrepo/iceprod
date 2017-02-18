@@ -193,10 +193,10 @@ class rpc(_Methods_Base):
                 time_used = float(stats['time_used'])
         except:
             logger.warn('bad time_used', exc_info=True)
-        #if hostname in stats and stats['hostname']:
+        #if 'hostname' in stats and stats['hostname']:
         #    self.parent.statsd.incr('finish_task.hostname.'+stats['hostname'].replace('.','_'),
         #                            count=int(time_used) if time_used else 1)
-        if domain in stats and stats['domain']:
+        if 'domain' in stats and stats['domain']:
             self.parent.statsd.incr('finish_task.domain.'+stats['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
 
@@ -211,7 +211,6 @@ class rpc(_Methods_Base):
             bindings2 = ['complete',now]
             if time_used:
                 logger.info('time_used: %r', time_used)
-                try:
                 sql2 += ', walltime = ? '
                 bindings2.append(time_used)
             sql2 += ' where task_id = ?'
@@ -345,10 +344,10 @@ class rpc(_Methods_Base):
                 time_used = float(error_info['time_used'])
         except:
             logger.warn('bad time_used', exc_info=True)
-        #if hostname in error_info and error_info['hostname']:
+        #if 'hostname' in error_info and error_info['hostname']:
         #    self.parent.statsd.incr('task_error.hostname.'+error_info['hostname'].replace('.','_'),
         #                            count=int(time_used) if time_used else 1)
-        if domain in error_info and error_info['domain']:
+        if 'domain' in error_info and error_info['domain']:
             self.parent.statsd.incr('task_error.domain.'+error_info['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
         with (yield self.parent.db.acquire_lock('queue')):
