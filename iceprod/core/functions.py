@@ -263,8 +263,6 @@ def get_local_ip_address():
 def gethostname():
     """Get hostname of this computer."""
     ret = socket.getfqdn()
-    if len(ret.split('.')) > 1:
-        return ret
     try:
         resp = requests.get('http://simprod.icecube.wisc.edu/downloads/getip.php')
         resp.raise_for_status()
