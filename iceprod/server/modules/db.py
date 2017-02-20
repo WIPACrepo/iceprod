@@ -292,6 +292,7 @@ else:
             for table_name in self.tables.keys():
                 sql_create = ' ('
                 sql_select = ' '
+                sql_index_create = []
                 sep = ''
                 cols = self.tables[table_name].keys()
                 for col in cols:
@@ -300,6 +301,8 @@ else:
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '
+                    elif False:#col.endswith('_id'):
+                        sql_index_create.append('CREATE INDEX IF NOT EXISTS '+col+'_index ON '+table_name+' ('+col+')')
                 sql_create += ')'
                 scols = set(cols)
                 with (conn if table_name != 'setting' else self._inc_id_connection) as c:
@@ -312,6 +315,8 @@ else:
                             # table does not exist
                             logger.info('create table '+table_name+sql_create)
                             cur.execute('create table '+table_name+sql_create)
+                            for query in sql_index_create:
+                                cur.execute(query)
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
@@ -324,6 +329,8 @@ else:
                             full_sql += 'drop table '+table_name+';'
                             full_sql += 'alter table '+table_name+'_backup rename to '+table_name;
                             cur.execute(full_sql)
+                            for query in sql_index_create:
+                                cur.execute(query)
                         else:
                             # table is good
                             logger.info('table '+table_name+' already exists')
@@ -344,6 +351,7 @@ else:
             conn = apsw.Connection(self.cfg['db'][name], **kwargs)
             conn.cursor().execute('PRAGMA journal_mode = WAL')
             conn.cursor().execute('PRAGMA synchronous = OFF')
+            conn.cursor().execute('PRAGMA automatic_index = OFF')
             conn.setbusytimeout(100)
             return conn
 
@@ -469,6 +477,8 @@ if MySQLdb:
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '
+                    elif False:#col.endswith('_id'):
+                        sql_create += ' INDEX' 
                 sql_create += ')'
                 scols = set(cols)
                 try:
