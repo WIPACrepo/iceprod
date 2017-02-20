@@ -160,14 +160,14 @@ class node(_Methods_Base):
                 yield self.parent.db.query(sql, bindings)
                 if self._is_master():
                     sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('site',site_id,now)
+                    bindings3 = ('site',site_id,nowstr())
                     try:
                         yield self.parent.db.query(sql3, bindings3)
                     except:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
                 else:
-                    yield self._send_to_master(('site',site_id,now,sql,bindings))
+                    yield self._send_to_master(('site',site_id,nowstr(),sql,bindings))
         except:
             logger.info('error in node_collate_resources', exc_info=True)
 
