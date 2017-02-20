@@ -349,6 +349,8 @@ class grid(object):
                 if ((not submit_dir) or
                     now - tasks[grid_queue_id]['submit_time'] > time_dict[status]):
                     # grid doesn't know
+                    logger.info('task not on grid, or over time: %r',
+                                tasks[grid_queue_id]['submit_dir'])
                     submit_dir = tasks[grid_queue_id]['submit_dir']
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
@@ -356,6 +358,8 @@ class grid(object):
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
                 elif submit_dir != tasks[grid_queue_id]['submit_dir']:
                     # mixup - delete both
+                    logger.warn('submit dirs not equal: %r != %r', submit_dir,
+                                tasks[grid_queue_id]['submit_dir'])
                     remove_grid_tasks.add(grid_queue_id)
                     if pilots:
                         reset_tasks.add(tasks[grid_queue_id]['pilot_id'])
