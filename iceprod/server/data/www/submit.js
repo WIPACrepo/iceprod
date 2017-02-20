@@ -630,6 +630,7 @@ var Submission = (function( $ ) {
                     show_unique('#expert_submit');
                 }
             };
+            show_unique('#' + data.state + '_submit');
             $('#basic_button').on('click',goto_basic);
             $('#advanced_button').on('click',goto_advanced);
             $('#expert_button').on('click',goto_expert);
