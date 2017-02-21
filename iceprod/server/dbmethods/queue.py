@@ -579,7 +579,7 @@ class queue(_Methods_Base):
                 sql += 'where dataset_id in (%s)'
                 for f in self._bulk_select(sql, dataset_prios):
                     for task_rel_id, reqs in (yield f):
-                        task_rel_ids[task_rel_id] = reqs
+                        task_rel_ids[task_rel_id] = json_decode(reqs)
                 sql = 'select task_id, depends, requirements, task_rel_id '
                 sql += 'from task where task_rel_id in (%s)'
                 datasets = {k:OrderedDict() for k in dataset_prios}
@@ -589,11 +589,10 @@ class queue(_Methods_Base):
                         status = tasks[task_id]['status']
                         if (status == 'idle' or
                             ((not global_queueing) and status == 'waiting')):
-                            reqs = ''
                             if reqs:
                                 reqs = json_decode(reqs)
                             elif task_rel_ids[task_rel_id]:
-                                reqs = json_decode(task_rel_ids[task_rel_id])
+                                reqs = task_rel_ids[task_rel_id]
                             datasets[dataset][task_id] = [depends,reqs,task_rel_id]
             except:
                 logger.info('error getting processing tasks', exc_info=True)
@@ -618,6 +617,7 @@ class queue(_Methods_Base):
                     elif depends:
                         for dep in depends.split(','):
                             if dep not in tasks:
+                                logger.info('look up depend status: %r',dep)
                                 sql = 'select task_status from search where task_id = ?'
                                 bindings = (dep,)
                                 try:
