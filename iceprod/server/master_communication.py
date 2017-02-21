@@ -54,7 +54,7 @@ def send_master(cfg, method, session=None, **kwargs):
                         'params':kwargs,'id':1})
 
     logger.info('calling method %s on master', method)
-    response = yield session.post(url, timeout=60, data=body,
+    response = yield session.post(url, timeout=120, data=body,
                                   headers={'Content-Type': 'application/json-rpc'})
     response.raise_for_status()
     ret = json_decode(response.content)
