@@ -191,6 +191,8 @@ class queue(module.module):
                 # get num tasks to queue
                 tasks_on_queue = plugin_cfg['tasks_on_queue']
                 num = min(tasks_on_queue[1] - num_queued, tasks_on_queue[0])
+                if len(tasks_on_queue) > 2:
+                    num = min(num, tasks_on_queue[2])
                 if num > 0:
                     # get priority factors
                     qf_p = 1.0
