@@ -926,16 +926,19 @@ class rpc(_Methods_Base):
         if not isinstance(tasks,dict):
             raise Exception('queue_get_queueing_tasks() did not return a dict')
         elif len(tasks) < num/2:
-            # buffer tasks and try again
+            logger.info('only %d tasks queued, buffering to get more',
+                        len(tasks))
             num -= len(tasks)
             yield self.parent.service['queue_buffer_jobs_tasks'](num_tasks=num)
+            logger.info('done buffering')
             tasks2 = yield self.parent.service['queue_get_queueing_tasks'](
                     dataset_prios, num=num, resources=resources,
                     global_queueing=True)
             if not isinstance(tasks2,dict):
                 raise Exception('queue_get_queueing_tasks() did not return a dict')
             tasks.update(tasks2)
-        logger.debug('rpc_queue_master(): tasks: %r',tasks)
+        logger.info('rpc_queue_master(): num tasks: %d', len(tasks))
+        logger.debug('rpc_queue_master(): tasks: %r', tasks)
 
         tables = yield self.parent.service['misc_get_tables_for_task'](tasks)
         raise tornado.gen.Return(tables)
