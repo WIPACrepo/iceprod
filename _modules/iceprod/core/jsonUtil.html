@@ -282,7 +282,6 @@
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Cannot encode %s class to JSON&#39;</span><span class="o">%</span><span class="n">name</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="JSONToObj"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.JSONToObj">[docs]</a><span class="k">def</span> <span class="nf">JSONToObj</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;__jsonclass__&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;try unpacking class&#39;</span><span class="p">)</span>
