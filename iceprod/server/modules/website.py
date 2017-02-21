@@ -356,7 +356,7 @@ class MyHandler(tornado.web.RequestHandler):
         try:
             f = self.modules['db'][func_name](*args,**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
-                f = yield tornado.gen.with_timeout(timedelta(seconds=60),f)
+                f = yield tornado.gen.with_timeout(timedelta(seconds=120),f)
         except:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise

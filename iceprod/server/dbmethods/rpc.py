@@ -925,7 +925,7 @@ class rpc(_Methods_Base):
                 global_queueing=True)
         if not isinstance(tasks,dict):
             raise Exception('queue_get_queueing_tasks() did not return a dict')
-        elif len(tasks) < num:
+        elif len(tasks) < num/2:
             # buffer tasks and try again
             num -= len(tasks)
             yield self.parent.service['queue_buffer_jobs_tasks'](num_tasks=num)

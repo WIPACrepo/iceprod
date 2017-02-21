@@ -680,7 +680,8 @@ class queue(_Methods_Base):
             try:
                 ret = []
                 for f in self._bulk_select(sql, tasks):
-                    ret.extend((yield f))
+                    ret2 = yield f
+                    ret.extend(ret2)
             except:
                 logger.debug('error queueing tasks', exc_info=True)
                 raise
