@@ -162,7 +162,6 @@ def objToJSON(obj):
             raise Exception('Cannot encode %s class to JSON'%name)
 
 def JSONToObj(obj):
-    logging.debug(obj)
     ret = obj
     if isinstance(obj,dict) and '__jsonclass__' in obj:
         logging.info('try unpacking class')

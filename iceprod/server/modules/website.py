@@ -464,7 +464,7 @@ class JSONRPCHandler(MyHandler):
                             status=500, request_id=request_id)
         else:
             if request_id is not None:
-                logger.info('jsonrpc response: %r', ret)
+                logger.debug('jsonrpc response: %r', ret)
                 self.write({'jsonrpc':'2.0', 'result':ret, 'id':request_id})
 
     def json_error(self,error,status=400,request_id=None):
