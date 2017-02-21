@@ -357,7 +357,7 @@ else:
 
         def _db_query(self, cur, sql, bindings=None):
             """Make a db query and do error handling"""
-            logger.info('running query %s',sql)
+            logger.debug('running query %s',sql)
             for i in range(10):
                 try:
                     if bindings is not None:
@@ -559,6 +559,7 @@ if MySQLdb:
 
         def _db_query(self, con, sql, bindings=None):
             """Make a db query and do error handling"""
+            logger.debug('running query %s',sql)
             sql, bindings = self._convert_to_mysql(sql, bindings)
             try:
                 if bindings is not None:
