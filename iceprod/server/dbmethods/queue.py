@@ -614,6 +614,7 @@ class queue(_Methods_Base):
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
                         satisfied = False
+                        logger.info('task %r has unknown depends', task_id)
                     elif depends:
                         for dep in depends.split(','):
                             if dep not in tasks:
@@ -653,8 +654,7 @@ class queue(_Methods_Base):
                         limit -= 1
                         if limit <= 0:
                             break
-                    else:
-                        logger.info('task %r cannot be queued yet', task_id)
+
             logger.info('queue() %d tasks can queue', len(task_prio))
             if not task_prio:
                 raise tornado.gen.Return({})
