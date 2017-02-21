@@ -84,7 +84,7 @@ class schedule(module.module):
         # fake a grid, so we can do grid-like things
         from iceprod.server.grid import grid
         args = [None, self.cfg['queue']['*'], self.cfg, self.modules,
-                self.io_loop, self.executor]
+                self.io_loop, self.executor, self.statsd]
         master_grid = grid(*args)
 
         # make sure the gridftp proxy is set up
