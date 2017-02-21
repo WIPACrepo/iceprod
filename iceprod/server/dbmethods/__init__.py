@@ -93,9 +93,6 @@ class _Methods_Base():
         self.parent = parent
         self.io_loop = parent.io_loop
         self.executor = parent.executor
-        self.bulk_query_limit = 990
-        if self.parent.db.__class__.__name__ == 'MySQL':
-            self.bulk_query_limit = 9990
 
     def _list_to_dict(self,table,input_row):
         """Convert an input that is a list of values from a table
@@ -136,9 +133,9 @@ class _Methods_Base():
             bindings = list(bindings)
         ret = []
         while bindings:
-            bindings2 = bindings[:self.bulk_query_limit]
+            bindings2 = bindings[:990]
             logger.info('bulk select %s %d',sql,len(bindings2))
-            bindings = bindings[self.bulk_query_limit:]
+            bindings = bindings[990:]
             sql2 = sql%(','.join('?' for _ in bindings2))
             ret.append(self.parent.db.query(sql2, bindings2))
         return ret

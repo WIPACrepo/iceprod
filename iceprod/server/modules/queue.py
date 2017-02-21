@@ -258,11 +258,11 @@ class queue(module.module):
             logger.debug('no master url, so skip global queueing')
             return
 
-        resources = yield self.modules['db']['node_get_site_resources'](
-                site_id=self.cfg['site_id'])
+        #resources = yield self.modules['db']['node_get_site_resources'](
+        #        site_id=self.cfg['site_id'])
 
         url = self.cfg['master']['url']
-        params = {'resources':resources,
+        params = {#'resources':resources,
                   'queueing_factor_priority':queueing_factor_priority,
                   'queueing_factor_dataset':queueing_factor_dataset,
                   'queueing_factor_tasks':queueing_factor_tasks,
