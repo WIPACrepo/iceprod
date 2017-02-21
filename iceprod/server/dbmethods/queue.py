@@ -602,7 +602,7 @@ class queue(_Methods_Base):
             task_prio = []
             for dataset in dataset_prios:
                 limit = int(math.ceil(dataset_prios[dataset]*num))
-                logger.debug('queue() dataset %s, limit is %d, available is %d',
+                logger.info('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
                 def sort_key(k):
                     if datasets[dataset][k][0]:
@@ -653,7 +653,9 @@ class queue(_Methods_Base):
                         limit -= 1
                         if limit <= 0:
                             break
-            logger.debug('queue() %d tasks can queue', len(task_prio))
+                    else:
+                        logger.info('task %r cannot be queued yet', task_id)
+            logger.info('queue() %d tasks can queue', len(task_prio))
             if not task_prio:
                 raise tornado.gen.Return({})
             # sort by prio, low to high (so when we pop we get higher first)
