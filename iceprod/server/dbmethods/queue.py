@@ -637,9 +637,11 @@ class queue(_Methods_Base):
                                     satisfied = False
                                     break
                                 elif ret[0][0] != 'complete':
+                                    logger.info('depends not yet satisfied: %r', task_id)
                                     satisfied = False
                                     break
                             elif tasks[dep]['status'] != 'complete':
+                                logger.info('depends not yet satisfied: %r', task_id)
                                 satisfied = False
                                 break
                     if satisfied and reqs and resources:
@@ -647,6 +649,7 @@ class queue(_Methods_Base):
                         try:
                             for r in reqs:
                                 if r not in resources:
+                                    logger.info('reqs not satisfied: %r', task_id)
                                     satisfied = False
                                     break
                         except:
