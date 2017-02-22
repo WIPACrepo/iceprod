@@ -275,6 +275,16 @@
                 <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">])</span>
 
+    <span class="nd">@run_on_executor</span>
+    <span class="k">def</span> <span class="nf">executor_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run function inside executor</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            func (callable): function to wrap</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">func</span><span class="p">()</span>
+
 
 <div class="viewcode-block" id="filtered_input"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.filtered_input">[docs]</a><span class="k">def</span> <span class="nf">filtered_input</span><span class="p">(</span><span class="n">input_data</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Filter input to sql in cases where we can&#39;t use bindings.</span>
