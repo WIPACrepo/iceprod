@@ -155,6 +155,16 @@ class _Methods_Base():
                 'status' in self.parent.db.cfg['master'] and
                 self.parent.db.cfg['master']['status'])
 
+    @run_on_executor
+    def executor_wrapper(self, func):
+        """
+        Run function inside executor
+
+        Args:
+            func (callable): function to wrap
+        """
+        return func()
+
 
 def filtered_input(input_data):
     """Filter input to sql in cases where we can't use bindings.
