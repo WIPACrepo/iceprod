@@ -787,7 +787,8 @@
 
                 <span class="n">task_prio</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_task_prio</span>
 
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue() %d tasks can queue&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">task_prio</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue() %d tasks can queue&#39;</span><span class="p">,</span>
+                        <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task_prio</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task_prio</span><span class="p">))</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">task_prio</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">({})</span>
 
