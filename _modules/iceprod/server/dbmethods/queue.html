@@ -723,9 +723,10 @@
                 <span class="k">raise</span>
 
             <span class="c"># get actual tasks</span>
-            <span class="n">task_prio</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">task_prio</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">dataset_prios</span><span class="p">:</span>
-                <span class="n">limit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">dataset_prios</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span><span class="o">*</span><span class="n">num</span><span class="p">))</span>
+                <span class="n">limit</span> <span class="o">=</span> <span class="n">num</span>
+                <span class="n">dataset_task_prio</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue() dataset %s, limit is %d, available is %d&#39;</span><span class="p">,</span>
                              <span class="n">dataset</span><span class="p">,</span> <span class="n">limit</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="n">dataset</span><span class="p">]))</span>
                 <span class="k">def</span> <span class="nf">sort_key</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
@@ -779,24 +780,30 @@
                                         <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">satisfied</span><span class="p">:</span>
                         <span class="c"># task can be queued now</span>
-                        <span class="n">task_prio</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">dataset_prios</span><span class="p">[</span><span class="n">dataset</span><span class="p">],</span><span class="n">dataset</span><span class="p">,</span><span class="n">task_id</span><span class="p">))</span>
+                        <span class="n">dataset_task_prio</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
                         <span class="n">limit</span> <span class="o">-=</span> <span class="mi">1</span>
                         <span class="k">if</span> <span class="n">limit</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
                             <span class="k">break</span>
 
+                <span class="n">task_prio</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_task_prio</span>
+
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue() %d tasks can queue&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">task_prio</span><span class="p">))</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">task_prio</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">({})</span>
-            <span class="c"># sort by prio, low to high (so when we pop we get higher first)</span>
-            <span class="n">task_prio</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">operator</span><span class="o">.</span><span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="c"># return first num tasks</span>
+
+            <span class="c"># grab tasks from task_prio in order of dataset priority</span>
             <span class="n">dataset_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
             <span class="n">tasks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">t</span> <span class="ow">in</span> <span class="n">task_prio</span><span class="p">:</span>
-                <span class="n">dataset_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-                <span class="n">tasks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">num</span><span class="p">:</span>
-                    <span class="k">break</span>
+            <span class="n">num_to_queue</span> <span class="o">=</span> <span class="n">num</span>
+            <span class="k">while</span> <span class="n">num_to_queue</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">task_prio</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">task_prio</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span><span class="n">dataset_prio</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">task_prio</span><span class="p">[</span><span class="n">dataset</span><span class="p">]:</span>
+                        <span class="k">del</span> <span class="n">task_prio</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span>
+                        <span class="k">continue</span>
+                    <span class="n">dataset_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+                    <span class="n">tasks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">task_prio</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">())</span>
+                    <span class="n">num_to_queue</span> <span class="o">-=</span> <span class="mi">1</span>
+
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, jobs_submitted, debug from dataset &#39;</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id in (%s)&#39;</span>
             <span class="k">try</span><span class="p">:</span>
