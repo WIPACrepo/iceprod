@@ -676,7 +676,7 @@ class queue(_Methods_Base):
             tasks = set()
             num_to_queue = num
             while num_to_queue > 0 and task_prio:
-                for dataset in sorted(task_prio, key=lambda k:dataset_prio[k]):
+                for dataset in sorted(task_prio, key=lambda k:dataset_prio[k], reverse=True):
                     if not task_prio[dataset]:
                         del task_prio[dataset]
                         continue
