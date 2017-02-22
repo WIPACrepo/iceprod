@@ -582,7 +582,7 @@ class queue(_Methods_Base):
                         task_rel_ids[task_rel_id] = json_decode(reqs)
                 sql = 'select task_id, depends, requirements, task_rel_id '
                 sql += 'from task where task_rel_id in (%s)'
-                datasets = {k:OrderedDict() for k in dataset_prios}
+                datasets = {k:{} for k in dataset_prios}
                 for f in self._bulk_select(sql, task_rel_ids):
                     for task_id, depends, reqs, task_rel_id in (yield f):
                         dataset = tasks[task_id]['dataset']
@@ -597,7 +597,7 @@ class queue(_Methods_Base):
                                     reqs = json_decode(reqs)
                                 elif task_rel_ids[task_rel_id]:
                                     reqs = task_rel_ids[task_rel_id]
-                                datasets[dataset][task_id] = [depends,reqs,task_rel_id]
+                                datasets[dataset][task_id] = (depends,reqs,task_rel_id)
             except:
                 logger.info('error getting processing tasks', exc_info=True)
                 raise
@@ -614,7 +614,8 @@ class queue(_Methods_Base):
                     else:
                         return ''
                 for task_id in sorted(datasets[dataset], key=sort_key, reverse=True):
-                    depends, reqs = datasets[dataset][task_id][:2]
+                    depends = datasets[dataset][task_id][0]
+                    reqs = datasets[dataset][task_id][1]
                     logger.info('now examining %r, with %r %r',task_id,depends,reqs)
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
