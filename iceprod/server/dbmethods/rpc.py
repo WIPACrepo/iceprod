@@ -321,7 +321,7 @@ class rpc(_Methods_Base):
                         job = ret[0][0]
                         dagtemp = os.path.join(temp_dir, str(dataset), str(job))
                         logger.info('cleaning site_temp %r', dagtemp)
-                        functions.delete(dagtemp)
+                        yield self._executor_wrapper(partial(functions.delete, dagtemp))
                     except Exception as e:
                         logger.warn('failed to clean site_temp', exc_info=True)
 

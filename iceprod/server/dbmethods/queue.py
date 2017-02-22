@@ -603,9 +603,10 @@ class queue(_Methods_Base):
                 raise
 
             # get actual tasks
-            task_prio = []
+            task_prio = {}
             for dataset in dataset_prios:
-                limit = int(math.ceil(dataset_prios[dataset]*num))
+                limit = num
+                dataset_task_prio = []
                 logger.info('queue() dataset %s, limit is %d, available is %d',
                              dataset, limit, len(datasets[dataset]))
                 def sort_key(k):
@@ -659,24 +660,30 @@ class queue(_Methods_Base):
                                         exc_info=True)
                     if satisfied:
                         # task can be queued now
-                        task_prio.append((dataset_prios[dataset],dataset,task_id))
+                        dataset_task_prio.append(task_id)
                         limit -= 1
                         if limit <= 0:
                             break
 
+                task_prio[dataset] = dataset_task_prio
+
             logger.info('queue() %d tasks can queue', len(task_prio))
             if not task_prio:
                 raise tornado.gen.Return({})
-            # sort by prio, low to high (so when we pop we get higher first)
-            task_prio.sort(key=operator.itemgetter(0), reverse=True)
-            # return first num tasks
+
+            # grab tasks from task_prio in order of dataset priority
             dataset_ids = set()
             tasks = set()
-            for p,d,t in task_prio:
-                dataset_ids.add(d)
-                tasks.add(t)
-                if len(tasks) >= num:
-                    break
+            num_to_queue = num
+            while num_to_queue > 0 and task_prio:
+                for dataset in sorted(task_prio, key=lambda k:dataset_prio[k]):
+                    if not task_prio[dataset]:
+                        del task_prio[dataset]
+                        continue
+                    dataset_ids.add(dataset)
+                    tasks.add(task_prio[dataset].pop())
+                    num_to_queue -= 1
+
             sql = 'select dataset_id, jobs_submitted, debug from dataset '
             sql += ' where dataset_id in (%s)'
             try:
