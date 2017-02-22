@@ -156,7 +156,7 @@ class _Methods_Base():
                 self.parent.db.cfg['master']['status'])
 
     @run_on_executor
-    def executor_wrapper(self, func):
+    def _executor_wrapper(self, func):
         """
         Run function inside executor
 
