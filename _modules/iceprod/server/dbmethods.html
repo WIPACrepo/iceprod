@@ -276,7 +276,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">])</span>
 
     <span class="nd">@run_on_executor</span>
-    <span class="k">def</span> <span class="nf">executor_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_executor_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run function inside executor</span>
 
