@@ -667,7 +667,8 @@ class queue(_Methods_Base):
 
                 task_prio[dataset] = dataset_task_prio
 
-            logger.info('queue() %d tasks can queue', len(task_prio))
+            logger.info('queue() %d tasks can queue',
+                        sum(len(task_prio[t]) for t in task_prio))
             if not task_prio:
                 raise tornado.gen.Return({})
 
