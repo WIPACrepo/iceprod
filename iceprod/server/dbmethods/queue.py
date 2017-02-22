@@ -615,6 +615,7 @@ class queue(_Methods_Base):
                         return ''
                 for task_id in sorted(datasets[dataset], key=sort_key, reverse=True):
                     depends, reqs = datasets[dataset][task_id][:2]
+                    logger.info('now examining %r, with %r %r',task_id,depends,reqs)
                     satisfied = True
                     if depends == 'unknown': # depends not yet computed
                         satisfied = False
