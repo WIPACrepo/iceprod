@@ -189,7 +189,8 @@ class queue(_Methods_Base):
             task = [task]
         elif not isinstance(task,Iterable):
             raise Exception('unknown type for task')
-        
+        logger.info('set task status: %r %r',task,status)
+
         msql = 'update search set task_status = ? '
         msql += ' where task_id = ?'
         msql2 = 'update task set prev_status = status, '

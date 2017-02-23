@@ -350,6 +350,15 @@ class rpc(_Methods_Base):
         if 'domain' in error_info and error_info['domain']:
             self.parent.statsd.incr('task_error.domain.'+error_info['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
+        if 'error_summary' in error_info:
+            err = error_info['error_summary']
+            logger.info('task killed because: %s', err)
+            self.parent.statsd.incr('task_error.killed')
+            if 'SIGTERM' in err:
+                self.parent.statsd.incr('task_error.kill.sigterm')
+            elif 'Resource overuse' in err:
+                resource_name = err.split(':',1)[0].split(' ')[-1]
+                self.parent.statsd.incr('task_error.kill.'+resource_name+'_overuse')
         with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select failures, requirements, task_rel_id from task '
