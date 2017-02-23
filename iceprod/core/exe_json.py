@@ -150,7 +150,7 @@ def task_kill(task_id, resources=None, reason=None):
         if resources:
             error_info['resources'] = resources
         if reason:
-            error_info['error_summary'] = json_compressor.compress(reason)
+            error_info['error_summary'] = reason
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
