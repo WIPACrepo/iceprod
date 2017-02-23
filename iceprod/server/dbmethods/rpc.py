@@ -336,6 +336,7 @@ class rpc(_Methods_Base):
             task_id (str): task id
             error_info (dict): error information
         """
+        logger.info('task_reset: %r',task_id)
         if not error_info:
             error_info = {}
         time_used = 0
