@@ -309,7 +309,8 @@
             <span class="n">task</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="p">]</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="n">Iterable</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown type for task&#39;</span><span class="p">)</span>
-        
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;set task status: %r %r&#39;</span><span class="p">,</span><span class="n">task</span><span class="p">,</span><span class="n">status</span><span class="p">)</span>
+
         <span class="n">msql</span> <span class="o">=</span> <span class="s">&#39;update search set task_status = ? &#39;</span>
         <span class="n">msql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
         <span class="n">msql2</span> <span class="o">=</span> <span class="s">&#39;update task set prev_status = status, &#39;</span>
