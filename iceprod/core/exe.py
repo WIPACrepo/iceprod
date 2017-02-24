@@ -759,7 +759,7 @@ def run_module(cfg, env, module):
         logger.error('module is missing class and src')
         raise Exception('error running module')
 
-    logger.info('cmd=%r',cmd)
+    logger.warn('subprocess cmd=%r',cmd)
     if module['env_clear']:
         iceprod_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         local_path = env['options']['local_temp'] if 'local_temp' in env['options'] else None
