@@ -28,6 +28,11 @@
     font-family: monospace;
     white-space: pre;
 }
+.submit_text
+{
+    line-height: 1.5;
+    margin-right: 10px;
+}
 /*
 .table_form  { display: table;      }
 .table_form	p     { display: table-row;  }

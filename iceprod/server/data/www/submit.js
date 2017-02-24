@@ -530,7 +530,7 @@ var Submission = (function( $ ) {
                 html += '</select>';
                 html += '<button id="submit_action">Submit</button></div>';
             } else {
-                html += '<span>Grids: '+data.dataset.gridspec+'</span>';
+                html += '<span class = "submit_text">Grids: '+data.dataset.gridspec+'</span>';
                 //html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
                 html += data.dataset.description + '</textarea>';
                 if (data.edit) {
