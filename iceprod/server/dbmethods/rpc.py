@@ -727,6 +727,8 @@ class rpc(_Methods_Base):
             except:
                 logger.warn('submit error', exc_info=True)
                 raise
+            raise tornado.gen.Return(dataset_id)
+
 
     @tornado.gen.coroutine
     def rpc_update_dataset_config(self, dataset_id, config):

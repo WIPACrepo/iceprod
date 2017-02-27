@@ -114,6 +114,7 @@ var Submission = (function( $ ) {
             private_methods.clean_json();
             RPCclient('submit_dataset',{passkey:data.passkey,config:data.submit_data,njobs:num_jobs,gridspec:gridspec,description:description},callback=function(return_data){
                 $('#error').html('success');
+                window.location = '/dataset/' + return_data;
             });
         },
         update : function() {
