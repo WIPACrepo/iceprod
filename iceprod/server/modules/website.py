@@ -47,7 +47,7 @@ import tornado.concurrent
 import concurrent.futures
 
 import iceprod
-from iceprod.server import get_pkgdata_filename
+from iceprod.server import GlobalID, get_pkgdata_filename
 from iceprod.server import module
 from iceprod.server.nginx import Nginx, find_nginx
 from iceprod.server.ssl_cert import create_cert, verify_cert
@@ -697,22 +697,27 @@ class Dataset(PublicHandler):
         filter_results = {n:self.get_arguments(n) for n in filter_options}
         if url and url_parts:
             dataset_id = url_parts[0]
+            ret = None
             if dataset_id.isdigit():
                 try:
                     if int(dataset_id) < 10000000:
-                        ret = yield self.db_call('web_get_dataset_by_name',
-                                                 name=dataset_id)
-                        if ret and not isinstance(ret,Exception):
-                            dataset_id = ret
+                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
+                        ret = yield self.db_call('web_get_datasets_details',
+                                                 dataset_id=try_dataset_id)
+                        if isinstance(ret,Exception):
+                            ret = None
+                        elif ret:
+                            dataset_id = try_dataset_id
                 except:
                     pass
-            ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-            if isinstance(ret,Exception):
-                raise ret
+            if not ret:
+                ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
+                if isinstance(ret,Exception):
+                    raise ret
             if ret:
                 dataset = ret.values()[0]
             else:
-                dataset = None
+                raise Exception('dataset not found')
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
             task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
             self.render('dataset_detail.html',dataset_id=dataset_id,
