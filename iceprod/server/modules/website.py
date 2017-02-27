@@ -715,7 +715,7 @@ class Dataset(PublicHandler):
                 ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
-                dataset_num = GlobalID.localID_ret(dataset_id)
+                dataset_num = GlobalID.localID_ret(dataset_id,type='int')
             if ret:
                 dataset = ret.values()[0]
             else:
