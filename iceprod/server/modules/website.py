@@ -707,6 +707,7 @@ class Dataset(PublicHandler):
                         if isinstance(ret,Exception):
                             ret = None
                         elif ret:
+                            dataset_num = dataset_id
                             dataset_id = try_dataset_id
                 except:
                     pass
@@ -714,13 +715,14 @@ class Dataset(PublicHandler):
                 ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
                 if isinstance(ret,Exception):
                     raise ret
+                dataset_num = GlobalID.localID_ret(dataset_id)
             if ret:
                 dataset = ret.values()[0]
             else:
                 raise Exception('dataset not found')
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
             task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
-            self.render('dataset_detail.html',dataset_id=dataset_id,
+            self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
                         dataset=dataset,tasks=tasks,task_info=task_info)
         else:
             datasets = yield self.db_call('web_get_datasets',**filter_results)
