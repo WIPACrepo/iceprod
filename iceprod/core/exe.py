@@ -90,17 +90,15 @@ class Config:
         return value
 
     def parseObject(self,obj,env):
-        """Run :func:`parseValue` on all values of a dict"""
-        ret = copy.copy(obj)
-        for attr in obj.keys():
-            tmp = obj[attr]
-            if isinstance(tmp,dataclasses.String):
-                ret[attr] = self.parseValue(tmp,env)
-            elif isinstance(tmp,dict):
-                ret[attr] = self.parseObject(ret[attr],env)
-            elif isinstance(tmp,(list,tuple)):
-                ret[attr] = [self.parseObject(v,env) for v in ret[attr]]
-        return ret
+        """Recursively parse a dict or list"""
+        if isinstance(obj,dataclasses.String):
+            return self.parseValue(obj,env)
+        elif isinstance(obj,(list,tuple)):
+            return [self.parseObject(v,env) for v in obj]
+        elif isinstance(obj,dict):
+            return {k:self.parseObject(obj[k]) for k in obj}
+        else:
+            return obj
 
 @contextmanager
 def setupenv(cfg, obj, oldenv={}):
