@@ -276,8 +276,8 @@ def gethostname():
 
 def download(url, local, cache=False, options={}):
     """Download a file, checksumming if possible"""
-    local = os.path.expandvars(local)
-    url  = os.path.expandvars(url)
+    local = os.path.expanduser(os.path.expandvars(local))
+    url  = os.path.expanduser(os.path.expandvars(url))
     if not isurl(url):
         if os.path.exists(url):
             url = 'file:'+url
