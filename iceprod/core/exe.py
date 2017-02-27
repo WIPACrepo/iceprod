@@ -96,6 +96,10 @@ class Config:
             tmp = obj[attr]
             if isinstance(tmp,dataclasses.String):
                 ret[attr] = self.parseValue(tmp,env)
+            elif isinstance(tmp,dict):
+                ret[attr] = self.parseObject(ret[attr],env)
+            elif isinstance(tmp,(list,tuple)):
+                ret[attr] = [self.parseObject(v) for v in ret[attr]]
         return ret
 
 @contextmanager
