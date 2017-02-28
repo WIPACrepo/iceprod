@@ -96,7 +96,10 @@ class Config:
         elif isinstance(obj,(list,tuple)):
             return [self.parseObject(v,env) for v in obj]
         elif isinstance(obj,dict):
-            return {k:self.parseObject(obj[k],env) for k in obj}
+            ret = copy.copy(obj) # in case it's a subclass of dict, like dataclasses
+            for k in obj:
+                ret[k] = self.parseObject(obj[k],env)
+            return ret
         else:
             return obj
 
