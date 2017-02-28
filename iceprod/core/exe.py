@@ -96,7 +96,7 @@ class Config:
         elif isinstance(obj,(list,tuple)):
             return [self.parseObject(v,env) for v in obj]
         elif isinstance(obj,dict):
-            return {k:self.parseObject(obj[k]) for k in obj}
+            return {k:self.parseObject(obj[k],env) for k in obj}
         else:
             return obj
 
