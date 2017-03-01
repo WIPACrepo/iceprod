@@ -52,7 +52,10 @@ def downloadtask(gridspec, resources=None):
         platform = functions.platform()
     hostname = functions.gethostname()
     domain = '.'.join(hostname.split('.')[-2:])
-    ifaces = functions.getInterfaces()
+    try:
+        ifaces = functions.getInterfaces()
+    except:
+        ifaces = None
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
     if not resources:
         resources = get_node_resources()
