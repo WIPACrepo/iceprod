@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import time
+from copy import deepcopy
 
 import logging
 logger = logging.getLogger('exe_json')
