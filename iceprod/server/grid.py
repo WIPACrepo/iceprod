@@ -62,6 +62,8 @@ class grid(object):
                 logger.warn('error making submit dir %s',self.submit_dir,
                             exc_info=True)
 
+        self.hostname = 'localhost'
+
         self.tasks_queued = 0
         self.tasks_processing = 0
         self.grid_processing = 0
@@ -79,6 +81,9 @@ class grid(object):
     def queue(self):
         """Queue tasks to the grid"""
         tasks = None
+
+        # update hostname once a submit cycle
+        self.hostname = functions.gethostname()
 
         if ('submit_pilots' in self.cfg['queue'] and
             self.cfg['queue']['submit_pilots']):
@@ -667,7 +672,7 @@ class grid(object):
             self.queue_cfg['monitor_address']):
             web_address = self.queue_cfg['monitor_address']
         else:
-            host = functions.gethostname()
+            host = self.hostname
             if 'system' in self.cfg and 'remote_cacert' in self.cfg['system']:
                 web_address = 'https://'+host
             else:
