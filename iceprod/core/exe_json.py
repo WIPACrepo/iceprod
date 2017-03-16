@@ -55,6 +55,9 @@ def downloadtask(gridspec, resources={}):
         ifaces = functions.getInterfaces()
     except:
         ifaces = None
+    resources = deepcopy(resources)
+    if 'gpu' in resources and isinstance(resources['gpu'],list):
+        resources['gpu'] = len(resources['gpu'])
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
     task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
                             hostname=hostname, domain=domain, ifaces=ifaces,
