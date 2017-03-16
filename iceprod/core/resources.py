@@ -131,7 +131,7 @@ class Resources:
                         v = time.time()/3600+v-0.1
                     logger.info('setting %s to %r', r, v)
                     self.total[r] = v
-        logger.info('total resources: %r', self.total)
+        logger.warn('total resources: %r', self.total)
 
         #: available resources that are unclaimed
         self.available = deepcopy(self.total)

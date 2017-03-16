@@ -91,13 +91,18 @@ class Pilot(object):
         except:
             pass
 
-        # set up resources for pilot
         self.lock = Condition()
+
+        # hint at resources for pilot
+        # don't pass them as raw, because that overrides condor
         if 'resources' in config['options']:
-            self.resources = Resources(raw=config['options']['resources'],
-                                       debug=self.debug)
-        else:
-            self.resources = Resources(debug=self.debug)
+            for k in config['options']['resources']:
+                v = config['options']['resources'][k]
+                name = 'NUM_'+k.upper()
+                if k in ('cpu','gpu'):
+                    name += 'S'
+                os.environ[name] = str(v)
+        self.resources = Resources(debug=self.debug)
 
         self.start_time = time.time()
 
