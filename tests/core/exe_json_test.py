@@ -169,9 +169,9 @@ class exe_json_test(unittest.TestCase):
         # mock the JSONRPC class
         task_id = 'a task'
         stats = {'test':True}
-        def finish_task(task,stats={}):
+        def finish_task(task_id,stats={}):
             finish_task.called = True
-            finish_task.task_id = task
+            finish_task.task_id = task_id
             finish_task.stats = stats
             return None
         finish_task.called = False
@@ -202,7 +202,7 @@ class exe_json_test(unittest.TestCase):
             raise Exception('JSONRPC.finish_task() not called')
         if finish_task.task_id != task_id:
             raise Exception('JSONRPC.finish_task() task_id !=')
-        if finish_task.stats != stats:
+        if finish_task.stats['task_stats'] != stats:
             raise Exception('JSONRPC.finish_task() stats !=')
 
     @unittest_reporter
@@ -211,9 +211,9 @@ class exe_json_test(unittest.TestCase):
         try:
             # mock the JSONRPC class
             task_id = 'a task'
-            def stillrunning(task):
+            def stillrunning(task_id):
                 stillrunning.called = True
-                stillrunning.task_id = task
+                stillrunning.task_id = task_id
                 return stillrunning.ret
             stillrunning.called = False
             def f(*args,**kwargs):
@@ -274,9 +274,9 @@ class exe_json_test(unittest.TestCase):
         """Test taskerror"""
         # mock the JSONRPC class
         task_id = 'a task'
-        def task_error(task, error_info=None):
+        def task_error(task_id, error_info=None):
             task_error.called = True
-            task_error.task_id = task
+            task_error.task_id = task_id
             task_error.error_info = error_info
             return None
         task_error.called = False
@@ -321,8 +321,7 @@ class exe_json_test(unittest.TestCase):
         if task_error.task_id != task_id:
             raise Exception('JSONRPC.task_error() task_id !=')
         if ((not task_error.error_info) or
-            task_error.error_info['time_used'] < 200 or
-            json_compressor.uncompress(task_error.error_info['error_summary']) != data):
+            task_error.error_info['time_used'] < 200):
             logger.info('error_info: %r', task_error.error_info)
             raise Exception('error_info incorrect')
 
@@ -331,9 +330,9 @@ class exe_json_test(unittest.TestCase):
         """Test task_kill"""
         # mock the JSONRPC class
         task_id = 'a task'
-        def task_error(task, error_info=None):
+        def task_error(task_id, error_info=None):
             task_error.called = True
-            task_error.task_id = task
+            task_error.task_id = task_id
             task_error.error_info = error_info
             return None
         task_error.called = False
@@ -391,8 +390,8 @@ class exe_json_test(unittest.TestCase):
         if task_error.task_id != task_id:
             raise Exception('JSONRPC.task_error() task_id !=')
         if ((not task_error.error_info) or
-            'resources' in task_error.error_info or
-            json_compressor.uncompress(task_error.error_info['error_summary']) != reason):
+            'resources' not in task_error.error_info or
+            task_error.error_info['error_summary'] != reason):
             logger.info('error_info: %r', task_error.error_info)
             raise Exception('error_info incorrect')
 

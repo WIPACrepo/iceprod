@@ -12,7 +12,6 @@ logger = logging.getLogger('exe_json')
 from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core import dataclasses
-from iceprod.core.util import get_node_resources
 from iceprod.core.serialization import dict_to_dataclasses
 from iceprod.core.jsonRPCclient import JSONRPC
 from iceprod.core.jsonUtil import json_compressor,json_decode
@@ -44,7 +43,7 @@ def processing(task_id):
         # an error occurred
         raise ret
 
-def downloadtask(gridspec, resources=None):
+def downloadtask(gridspec, resources={}):
     """Download a new task from the server"""
     try:
         platform = os.environ['PLATFORM']
@@ -57,8 +56,6 @@ def downloadtask(gridspec, resources=None):
     except:
         ifaces = None
     python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
-    if not resources:
-        resources = get_node_resources()
     task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
                             hostname=hostname, domain=domain, ifaces=ifaces,
                             python_unicode=python_unicode,

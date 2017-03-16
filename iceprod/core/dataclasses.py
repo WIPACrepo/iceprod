@@ -343,8 +343,8 @@ class Task(_TaskCommon):
                         self['batchsys'].valid())) and
                     isinstance(self['trays'],list) and
                     all(isinstance(t,Tray) and t.valid() for t in self['trays']) and
-                    isinstance(self['requirements'],Requirement and
-                    self['requirements'].valid())
+                    isinstance(self['requirements'],Requirement) and
+                    self['requirements'].valid()
                    )
         except Exception:
             return False

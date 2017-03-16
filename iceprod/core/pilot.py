@@ -17,8 +17,7 @@ import signal
 
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
-from iceprod.core.util import (Task_Resources, Task_Resource_Overusage,
-                               get_task_resources)
+from iceprod.core.resources import Resources
 from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
 
@@ -39,21 +38,23 @@ except ImportError:
     def setproctitle(name):
         pass
 
-Task = namedtuple('Task', ['p','process','children','resources',
-                           'used_resources','tmpdir'])
+Task = namedtuple('Task', ['p','process','tmpdir'])
 
-def process_wrapper(func, title):
+def process_wrapper(func, title, resources):
     """
     Set process title. Set log file, stdout, stderr. Then go on to call func.
 
     Args:
         func (callable): The function that we really want to run
         title (str): The new process title
+        resources (dict): The resources of this process
     """
     try:
         setproctitle(title)
     except:
         pass
+
+    Resources.set_env(resources)
 
     iceprod.core.logger.new_file(constants['stdlog'])
     stdout = partial(to_file,sys.stdout,constants['stdout'])
@@ -92,9 +93,11 @@ class Pilot(object):
 
         # set up resources for pilot
         self.lock = Condition()
-        self.resources = get_task_resources()
         if 'resources' in config['options']:
-            self.resources.update(config['options']['resources'])
+            self.resources = Resources(raw=config['options']['resources'],
+                                       debug=self.debug)
+        else:
+            self.resources = Resources(debug=self.debug)
 
         self.start_time = time.time()
 
@@ -130,59 +133,19 @@ class Pilot(object):
         """Handle a SIGTERM gracefully"""
         logger.info('checking resources after SIGTERM')
         start_time = time.time()
+        if psutil:
+            overages = self.resources.check_claims(force=True)
+        else:
+            overages = {}
         for task_id in list(self.tasks):
-            task = self.tasks[task_id]
-            reason = 'pilot SIGTERM'
-            if psutil:
-                used_resources = {r:0 for r in task.resources}
-                if not task.p.is_alive():
-                    logger.info('%r not alive', task_id)
-                else:
-                    try:
-                        if task.process:
-                            processes = [task.process]+task.process.children(recursive=True)
-                        else:
-                            logger.warn('no processes for task %r',task_id)
-                            continue
-                        for p in processes:
-                            with p.oneshot():
-                                used_resources['cpu'] += p.cpu_percent()/100.0
-                                used_resources['memory'] += p.memory_info().rss/1000000000.0
-                                if not used_resources['time']:
-                                    used_resources['time'] = (start_time - task.process.create_time())/3600.0
-                        used_resources['disk'] = du(task.tmpdir)/1000000000.0
-                        logger.debug('task %r used %r',task_id,used_resources)
-                    except:
-                        logger.warn('error getting resources', exc_info=True)
-
-                    for r in used_resources:
-                        if used_resources[r]-task.resources[r] > 0:
-                            reason = 'Resource overuse for {}: {}'.format(r,used_resources[r])
-                            break
-                    logger.warn('kill %r for %s', task_id, reason)
-                    processes.reverse() # kill children first
-                    for p in processes:
-                        try:
-                            p.terminate()
-                        except:
-                            logger.warn('error terminating process for %r',
-                                        task_id, exc_info=True)
-
-                    def on_terminate(proc):
-                        logger.info("process %r terminated with exit code %r",
-                                    proc, proc.returncode)
-                    try:
-                        gone, alive = psutil.wait_procs(processes, timeout=0.1,
-                                                        callback=on_terminate)
-                        for p in alive:
-                            p.kill()
-                    except:
-                        logger.warn('failed to kill processes for %r', task_id,
-                                    exc_info=True)
+            if task_id in overages:
+                reason = overages[task_id]
+            else:
+                reason = 'pilot SIGTERM'
 
             # clean up task
-            self.clean_task(task)
-            del self.tasks[task_id]
+            used_resources = self.resources.get_peak(task_id)
+            self.clean_task(task_id)
             exe_json.task_kill(task_id, resources=used_resources,
                                reason=reason)
 
@@ -195,93 +158,21 @@ class Pilot(object):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
             sleep_time = 0.5 # check every X seconds
-            child_sleep_time = 20
-            child_start_time = time.time()
-            disk_sleep_time = 180
-            disk_start_time = time.time()
             while True:
                 logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
-                for task_id in list(self.tasks):
-                    task = self.tasks[task_id]
-                    if not task.p.is_alive():
-                        logger.info('pilot monitor - task not alive, so notify')
-                        self.lock.notify()
-                        continue
-
-                    used_resources = task.used_resources
-                    try:
-                        if start_time - child_start_time > child_sleep_time:
-                            child_start_time = start_time
-                            task.children[:] = task.process.children(recursive=True)
-                            logger.debug('have children')
-                        processes = [task.process]+task.children
-                        mem = 0
-                        cpu = 0
-                        t = 0
-                        for p in processes:
-                            with p.oneshot():
-                                mem += p.memory_info().rss
-                                cpu += p.cpu_percent()
-                                if not t:
-                                    t = p.create_time()
-                        used_resources['memory'] = mem/1000000000.0
-                        used_resources['cpu'] = cpu/100.
-                        used_resources['time'] = (start_time - t)/3600.0
-                        if start_time - disk_start_time > disk_sleep_time:
-                            disk_start_time = start_time
-                            used_resources['disk'] = du(task.tmpdir)/1000000000.0
-                        logger.debug('task %r used %r',task_id,used_resources)
-                    except:
-                        logger.warn('error getting resources', exc_info=True)
-                        continue
-
-                    kill = False
-                    reason = ''
-                    for r in used_resources:
-                        overusage = used_resources[r]-task.resources[r]
-                        if overusage > 0:
-                            overusage_percent = used_resources[r]*1.0/task.resources[r]
-                            if (r in Task_Resource_Overusage and
-                                (overusage_percent < Task_Resource_Overusage[r]['ignore'] or
-                                 (overusage < self.resources[r] and
-                                  overusage_percent < Task_Resource_Overusage[r]['allowed']
-                                ))):
-                                logger.info('managable overusage of %s for %r',
-                                            r, task_id)
-                                continue
-                            kill = True
-                            reason = 'Resource overuse for {}: {}'.format(r,used_resources[r])
-                            break
-                    if kill:
-                        logger.warn('kill %r for going over resources %r',
-                                    task_id, used_resources)
-                        processes.reverse() # kill children first
-                        for p in processes:
-                            try:
-                                p.terminate()
-                            except:
-                                logger.warn('error terminating process for %r',
-                                            task_id, exc_info=True)
-
-                        def on_terminate(proc):
-                            logger.info("process %r terminated with exit code %r",
-                                        proc, proc.returncode)
-                        try:
-                            gone, alive = psutil.wait_procs(processes, timeout=0.1,
-                                                            callback=on_terminate)
-                            for p in alive:
-                                p.kill()
-                        except:
-                            logger.warn('failed to kill processes for %r', task_id,
-                                        exc_info=True)
-                        self.clean_task(task)
-                        del self.tasks[task_id]
-                        exe_json.task_kill(task_id, resources=used_resources,
-                                           reason=reason)
-                        # try to queue another task
-                        logger.info('killed, so notify')
-                        self.lock.notify()
+                
+                overages = self.resources.check_claims()
+                for task_id in overages:
+                    used_resources = self.resources.get_peak(task_id)
+                    logger.warn('kill %r for going over resources: %r',
+                                task_id, used_resources)
+                    self.clean_task(task_id)
+                    exe_json.task_kill(task_id, resources=used_resources,
+                                       reason=overages[task_id])
+                    # try to queue another task
+                    logger.info('killed, so notify')
+                    self.lock.notify()
 
                 duration = time.time()-start_time
                 logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
@@ -302,7 +193,7 @@ class Pilot(object):
             while running:
                 try:
                     task_config = exe_json.downloadtask(self.config['options']['gridspec'],
-                                                        resources=self.resources)
+                                                        resources=self.resources.available)
                 except Exception:
                     errors += 1
                     if errors > 5:
@@ -324,9 +215,13 @@ class Pilot(object):
                         errors += 1
                         if errors > 5:
                             running = False
-                        logger.warn('error getting task_id from config')
+                        logger.error('error getting task_id from config')
                         continue
                     try:
+                        if 'resources' not in task_config['options']:
+                            task_config['options']['resources'] = None
+                        task_resources = self.resources.claim(task_id, task_config['options']['resources'])
+                        task_config['options']['resources'] = task_resources
                         self.create_task(task_config)
                     except Exception:
                         errors += 1
@@ -337,14 +232,10 @@ class Pilot(object):
                         exe_json.task_kill(task_id, reason='failed to create task')
                     else:
                         tasks_running += 1
-                        for r in self.resources:
-                            if r in ('cpu','memory','disk', 'gpu'):
-                                self.resources[r] -= task_config['options']['resources'][r]
-                            elif isinstance(self.resources[r], String):
-                                self.resources[r] = self.resources[r].split(',')
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
 
-                if self.resources['cpu'] < 1 or self.resources['memory'] < 1:
+                if (self.resources.available['cpu'] < 1
+                    or self.resources.available['memory'] < 1):
                     logger.info('no resources left, so wait for tasks to finish')
                     break
 
@@ -356,8 +247,7 @@ class Pilot(object):
                 # check if any processes have died
                 for task_id in list(self.tasks):
                     if not self.tasks[task_id].p.is_alive():
-                        self.clean_task(self.tasks[task_id])
-                        del self.tasks[task_id]
+                        self.clean_task(task_id)
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
@@ -386,17 +276,6 @@ class Pilot(object):
             elif k not in config['options']:
                 config['options'][k] = self.config['options'][k]
 
-        # add resources
-        if 'resources' not in config['options']:
-            config['options']['resources'] = {}
-        for r in self.resources:
-            if r in config['options']['resources']:
-                if config['options']['resources'][r] > self.resources[r]:
-                    raise Exception('requested {} of {}, but pilot has {}'.format(
-                        config['options']['resources'][r], r, self.resources[r]))
-            else:
-                config['options']['resources'][r] = self.resources[r]
-
         # run task in tmp dir
         main_dir = os.getcwd()
         try:
@@ -410,63 +289,76 @@ class Pilot(object):
 
             # start the task
             os.chdir(tmpdir)
+            r = config['options']['resources']
             p = Process(target=partial(process_wrapper, partial(self.runner, config),
-                                       'iceprod_task_{}'.format(task_id)))
+                                       'iceprod_task_{}'.format(task_id),
+                                       resources=r))
             p.start()
             if psutil:
                 ps = psutil.Process(p.pid)
                 ps.nice(psutil.Process().nice()+1)
             else:
                 ps = None
-            r = config['options']['resources']
             ur = {k:0 for k in r}
-            self.tasks[task_id] = Task(p=p, process=ps, children=[],
-                                       resources=r, used_resources=ur,
-                                       tmpdir=tmpdir)
+            self.tasks[task_id] = Task(p=p, process=ps, tmpdir=tmpdir)
+            self.resources.register_process(task_id, ps, tmpdir)
         except:
             logger.error('error creating task', exc_info=True)
         finally:
             os.chdir(main_dir)
 
-    def clean_task(self, task):
-        """
-        Clean up a Task
+    def clean_task(self, task_id):
+        """Clean up a Task.
+
+        Delete remaining processes and the task temp dir. Release resources
+        back to the pilot.
 
         Args:
-            task (Task): the Task
+            task_id (str): the task_id
         """
-        logger.info('cleaning task at %s', task.tmpdir)
+        logger.info('cleaning task %s', task_id)
+        if task_id in self.tasks:
+            task = self.tasks[task_id]
+            del self.tasks[task_id]
+
+            # kill process if still running
+            try:
+                if psutil:
+                    # kill children correctly
+                    processes = reversed(task.process.children(recursive=True))
+                    processes.append(task.process)
+                    for p in processes:
+                        try:
+                            p.terminate()
+                        except:
+                            logger.warn('error terminating process',
+                                        exc_info=True)
+
+                    def on_terminate(proc):
+                        logger.info("process %r terminated with exit code %r",
+                                    proc, proc.returncode)
+                    try:
+                        gone, alive = psutil.wait_procs(processes, timeout=0.1,
+                                                        callback=on_terminate)
+                        for p in alive:
+                            p.kill()
+                    except:
+                        logger.warn('failed to kill processes',
+                                    exc_info=True)
+                else:
+                    task.p.terminate()
+            except:
+                logger.warn('error deleting process', exc_info=True)
+
+            # clean tmpdir
+            try:
+                if not self.debug:
+                    shutil.rmtree(task.tmpdir)
+            except:
+                logger.warn('error deleting tmpdir', exc_info=True)
+
+        # return resources to pilot
         try:
-            # return resources to pilot
-            for r in task.resources:
-                if r in ('cpu','memory','disk', 'gpu'):
-                    self.resources[r] += task.resources[r]
-            if not self.debug:
-                # clean tmpdir
-                shutil.rmtree(task.tmpdir)
-        except Exception:
-            logger.warn('error cleaning up task', exc_info=True)
-
-def du(path):
-    """
-    Perform a "du" on a path, getting the disk usage.
-
-    Args:
-        path (str): The path to analyze
-
-    Returns:
-        int: bytes used
-    """
-    logger.info('du of %s', path)
-    total = 0
-    for root,dirs,files in os.walk(path):
-        for d in list(dirs):
-            p = os.path.join(root,d)
-            if os.path.islink(p):
-                dirs.remove(d)
-        for f in files:
-            p = os.path.join(root,f)
-            if not os.path.islink(p):
-                total += os.path.getsize(p)
-    logger.info('du of %s finished: %r', path, total)
-    return total
+            self.resources.release(task_id)
+        except:
+            logger.warn('error releasing resources', exc_info=True)

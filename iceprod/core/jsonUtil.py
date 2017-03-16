@@ -152,7 +152,7 @@ for k in dict(inspect.getmembers(dataclasses,inspect.isclass)):
     JSONConverters[k] = var_converter
 
 def objToJSON(obj):
-    if isinstance(obj,(dict,list,tuple,str,unicode,int,long,float,bool)) or obj is None:
+    if isinstance(obj,(dict,list,tuple,str,int,float,bool)) or obj is None:
         return obj
     else:
         name = obj.__class__.__name__
@@ -180,12 +180,14 @@ def JSONToObj(obj):
 def recursive_unicode(obj):
     """Walks a simple data structure, converting byte strings to unicode.
 
-    Supports lists, tuples, and dictionaries.
+    Supports lists, tuples, sets, and dictionaries.
     """
     if isinstance(obj, dict):
-        return dict((recursive_unicode(k), recursive_unicode(v)) for (k, v) in obj.iteritems())
+        return {recursive_unicode(k): recursive_unicode(obj[k]) for k in obj}
+    elif isinstance(obj, set):
+        return {recursive_unicode(i) for i in obj}
     elif isinstance(obj, list):
-        return list(recursive_unicode(i) for i in obj)
+        return [recursive_unicode(i) for i in obj]
     elif isinstance(obj, tuple):
         return tuple(recursive_unicode(i) for i in obj)
     elif isinstance(obj, bytes):

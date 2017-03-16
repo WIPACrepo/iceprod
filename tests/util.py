@@ -6,7 +6,7 @@ import logging
 import fnmatch
 import unittest
 import inspect
-from collections import defaultdict
+from collections import defaultdict, Iterable
 from functools import wraps, partial
 
 from tornado.concurrent import Future
@@ -106,6 +106,22 @@ def listmodules(package_name=''):
             tmp = os.path.splitext(module)[0]
             ret.append(package_name+'.'+tmp)
     return ret
+
+# standardize unittest
+if sys.version_info[0] == 2:
+    unittest.TestCase.assertCountEqual = unittest.TestCase.assertItemsEqual
+def assertCountEqualRecursive(self, a, b):
+    self.assertEqual(type(a), type(b))
+    if isinstance(a, dict):
+        if set(a).symmetric_difference(b):
+            raise AssertionError('different keys')
+        for k in a:
+            self.assertCountEqualRecursive(a[k], b[k])
+    elif isinstance(a, Iterable):
+        self.assertCountEqual(a, b)
+    else:
+        self.assertEqual(a, b)
+unittest.TestCase.assertCountEqualRecursive = assertCountEqualRecursive
 
 
 class services_mock(dict):

@@ -754,7 +754,7 @@ def run_module(cfg, env, module):
         if module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src]+args)
-        elif src[-3:] == '.sh':
+        elif module_src[-3:] == '.sh':
             # call as shell script
             cmd.extend(['/bin/sh', module_src]+args)
         else:
@@ -772,6 +772,7 @@ def run_module(cfg, env, module):
         for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','http_proxy'):
             if k in os.environ:
                 env[k] = os.environ[k]
+        logger.warn('env = %r', env)
         return subprocess.Popen(cmd, env=env)
     else:
         return subprocess.Popen(cmd)

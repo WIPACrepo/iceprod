@@ -27,6 +27,7 @@ import argparse
 import unittest
 
 sys.path.insert(0,os.getcwd())
+os.environ['PYTHONPATH'] = os.getcwd()+':'+os.environ['PYTHONPATH']
 
 logging.basicConfig()
 logger = logging.getLogger('tests')

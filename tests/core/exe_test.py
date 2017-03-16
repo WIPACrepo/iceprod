@@ -67,28 +67,31 @@ class exe_test(unittest.TestCase):
         self.config = iceprod.core.exe.Config()
         self.config.config['options']['offline'] = True
 
-    def download(self,url,local,cache=False,proxy=False,options={}):
+    def download(self,url,local,cache=False,options={}):
         """mocked iceprod.functions.download"""
         logger.info('mock download: %r %r', url, local)
         self.download_called = True
         self.download_args = {'url':url,'local':local,'cache':cache,
-                              'proxy':proxy,'options':options}
+                              'options':options}
         if callable(self.download_return):
             data = self.download_return()
         elif self.download_return:
             data = self.download_return
         else:
             return False
+        if os.path.isdir(local):
+            local = os.path.join(local,os.path.basename(url))
         # remove tar or compress file extensions
         suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
                     '.lzma2','.lzma','.lz','.xz')
         local2 = reduce(lambda a,b:a.replace(b,''),suffixes,local)
         if isinstance(data,dict):
             # make directory of things
-            os.mkdir(local2)
-            for k in data:
-                with open(os.path.join(local2,k),'w') as f:
-                    f.write(data[k])
+            if not os.path.exists(local2):
+                os.mkdir(local2)
+                for k in data:
+                    with open(os.path.join(local2,k),'w') as f:
+                        f.write(data[k])
         else:
             with open(local2,'w') as f:
                 f.write(data)
@@ -100,16 +103,16 @@ class exe_test(unittest.TestCase):
                 c = local.rsplit('.',1)[-1]
             output = iceprod.core.functions.compress(local2, c)
         if os.path.exists(local):
-            return True
+            return local
         else:
             raise Exception('Something went wrong when mocking download')
 
-    def upload(self,local,remote,proxy=False,options={}):
+    def upload(self,local,remote,options={}):
         """mocked iceprod.functions.upload"""
         logger.info('mock upload: %r %r', local, remote)
         self.upload_called = True
         self.upload_args = {'local':local,'remote':remote,
-                            'proxy':proxy,'options':options}
+                            'options':options}
         suffixes = ('.tar','.tgz','.gz','.tbz2','.tbz','.bz2','.bz',
                     '.lzma2','.lzma','.lz','.xz')
         tmp_dir = tempfile.mkdtemp(dir=self.test_dir)
@@ -580,14 +583,10 @@ inithello(void)
         except:
             logger.error('exe.setupClass() error')
             raise
-        # check for record of file in env
-        if r['name'] not in env['classes']:
-            raise Exception('setupClass did not add the src file' +
-                            ' %s to the env'%r['local'])
-        # check for ability to use class
-        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[0],r['src'])):
-            raise Exception('setupClass did not make class available' +
-                            ' for import')
+
+        self.assertIn(r['name'], env['classes'])
+        self.assertIn(os.path.dirname(env['classes'][r['name']]),
+                      os.environ['PYTHONPATH'].split(':'))
 
     @unittest_reporter(name='setupClass() with env')
     def test_05_setupClass_Env(self):
@@ -610,14 +609,10 @@ inithello(void)
         except:
             logger.error('exe.setupClass() error')
             raise
-        # check for record of file in env
-        if r['name'] not in env['classes']:
-            raise Exception('setupClass did not add the src file' +
-                            ' %s to the env'%r['local'])
-        # check for ability to use class
-        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[0],r['src'])):
-            raise Exception('setupClass did not make class available' +
-                            ' for import')
+
+        self.assertIn(r['name'], env['classes'])
+        self.assertIn(os.path.dirname(env['classes'][r['name']]),
+                      os.environ['PYTHONPATH'].split(':'))
         # test env
         if 'I3_BUILD' not in os.environ or os.environ['I3_BUILD'] == '$CLASS':
             raise Exception('I3_BUILD not in environment')
@@ -638,14 +633,10 @@ inithello(void)
         except:
             logger.error('exe.setupClass() error')
             raise
-        # check for record of file in env
-        if r['name'] not in env['classes']:
-            raise Exception('setupClass did not add the src file' +
-                            ' %s to the env'%r['local'])
-        # check for ability to use class
-        if not os.path.exists(os.path.join(os.environ['PYTHONPATH'].split(':')[1],r['src'])):
-            raise Exception('setupClass did not make class available' +
-                            ' for import')
+
+        self.assertIn(r['name'], env['classes'])
+        self.assertIn(os.path.dirname(env['classes'][r['name']]),
+                      os.environ['PYTHONPATH'].split(':'))
         # test env
         if 'tester' not in os.environ or os.environ['tester'] != '1:2:3':
             raise Exception('tester not in environment')

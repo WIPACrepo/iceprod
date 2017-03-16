@@ -8,6 +8,7 @@ as well as contain any crashes.
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
 import imp
 import inspect
 
@@ -56,7 +57,11 @@ def run(classname, filename=None, args=False, debug=False):
         class_args = get_args()
         logging.info('args: %r', class_args)
     class_args = unicode_to_ascii(class_args)
-    p,cl = classname.rsplit('.',1)
+    parts = classname.rsplit('.',1)
+    if len(parts) == 1:
+        p,cl = os.path.basename(filename),parts[0]
+    else:
+        p,cl = parts
     if filename:
         logging.info('try loading from source')
         mod = imp.load_source(p, filename)

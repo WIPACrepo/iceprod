@@ -131,9 +131,12 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         if 'gridspec' not in config['options']:
             logger.critical('gridspec missing')
             raise Exception('gridspec missing')
+        pilot_kwargs = {}
+        if 'run_timeout' in config['options']:
+            pilot_kwargs['run_timeout'] = config['options']['run_timeout']
         iceprod.core.pilot.Pilot(config, debug=debug,
                                  runner=partial(runner, url=url, debug=debug),
-                                 pilot_id=pilot_id)
+                                 pilot_id=pilot_id, **pilot_kwargs)
 
     logger.warn('finished running normally; exiting...')
 

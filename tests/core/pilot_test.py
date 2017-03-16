@@ -19,6 +19,7 @@ import glob
 import subprocess
 import unittest
 import multiprocessing
+from copy import deepcopy
 
 try:
     from unittest import mock
@@ -27,6 +28,7 @@ except ImportError:
 
 from iceprod.core import to_log,constants
 from iceprod.core import pilot
+from iceprod.core import resources
 import iceprod.core.exe_json
 
 try:
@@ -143,41 +145,6 @@ class pilot_test(unittest.TestCase):
         update.assert_not_called()
         kill.assert_called()
 
-    @unittest_reporter
-    def test_30_du(self):
-        du_dir = os.path.join(self.test_dir,'test')
-        os.mkdir(du_dir)
-        for f in ('a','b','c'):
-            path = os.path.join(du_dir,f)
-            open(path,'w').write('a'*100)
-        self.assertEqual(pilot.du(du_dir), 300)
-
-    @unittest_reporter(name='du() symlink')
-    def test_31_du_symlink(self):
-        du_dir = os.path.join(self.test_dir,'test')
-        os.mkdir(du_dir)
-        for f in ('a','b','c'):
-            path = os.path.join(du_dir,f)
-            open(path,'w').write('a'*100)
-        os.symlink(os.path.join(du_dir,'a'), os.path.join(du_dir,'l'))
-        self.assertEqual(pilot.du(du_dir), 300)
-
-    @unittest_reporter(name='du() dir + symlink')
-    def test_32_du_dir_symlink(self):
-        du_dir = os.path.join(self.test_dir,'test')
-        os.mkdir(du_dir)
-        for f in ('a','b','c'):
-            path = os.path.join(du_dir,f)
-            open(path,'w').write('a'*100)
-        os.symlink(os.path.join(du_dir,'a'), os.path.join(du_dir,'l'))
-        os.mkdir(os.path.join(du_dir,'subdir'))
-        for f in ('a','b','c'):
-            path = os.path.join(du_dir,'subdir',f)
-            open(path,'w').write('a'*100)
-        os.symlink(os.path.join(du_dir,'subdir'), os.path.join(du_dir,'s2'))
-        os.symlink(os.path.join(du_dir,'subdir','a'), os.path.join(du_dir,'subdir','s3'))
-        self.assertEqual(pilot.du(du_dir), 600)
-
 
 class pilot_multi_test(unittest.TestCase):
     def setUp(self):
@@ -204,7 +171,7 @@ class pilot_multi_test(unittest.TestCase):
         download.side_effect = return_once(task_cfg, end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
         runner = lambda x:time.sleep(0.2)
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=10.01)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=1.1, debug=True)
         update.assert_has_calls([mock.call('a',tasks='a'), mock.call('a',tasks='')])
 
     @mock.patch('iceprod.core.exe_json.update_pilot')
@@ -217,7 +184,7 @@ class pilot_multi_test(unittest.TestCase):
         def runner(cfg):
             x = [random.random() for _ in range(1000)]
             time.sleep(random.random()+0.1)
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.1)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.1, debug=True)
         update.assert_any_call('a',tasks='a')
         update.assert_called_with('a',tasks='')
 
@@ -230,7 +197,7 @@ class pilot_multi_test(unittest.TestCase):
         download.side_effect = return_once(task_cfg, task_cfg2)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
         runner = lambda x:time.sleep(random.random())
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01, debug=True)
         self.assertGreaterEqual(update.call_count, 3)
         update.assert_any_call('a',tasks='a')
         for call in update.call_args_list:
@@ -246,16 +213,16 @@ class pilot_multi_test(unittest.TestCase):
     def test_10_pilot_sequential(self, download, update):
         task_cfg = {'options':{'task_id':'a'}}
         task_cfg2 = {'options':{'task_id':'b'}}
-        download.side_effect = return_once(dict(task_cfg), end_value=None)
+        download.side_effect = return_once(deepcopy(task_cfg), end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
         runner = lambda x:time.sleep(0.1)
         start_time = time.time()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01, debug=True)
         duration_single = time.time() - start_time
         
-        download.side_effect = return_once(task_cfg, None, task_cfg2, end_value=None)
+        download.side_effect = return_once(task_cfg, task_cfg2, end_value=None)
         start_time = time.time()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01)
+        p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.01, debug=True)
         duration_double = time.time() - start_time
         logger.info('single: %f - double: %f', duration_single, duration_double)
         self.assertGreater(duration_double, duration_single+0.05)
