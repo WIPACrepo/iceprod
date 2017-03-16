@@ -15,6 +15,7 @@ from datetime import timedelta
 from glob import glob
 import signal
 
+from iceprod.core.functions import gethostname
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
 from iceprod.core.resources import Resources
@@ -40,7 +41,7 @@ except ImportError:
 
 Task = namedtuple('Task', ['p','process','tmpdir'])
 
-def process_wrapper(func, title, resources):
+def process_wrapper(func, title, pilot_id, resources):
     """
     Set process title. Set log file, stdout, stderr. Then go on to call func.
 
@@ -57,6 +58,9 @@ def process_wrapper(func, title, resources):
     Resources.set_env(resources)
 
     iceprod.core.logger.new_file(constants['stdlog'])
+    logger.warn('pilot_id: %s', pilot_id)
+    logger.warn('hostname: %s', gethostname())
+
     stdout = partial(to_file,sys.stdout,constants['stdout'])
     stderr = partial(to_file,sys.stderr,constants['stderr'])
     with stdout(), stderr():
@@ -297,7 +301,7 @@ class Pilot(object):
             r = config['options']['resources']
             p = Process(target=partial(process_wrapper, partial(self.runner, config),
                                        'iceprod_task_{}'.format(task_id),
-                                       resources=r))
+                                       pilot_id=self.pilot_id, resources=r))
             p.start()
             if psutil:
                 ps = psutil.Process(p.pid)

@@ -355,11 +355,14 @@ class Resources:
         mem = 0
         cpu = 0
         for p in processes:
-            with p.oneshot():
-                if lookups['cpu']:
-                    cpu += p.cpu_percent()
-                if lookups['memory']:
-                    mem += p.memory_info().rss
+            try:
+                with p.oneshot():
+                    if lookups['cpu']:
+                        cpu += p.cpu_percent()
+                    if lookups['memory']:
+                        mem += p.memory_info().rss
+            except Exception:
+                pass
         used_resources = {
             'cpu': cpu/100.0 if cpu else None,
             'memory': mem/1000000000.0 if mem else None,
