@@ -141,8 +141,369 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="website-module">
-<span id="website"></span><span id="index-0"></span><h1>Website Module<a class="headerlink" href="#website-module" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-iceprod.server.modules.website">
+<span id="website-module"></span><span id="website"></span><span id="index-0"></span><h1>Website Module<a class="headerlink" href="#module-iceprod.server.modules.website" title="Permalink to this headline">¶</a></h1>
+<p>The website module uses <a class="reference external" href="http://www.tornadoweb.org">Tornado</a>,
+a fast and scalable python web server.</p>
+<p>There are three groups of handlers:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Main website</dt>
+<dd><p class="first last">This is the external website users will see when interacting with IceProd.
+It has been broken down into several sub-handlers for easier maintenance.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>JSONRPC</dt>
+<dd><p class="first last">This is the machine-readable portion of the website. Jobs talk to the
+server through this mechanism. The main website also uses this for
+various actions.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>lib downloads</dt>
+<dd><p class="first last">This is a directory of downloads local to the IceProd instance.
+Usually this will be the necessary software to run the iceprod core.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="class">
+<dt id="iceprod.server.modules.website.website">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">website</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#website"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.website" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main website module.</p>
+<p>Run the website, which is required for anything to work.</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.website.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#website.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.website.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop website</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.website.kill">
+<code class="descname">kill</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#website.kill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.website.kill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kill website</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.website.logrotate">
+<code class="descname">logrotate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#website.logrotate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.website.logrotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotate the Nginx logs.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.website.start">
+<code class="descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#website.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.website.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the website</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.modules.website.catch_error">
+<code class="descclassname">iceprod.server.modules.website.</code><code class="descname">catch_error</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#catch_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.catch_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator to catch and handle errors on handlers</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="iceprod.server.modules.website.authenticated_secure">
+<code class="descclassname">iceprod.server.modules.website.</code><code class="descname">authenticated_secure</code><span class="sig-paren">(</span><em>method</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#authenticated_secure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.authenticated_secure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorate methods with this to require that the user be logged in
+to a secure area.</p>
+<p>If the user is not logged in, they will be redirected to the configured
+<cite>login url &lt;RequestHandler.get_login_url&gt;</cite>.</p>
+<p>If you configure a login url with a query parameter, Tornado will
+assume you know what you&#8217;re doing and use it as-is.  If not, it
+will add a <cite>next</cite> parameter so the login page knows where to send
+you once you&#8217;re logged in.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.MyHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">MyHandler</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#MyHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.MyHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default Handler</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.MyHandler.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>cfg</em>, <em>modules</em>, <em>fileio</em>, <em>debug=False</em>, <em>statsd=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#MyHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.MyHandler.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get some params from the website module</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cfg</strong> &#8211; the global config</li>
+<li><strong>modules</strong> &#8211; modules handle</li>
+<li><strong>fileio</strong> &#8211; AsyncFileIO object</li>
+<li><strong>debug</strong> &#8211; debug flag (optional)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.MyHandler.db_call">
+<code class="descname">db_call</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#MyHandler.db_call"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.MyHandler.db_call" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a database call, returning the result</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.MyHandler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#MyHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.MyHandler.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>GET is invalid and returns an error</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.MyHandler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#MyHandler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.MyHandler.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>POST is invalid and returns an error</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.JSONRPCHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">JSONRPCHandler</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#JSONRPCHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.JSONRPCHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>JSONRPC 2.0 Handler.</p>
+<p>Call DB methods using RPC over json.</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.JSONRPCHandler.check_xsrf_cookie">
+<code class="descname">check_xsrf_cookie</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#JSONRPCHandler.check_xsrf_cookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.JSONRPCHandler.check_xsrf_cookie" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.JSONRPCHandler.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#JSONRPCHandler.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.JSONRPCHandler.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses json in the jsonrpc format, returning results in
+jsonrpc format as well.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.JSONRPCHandler.json_error">
+<code class="descname">json_error</code><span class="sig-paren">(</span><em>error</em>, <em>status=400</em>, <em>request_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#JSONRPCHandler.json_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.JSONRPCHandler.json_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a proper jsonrpc error message</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.LibHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">LibHandler</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#LibHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.LibHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handler for iceprod library downloads.</p>
+<p>These are straight http downloads like normal.</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.LibHandler.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>prefix</em>, <em>directory</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#LibHandler.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.LibHandler.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get some params from the website module</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fileio</strong> &#8211; AsyncFileIO object</li>
+<li><strong>prefix</strong> &#8211; library url prefix</li>
+<li><strong>directory</strong> &#8211; library directory on disk</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.LibHandler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#LibHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.LibHandler.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look up a library</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.PublicHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">PublicHandler</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#PublicHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.PublicHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handler for public facing website</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.PublicHandler.get_template_namespace">
+<code class="descname">get_template_namespace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#PublicHandler.get_template_namespace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.PublicHandler.get_template_namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.PublicHandler.get_current_user">
+<code class="descname">get_current_user</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#PublicHandler.get_current_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.PublicHandler.get_current_user" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.PublicHandler.write_error">
+<code class="descname">write_error</code><span class="sig-paren">(</span><em>status_code=500</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#PublicHandler.write_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.PublicHandler.write_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write out custom error page.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Default">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Default</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle / urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Default.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Default.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Default.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Submit">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Submit</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Submit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Submit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle /submit urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Submit.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Submit.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Submit.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Config">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Config</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle /submit urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Config.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Config.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Config.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Site">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Site</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Site" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle /site urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Site.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Site.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Site.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Dataset">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Dataset</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle /dataset urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Dataset.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Dataset.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Dataset.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Task">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Task</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle /task urls</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Task.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Task.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Task.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Documentation">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Documentation</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Documentation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Documentation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="iceprod.server.modules.website.Documentation.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Documentation.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Documentation.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Log">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Log</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Log" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="iceprod.server.modules.website.Log.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Log.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Log.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.GroupsHandler">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">GroupsHandler</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#GroupsHandler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.GroupsHandler" title="Permalink to this definition">¶</a></dt>
+<dd><p>View/modify groups</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.GroupsHandler.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#GroupsHandler.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.GroupsHandler.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.UserAccount">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">UserAccount</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#UserAccount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.UserAccount" title="Permalink to this definition">¶</a></dt>
+<dd><p>View/modify a user account</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.UserAccount.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#UserAccount.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.UserAccount.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.UserAccount.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#UserAccount.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.UserAccount.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Help">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Help</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Help" title="Permalink to this definition">¶</a></dt>
+<dd><p>Help Page</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Help.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Help.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Help.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Other">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Other</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Other"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Other" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle any other urls - this is basically all 404</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Other.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Other.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Other.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Login">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Login</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Login"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Login" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle the login url</p>
+<dl class="method">
+<dt id="iceprod.server.modules.website.Login.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Login.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Login.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.modules.website.Login.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Login.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Login.post" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="iceprod.server.modules.website.Logout">
+<em class="property">class </em><code class="descclassname">iceprod.server.modules.website.</code><code class="descname">Logout</code><span class="sig-paren">(</span><em>application</em>, <em>request</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Logout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Logout" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="iceprod.server.modules.website.Logout.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/iceprod/server/modules/website.html#Logout.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.modules.website.Logout.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
 
 

@@ -1,0 +1,960 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>iceprod.core.exe &mdash; IceProd master documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="IceProd master documentation" href="../../../index.html"/>
+        <link rel="up" title="iceprod.core" href="../core.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IceProd
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                master
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IceProd</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div style="float:right">
+            <a href="https://github.com/WIPACrepo/iceprod" class="fa fa-github"> Edit on GitHub</a>
+          </div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for iceprod.core.exe</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The core execution functions for running on a node.</span>
+<span class="sd">These are all called from :any:`iceprod.core.i3exec`.</span>
+
+<span class="sd">The fundamental design of the core is to run a task composed of trays and</span>
+<span class="sd">modules.  The general heirarchy looks like::</span>
+
+<span class="sd">    task</span>
+<span class="sd">    |</span>
+<span class="sd">    |- tray1</span>
+<span class="sd">       |</span>
+<span class="sd">       |- module1</span>
+<span class="sd">       |</span>
+<span class="sd">       |- module2</span>
+<span class="sd">    |</span>
+<span class="sd">    |- tray2</span>
+<span class="sd">       |</span>
+<span class="sd">       |- module3</span>
+<span class="sd">       |</span>
+<span class="sd">       |- module4</span>
+
+<span class="sd">Parameters can be defined at every level, and each level is treated as a</span>
+<span class="sd">scope (such that inner scopes inherit from outer scopes).  This is</span>
+<span class="sd">accomplished via an internal evironment for each scope.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">imp</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">filecmp</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Container</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;exe&#39;</span><span class="p">)</span>
+
+<span class="c"># make sure we have subprocess with timeout support</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&#39;posix&#39;</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess32</span> <span class="k">as</span> <span class="nn">subprocess</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">to_log</span><span class="p">,</span><span class="n">constants</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">util</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">util</span>
+<span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.exe_json</span> <span class="k">import</span> <span class="n">stillrunning</span>
+<span class="kn">import</span> <span class="nn">iceprod.core.parser</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
+
+
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.Config">[docs]</a><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Contain the configuration and related methods&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span> <span class="k">if</span> <span class="n">config</span> <span class="k">else</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Job</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span> <span class="k">if</span> <span class="n">parser</span> <span class="k">else</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">ExpParser</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Config.parseValue"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.Config.parseValue">[docs]</a>    <span class="k">def</span> <span class="nf">parseValue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a value from the available env and global config.</span>
+
+<span class="sd">        Uses the :class:`Meta Parser &lt;iceprod.core.parser&gt;` on any string value.</span>
+<span class="sd">        Pass-through for any other object.</span>
+
+<span class="sd">        :param value: The value to parse</span>
+<span class="sd">        :param env: The environment to use, optional</span>
+<span class="sd">        :returns: The parsed value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;parse before:%r| env=%r&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">env</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span><span class="n">env</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;parse after:%r&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="Config.parseObject"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.Config.parseObject">[docs]</a>    <span class="k">def</span> <span class="nf">parseObject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obj</span><span class="p">,</span><span class="n">env</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursively parse a dict or list&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">env</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">env</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="c"># in case it&#39;s a subclass of dict, like dataclasses</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="n">ret</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span></div></div>
+
+<span class="nd">@contextmanager</span>
+<div class="viewcode-block" id="setupenv"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.setupenv">[docs]</a><span class="k">def</span> <span class="nf">setupenv</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">oldenv</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The internal environment (env) is a dictionary composed of several objects:</span>
+
+<span class="sd">    parameters</span>
+<span class="sd">        Parameters are defined directly as an object, or as a string pointing</span>
+<span class="sd">        to another object.  They can use the IceProd meta-language to be</span>
+<span class="sd">        defined in relation to other parameters specified in inherited</span>
+<span class="sd">        scopes, or as eval or sprinf functions.</span>
+
+<span class="sd">    resources</span>
+<span class="sd">        \ </span>
+
+<span class="sd">    data</span>
+<span class="sd">        Resources and data are similar in that they handle extra files that</span>
+<span class="sd">        modules may create or use.  The difference is that resources are only</span>
+<span class="sd">        for reading, such as pre-built lookup tables, while data can be input</span>
+<span class="sd">        and/or output. Compression can be automatically handled by IceProd.</span>
+<span class="sd">        Both resources and data are defined in the environment as strings to</span>
+<span class="sd">        their file location.</span>
+<span class="sd">        </span>
+<span class="sd">    classes</span>
+<span class="sd">        This is where external software gets added.  The software can be an</span>
+<span class="sd">        already downloaded resource or just a url to download.  All python</span>
+<span class="sd">        files get added to the python path and binary libraries get symlinked</span>
+<span class="sd">        into a directory on the LD_LIBRARY_PATH.  Note that if there is more</span>
+<span class="sd">        than one copy of the same shared library file, only the most recent</span>
+<span class="sd">        one is in scope.  Classes are defined in the environment as strings</span>
+<span class="sd">        to their file location.</span>
+
+<span class="sd">    deletions</span>
+<span class="sd">        These are files that should be deleted when the scope ends.</span>
+
+<span class="sd">    uploads</span>
+<span class="sd">        These are files that should be uploaded when the scope ends.</span>
+<span class="sd">        Mostly Data objects that are used as output.</span>
+<span class="sd">    </span>
+<span class="sd">    shell environment</span>
+<span class="sd">        An environment to reset to when exiting the context manager.</span>
+
+<span class="sd">    To keep the scope correct a new dictionary is created for every level, then</span>
+<span class="sd">    the inheritable objects are shallow copied (to 1 level) into the new env.</span>
+<span class="sd">    The deletions are not inheritable (start empty for each scope), and the shell</span>
+<span class="sd">    environment is set at whatever the previous scope currently has.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cfg (:py:class:`Config`): Config object</span>
+<span class="sd">        obj (dict): A dict-like object from :py:mod:`iceprod.core.dataclasses`</span>
+<span class="sd">                    such as :py:class:`iceprod.core.dataclasses.Steering`.</span>
+<span class="sd">        oldenv (dict): (optional) env that we are running inside</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># start with empty env</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c"># attempt to do depth=2 copying</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">oldenv</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">oldenv</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;object to load environment from is empty&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">Steering</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;object is not valid Steering&#39;</span><span class="p">)</span>
+
+        <span class="c"># make sure things for this env are clear (don&#39;t inherit)</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;deletions&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;uploads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c"># get clear environment variables</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;pythonpath&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c"># copy parameters</span>
+        <span class="k">if</span> <span class="s">&#39;parameters&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;parameters&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="c"># copy new parameters to env first so local referrals work</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">])</span>
+            <span class="c"># parse parameter values and update if necessary</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]:</span>
+                <span class="n">newval</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">p</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">newval</span> <span class="o">!=</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">p</span><span class="p">]:</span>
+                    <span class="n">env</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">newval</span>
+
+        <span class="k">if</span> <span class="s">&#39;resources&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;resources&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="c"># download resources</span>
+            <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]:</span>
+                <span class="n">downloadResource</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span><span class="n">env</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s">&#39;data&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;data&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="c"># download data</span>
+            <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]:</span>
+                <span class="n">d</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">env</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s">&#39;movement&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;input&#39;</span><span class="p">,</span><span class="s">&#39;both&#39;</span><span class="p">):</span>
+                    <span class="n">downloadData</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">d</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s">&#39;movement&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;output&#39;</span><span class="p">,</span><span class="s">&#39;both&#39;</span><span class="p">):</span>
+                    <span class="n">env</span><span class="p">[</span><span class="s">&#39;uploads&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;classes&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;classes&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="c"># set up classes</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]:</span>
+                <span class="n">setupClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">env</span><span class="p">))</span>
+
+    <span class="k">except</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Noncritical error when setting up environment&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;Serious error when setting up environment&#39;</span><span class="p">,</span><span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+        <span class="k">raise</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">env</span>
+        
+        <span class="c"># upload data</span>
+        <span class="k">if</span> <span class="s">&#39;uploads&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;uploads&#39;</span><span class="p">]:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">uploadData</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;failed when uploading file %s - %s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">)))</span>
+                    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]:</span>
+                        <span class="k">raise</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c"># delete any files</span>
+        <span class="k">if</span> <span class="s">&#39;deletions&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;deletions&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;deletions&#39;</span><span class="p">]):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">OSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;failed to delete file %s - %s&#39;</span><span class="p">,(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]:</span>
+                        <span class="k">raise</span>
+
+        <span class="c"># reset environment</span>
+        <span class="k">if</span> <span class="s">&#39;environment&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">e</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]:</span>
+                    <span class="k">del</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">][</span><span class="n">e</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="downloadResource"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.downloadResource">[docs]</a><span class="k">def</span> <span class="nf">downloadResource</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">remote_base</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                     <span class="n">local_base</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Download a resource and put location in the env&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">remote_base</span><span class="p">:</span>
+        <span class="n">remote_base</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;resource_url&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;need to specify either local or remote&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_base</span><span class="p">,</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">functions</span><span class="o">.</span><span class="n">isurl</span><span class="p">(</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_base</span><span class="p">,</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">local_base</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;resource_directory&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+            <span class="n">local_base</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;resource_directory&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">local_base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]:</span>
+        <span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">])</span>
+    <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_base</span><span class="p">,</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="s">&#39;files&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">local</span><span class="p">)):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">local</span><span class="p">))</span>
+
+    <span class="c"># get resource</span>
+    <span class="k">if</span> <span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;resource %s already exists in env, so skip download and compression&#39;</span><span class="p">,</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+        <span class="k">return</span>
+    <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;resource %s already exists as file, so skip download&#39;</span><span class="p">,</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># download resource</span>
+        <span class="n">download_options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+            <span class="n">download_options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+            <span class="n">download_options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
+            <span class="n">download_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">])</span>
+        <span class="n">functions</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">download_options</span><span class="p">)</span>
+
+    <span class="c"># check compression</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;compression&#39;</span><span class="p">]</span> <span class="ow">and</span>
+        <span class="p">(</span><span class="n">functions</span><span class="o">.</span><span class="n">iscompressed</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">or</span> <span class="n">functions</span><span class="o">.</span><span class="n">istarred</span><span class="p">(</span><span class="n">url</span><span class="p">))):</span>
+        <span class="c"># uncompress file</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">uncompress</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+        <span class="c"># add uncompressed file(s) to env</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">][</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">files</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># add file to env</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">][</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">local</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;resource %s added to env&#39;</span><span class="p">,</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="downloadData"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.downloadData">[docs]</a><span class="k">def</span> <span class="nf">downloadData</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Download data and put location in the env&quot;&quot;&quot;</span>
+    <span class="n">remote_base</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">storage_location</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;data_directory&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="n">local_base</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;data_directory&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">local_base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="n">downloadResource</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">remote_base</span><span class="p">,</span><span class="n">local_base</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="uploadData"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.uploadData">[docs]</a><span class="k">def</span> <span class="nf">uploadData</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Upload data&quot;&quot;&quot;</span>
+    <span class="n">remote_base</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">storage_location</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;data_directory&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="n">local_base</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;data_directory&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">local_base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_base</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">functions</span><span class="o">.</span><span class="n">isurl</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_base</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;remote&#39;</span><span class="p">]</span>
+    <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_base</span><span class="p">,</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;local&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;file %s does not exist&#39;</span><span class="o">%</span><span class="n">local</span><span class="p">)</span>
+
+    <span class="c"># check compression</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;compression&#39;</span><span class="p">]:</span>
+        <span class="c"># get compression type, if specified</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">functions</span><span class="o">.</span><span class="n">iscompressed</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">or</span> <span class="n">functions</span><span class="o">.</span><span class="n">istarred</span><span class="p">(</span><span class="n">url</span><span class="p">))</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="p">(</span><span class="n">functions</span><span class="o">.</span><span class="n">iscompressed</span><span class="p">(</span><span class="n">local</span><span class="p">)</span> <span class="ow">or</span> <span class="n">functions</span><span class="o">.</span><span class="n">istarred</span><span class="p">(</span><span class="n">local</span><span class="p">))):</span>
+            <span class="c"># url has compression on it, so use that</span>
+            <span class="k">if</span> <span class="s">&#39;.tar.&#39;</span> <span class="ow">in</span> <span class="n">url</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">local</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">c</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;cannot compress file %s to %s&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+    <span class="c"># upload file</span>
+    <span class="n">upload_options</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="n">upload_options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+        <span class="n">upload_options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
+        <span class="n">upload_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">])</span>
+    <span class="n">functions</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">upload_options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="setupClass"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.setupClass">[docs]</a><span class="k">def</span> <span class="nf">setupClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">class_obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set up a class for use in modules, and put it in the env&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="s">&#39;classes&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">class_obj</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Class is not defined&#39;</span><span class="p">)</span>
+    <span class="n">loaded</span> <span class="o">=</span> <span class="k">False</span>
+    <span class="k">if</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]:</span>
+        <span class="c"># class already loaded, so leave it alone</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;class %s already loaded&#39;</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">]:</span>
+        <span class="c"># class is downloaded as a resource</span>
+        <span class="k">if</span> <span class="s">&#39;files&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">or</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;resource %s for class %s does not exist&#39;</span><span class="p">,</span>
+                         <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">],</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">local</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;files&#39;</span><span class="p">][</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;resource_name&#39;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+                <span class="n">local</span> <span class="o">=</span> <span class="n">local</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]))):</span>
+                <span class="c"># treat src as a path inside the resource</span>
+                <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+            <span class="n">loaded</span> <span class="o">=</span> <span class="k">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># get url of class</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="k">True</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">url</span> <span class="ow">and</span> <span class="n">functions</span><span class="o">.</span><span class="n">isurl</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">10</span> <span class="c"># skip repeat download attempts</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c"># first, look in resources</span>
+                    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;resource_url&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;resource_url&#39;</span><span class="p">],</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;http://prod-exe.icecube.wisc.edu/&#39;</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="c"># then, look in regular svn</span>
+                    <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;svn_repository&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;svn_repository&#39;</span><span class="p">],</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;http://code.icecube.wisc.edu/svn/projects/&#39;</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;Cannot find class %s because of bad src url&#39;</span><span class="o">%</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;local_temp&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                <span class="n">local_temp</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;local_temp&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">local_temp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;classes&#39;</span><span class="p">)</span>
+                <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;local_temp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_temp</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local_temp</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">local_temp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">local_temp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">local_temp</span>
+
+            <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_temp</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">))</span>
+
+            <span class="n">download_options</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                <span class="n">download_options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
+                <span class="n">download_options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
+                <span class="n">download_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">])</span>
+
+            <span class="c"># download class</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;attempting to download class %s to %s&#39;</span><span class="p">,</span><span class="n">url</span><span class="p">,</span><span class="n">local_temp</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">download_local</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local_temp</span><span class="p">,</span>
+                                                    <span class="n">options</span><span class="o">=</span><span class="n">download_options</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;failed to download&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span> <span class="c"># retry with different url</span>
+                <span class="k">raise</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">download_local</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">functions</span><span class="o">.</span><span class="n">iscompressed</span><span class="p">(</span><span class="n">download_local</span><span class="p">)</span> <span class="ow">or</span> <span class="n">functions</span><span class="o">.</span><span class="n">istarred</span><span class="p">(</span><span class="n">download_local</span><span class="p">):</span>
+                <span class="n">files</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">uncompress</span><span class="p">(</span><span class="n">download_local</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="n">local_temp</span><span class="p">)</span>
+                <span class="c"># check if we extracted a tarfile</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+                    <span class="n">local</span> <span class="o">=</span> <span class="n">files</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                    <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">commonprefix</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">dirname</span><span class="p">:</span>
+                        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local_temp</span><span class="p">,</span> <span class="n">dirname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dirname</span> <span class="o">=</span> <span class="n">local_temp</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;looking up tarball at %r&#39;</span><span class="p">,</span> <span class="n">dirname</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;rename %r to %r&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">dirname</span><span class="p">)</span>
+                        <span class="n">local</span> <span class="o">=</span> <span class="n">dirname</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;files is strange datatype: %r&#39;</span><span class="p">,</span>
+                                <span class="nb">type</span><span class="p">(</span><span class="n">files</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">local</span> <span class="o">!=</span> <span class="n">download_local</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;rename %r to %r&#39;</span><span class="p">,</span> <span class="n">download_local</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">download_local</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="n">loaded</span> <span class="o">=</span> <span class="k">True</span>
+            <span class="k">break</span>
+
+    <span class="k">if</span> <span class="n">loaded</span><span class="p">:</span>
+        <span class="c"># add to env</span>
+        <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">][</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">local</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;class %s loaded at %r&#39;</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">local</span><span class="p">)</span>
+
+        <span class="c"># add binary libraries to the LD_LIBRARY_PATH</span>
+        <span class="k">def</span> <span class="nf">ldpath</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="n">f</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">islib</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">f</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;.so&#39;</span> <span class="ow">or</span> <span class="s">&#39;.so.&#39;</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">or</span> <span class="n">f</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;.a&#39;</span> <span class="ow">or</span> <span class="s">&#39;.a.&#39;</span> <span class="ow">in</span> <span class="n">f</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">f</span> <span class="ow">and</span> <span class="n">islib</span><span class="p">(</span><span class="n">f</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">islib</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">root</span><span class="p">)):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;adding to LD_LIBRARY_PATH: %s&#39;</span><span class="p">,</span><span class="n">root</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s">&#39;LD_LIBRARY_PATH&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">root</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;LD_LIBRARY_PATH&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="c"># already present</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;LD_LIBRARY_PATH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;LD_LIBRARY_PATH&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;LD_LIBRARY_PATH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no libs in %s&#39;</span><span class="p">,</span><span class="n">root</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">addToPythonPath</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="s">&#39;*.py&#39;</span><span class="p">)):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;adding to PYTHONPATH: %s&#39;</span><span class="p">,</span><span class="n">root</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s">&#39;PYTHONPATH&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">root</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="c"># already present</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">root</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no python files: %s&#39;</span><span class="p">,</span><span class="n">root</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+            <span class="c"># build search list</span>
+            <span class="n">search_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">local</span><span class="p">]</span>
+            <span class="n">search_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="s">&#39;lib*&#39;</span><span class="p">)))</span>
+            <span class="n">search_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="s">&#39;lib*/python*/*-packages&#39;</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;libs&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+                <span class="n">search_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">local</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;libs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">search_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="n">addToPythonPath</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+                <span class="n">ldpath</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+            <span class="n">root</span><span class="p">,</span> <span class="n">f</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.py&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+                    <span class="n">addToPythonPath</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># check for binary library</span>
+                <span class="n">ldpath</span><span class="p">(</span><span class="n">root</span><span class="p">,</span><span class="n">f</span><span class="p">)</span>
+        <span class="c"># modify environment variables</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;env_vars = %s&#39;</span><span class="p">,</span><span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;env_vars&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;env_vars&#39;</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">class_obj</span><span class="p">[</span><span class="s">&#39;env_vars&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;;&#39;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;=&#39;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">,</span><span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;bad env variable: %s&#39;</span><span class="p">,</span><span class="n">e</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;$CLASS&#39;</span><span class="p">,</span><span class="n">local</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;setting envvar: %s = %s&#39;</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span></div>
+
+<span class="c">### Run Functions ###</span>
+
+<div class="viewcode-block" id="runtask"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.runtask">[docs]</a><span class="k">def</span> <span class="nf">runtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run the specified task&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No task provided&#39;</span><span class="p">)</span>
+
+    <span class="c"># set up task_temp</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;task_temp&#39;</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="s">&#39;task_temp&#39;</span><span class="p">)</span>
+    <span class="n">globalenv</span><span class="p">[</span><span class="s">&#39;task_temp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;task_temp&#39;</span><span class="p">)</span>
+
+    <span class="c"># set up stats</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># set up local env</span>
+        <span class="k">with</span> <span class="n">setupenv</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">)</span> <span class="k">as</span> <span class="n">env</span><span class="p">:</span>
+            <span class="c"># run trays</span>
+            <span class="k">for</span> <span class="n">tray</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;trays&#39;</span><span class="p">]:</span>
+                <span class="n">tmpstat</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">runtray</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">tray</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="n">tmpstat</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmpstat</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">stats</span><span class="p">[</span><span class="n">tray</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmpstat</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmpstat</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">stats</span><span class="p">[</span><span class="n">tray</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmpstat</span><span class="p">[</span><span class="n">tmpstat</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c"># destroy task temp</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">functions</span><span class="o">.</span><span class="n">removedirs</span><span class="p">(</span><span class="s">&#39;task_temp&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error removing task_temp directory: %r&#39;</span><span class="p">,</span>
+                           <span class="n">e</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">stats</span></div>
+
+
+<div class="viewcode-block" id="runtray"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.runtray">[docs]</a><span class="k">def</span> <span class="nf">runtray</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">,</span><span class="n">tray</span><span class="p">,</span><span class="n">stats</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;Run the specified tray&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tray</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No tray provided&#39;</span><span class="p">)</span>
+
+    <span class="c"># set up tray_temp</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;tray_temp&#39;</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="s">&#39;tray_temp&#39;</span><span class="p">)</span>
+    <span class="n">globalenv</span><span class="p">[</span><span class="s">&#39;tray_temp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="s">&#39;tray_temp&#39;</span><span class="p">)</span>
+
+    <span class="c"># run iterations</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tmpenv</span> <span class="o">=</span> <span class="n">globalenv</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">tray</span><span class="p">[</span><span class="s">&#39;iterations&#39;</span><span class="p">]):</span>
+            <span class="c"># set up local env</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;iter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="n">tmpstat</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">with</span> <span class="n">setupenv</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">tray</span><span class="p">,</span> <span class="n">tmpenv</span><span class="p">)</span> <span class="k">as</span> <span class="n">env</span><span class="p">:</span>
+                <span class="c"># run modules</span>
+                <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">tray</span><span class="p">[</span><span class="s">&#39;modules&#39;</span><span class="p">]:</span>
+                    <span class="n">runmodule</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="n">tmpstat</span><span class="p">)</span>
+            <span class="n">stats</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmpstat</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c"># destroy tray temp</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">functions</span><span class="o">.</span><span class="n">removedirs</span><span class="p">(</span><span class="s">&#39;tray_temp&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error removing tray_temp directory: %s&#39;</span><span class="p">,</span>
+                           <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="runmodule"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.runmodule">[docs]</a><span class="k">def</span> <span class="nf">runmodule</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;Run the specified module&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;No module provided&#39;</span><span class="p">)</span>
+
+    <span class="c"># set up local env</span>
+    <span class="k">with</span> <span class="n">setupenv</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">module</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">)</span> <span class="k">as</span> <span class="n">env</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">]:</span>
+            <span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]:</span>
+            <span class="n">module</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]:</span>
+            <span class="n">module</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]:</span>
+            <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
+
+        <span class="c"># make subprocess to run the module</span>
+        <span class="n">process</span> <span class="o">=</span> <span class="n">run_module</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">interval</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;stillrunninginterval&#39;</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">interval</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">interval</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="n">interval</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="k">while</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="s">&#39;offline&#39;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;offline&#39;</span><span class="p">]):</span>
+                <span class="c"># check for DB kill</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">stillrunning</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                        <span class="n">process</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+                        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;DB kill&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">returncode</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;module failed&#39;</span><span class="p">)</span>
+
+        <span class="c"># get stats, if available</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]):</span>
+            <span class="n">new_stats</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]:</span>
+                <span class="n">stats</span><span class="p">[</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">new_stats</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stats</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_stats</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="run_module"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.run_module">[docs]</a><span class="k">def</span> <span class="nf">run_module</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Modules are run in a forked process to prevent segfaults from killing IceProd.</span>
+<span class="sd">    Their stdout and stderr is dumped into the log file with prefixes on each</span>
+<span class="sd">    line to designate its source.  Any error or the return value is returned to</span>
+<span class="sd">    the main process via a Queue.</span>
+
+<span class="sd">    If a module defines a src, that is assumed to be a Class which should be</span>
+<span class="sd">    added to the env.  The running_class is where the exact script or binary</span>
+<span class="sd">    is chosen.  It can match several things:</span>
+
+<span class="sd">    * A fully defined python module.class import (also takes module.function)</span>
+<span class="sd">    * A python class defined in the src provided</span>
+<span class="sd">    * A regular python script</span>
+<span class="sd">    * An executable of some type (this is run in a subprocess with shell</span>
+<span class="sd">      execution disabled)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">module_src</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]:</span>
+        <span class="c"># get script to run</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Class</span><span class="p">()</span>
+        <span class="n">c</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span>
+        <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s">&#39;?&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">][:</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;?&#39;</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="s">&#39;#&#39;</span> <span class="ow">in</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]:</span>
+            <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">][:</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s">&#39;#&#39;</span><span class="p">)]</span>
+        <span class="n">setupClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Failed to install class %s&#39;</span><span class="o">%</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+        <span class="n">module_src</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">][</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span>
+
+    <span class="c"># set up env_shell</span>
+    <span class="n">env_shell</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]:</span>
+        <span class="n">env_shell</span> <span class="o">=</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;searching for env_shell at %r&#39;</span><span class="p">,</span> <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">env_class</span> <span class="o">=</span> <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;searching for env_shell as %r class&#39;</span><span class="p">,</span> <span class="n">env_class</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">env_class</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]:</span>
+                <span class="n">env_tmp</span> <span class="o">=</span> <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)</span>
+                <span class="n">env_tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">][</span><span class="n">env_class</span><span class="p">]</span>
+                <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">env_tmp</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;attempting to download env_shell&#39;</span><span class="p">)</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">Class</span><span class="p">()</span>
+                <span class="n">c</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;src&#39;</span><span class="p">])</span>
+                <span class="n">setupClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">c</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Failed to install class %s&#39;</span><span class="o">%</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">])</span>
+                <span class="n">env_shell</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;classes&#39;</span><span class="p">][</span><span class="n">c</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]]</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;running module </span><span class="se">\&#39;</span><span class="s">%s</span><span class="se">\&#39;</span><span class="s"> with class %s&#39;</span><span class="p">,</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span>
+                <span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">])</span>
+
+    <span class="c"># set up the args</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;args=%s&#39;</span><span class="p">,</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">)</span> <span class="ow">and</span>
+            <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;{&#39;</span><span class="p">,</span><span class="s">&#39;[&#39;</span><span class="p">)):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;args&quot;</span><span class="p">:[</span><span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">env</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">split</span><span class="p">()],</span><span class="s">&quot;kwargs&quot;</span><span class="p">:{}}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;args&quot;</span><span class="p">:[</span><span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">env</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span><span class="s">&quot;kwargs&quot;</span><span class="p">:{}}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;args&quot;</span><span class="p">:[],</span><span class="s">&quot;kwargs&quot;</span><span class="p">:</span><span class="n">cfg</span><span class="o">.</span><span class="n">parseObject</span><span class="p">(</span><span class="n">args</span><span class="p">,</span><span class="n">env</span><span class="p">)}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;args is unknown type&#39;</span><span class="p">)</span>
+
+    <span class="c"># set up the environment</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">env_shell</span><span class="p">:</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">env_shell</span><span class="p">)</span>
+
+    <span class="c"># run the module</span>
+    <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;run as a class using the helper script&#39;</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;python&#39;</span><span class="p">,</span> <span class="s">&#39;-m&#39;</span><span class="p">,</span> <span class="s">&#39;iceprod.core.exe_helper&#39;</span><span class="p">,</span> <span class="s">&#39;--classname&#39;</span><span class="p">,</span>
+                    <span class="n">module</span><span class="p">[</span><span class="s">&#39;running_class&#39;</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--debug&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">module_src</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;--filename&#39;</span><span class="p">,</span> <span class="n">module_src</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">],</span><span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json_encode</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;--args&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">module_src</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;run as a script directly&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">splitter</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;-%s&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="k">else</span> <span class="s">&#39;--%s&#39;</span><span class="p">)</span><span class="o">%</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">b</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ret</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ret</span><span class="o">+</span><span class="s">&#39;=&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;args&#39;</span><span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">splitter</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;kwargs&#39;</span><span class="p">][</span><span class="n">a</span><span class="p">])</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;kwargs&#39;</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">module_src</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;.py&#39;</span><span class="p">:</span>
+            <span class="c"># call as python script</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;python&#39;</span><span class="p">,</span> <span class="n">module_src</span><span class="p">]</span><span class="o">+</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">module_src</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span> <span class="o">==</span> <span class="s">&#39;.sh&#39;</span><span class="p">:</span>
+            <span class="c"># call as shell script</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s">&#39;/bin/sh&#39;</span><span class="p">,</span> <span class="n">module_src</span><span class="p">]</span><span class="o">+</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># call as regular executable</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">module_src</span><span class="p">]</span><span class="o">+</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;module is missing class and src&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;error running module&#39;</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;subprocess cmd=%r&#39;</span><span class="p">,</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_clear&#39;</span><span class="p">]:</span>
+        <span class="n">iceprod_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">))))</span>
+        <span class="n">local_path</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;local_temp&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s">&#39;local_temp&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="k">None</span>
+        <span class="n">env</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;PYTHONPATH&#39;</span><span class="p">:</span><span class="n">iceprod_path</span><span class="o">+</span><span class="p">(</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">local_path</span> <span class="k">if</span> <span class="n">local_path</span> <span class="k">else</span> <span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;:&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;CUDA_VISIBLE_DEVICES&#39;</span><span class="p">,</span><span class="s">&#39;COMPUTE&#39;</span><span class="p">,</span><span class="s">&#39;GPU_DEVICE_ORDINAL&#39;</span><span class="p">,</span><span class="s">&#39;http_proxy&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+                <span class="n">env</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;env = %r&#39;</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, IceCube Collaboration.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'master',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
