@@ -12,7 +12,6 @@ import random
 
 import tornado.gen
 
-from iceprod.core.util import Node_Resources
 from iceprod.core.dataclasses import Number,String
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
@@ -942,7 +941,7 @@ class queue(_Methods_Base):
         Add the tasks currently available for lookup by pilots.
 
         Args:
-            tasks (dict): dict of {task_id: Node_Resources}
+            tasks (dict): dict of {task_id: resources}
         """
         sql = 'replace into task_lookup (task_id,'
         sql += ','.join('req_'+k for k in tasks.values()[0])

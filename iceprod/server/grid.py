@@ -9,6 +9,7 @@ import sys
 import random
 import math
 import logging
+from copy import deepcopy
 from io import BytesIO
 from datetime import datetime,timedelta
 from collections import namedtuple, Counter
@@ -20,7 +21,7 @@ from tornado.concurrent import run_on_executor
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
-from iceprod.core.util import Node_Resources
+from iceprod.core.resources import Resources
 from iceprod.server import module
 from iceprod.server import get_pkg_binary,GlobalID
 from iceprod.server import dataset_prio
@@ -444,16 +445,20 @@ class grid(object):
 
     def _get_resources(self, tasks):
         """yield resource information for each task in a list"""
-        Resource = namedtuple('Resource', Node_Resources)
-        default_resource = Resource(**Node_Resources)
+        r = deepcopy(Resources.defaults)
+        for k in r:
+            if isinstance(r[k],list):
+                r[k] = len(r[k])
+        Resource = namedtuple('Resource', r)
+        default_resource = Resource(**r)
         for t in tasks:
             values = {}
             for k in t['reqs']:
                 if t['reqs'][k]:
                     try:
-                        if isinstance(Node_Resources[k], int):
+                        if isinstance(r[k], int):
                             values[k] = int(t['reqs'][k])
-                        elif isinstance(Node_Resources[k], float):
+                        elif isinstance(r[k], float):
                             values[k] = float(t['reqs'][k])
                         else:
                             values[k] = t['reqs'][k]

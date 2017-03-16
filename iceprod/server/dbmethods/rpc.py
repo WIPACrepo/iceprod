@@ -10,7 +10,7 @@ import math
 
 import tornado.gen
 
-from iceprod.core.util import Node_Resources
+from iceprod.core.resources import Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
 from iceprod.core import functions
@@ -64,11 +64,14 @@ class rpc(_Methods_Base):
             logger.info('queue lock granted')
             # check resource requirements
             reqs = {}
-            for k in Node_Resources:
-                if k in args and args[k] != Node_Resources[k]:
+            for k in Resources.defaults:
+                default = Resources.defaults[k]
+                if isinstance(default, list):
+                    default = len(default)
+                if k in args and args[k] != default:
                     reqs[k] = args[k]
                 else:
-                    reqs[k] = Node_Resources[k]
+                    reqs[k] = default
             logger.info('new task for resources: %r', reqs)
 
             for _ in range(100):
@@ -429,16 +432,19 @@ class rpc(_Methods_Base):
                     logger.info('old task_reqs: %r', task_reqs)
                     # update requirements
                     for req in error_info['resources']:
-                        if req not in Node_Resources or req in ('cpu','gpu'):
+                        if req not in Resources.defaults or req in ('cpu','gpu'):
                             logger.info('skipping update for req %r', req)
                             continue
                         req_value = error_info['resources'][req]
                         if isinstance(req_value, dataclasses.Number):
-                            if isinstance(Node_Resources[req], int):
+                            default = Resources.defaults[req]
+                            if isinstance(default, list):
+                                default = len(default)
+                            if isinstance(default, int):
                                 req_value = int(req_value)
-                            elif isinstance(Node_Resources[req], float):
+                            elif isinstance(default, float):
                                 req_value = round(req_value*1.5, 1)
-                            if req_value <= Node_Resources[req]:
+                            if req_value <= default:
                                 continue
                             if (req not in task_reqs or task_reqs[req] < req_value
                                 or not isinstance(task_reqs[req], dataclasses.Number)):
