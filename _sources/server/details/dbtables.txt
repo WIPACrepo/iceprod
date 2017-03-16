@@ -129,6 +129,7 @@ Tables
 * req_gpu : int
 * req_memory : float
 * req_disk : float
+* req_time : float
 
 **search**
 
