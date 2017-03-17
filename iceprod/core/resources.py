@@ -409,7 +409,7 @@ class Resources:
         if 'gpu' in resources and resources['gpu']:
             # strip all non-numbers:
             val = ','.join(resources['gpu'])
-            val = ''.join(filter(lambda x: x.isdigit(), val))
+            val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
             os.environ['CUDA_VISIBLE_DEVICES'] = val
             os.environ['GPU_DEVICE_ORDINAL'] = val
         else:
