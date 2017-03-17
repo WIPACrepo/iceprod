@@ -115,14 +115,14 @@ class condor(grid.grid):
                     p('+OriginalCpus = {}'.format(task['reqs']['cpu']))
                     p('+RequestResizedCpus = ((Cpus < OriginalCpus) ? OriginalCpus : Cpus)')
                     p('+JOB_GLIDEIN_Cpus = "$$(Cpus:0)"')
-                    p('JobIsRunningCpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Cpus)))')
+                    p('+JobIsRunningCpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Cpus)))')
                     p('+JobCpus = (JobIsRunningCpus ? int(MATCH_EXP_JOB_GLIDEIN_Cpus) : OriginalCpus)')
                     p('request_cpus = (!isUndefined(Cpus)) ? RequestResizedCpus : JobCpus')
                 if 'gpu' in task['reqs']:
                     p('+OriginalGpus = {}'.format(task['reqs']['gpu']))
                     p('+RequestResizedGpus = (Gpus < OriginalGpus) ? OriginalGpus : Gpus')
                     p('+JOB_GLIDEIN_Gpus = "$$(Gpus:0)"')
-                    p('JobIsRunningGpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Gpus)))')
+                    p('+JobIsRunningGpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Gpus)))')
                     p('+JobGpus = (JobIsRunningGpus ? int(MATCH_EXP_JOB_GLIDEIN_GPUs) : OriginalGpus)')
                     p('request_gpus = !isUndefined(Gpus) ? RequestResizedGpus : JobGpus')
                 if 'memory' in task['reqs']:
@@ -130,14 +130,14 @@ class condor(grid.grid):
                     p('+OriginalMemory = {}'.format(int(task['reqs']['memory']*1000+100)))
                     p('+RequestResizedMemory = (Memory < OriginalMemory) ? OriginalMemory : Memory')
                     p('+JOB_GLIDEIN_Memory = "$$(Memory:0)"')
-                    p('JobIsRunningMemory = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Memory)))')
+                    p('+JobIsRunningMemory = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Memory)))')
                     p('+JobMemory = (JobIsRunningMemory ? int(MATCH_EXP_JOB_GLIDEIN_Memory) : OriginalMemory)')
                     p('request_memory = !isUndefined(Memory) ? RequestResizedMemory : JobMemory')
                 if 'disk' in task['reqs']:
                     p('+OriginalDisk = {}'.format(int(task['reqs']['disk']*1000000)))
                     p('+RequestResizedDisk = (Disk < OriginalDisk) ? OriginalDisk : Disk')
                     p('+JOB_GLIDEIN_Disk = "$$(Disk:0)"')
-                    p('JobIsRunningDisk = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Disk)))')
+                    p('+JobIsRunningDisk = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Disk)))')
                     p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk)')
                     p('request_disk = !isUndefined(Disk) ? RequestResizedDisk : JobDisk')
                 if 'time' in task['reqs']:
