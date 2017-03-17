@@ -105,7 +105,7 @@ class Resources:
         #: total resources controlled by the pilot
         self.total = {
             'cpu':get_cpus(),
-            'gpu':get_gpus(),
+            'gpu':get_gpus()*2,
             'memory':get_memory()-0.1, # trim auto-totals to prevent going over
             'disk':get_disk()-0.1,
             'time':time.time()/3600+get_time()-0.1, # end time
@@ -407,8 +407,11 @@ class Resources:
             resources (dict): Resources to set
         """
         if 'gpu' in resources and resources['gpu']:
-            os.environ['CUDA_VISIBLE_DEVICES'] = ','.join(resources['gpu'])
-            os.environ['GPU_DEVICE_ORDINAL'] = ','.join(resources['gpu'])
+            # strip all non-numbers:
+            val = ','.join(resources['gpu'])
+            val = ''.join(filter(lambda x: x.isdigit(), val))
+            os.environ['CUDA_VISIBLE_DEVICES'] = val
+            os.environ['GPU_DEVICE_ORDINAL'] = val
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = '9999'
             os.environ['GPU_DEVICE_ORDINAL'] = '9999'
