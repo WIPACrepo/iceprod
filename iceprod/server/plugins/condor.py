@@ -123,7 +123,7 @@ class condor(grid.grid):
                     p('+RequestResizedGpus = (Gpus < OriginalGpus) ? OriginalGpus : Gpus')
                     p('+JOB_GLIDEIN_Gpus = "$$(Gpus:0)"')
                     p('JobIsRunningGpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Gpus)))')
-                    p('+JobCpus = (JobIsRunningGpus ? int(MATCH_EXP_JOB_GLIDEIN_GPUs) : OriginalGpus')
+                    p('+JobGpus = (JobIsRunningGpus ? int(MATCH_EXP_JOB_GLIDEIN_GPUs) : OriginalGpus)')
                     p('request_gpus = !isUndefined(Gpus) ? RequestResizedGpus : JobGpus')
                 if 'memory' in task['reqs']:
                     # extra 100MB for pilot
@@ -131,14 +131,14 @@ class condor(grid.grid):
                     p('+RequestResizedMemory = (Memory < OriginalMemory) ? OriginalMemory : Memory')
                     p('+JOB_GLIDEIN_Memory = "$$(Memory:0)"')
                     p('JobIsRunningMemory = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Memory)))')
-                    p('+JobMemory = (JobIsRunningMemory ? int(MATCH_EXP_JOB_GLIDEIN_Memory) : OriginalMemory')
+                    p('+JobMemory = (JobIsRunningMemory ? int(MATCH_EXP_JOB_GLIDEIN_Memory) : OriginalMemory)')
                     p('request_memory = !isUndefined(Memory) ? RequestResizedMemory : JobMemory')
                 if 'disk' in task['reqs']:
                     p('+OriginalDisk = {}'.format(int(task['reqs']['disk']*1000000)))
                     p('+RequestResizedDisk = (Disk < OriginalDisk) ? OriginalDisk : Disk')
                     p('+JOB_GLIDEIN_Disk = "$$(Disk:0)"')
                     p('JobIsRunningDisk = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Disk)))')
-                    p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk')
+                    p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk)')
                     p('request_disk = !isUndefined(Disk) ? RequestResizedDisk : JobDisk')
                 if 'time' in task['reqs']:
                     p('Rank = Target.TimeToLive - {}'.format(int(task['reqs']['time'])*3600))
