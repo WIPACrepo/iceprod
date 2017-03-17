@@ -113,10 +113,10 @@ class condor(grid.grid):
             if 'reqs' in task:
                 if 'cpu' in task['reqs']:
                     p('+OriginalCpus = {}'.format(task['reqs']['cpu']))
-                    p('+RequestResizedCpus = (Cpus < OriginalCpus) ? OriginalCpus : Cpus')
+                    p('+RequestResizedCpus = ((Cpus < OriginalCpus) ? OriginalCpus : Cpus)')
                     p('+JOB_GLIDEIN_Cpus = "$$(Cpus:0)"')
-                    p('+JobCpus = (JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_CPUs)) ? int(MATCH_EXP_JOB_GLIDEIN_CPUs) : OriginalCpus')
-                    p('request_cpus = !isUndefined(Cpus) ? RequestResizedCpus : JobCpus')
+                    p('+JobCpus = ((JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_CPUs)) ? int(MATCH_EXP_JOB_GLIDEIN_CPUs) : OriginalCpus)')
+                    p('request_cpus = (!isUndefined(Cpus)) ? RequestResizedCpus : JobCpus')
                 if 'gpu' in task['reqs']:
                     p('+OriginalGpus = {}'.format(task['reqs']['gpu']))
                     p('+RequestResizedGpus = (Gpus < OriginalGpus) ? OriginalGpus : Gpus')
