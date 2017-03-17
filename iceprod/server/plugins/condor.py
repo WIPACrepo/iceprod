@@ -108,16 +108,34 @@ class condor(grid.grid):
                   ';iceprod_out=iceprod_out_$(Process)'
                   ';iceprod_err=iceprod_err_$(Process)"')
 
+            # handle resources
+            p('JobIsRunning = (JobStatus =!= 1) && (JobStatus =!= 5)')
             if 'reqs' in task:
                 if 'cpu' in task['reqs']:
-                    p('request_cpus = isUndefined(Cpus) ? {0} : ((Cpus < {0}) ? {0} : Cpus)'.format(task['reqs']['cpu']))
+                    p('OriginalCpus = {}'.format(task['reqs']['cpu']))
+                    p('RequestResizedCpus = (Cpus < OriginalCpus) ? OriginalCpus : Cpus')
+                    p('JOB_GLIDEIN_Cpus = "$$(Cpus:0)"')
+                    p('JobCpus = (JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_CPUs)) ? int(MATCH_EXP_JOB_GLIDEIN_CPUs) : OriginalCpus')
+                    p('request_cpus = !isUndefined(Cpus) ? RequestResizedCpus : JobCpus')
                 if 'gpu' in task['reqs']:
-                    p('request_gpus = isUndefined(Gpus) ? {0} : ((Gpus < {0}) ? {0} : Gpus)'.format(task['reqs']['gpu']))
+                    p('OriginalGpus = {}'.format(task['reqs']['gpu']))
+                    p('RequestResizedGpus = (Gpus < OriginalGpus) ? OriginalGpus : Gpus')
+                    p('JOB_GLIDEIN_Gpus = "$$(Gpus:0)"')
+                    p('JobCpus = (JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_GPUs)) ? int(MATCH_EXP_JOB_GLIDEIN_GPUs) : OriginalGpus')
+                    p('request_gpus = !isUndefined(Gpus) ? RequestResizedGpus : JobGpus')
                 if 'memory' in task['reqs']:
                     # extra 100MB for pilot
-                    p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
+                    p('OriginalMemory = {}'.format(int(task['reqs']['memory']*1000+100)))
+                    p('RequestResizedMemory = (Memory < OriginalMemory) ? OriginalMemory : Memory')
+                    p('JOB_GLIDEIN_Memory = "$$(Memory:0)"')
+                    p('JobMemory = (JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_Memory)) ? int(MATCH_EXP_JOB_GLIDEIN_Memory) : OriginalMemory')
+                    p('request_memory = !isUndefined(Memory) ? RequestResizedMemory : JobMemory')
                 if 'disk' in task['reqs']:
-                    p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
+                    p('OriginalDisk = {}'.format(int(task['reqs']['disk']*1000000)))
+                    p('RequestResizedDisk = (Disk < OriginalDisk) ? OriginalDisk : Disk')
+                    p('JOB_GLIDEIN_Disk = "$$(Disk:0)"')
+                    p('JobDisk = (JobIsRunning && !isUndefined(MATCH_EXP_JOB_GLIDEIN_Disk)) ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk')
+                    p('request_memory = !isUndefined(Disk) ? RequestResizedDisk : JobDisk')
                 if 'time' in task['reqs']:
                     p('Rank = Target.TimeToLive - {}'.format(int(task['reqs']['time'])*3600))
 
