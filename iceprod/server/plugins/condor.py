@@ -110,9 +110,9 @@ class condor(grid.grid):
 
             if 'reqs' in task:
                 if 'cpu' in task['reqs']:
-                    p('request_cpus = isUndefined(Cpus) ? {} : Cpus'.format(task['reqs']['cpu']))
+                    p('request_cpus = isUndefined(Cpus) ? {0} : ((Cpus < {0}) ? {0} : Cpus)'.format(task['reqs']['cpu']))
                 if 'gpu' in task['reqs']:
-                    p('request_gpus = isUndefined(Gpus) ? {} : Gpus'.format(task['reqs']['gpu']))
+                    p('request_gpus = isUndefined(Gpus) ? {0} : ((Gpus < {0}) ? {0} : Gpus)'.format(task['reqs']['gpu']))
                 if 'memory' in task['reqs']:
                     # extra 100MB for pilot
                     p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
