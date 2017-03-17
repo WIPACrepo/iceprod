@@ -110,14 +110,16 @@ class condor(grid.grid):
 
             if 'reqs' in task:
                 if 'cpu' in task['reqs']:
-                    p('request_cpus = {}'.format(task['reqs']['cpu']))
+                    p('request_cpus = isUndefined(Cpus) ? {} : Cpus'.format(task['reqs']['cpu']))
                 if 'gpu' in task['reqs']:
-                    p('request_gpus = {}'.format(task['reqs']['gpu']))
+                    p('request_gpus = isUndefined(Gpus) ? {} : Gpus'.format(task['reqs']['gpu']))
                 if 'memory' in task['reqs']:
                     # extra 100MB for pilot
                     p('request_memory = {}'.format(int(task['reqs']['memory']*1000+100)))
                 if 'disk' in task['reqs']:
                     p('request_disk = {}'.format(int(task['reqs']['disk']*1000000)))
+                if 'time' in task['reqs']:
+                    p('Rank = Target.TimeToLive - {}'.format(int(task['reqs']['time'])*3600))
 
             for b in batch_opts:
                 p(b+'='+batch_opts[b])
