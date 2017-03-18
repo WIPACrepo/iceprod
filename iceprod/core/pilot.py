@@ -14,6 +14,7 @@ from collections import namedtuple
 from datetime import timedelta
 from glob import glob
 import signal
+import traceback
 
 from iceprod.core.functions import gethostname
 from iceprod.core import to_file, constants
@@ -82,6 +83,7 @@ class Pilot(object):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
+        self.hostname = gethostname()
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
 
@@ -155,8 +157,11 @@ class Pilot(object):
             # clean up task
             used_resources = self.resources.get_peak(task_id)
             self.clean_task(task_id)
+            message = reason
+            message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
+            message += '\nhostname: {}'.format(self.hostname)
             exe_json.task_kill(task_id, resources=used_resources,
-                               reason=reason)
+                               reason=reason, message=message)
 
         # stop the pilot
         exe_json.update_pilot(self.pilot_id, tasks='')
@@ -177,8 +182,11 @@ class Pilot(object):
                     logger.warn('kill %r for going over resources: %r',
                                 task_id, used_resources)
                     self.clean_task(task_id)
+                    message = overages[task_id]
+                    message += '\n\npilot_id: {}'.format(self.pilot_id)
+                    message += '\nhostname: {}'.format(self.hostname)
                     exe_json.task_kill(task_id, resources=used_resources,
-                                       reason=overages[task_id])
+                                       reason=overages[task_id], message=message)
                     # try to queue another task
                     logger.info('killed, so notify')
                     self.lock.notify()
@@ -238,7 +246,10 @@ class Pilot(object):
                             running = False
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
-                        exe_json.task_kill(task_id, reason='failed to create task')
+                        message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
+                        message += traceback.format_exc()
+                        exe_json.task_kill(task_id, reason='failed to create task',
+                                           message=message)
                     else:
                         tasks_running += 1
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))

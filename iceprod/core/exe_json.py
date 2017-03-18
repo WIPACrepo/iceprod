@@ -139,8 +139,16 @@ def taskerror(cfg, start_time=None):
         # an error occurred
         raise ret
 
-def task_kill(task_id, resources=None, reason=None):
-    """Tell the server that we killed a task"""
+def task_kill(task_id, resources=None, reason=None, message=None):
+    """
+    Tell the server that we killed a task
+
+    Args:
+        task_id (str): the task_id
+        resources (dict): used resources
+        reason (str): short summary for kill
+        message (str): long message to replace log upload
+    """
     try:
         hostname = functions.gethostname()
         domain = '.'.join(hostname.split('.')[-2:])
@@ -158,6 +166,14 @@ def task_kill(task_id, resources=None, reason=None):
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
+    if message:
+        data = json_compressor.compress(message)
+        ret = JSONRPC.upload_logfile(task=task_id,name='stdlog',data=data)
+        if isinstance(ret,Exception):
+            # an error occurred
+            raise ret
+        JSONRPC.upload_logfile(task=task_id,name='stdout',data='')
+        JSONRPC.upload_logfile(task=task_id,name='stderr',data='')
     ret = JSONRPC.task_error(task_id=task_id, error_info=error_info)
     if isinstance(ret, Exception):
         # an error occurred
