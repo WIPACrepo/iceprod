@@ -259,8 +259,16 @@
         <span class="c"># an error occurred</span>
         <span class="k">raise</span> <span class="n">ret</span></div>
 
-<div class="viewcode-block" id="task_kill"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.task_kill">[docs]</a><span class="k">def</span> <span class="nf">task_kill</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Tell the server that we killed a task&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="task_kill"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.task_kill">[docs]</a><span class="k">def</span> <span class="nf">task_kill</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tell the server that we killed a task</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        task_id (str): the task_id</span>
+<span class="sd">        resources (dict): used resources</span>
+<span class="sd">        reason (str): short summary for kill</span>
+<span class="sd">        message (str): long message to replace log upload</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">hostname</span> <span class="o">=</span> <span class="n">functions</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
         <span class="n">domain</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hostname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
@@ -278,6 +286,14 @@
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
         <span class="n">error_info</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="k">if</span> <span class="n">message</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json_compressor</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">upload_logfile</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;stdlog&#39;</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="c"># an error occurred</span>
+            <span class="k">raise</span> <span class="n">ret</span>
+        <span class="n">JSONRPC</span><span class="o">.</span><span class="n">upload_logfile</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;stdout&#39;</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">JSONRPC</span><span class="o">.</span><span class="n">upload_logfile</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s">&#39;stderr&#39;</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">JSONRPC</span><span class="o">.</span><span class="n">task_error</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="n">task_id</span><span class="p">,</span> <span class="n">error_info</span><span class="o">=</span><span class="n">error_info</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
         <span class="c"># an error occurred</span>

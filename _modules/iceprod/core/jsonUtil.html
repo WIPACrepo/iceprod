@@ -137,10 +137,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="json_compressor.compress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.compress">[docs]</a>    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="s">&#39;&#39;</span></div>
     <span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="json_compressor.uncompress"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.json_compressor.uncompress">[docs]</a>    <span class="k">def</span> <span class="nf">uncompress</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div></div>
+        <span class="k">return</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span> <span class="k">if</span> <span class="n">obj</span> <span class="k">else</span> <span class="s">&#39;&#39;</span></div></div>
 
 
 <div class="viewcode-block" id="datetime_converter"><a class="viewcode-back" href="../../../core/jsonUtil.html#iceprod.core.jsonUtil.datetime_converter">[docs]</a><span class="k">class</span> <span class="nc">datetime_converter</span><span class="p">:</span>
