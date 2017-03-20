@@ -118,6 +118,7 @@ class condor(grid.grid):
                     p('+JobIsRunningCpus = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Cpus)))')
                     p('+JobCpus = (JobIsRunningCpus ? int(MATCH_EXP_JOB_GLIDEIN_Cpus) : OriginalCpus)')
                     p('request_cpus = (!isUndefined(Cpus)) ? RequestResizedCpus : JobCpus')
+                    p('Rank = Rank + (isUndefined(Cpus) ? 0 : Cpus)/8')
                 if 'gpu' in task['reqs'] and task['reqs']['gpu']:
                     p('+OriginalGpus = {}'.format(task['reqs']['gpu']))
                     p('+RequestResizedGpus = (Gpus < OriginalGpus) ? OriginalGpus : Gpus')
@@ -141,7 +142,7 @@ class condor(grid.grid):
                     p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk)')
                     p('request_disk = !isUndefined(Disk) ? RequestResizedDisk : JobDisk')
                 if 'time' in task['reqs'] and task['reqs']['time']:
-                    p('Rank = Target.TimeToLive - {}'.format(int(task['reqs']['time'])*3600))
+                    p('Rank = Rank + (Target.TimeToLive - {})/86400'.format(int(task['reqs']['time'])*3600))
 
             for b in batch_opts:
                 p(b+'='+batch_opts[b])
