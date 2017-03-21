@@ -114,8 +114,15 @@ def stillrunning(cfg):
         cfg.config['options']['DBkill'] = True
         raise Exception('task should be stopped')
 
-def taskerror(cfg, start_time=None):
-    """Tell the server about the error experienced"""
+def taskerror(cfg, start_time=None, reason=None):
+    """
+    Tell the server about the error experienced
+
+    Args:
+        cfg (:py:class:`iceprod.core.exe.Config`): the runner config
+        start_time (float): job start time in unix seconds
+        reason (str): one-line summary of error
+    """
     if 'task_id' not in cfg.config['options']:
         raise Exception('config["options"][task_id] not specified, '
                         'so cannot send error')
@@ -127,9 +134,12 @@ def taskerror(cfg, start_time=None):
         error_info = {
             'hostname': hostname, 'domain': domain,
             'time_used': None,
+            'error_summary': '',
         }
         if start_time:
             error_info['time_used'] = time.time() - start_time
+        if reason:
+            error_info['error_summary'] = reason
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None

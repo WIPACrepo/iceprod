@@ -291,7 +291,11 @@ def downloadResource(env, resource, remote_base=None,
             download_options['password'] = env['options']['password']
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
-        functions.download(url, local, options=download_options)
+        try:
+            functions.download(url, local, options=download_options)
+        except:
+            logger.critical('failed to download %s to %s', url, local, exc_info=True)
+            raise Exception('failed to download {} to {}'.format(url, local))
 
     # check compression
     if (resource['compression'] and
@@ -355,7 +359,11 @@ def uploadData(env, data):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
-    functions.upload(local, url, options=upload_options)
+    try:
+        functions.upload(local, url, options=upload_options)
+    except:
+        logger.critical('failed to upload %s to %s', local, url, exc_info=True)
+        raise Exception('failed to upload {} to {}'.format(local, url))
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
@@ -563,7 +571,6 @@ def runtask(cfg, globalenv, task):
                            e, exc_info=True)
 
     return stats
-
 
 def runtray(cfg, globalenv,tray,stats={}):
     """Run the specified tray"""

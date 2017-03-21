@@ -272,7 +272,8 @@ def runner(config, url, debug=False, offline=False):
                 # set task status on server
                 if not offline:
                     try:
-                        iceprod.core.exe_json.taskerror(cfg, start_time=start_time)
+                        iceprod.core.exe_json.taskerror(cfg, start_time=start_time,
+                                                        reason=str(e))
                     except Exception as e:
                         logger.error(e)
                     # forcibly turn on logging, so we can see the error

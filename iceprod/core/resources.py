@@ -183,13 +183,13 @@ class Resources:
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:
                         raise Exception('not enough {} resources available: {} > {}'.format(
-                                r, val, self.available[r])
+                                r, val, self.available[r]))
                     elif val > 0:
                         claim[r] = val
                 elif isinstance(self.defaults[r], list):
                     if val > len(self.available[r]):
                         raise Exception('not enough {} resources available: {} > {}'.format(
-                                r, val, len(self.available[r]))
+                                r, val, len(self.available[r])))
                     elif val > 0:
                         claim[r] = self.available[r][:val]
 
