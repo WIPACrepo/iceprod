@@ -268,6 +268,7 @@ class Resources:
                 logger.warn('error getting usage for %r', task_id,
                             exc_info=True)
                 continue
+            usage_time = usage['time'] - self.history[task_id]['create_time']
             for r in usage:
                 overusage = usage[r]-claim['resources'][r]
                 if overusage > 0:
@@ -281,12 +282,13 @@ class Resources:
                           and overusage_percent < limit['allowed']):
                         logger.info('managable overusage of %s for %s', r, task_id)
                     else:
-                        ret[task_id] = 'Resource overusage for {}: {}'.format(r,usage[r])
+                        ret[task_id] = 'Resource overusage for {}: {}'.format(r,
+                                usage_time if r == 'time' else usage[r])
                         break
             for r in usage:
                 v = usage[r]
-                if r in ('time',):
-                    v -= self.history[task_id]['create_time']
+                if r == 'time':
+                    v = usage_time
                 if task_id not in self.used:
                     self.used[task_id] = {r: v}
                 elif r not in self.used[task_id] or v > self.used[task_id][r]:
