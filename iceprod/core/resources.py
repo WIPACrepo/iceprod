@@ -177,6 +177,7 @@ class Resources:
 
                 if r == 'time':
                     val = now+val
+                    continue # ignore time matching for now
 
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:
@@ -286,6 +287,7 @@ class Resources:
                 v = usage[r]
                 if r in ('time',):
                     v -= self.history[task_id]['create_time']
+                    v /= 3600
                 if task_id not in self.used:
                     self.used[task_id] = {r: v}
                 elif r not in self.used[task_id] or v > self.used[task_id][r]:
