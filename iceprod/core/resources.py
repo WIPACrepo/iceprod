@@ -22,7 +22,6 @@ except ImportError:
 
 logger = logging.getLogger('resources')
 
-
 class Resources:
     """
     Task (and node) resource definition and tracking.
@@ -88,6 +87,7 @@ class Resources:
                 'disk':30,
                 'time':1,
             }
+            logger.setLevel(logging.DEBUG)
         else:
             #: time intervals when to check resources, vs using cached values
             self.lookup_intervals = {
@@ -98,6 +98,7 @@ class Resources:
                 'disk':180,
                 'time':1,
             }
+            logger.setLevel(logging.INFO)
 
         #: start time for resource tracking
         self.start_time = time.time()
@@ -176,17 +177,19 @@ class Resources:
                     val = float(val)
 
                 if r == 'time':
-                    val = now + (val/3600)
+                    val = now + (val/3600.)
                     continue # ignore time matching for now
 
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:
-                        raise Exception('not enough %s resources available'%r)
+                        raise Exception('not enough {} resources available: {} > {}'.format(
+                                r, val, self.available[r])
                     elif val > 0:
                         claim[r] = val
                 elif isinstance(self.defaults[r], list):
                     if val > len(self.available[r]):
-                        raise Exception('not enough %s resources available'%r)
+                        raise Exception('not enough {} resources available: {} > {}'.format(
+                                r, val, len(self.available[r]))
                     elif val > 0:
                         claim[r] = self.available[r][:val]
 
@@ -428,12 +431,14 @@ def get_cpus():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totalcpus':
                     ret = int(float(line.split('=')[1]))
+                    logger.info('got cpus from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if ret is None and 'NUM_CPUS' in os.environ:
         try:
             ret = int(float(os.environ['NUM_CPUS']))
+            logger.info('got cpus from NUM_CPUS: %r',ret)
         except Exception:
             pass
     if ret is None:
@@ -454,27 +459,32 @@ def get_gpus():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'assignedgpus':
                     ret = line.split('=')[1].strip(' "').split(',')
+                    logger.info('got gpus from machine ad: %r',ret)
                     break
-        except Exception:
-            pass
-    if ret is None and 'NUM_GPUS' in os.environ:
-        try:
-            ret = [str(x) for x in range(int(os.environ['NUM_GPUS']))]
         except Exception:
             pass
     if ret is None and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
             ret = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+            logger.info('got gpus from CUDA_VISIBLE_DEVICES: %r',ret)
         except Exception:
             pass
     if ret is None and 'GPU_DEVICE_ORDINAL' in os.environ:
         try:
             ret = os.environ['GPU_DEVICE_ORDINAL'].split(',')
+            logger.info('got gpus from GPU_DEVICE_ORDINAL: %r',ret)
         except Exception:
             pass
     if ret is None and '_CONDOR_AssignedGPUs' in os.environ:
         try:
             ret = os.environ['_CONDOR_AssignedGPUs'].split(',')
+            logger.info('got gpus from _CONDOR_AssignedGPUs: %r',ret)
+        except Exception:
+            pass
+    if ret is None and 'NUM_GPUS' in os.environ:
+        try:
+            ret = [str(x) for x in range(int(os.environ['NUM_GPUS']))]
+            logger.info('got gpus from NUM_GPUS: %r',ret)
         except Exception:
             pass
     if ret is None:
@@ -491,12 +501,14 @@ def get_memory():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totalmemory':
                     ret = float(line.split('=')[1])/1000.
+                    logger.info('got memory from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if ret is None and 'NUM_MEMORY' in os.environ:
         try:
             ret = float(os.environ['NUM_MEMORY'])
+            logger.info('got memory from NUM_MEMORY: %r',ret)
         except Exception:
             pass
     if ret is None:
@@ -513,12 +525,14 @@ def get_disk():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totaldisk':
                     ret = float(line.split('=')[1])/1000000.
+                    logger.info('got disk from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if ret is None and 'NUM_DISK' in os.environ:
         try:
             ret = float(os.environ['NUM_DISK'])
+            logger.info('got disk from NUM_DISK: %r',ret)
         except Exception:
             pass
     if ret is None:
@@ -535,19 +549,20 @@ def get_time():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'timetolive':
                     ret = float(line.split('=')[1])/3600
+                    logger.info('got time from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if ret is None and 'NUM_TIME' in os.environ:
         try:
             ret = float(os.environ['NUM_TIME'])
+            logger.info('got time from NUM_TIME: %r',ret)
         except Exception:
             pass
     if ret is None:
         return Resources.defaults['time']
     else:
         return ret
-
 
 def get_gpu_utilization_by_id(gpu_id):
     """Get gpu utilization based on gpu id"""

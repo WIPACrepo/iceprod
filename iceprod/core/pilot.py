@@ -61,6 +61,8 @@ def process_wrapper(func, title, pilot_id, resources):
     iceprod.core.logger.new_file(constants['stdlog'])
     logger.warn('pilot_id: %s', pilot_id)
     logger.warn('hostname: %s', gethostname())
+    env_str = '\n'.join('    '+k+' = '+os.environ[k] for k in os.environ)
+    logger.warn('environment: \n%s', env_str)
 
     stdout = partial(to_file,sys.stdout,constants['stdout'])
     stderr = partial(to_file,sys.stderr,constants['stderr'])
