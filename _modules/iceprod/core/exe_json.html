@@ -234,8 +234,15 @@
         <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;DBkill&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;task should be stopped&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="taskerror"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.taskerror">[docs]</a><span class="k">def</span> <span class="nf">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Tell the server about the error experienced&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="taskerror"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.taskerror">[docs]</a><span class="k">def</span> <span class="nf">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tell the server about the error experienced</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cfg (:py:class:`iceprod.core.exe.Config`): the runner config</span>
+<span class="sd">        start_time (float): job start time in unix seconds</span>
+<span class="sd">        reason (str): one-line summary of error</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s">&#39;task_id&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;config[&quot;options&quot;][task_id] not specified, &#39;</span>
                         <span class="s">&#39;so cannot send error&#39;</span><span class="p">)</span>
@@ -247,9 +254,12 @@
         <span class="n">error_info</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span> <span class="s">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
             <span class="s">&#39;time_used&#39;</span><span class="p">:</span> <span class="k">None</span><span class="p">,</span>
+            <span class="s">&#39;error_summary&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">start_time</span><span class="p">:</span>
             <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+        <span class="k">if</span> <span class="n">reason</span><span class="p">:</span>
+            <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;error_summary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to collect error info&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
         <span class="n">error_info</span> <span class="o">=</span> <span class="k">None</span>
