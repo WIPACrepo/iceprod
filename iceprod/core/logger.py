@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+import time
 import logging
 import logging.handlers
 
@@ -39,6 +40,7 @@ def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
         fileHandler = logging.handlers.RotatingFileHandler(logfile, 'a',
                                                            logsize, lognum)
         formatter = logging.Formatter(logformat)
+        formatter.converter = time.gmtime
         fileHandler.setFormatter(formatter)
         rootLogger.addHandler(fileHandler)
         for handler in rootLogger.handlers:
