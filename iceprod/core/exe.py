@@ -620,6 +620,8 @@ def runmodule(cfg, globalenv, module, stats={}):
             module['env_shell'] = cfg.parseValue(module['env_shell'],env)
 
         # make subprocess to run the module
+        if os.path.exists(constants['task_exception']):
+            os.remove(constants['task_exception'])
         process = run_module(cfg, env, module)
         try:
             interval = float(cfg.config['options']['stillrunninginterval'])
@@ -644,7 +646,16 @@ def runmodule(cfg, globalenv, module, stats={}):
             except subprocess.TimeoutExpired:
                 pass
         if process.returncode:
-            raise Exception('module failed')
+            try:
+                with open(constants['task_exception']) as f:
+                    e = pickle.load(f)
+                    if isinstance(e, Exception):
+                        raise e
+                    else:
+                        raise Exception(str(e))
+            except:
+                logger.warn('cannot load exception info from failed module')
+                raise Exception('module failed')
 
         # get stats, if available
         if os.path.exists(constants['stats']):

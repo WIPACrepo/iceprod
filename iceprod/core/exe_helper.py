@@ -99,7 +99,12 @@ def main():
     parser.add_argument('-d','--debug', action='store_true', default=False,
                         help='Enable debug actions and logging')
     args = vars(parser.parse_args())
-    run(**args)
+    try:
+        run(**args)
+    except Exception as e:
+        with open(constants['task_exception'],'w') as f:
+            pickle.dump(e,f)
+        raise
 
 if __name__ == '__main__':
     main()

@@ -15,6 +15,7 @@ constants = {'stdout': 'iceprod_out',
              'stderr': 'iceprod_err',
              'stdlog': 'iceprod_log',
              'stats': 'iceprod_stats',
+             'task_exception': 'iceprod_task_exception',
              'args': 'iceprod_args',}
 
 @contextmanager
