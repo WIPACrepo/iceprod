@@ -142,6 +142,7 @@
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">serialization</span>
 <span class="kn">from</span> <span class="nn">iceprod.core.resources</span> <span class="k">import</span> <span class="n">Resources</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">get_pkg_binary</span><span class="p">,</span><span class="n">GlobalID</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">dataset_prio</span>
@@ -565,26 +566,26 @@
 
     <span class="k">def</span> <span class="nf">_get_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;yield resource information for each task in a list&quot;&quot;&quot;</span>
-        <span class="n">r</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">Resources</span><span class="o">.</span><span class="n">defaults</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="nb">list</span><span class="p">):</span>
-                <span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-        <span class="n">Resource</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;Resource&#39;</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
-        <span class="n">default_resource</span> <span class="o">=</span> <span class="n">Resource</span><span class="p">(</span><span class="o">**</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">default_resource</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">Resources</span><span class="o">.</span><span class="n">defaults</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_resource</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
             <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">]:</span>
                 <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]:</span>
                     <span class="k">try</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
                             <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
-                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
                             <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span>
                     <span class="k">except</span><span class="p">:</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;bad reqs value for task %r&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="n">default_resource</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="o">**</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">resource</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">default_resource</span><span class="p">)</span>
+            <span class="n">resource</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">resource</span>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="grid.add_tasks_to_pilot_lookup"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.grid.add_tasks_to_pilot_lookup">[docs]</a>    <span class="k">def</span> <span class="nf">add_tasks_to_pilot_lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tasks</span><span class="p">):</span>
@@ -592,7 +593,7 @@
         <span class="n">task_iter</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">izip</span><span class="p">(</span><span class="n">tasks</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
                                    <span class="bp">self</span><span class="o">.</span><span class="n">_get_resources</span><span class="p">(</span><span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
         <span class="k">for</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">resources</span> <span class="ow">in</span> <span class="n">task_iter</span><span class="p">:</span>
-            <span class="n">task_reqs</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+            <span class="n">task_reqs</span><span class="p">[</span><span class="n">task_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">resources</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;adding %d tasks to pilot lookup&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">task_reqs</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;add_to_task_lookup&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">task_reqs</span><span class="p">))</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_add_task_lookup&#39;</span><span class="p">](</span><span class="n">tasks</span><span class="o">=</span><span class="n">task_reqs</span><span class="p">)</span>
@@ -613,7 +614,8 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
             <span class="n">tasks</span> <span class="o">=</span> <span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">resources</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resources</span><span class="p">({</span><span class="s">&#39;reqs&#39;</span><span class="p">:</span><span class="n">v</span><span class="p">}</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">):</span>
-            <span class="n">groups</span><span class="p">[</span><span class="n">resources</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+            <span class="n">groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="c"># determine how many pilots to queue</span>
         <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
@@ -636,9 +638,9 @@
                         <span class="k">break</span>
 
         <span class="k">for</span> <span class="n">resources</span> <span class="ow">in</span> <span class="n">groups2</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;submitting %d pilots for resource %r&#39;</span><span class="p">,</span>
-                        <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span> <span class="n">resources</span><span class="p">)</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+                        <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;pilot_resources.&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
             <span class="n">pilot</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
