@@ -102,6 +102,7 @@ class Pilot(object):
         except:
             pass
 
+        self.running = True
         self.lock = Condition()
 
         # hint at resources for pilot
@@ -132,6 +133,7 @@ class Pilot(object):
         # set up signal handler
         def handler(signum, frame):
             logger.critical('termination signal received')
+            self.running = False
             self.ioloop.add_callback_from_signal(self.term_handler)
         signal.signal(signal.SIGTERM, handler)
 
@@ -205,7 +207,7 @@ class Pilot(object):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
             sleep_time = 0.5 # check every X seconds
-            while True:
+            while self.running or self.tasks:
                 logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
                 
@@ -238,16 +240,15 @@ class Pilot(object):
         """Run the pilot"""
         errors = 0
         tasks_running = 0
-        running = True
-        while running:
-            while running:
+        while self.running:
+            while self.running:
                 try:
                     task_config = exe_json.downloadtask(self.config['options']['gridspec'],
                                                         resources=self.resources.get_available())
                 except Exception:
                     errors += 1
                     if errors > 5:
-                        running = False
+                        self.running = False
                     logger.error('cannot download task. current error count is %d',
                                  errors, exc_info=True)
                     continue
@@ -256,7 +257,7 @@ class Pilot(object):
                 if task_config is None:
                     logger.info('no task available')
                     if not self.tasks:
-                        running = False
+                        self.running = False
                     break
                 else:
                     try:
@@ -264,7 +265,7 @@ class Pilot(object):
                     except Exception:
                         errors += 1
                         if errors > 5:
-                            running = False
+                            self.running = False
                         logger.error('error getting task_id from config')
                         continue
                     try:
@@ -275,7 +276,7 @@ class Pilot(object):
                     except Exception:
                         errors += 1
                         if errors > 5:
-                            running = False
+                            self.running = False
                         logger.warn('error claiming resources %s', task_id,
                                     exc_info=True)
                         message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
@@ -288,7 +289,7 @@ class Pilot(object):
                     except Exception:
                         errors += 1
                         if errors > 5:
-                            running = False
+                            self.running = False
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
                         message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
@@ -305,7 +306,7 @@ class Pilot(object):
                     break
 
             # wait until we can queue more tasks
-            while running or self.tasks:
+            while self.running or self.tasks:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
                 ret = yield self.lock.wait(timeout=self.run_timeout)
                 logger.debug('yield returned %r',ret)
@@ -317,7 +318,7 @@ class Pilot(object):
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
                     exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
-                    if running:
+                    if self.running:
                         break
         
         if errors >= 5:
@@ -396,7 +397,8 @@ class Pilot(object):
             try:
                 if psutil:
                     # kill children correctly
-                    processes = reversed(task['process'].children(recursive=True))
+                    processes = task['process'].children(recursive=True)
+                    processes.reverse()
                     processes.append(task['process'])
                     for p in processes:
                         try:
