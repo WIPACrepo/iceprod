@@ -943,11 +943,12 @@ class queue(_Methods_Base):
         Args:
             tasks (dict): dict of {task_id: resources}
         """
+        keys = tasks.values()[0]
         sql = 'replace into task_lookup (task_id,'
-        sql += ','.join('req_'+k for k in tasks.values()[0])
+        sql += ','.join('req_'+k for k in keys)
         sql += ') values (?,'
-        sql += ','.join('?' for k in tasks.values()[0])+')'
-        bindings = [(task_id,)+tuple(tasks[task_id].values()) for task_id in tasks]
+        sql += ','.join('?' for k in keys)+')'
+        bindings = [(task_id,)+tuple(tasks[task_id][k] for k in keys) for task_id in tasks]
         yield self.parent.db.query([sql for _ in bindings], bindings)
 
     @tornado.gen.coroutine

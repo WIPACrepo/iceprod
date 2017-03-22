@@ -71,7 +71,7 @@ class grid_test(AsyncTestCase):
 
         # call normal init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
 
         self.assertTrue(g)
         self.assertEqual(g.gridspec, gridspec)
@@ -108,7 +108,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         if not g:
             raise Exception('init did not return grid object')
 
@@ -161,7 +161,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call normally
@@ -277,7 +277,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         now = datetime.utcnow()
@@ -389,7 +389,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         now = datetime.utcnow()
@@ -551,7 +551,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         now = datetime.utcnow()
@@ -795,7 +795,7 @@ class grid_test(AsyncTestCase):
 
         # init
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call normally
@@ -966,7 +966,7 @@ class grid_test(AsyncTestCase):
         self.services.ret['db']['auth_new_passkey'] = 'blah'
         self.services.called = []
         g = grid(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call normally

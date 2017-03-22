@@ -22,6 +22,7 @@ from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.resources import Resources
+from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import module
 from iceprod.server import get_pkg_binary,GlobalID
 from iceprod.server import dataset_prio
@@ -445,26 +446,26 @@ class grid(object):
 
     def _get_resources(self, tasks):
         """yield resource information for each task in a list"""
-        r = deepcopy(Resources.defaults)
-        for k in r:
-            if isinstance(r[k],list):
-                r[k] = len(r[k])
-        Resource = namedtuple('Resource', r)
-        default_resource = Resource(**r)
+        default_resource = deepcopy(Resources.defaults)
+        for k in default_resource:
+            if isinstance(default_resource[k],list):
+                default_resource[k] = len(default_resource[k])
         for t in tasks:
             values = {}
             for k in t['reqs']:
                 if t['reqs'][k]:
                     try:
-                        if isinstance(r[k], int):
+                        if isinstance(default_resource, int):
                             values[k] = int(t['reqs'][k])
-                        elif isinstance(r[k], float):
+                        elif isinstance(default_resource, float):
                             values[k] = float(t['reqs'][k])
                         else:
                             values[k] = t['reqs'][k]
                     except:
                         logger.warn('bad reqs value for task %r', t)
-            yield default_resource._replace(**values)
+            resource = deepcopy(default_resource)
+            resource.update(values)
+            yield resource
 
     @tornado.gen.coroutine
     def add_tasks_to_pilot_lookup(self, tasks):
@@ -472,7 +473,7 @@ class grid(object):
         task_iter = itertools.izip(tasks.keys(),
                                    self._get_resources(tasks.values()))
         for task_id, resources in task_iter:
-            task_reqs[task_id] = resources._asdict()
+            task_reqs[task_id] = resources
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         self.statsd.incr('add_to_task_lookup', len(task_reqs))
         ret = yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
@@ -493,7 +494,8 @@ class grid(object):
         if isinstance(tasks,dict):
             tasks = tasks.values()
         for resources in self._get_resources({'reqs':v} for v in tasks):
-            groups[resources] += 1
+            k = json_encode(resources)
+            groups[k] += 1
 
         # determine how many pilots to queue
         tasks_on_queue = self.queue_cfg['tasks_on_queue']
@@ -516,9 +518,9 @@ class grid(object):
                         break
 
         for resources in groups2:
+            r = json_decode(resources)
             logger.info('submitting %d pilots for resource %r',
-                        groups2[resources], resources)
-            r = resources._asdict()
+                        groups2[resources], r)
             for name in r:
                 self.statsd.incr('pilot_resources.'+name, r[name])
             pilot = {'task_id': 'pilot',
