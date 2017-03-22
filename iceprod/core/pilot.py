@@ -105,6 +105,9 @@ class Pilot(object):
         self.running = True
         self.lock = Condition()
 
+        logger.warn('pilot_id: %s', self.pilot_id)
+        logger.warn('hostname: %s', self.hostname)
+
         # hint at resources for pilot
         # don't pass them as raw, because that overrides condor
         if 'resources' in config['options']:

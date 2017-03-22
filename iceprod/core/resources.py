@@ -227,6 +227,7 @@ class Resources:
 
         # now send back to user
         claim['time'] -= now
+        logger.info('granted %r', claim)
         return claim
 
     def release(self, task_id):
@@ -283,6 +284,7 @@ class Resources:
             claim = self.claimed[task_id]
             try:
                 usage = self.get_usage(task_id, force=force)
+                logger.info('%s is using %r', task_id, usage)
             except Exception:
                 logger.warn('error getting usage for %r', task_id,
                             exc_info=True)
