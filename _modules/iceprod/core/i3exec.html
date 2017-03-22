@@ -414,7 +414,9 @@
                 <span class="k">for</span> <span class="n">up</span> <span class="ow">in</span> <span class="n">upload</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">up</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;logging&#39;</span><span class="p">):</span>
                         <span class="c"># upload err,log,out files</span>
-                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">uploadLogging</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">uploadLog</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">uploadErr</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">uploadOut</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
                         <span class="k">break</span>
                     <span class="k">elif</span> <span class="n">up</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;log&#39;</span><span class="p">):</span>
                         <span class="c"># upload log files</span>
