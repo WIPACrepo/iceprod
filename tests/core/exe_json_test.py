@@ -434,8 +434,7 @@ class exe_json_test(unittest.TestCase):
         uploader.data = {}
         name = 'testing'
         try:
-            iceprod.core.exe_json._upload_logfile(self.config, task_id,
-                                             name, filename)
+            iceprod.core.exe_json._upload_logfile(self.config, name, filename)
         except:
             logger.error('running _upload_logfile failed')
             raise
@@ -458,20 +457,55 @@ class exe_json_test(unittest.TestCase):
                     f.write(''.join([str(random.randint(0,10000))
                                      for _ in xrange(100)]))
         try:
-            iceprod.core.exe_json.uploadLogging(self.config)
+            iceprod.core.exe_json.uploadLog(self.config)
         except:
-            logger.error('running uploadLogging failed')
+            logger.error('running uploadLog failed')
             raise
         if not uploader.called:
-            raise Exception('JSONRPC.uploadLogging() not called')
+            raise Exception('JSONRPC.uploadLog() not called')
         if uploader.task_id != task_id:
-            raise Exception('JSONRPC.uploadLogging() task_id !=')
-        for name in ('stdlog','stderr','stdout'):
-            if name not in uploader.data:
-                raise Exception('JSONRPC.uploadLogging(%s) invalid name: %r'%
-                                (name,uploader.data.keys()))
-            if uploader.data[name] != open(constants[name]).read():
-                raise Exception('JSONRPC.uploadLogging(%s) data !='%name)
+            raise Exception('JSONRPC.uploadLog() task_id !=')
+        if 'stdlog' not in uploader.data:
+            raise Exception('JSONRPC.uploadLog() invalid name: %r'%
+                            (uploader.data.keys()))
+        if uploader.data['stdlog'] != open(constants['stdlog']).read():
+            raise Exception('JSONRPC.uploadLog() data !='%name)
+
+        uploader.called = False
+        uploader.task_id = None
+        uploader.data = {}
+        try:
+            iceprod.core.exe_json.uploadErr(self.config)
+        except:
+            logger.error('running uploadErr failed')
+            raise
+        if not uploader.called:
+            raise Exception('JSONRPC.uploadErr() not called')
+        if uploader.task_id != task_id:
+            raise Exception('JSONRPC.uploadErr() task_id !=')
+        if 'stderr' not in uploader.data:
+            raise Exception('JSONRPC.uploadErr() invalid name: %r'%
+                            (uploader.data.keys()))
+        if uploader.data['stderr'] != open(constants['stderr']).read():
+            raise Exception('JSONRPC.uploadErr() data !='%name)
+
+        uploader.called = False
+        uploader.task_id = None
+        uploader.data = {}
+        try:
+            iceprod.core.exe_json.uploadOut(self.config)
+        except:
+            logger.error('running uploadOut failed')
+            raise
+        if not uploader.called:
+            raise Exception('JSONRPC.uploadOut() not called')
+        if uploader.task_id != task_id:
+            raise Exception('JSONRPC.uploadOut() task_id !=')
+        if 'stdout' not in uploader.data:
+            raise Exception('JSONRPC.uploadOut() invalid name: %r'%
+                            (uploader.data.keys()))
+        if uploader.data['stdout'] != open(constants['stdout']).read():
+            raise Exception('JSONRPC.uploadOut() data !='%name)
 
 
 def load_tests(loader, tests, pattern):

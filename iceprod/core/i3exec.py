@@ -294,7 +294,9 @@ def runner(config, url, debug=False, offline=False):
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        iceprod.core.exe_json.uploadLogging(cfg)
+                        iceprod.core.exe_json.uploadLog(cfg)
+                        iceprod.core.exe_json.uploadErr(cfg)
+                        iceprod.core.exe_json.uploadOut(cfg)
                         break
                     elif up.startswith('log'):
                         # upload log files

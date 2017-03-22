@@ -70,6 +70,18 @@ class pilot_test(unittest.TestCase):
         self.process.side_effect = run
         self.addCleanup(patcher.stop)
 
+        # clean up environment
+        base_env = dict(os.environ)
+        def reset_env():
+            for k in set(os.environ).difference(base_env):
+                del os.environ[k]
+            for k in base_env:
+                os.environ[k] = base_env[k]
+        self.addCleanup(reset_env)
+
+        # mock hostname
+        pilot.gethostname = lambda: 'foo.bar'
+
     @mock.patch('iceprod.core.pilot.Pilot.run')
     @unittest_reporter(name='Pilot.__init__()')
     def test_01_pilot_init(self, run):
@@ -98,7 +110,7 @@ class pilot_test(unittest.TestCase):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
         task_cfg2 = {'options':{'task_id':'b','resources':{'cpu':1,'memory':1,'disk':1}}}
         download.side_effect = return_once(task_cfg, task_cfg2, end_value=None)
-        cfg = {'options':{'gridspec':'a','resources':{'cpu':2,'memory':2,'disk':2}}}
+        cfg = {'options':{'gridspec':'a','resources':{'cpu':2,'memory':2.2,'disk':2.2}}}
         runner = mock.MagicMock()
         p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.001)
         runner.assert_has_calls([mock.call(task_cfg), mock.call(task_cfg2)])
@@ -138,7 +150,7 @@ class pilot_test(unittest.TestCase):
     def test_10_pilot_create_error(self, download, update, kill):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':3,'memory':1,'disk':1}}}
         download.side_effect = return_once(task_cfg, end_value=None)
-        cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
+        cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1.1,'disk':1.1}}}
         runner = mock.MagicMock()
         p = pilot.Pilot(cfg, runner, pilot_id='a', run_timeout=0.001)
         runner.assert_not_called()

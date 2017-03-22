@@ -10,6 +10,7 @@ import tempfile
 import shutil
 from functools import partial
 from multiprocessing import Process
+from multiprocessing.queues import SimpleQueue
 from collections import namedtuple
 from datetime import timedelta
 from glob import glob
@@ -40,15 +41,16 @@ except ImportError:
     def setproctitle(name):
         pass
 
-Task = namedtuple('Task', ['p','process','tmpdir'])
 
-def process_wrapper(func, title, pilot_id, resources):
+def process_wrapper(func, title, pilot_id='', hostname='', resources={}):
     """
     Set process title. Set log file, stdout, stderr. Then go on to call func.
 
     Args:
         func (callable): The function that we really want to run
         title (str): The new process title
+        pilot_id (str): The pilot id
+        hostname (str): The hostname
         resources (dict): The resources of this process
     """
     try:
@@ -60,7 +62,7 @@ def process_wrapper(func, title, pilot_id, resources):
 
     iceprod.core.logger.new_file(constants['stdlog'])
     logger.warn('pilot_id: %s', pilot_id)
-    logger.warn('hostname: %s', gethostname())
+    logger.warn('hostname: %s', hostname)
     env_str = '\n'.join('    '+k+' = '+os.environ[k] for k in os.environ)
     logger.warn('environment: \n%s', env_str)
 
@@ -88,6 +90,7 @@ class Pilot(object):
         self.hostname = gethostname()
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
+        self.message_queue = SimpleQueue()
 
         if self.debug:
             logger.setLevel(logging.DEBUG)
@@ -114,11 +117,15 @@ class Pilot(object):
 
         self.start_time = time.time()
 
-        # set up monitor
         self.ioloop = IOLoop.current()
+
+        # set up jsonrpc forwarder
+        self.ioloop.add_callback(self.message_queue_monitor)
+
+        # set up resource monitor
         self.tasks = {}
         if psutil:
-            self.ioloop.add_callback(self.monitor)
+            self.ioloop.add_callback(self.resource_monitor)
         else:
             logger.warn('no psutil. not checking resource usage')
 
@@ -128,6 +135,7 @@ class Pilot(object):
             self.ioloop.add_callback_from_signal(self.term_handler)
         signal.signal(signal.SIGTERM, handler)
 
+        # run the loop
         self.ioloop.run_sync(self.run)
 
         if self.debug:
@@ -169,8 +177,31 @@ class Pilot(object):
         exe_json.update_pilot(self.pilot_id, tasks='')
         self.ioloop.stop()
 
+    def message_queue_monitor(self):
+        """Forward JSONRPC messages from tasks"""
+        sleep_time = 0.1
+        try:
+            if not self.message_queue.empty():
+                task_id,func_name,cfg,args,kwargs = self.message_queue.get()
+                logger.info('forwarding message for %s to %s', task_id, func_name)
+                del cfg.config['options']['message_queue']
+                if func_name in ('finishtask','taskerror'):
+                    kwargs['resources'] = self.resources.get_peak(task_id)
+                try:
+                    ret = getattr(exe_json, func_name)(cfg,*args,**kwargs)
+                except Exception as e:
+                    logger.info('exception returned from forward', exc_info=True)
+                    ret = e
+                if task_id not in self.tasks:
+                    logger.warn('cannot forward return value')
+                else:
+                    self.tasks[task_id]['recv_queue'].put(ret)
+        except:
+            logger.info('error forwarding message', exc_info=True)
+        self.ioloop.call_later(sleep_time, self.message_queue_monitor)
+
     @gen.coroutine
-    def monitor(self):
+    def resource_monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
             sleep_time = 0.5 # check every X seconds
@@ -212,7 +243,7 @@ class Pilot(object):
             while running:
                 try:
                     task_config = exe_json.downloadtask(self.config['options']['gridspec'],
-                                                        resources=self.resources.available)
+                                                        resources=self.resources.get_available())
                 except Exception:
                     errors += 1
                     if errors > 5:
@@ -241,6 +272,18 @@ class Pilot(object):
                             task_config['options']['resources'] = None
                         task_resources = self.resources.claim(task_id, task_config['options']['resources'])
                         task_config['options']['resources'] = task_resources
+                    except Exception:
+                        errors += 1
+                        if errors > 5:
+                            running = False
+                        logger.warn('error claiming resources %s', task_id,
+                                    exc_info=True)
+                        message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
+                        message += traceback.format_exc()
+                        exe_json.task_kill(task_id, reason='failed to claim resources',
+                                           message=message)
+                        continue
+                    try:
                         self.create_task(task_config)
                     except Exception:
                         errors += 1
@@ -268,7 +311,7 @@ class Pilot(object):
                 logger.debug('yield returned %r',ret)
                 # check if any processes have died
                 for task_id in list(self.tasks):
-                    if not self.tasks[task_id].p.is_alive():
+                    if not self.tasks[task_id]['p'].is_alive():
                         self.clean_task(task_id)
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
@@ -276,7 +319,7 @@ class Pilot(object):
                     exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
                     if running:
                         break
-
+        
         if errors >= 5:
             logger.critical('too many errors when running tasks')
         else:
@@ -298,6 +341,10 @@ class Pilot(object):
             elif k not in config['options']:
                 config['options'][k] = self.config['options'][k]
 
+        # add message queue
+        send_queue = SimpleQueue
+        self.config['message_queue'] = [self.message_queue, send_queue]
+
         # run task in tmp dir
         main_dir = os.getcwd()
         try:
@@ -314,6 +361,7 @@ class Pilot(object):
             r = config['options']['resources']
             p = Process(target=partial(process_wrapper, partial(self.runner, config),
                                        'iceprod_task_{}'.format(task_id),
+                                       hostname=self.hostname,
                                        pilot_id=self.pilot_id, resources=r))
             p.start()
             if psutil:
@@ -322,7 +370,8 @@ class Pilot(object):
             else:
                 ps = None
             ur = {k:0 for k in r}
-            self.tasks[task_id] = Task(p=p, process=ps, tmpdir=tmpdir)
+            self.tasks[task_id] = {'p':p, 'process':ps, 'tmpdir':tmpdir,
+                                   'recv_queue':send_queue}
             self.resources.register_process(task_id, ps, tmpdir)
         except:
             logger.error('error creating task', exc_info=True)
@@ -347,8 +396,8 @@ class Pilot(object):
             try:
                 if psutil:
                     # kill children correctly
-                    processes = reversed(task.process.children(recursive=True))
-                    processes.append(task.process)
+                    processes = reversed(task['process'].children(recursive=True))
+                    processes.append(task['process'])
                     for p in processes:
                         try:
                             p.terminate()
@@ -368,14 +417,14 @@ class Pilot(object):
                         logger.warn('failed to kill processes',
                                     exc_info=True)
                 else:
-                    task.p.terminate()
+                    task['p'].terminate()
             except:
                 logger.warn('error deleting process', exc_info=True)
 
             # clean tmpdir
             try:
                 if not self.debug:
-                    shutil.rmtree(task.tmpdir)
+                    shutil.rmtree(task['tmpdir'])
             except:
                 logger.warn('error deleting tmpdir', exc_info=True)
 

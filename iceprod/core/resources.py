@@ -143,6 +143,20 @@ class Resources:
         #: maximum usage for each claim
         self.used = {} # dict of task_id:{resource}
 
+    def get_available(self):
+        """
+        Get available resources for new tasks to match against.
+
+        Returns:
+            dict: resources
+        """
+        ret = deepcopy(self.available)
+        for r in ret:
+            if isinstance(ret[r], list):
+                ret[r] = len(ret[r])
+        ret['time'] -= time.time()/3600
+        return ret
+
     def claim(self, task_id, resources):
         """
         Attempt to claim resources for a task.
@@ -153,6 +167,9 @@ class Resources:
 
         Raises:
             If claim cannot be satisfied, raise Exception
+
+        Returns:
+            dict: claimed resources
         """
         now = time.time()/3600
         claim = {
@@ -177,8 +194,7 @@ class Resources:
                     val = float(val)
 
                 if r == 'time':
-                    val = now + (val/3600.)
-                    continue # ignore time matching for now
+                    val = now + val
 
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:

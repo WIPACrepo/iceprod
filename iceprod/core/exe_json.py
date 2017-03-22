@@ -6,6 +6,7 @@ import sys
 import os
 import time
 from copy import deepcopy
+from functools import wraps
 
 import logging
 logger = logging.getLogger('exe_json')
@@ -32,17 +33,6 @@ def setupjsonRPC(url, passkey, **kwargs):
             raise Exception('JSONRPC communication error when starting - '
                             'echo failed (%r).  url=%s and passkey=%s'
                             %(ret,url,passkey))
-
-def processing(task_id):
-    """
-    Tell the server that we are processing this task.
-
-    Only used for single task config, not for pilots.
-    """
-    ret = JSONRPC.set_processing(task_id=task_id)
-    if isinstance(ret,Exception):
-        # an error occurred
-        raise ret
 
 def downloadtask(gridspec, resources={}):
     """Download a new task from the server"""
@@ -75,13 +65,42 @@ def downloadtask(gridspec, resources={}):
             raise
     return task
 
-def finishtask(cfg, stats={}, start_time=None):
+def processing(task_id):
+    """
+    Tell the server that we are processing this task.
+
+    Only used for single task config, not for pilots.
+    """
+    ret = JSONRPC.set_processing(task_id=task_id)
+    if isinstance(ret,Exception):
+        # an error occurred
+        raise ret
+
+def send_through_pilot(func):
+    """
+    Decorator to route communication through the pilot
+    """
+    @wraps(func)
+    def wrapper(cfg, *args, **kwargs):
+        if 'task_id' not in cfg.config['options']:
+            raise Exception('config["options"]["task_id"] not specified')
+        if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
+            raise Exception('DBKill')
+        if 'message_queue' in cfg.config['options']:
+            send,recv = cfg.config['options']['message_queue']
+            task_id = cfg.config['options']['task_id']
+            send.put((task_id,func.__name__,cfg,args,kwargs))
+            ret = recv.get()
+            if isinstance(ret, Exception):
+                raise ret
+            return ret
+        else:
+            return func(cfg, *args, **kwargs)
+    return wrapper
+
+@send_through_pilot
+def finishtask(cfg, stats={}, start_time=None, resources=None):
     """Finish a task"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"]["task_id"] not specified, '
-                        'so cannot finish task')
-    if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
-        return # don't finish task on a DB kill
     if 'stats' in cfg.config['options']:
         # filter task stats
         stat_keys = set(json_decode(cfg.config['options']['stats']))
@@ -95,17 +114,17 @@ def finishtask(cfg, stats={}, start_time=None):
         t = None
     stats = {'hostname': hostname, 'domain': domain,
              'time_used': t, 'task_stats': stats}
+    if resources:
+        stats['resources'] = resources
     ret = JSONRPC.finish_task(task_id=cfg.config['options']['task_id'],
                               stats=stats)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
 
+@send_through_pilot
 def stillrunning(cfg):
     """Check if the task should still be running according to the DB"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot finish task')
     ret = JSONRPC.stillrunning(task_id=cfg.config['options']['task_id'])
     if isinstance(ret,Exception):
         # an error occurred
@@ -114,7 +133,8 @@ def stillrunning(cfg):
         cfg.config['options']['DBkill'] = True
         raise Exception('task should be stopped')
 
-def taskerror(cfg, start_time=None, reason=None):
+@send_through_pilot
+def taskerror(cfg, start_time=None, reason=None, resources=None):
     """
     Tell the server about the error experienced
 
@@ -123,11 +143,6 @@ def taskerror(cfg, start_time=None, reason=None):
         start_time (float): job start time in unix seconds
         reason (str): one-line summary of error
     """
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot send error')
-    if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
-        return # don't change status on a DB kill
     try:
         hostname = functions.gethostname()
         domain = '.'.join(hostname.split('.')[-2:])
@@ -140,6 +155,8 @@ def taskerror(cfg, start_time=None, reason=None):
             error_info['time_used'] = time.time() - start_time
         if reason:
             error_info['error_summary'] = reason
+        if resources:
+            error_info['resources'] = resources
     except Exception:
         logger.warn('failed to collect error info', exc_info=True)
         error_info = None
@@ -189,42 +206,27 @@ def task_kill(task_id, resources=None, reason=None, message=None):
         # an error occurred
         raise ret
 
-def _upload_logfile(cfg, task_id, name, filename):
+@send_through_pilot
+def _upload_logfile(cfg, name, filename):
     """Upload a log file"""
-    if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
-        return # don't upload logs on a DB kill
+    task_id = cfg.config['options']['task_id']
     data = json_compressor.compress(open(filename).read())
     ret = JSONRPC.upload_logfile(task=task_id,name=name,data=data)
     if isinstance(ret,Exception):
         # an error occurred
         raise ret
 
-def uploadLogging(cfg):
-    """Upload all logging files"""
-    uploadLog(cfg)
-    uploadErr(cfg)
-    uploadOut(cfg)
-
 def uploadLog(cfg):
-    """Upload log files"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot send log')
-    _upload_logfile(cfg, cfg.config['options']['task_id'],'stdlog',constants['stdlog'])
+    """Upload log file"""
+    _upload_logfile(cfg, 'stdlog', os.path.abspath(constants['stdlog']))
 
 def uploadErr(cfg):
-    """Upload error files"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot send error')
-    _upload_logfile(cfg, cfg.config['options']['task_id'],'stderr',constants['stderr'])
+    """Upload stderr file"""
+    _upload_logfile(cfg, 'stderr', os.path.abspath(constants['stderr']))
 
 def uploadOut(cfg):
-    """Upload out files"""
-    if 'task_id' not in cfg.config['options']:
-        raise Exception('config["options"][task_id] not specified, '
-                        'so cannot send output')
-    _upload_logfile(cfg, cfg.config['options']['task_id'],'stdout',constants['stdout'])
+    """Upload stdout file"""
+    _upload_logfile(cfg, 'stdout', os.path.abspath(constants['stdout']))
 
 def update_pilot(pilot_id, **kwargs):
     """Update the pilot table"""
