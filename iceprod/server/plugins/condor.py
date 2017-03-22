@@ -95,6 +95,7 @@ class condor(grid.grid):
             p('output = condor.out.$(Process)')
             p('error = condor.err.$(Process)')
             p('notification = never')
+            p('+IsIceProdJob = True') # mark as IceProd for monitoring
             p('want_graceful_removal = True')
             if filelist:
                 p('transfer_input_files = {}'.format(','.join(filelist)))
