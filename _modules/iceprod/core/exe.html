@@ -740,6 +740,8 @@
             <span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">parseValue</span><span class="p">(</span><span class="n">module</span><span class="p">[</span><span class="s">&#39;env_shell&#39;</span><span class="p">],</span><span class="n">env</span><span class="p">)</span>
 
         <span class="c"># make subprocess to run the module</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;task_exception&#39;</span><span class="p">]):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;task_exception&#39;</span><span class="p">])</span>
         <span class="n">process</span> <span class="o">=</span> <span class="n">run_module</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">module</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">interval</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;stillrunninginterval&#39;</span><span class="p">])</span>
@@ -764,7 +766,16 @@
             <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
                 <span class="k">pass</span>
         <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">returncode</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;module failed&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;task_exception&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">e</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">e</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cannot load exception info from failed module&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;module failed&#39;</span><span class="p">)</span>
 
         <span class="c"># get stats, if available</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]):</span>
