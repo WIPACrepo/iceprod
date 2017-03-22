@@ -458,6 +458,10 @@ class JSONRPCHandler(MyHandler):
             logger.info('DB method not found: %r', method)
             self.json_error({'code':-32601,'message':'Method not found'},
                             request_id=request_id)
+        except tornado.gen.TimeoutError:
+            logger.info('Timeout error in DB method: %r', method, exc_info=True)
+            self.json_error({'code':-32001,'message':'Server error'},
+                            status=503, request_id=request_id)
         except Exception:
             logger.info('error in DB method: %r', method, exc_info=True)
             self.json_error({'code':-32000,'message':'Server error'},

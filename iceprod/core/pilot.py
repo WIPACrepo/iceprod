@@ -241,7 +241,7 @@ class Pilot(object):
     @gen.coroutine
     def run(self):
         """Run the pilot"""
-        errors = 0
+        errors = int(self.resources.total['cpu'])*5
         tasks_running = 0
         while self.running:
             while self.running:
@@ -249,8 +249,8 @@ class Pilot(object):
                     task_config = exe_json.downloadtask(self.config['options']['gridspec'],
                                                         resources=self.resources.get_available())
                 except Exception:
-                    errors += 1
-                    if errors > 5:
+                    errors -= 1
+                    if errors < 1:
                         self.running = False
                     logger.error('cannot download task. current error count is %d',
                                  errors, exc_info=True)
@@ -266,8 +266,8 @@ class Pilot(object):
                     try:
                         task_id = task_config['options']['task_id']
                     except Exception:
-                        errors += 1
-                        if errors > 5:
+                        errors -= 1
+                        if errors < 1:
                             self.running = False
                         logger.error('error getting task_id from config')
                         continue
@@ -277,8 +277,8 @@ class Pilot(object):
                         task_resources = self.resources.claim(task_id, task_config['options']['resources'])
                         task_config['options']['resources'] = task_resources
                     except Exception:
-                        errors += 1
-                        if errors > 5:
+                        errors -= 1
+                        if errors < 1:
                             self.running = False
                         logger.warn('error claiming resources %s', task_id,
                                     exc_info=True)
@@ -290,8 +290,8 @@ class Pilot(object):
                     try:
                         self.create_task(task_config)
                     except Exception:
-                        errors += 1
-                        if errors > 5:
+                        errors -= 1
+                        if errors < 1:
                             self.running = False
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
@@ -316,6 +316,12 @@ class Pilot(object):
                 # check if any processes have died
                 for task_id in list(self.tasks):
                     if not self.tasks[task_id]['p'].is_alive():
+                        if self.tasks[task_id]['p'].exitcode != 0:
+                            logger.info('task %s exited with bad code: %r',
+                                        task_id, self.tasks[task_id]['p'].exitcode)
+                            errors -= 1
+                            if errors < 1:
+                                self.running = False
                         self.clean_task(task_id)
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
@@ -323,9 +329,11 @@ class Pilot(object):
                     exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
                     if self.running:
                         break
-        
-        if errors >= 5:
+
+        if errors < 1:
             logger.critical('too many errors when running tasks')
+            logger.error('enabling black hole protection - sleep 1 hour')
+            time.sleep(3600)
         else:
             logger.warn('cleanly stopping pilot')
 
@@ -406,6 +414,8 @@ class Pilot(object):
                     for p in processes:
                         try:
                             p.terminate()
+                        except psutil.NoSuchProcess:
+                            pass
                         except:
                             logger.warn('error terminating process',
                                         exc_info=True)
@@ -417,7 +427,13 @@ class Pilot(object):
                         gone, alive = psutil.wait_procs(processes, timeout=0.1,
                                                         callback=on_terminate)
                         for p in alive:
-                            p.kill()
+                            try:
+                                p.kill()
+                            except psutil.NoSuchProcess:
+                                pass
+                            except:
+                                logger.warn('error killing process',
+                                            exc_info=True)
                     except:
                         logger.warn('failed to kill processes',
                                     exc_info=True)

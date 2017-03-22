@@ -80,7 +80,7 @@ class Client(object):
 
         # make request to server
         data = None
-        for i in range(3):
+        for i in range(10):
             try:
                 r = self.__session.post(self.__address, timeout=self.__timeout,
                         data=body, headers={'Content-Type': 'application/json-rpc'})
@@ -90,8 +90,9 @@ class Client(object):
             except:
                 logger.warn('error making jsonrpc request for %s', methodname)
                 if i < 2:
-                    # try restarting connection
+                    # try restarting connection, with backoff
                     self.close()
+                    time.sleep(random.randint(i*2,(i+1)*30))
                     self.open()
                 else:
                     raise
