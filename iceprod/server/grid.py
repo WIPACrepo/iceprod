@@ -518,25 +518,28 @@ class grid(object):
                         break
 
         for resources in groups2:
-            r = json_decode(resources)
-            logger.info('submitting %d pilots for resource %r',
-                        groups2[resources], r)
-            for name in r:
-                self.statsd.incr('pilot_resources.'+name, r[name])
-            pilot = {'task_id': 'pilot',
-                     'name': 'pilot',
-                     'debug': debug,
-                     'reqs': r,
-                     'num': groups2[resources],
-            }
-            pilot_ids = yield self.modules['db']['queue_new_pilot_ids'](num=pilot['num'])
-            pilot['pilot_ids'] = pilot_ids
-            yield self.setup_submit_directory(pilot)
-            yield self.submit(pilot)
-            ret = yield self.modules['db']['queue_add_pilot'](pilot=pilot)
-            if isinstance(ret,Exception):
-                logger.error('error updating DB with pilots')
-                raise ret
+            try:
+                r = json_decode(resources)
+                logger.info('submitting %d pilots for resource %r',
+                            groups2[resources], r)
+                for name in r:
+                    self.statsd.incr('pilot_resources.'+name, r[name])
+                pilot = {'task_id': 'pilot',
+                         'name': 'pilot',
+                         'debug': debug,
+                         'reqs': r,
+                         'num': groups2[resources],
+                }
+                pilot_ids = yield self.modules['db']['queue_new_pilot_ids'](num=pilot['num'])
+                pilot['pilot_ids'] = pilot_ids
+                yield self.setup_submit_directory(pilot)
+                yield self.submit(pilot)
+                ret = yield self.modules['db']['queue_add_pilot'](pilot=pilot)
+                if isinstance(ret,Exception):
+                    logger.error('error updating DB with pilots')
+                    raise ret
+            except:
+                logger.error('error submitting pilots', exc_info=True)
 
     @tornado.gen.coroutine
     def setup_submit_directory(self,task):
