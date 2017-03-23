@@ -638,25 +638,28 @@
                         <span class="k">break</span>
 
         <span class="k">for</span> <span class="n">resources</span> <span class="ow">in</span> <span class="n">groups2</span><span class="p">:</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;submitting %d pilots for resource %r&#39;</span><span class="p">,</span>
-                        <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;pilot_resources.&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
-            <span class="n">pilot</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
-                     <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
-                     <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">,</span>
-                     <span class="s">&#39;reqs&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
-                     <span class="s">&#39;num&#39;</span><span class="p">:</span> <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span>
-            <span class="p">}</span>
-            <span class="n">pilot_ids</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_new_pilot_ids&#39;</span><span class="p">](</span><span class="n">num</span><span class="o">=</span><span class="n">pilot</span><span class="p">[</span><span class="s">&#39;num&#39;</span><span class="p">])</span>
-            <span class="n">pilot</span><span class="p">[</span><span class="s">&#39;pilot_ids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pilot_ids</span>
-            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_submit_directory</span><span class="p">(</span><span class="n">pilot</span><span class="p">)</span>
-            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">pilot</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_add_pilot&#39;</span><span class="p">](</span><span class="n">pilot</span><span class="o">=</span><span class="n">pilot</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error updating DB with pilots&#39;</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="n">ret</span></div>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;submitting %d pilots for resource %r&#39;</span><span class="p">,</span>
+                            <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;pilot_resources.&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">pilot</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">,</span>
+                         <span class="s">&#39;reqs&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
+                         <span class="s">&#39;num&#39;</span><span class="p">:</span> <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span>
+                <span class="p">}</span>
+                <span class="n">pilot_ids</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_new_pilot_ids&#39;</span><span class="p">](</span><span class="n">num</span><span class="o">=</span><span class="n">pilot</span><span class="p">[</span><span class="s">&#39;num&#39;</span><span class="p">])</span>
+                <span class="n">pilot</span><span class="p">[</span><span class="s">&#39;pilot_ids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pilot_ids</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_submit_directory</span><span class="p">(</span><span class="n">pilot</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">pilot</span><span class="p">)</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_add_pilot&#39;</span><span class="p">](</span><span class="n">pilot</span><span class="o">=</span><span class="n">pilot</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error updating DB with pilots&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">ret</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error submitting pilots&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="grid.setup_submit_directory"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.grid.setup_submit_directory">[docs]</a>    <span class="k">def</span> <span class="nf">setup_submit_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">task</span><span class="p">):</span>
