@@ -453,13 +453,13 @@ def get_cpus():
                     break
         except Exception:
             pass
-    if ret is None and 'NUM_CPUS' in os.environ:
+    if (not ret) and 'NUM_CPUS' in os.environ:
         try:
             ret = int(float(os.environ['NUM_CPUS']))
             logger.info('got cpus from NUM_CPUS: %r',ret)
         except Exception:
             pass
-    if ret is None:
+    if not ret:
         return Resources.defaults['cpu']
     else:
         return ret
@@ -481,31 +481,31 @@ def get_gpus():
                     break
         except Exception:
             pass
-    if ret is None and 'CUDA_VISIBLE_DEVICES' in os.environ:
+    if (not ret) and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
-            ret = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+            ret = [x.strip() for x in os.environ['CUDA_VISIBLE_DEVICES'].split(',') if x.strip()]
             logger.info('got gpus from CUDA_VISIBLE_DEVICES: %r',ret)
         except Exception:
             pass
-    if ret is None and 'GPU_DEVICE_ORDINAL' in os.environ:
+    if (not ret) and 'GPU_DEVICE_ORDINAL' in os.environ:
         try:
-            ret = os.environ['GPU_DEVICE_ORDINAL'].split(',')
+            ret = [x.strip() for x in os.environ['GPU_DEVICE_ORDINAL'].split(',') if x.strip()]
             logger.info('got gpus from GPU_DEVICE_ORDINAL: %r',ret)
         except Exception:
             pass
-    if ret is None and '_CONDOR_AssignedGPUs' in os.environ:
+    if (not ret) and '_CONDOR_AssignedGPUs' in os.environ:
         try:
-            ret = os.environ['_CONDOR_AssignedGPUs'].split(',')
+            ret = [x.strip() for x in os.environ['_CONDOR_AssignedGPUs'].split(',') if x.strip()]
             logger.info('got gpus from _CONDOR_AssignedGPUs: %r',ret)
         except Exception:
             pass
-    if ret is None and 'NUM_GPUS' in os.environ:
+    if (not ret) and 'NUM_GPUS' in os.environ:
         try:
             ret = [str(x) for x in range(int(os.environ['NUM_GPUS']))]
             logger.info('got gpus from NUM_GPUS: %r',ret)
         except Exception:
             pass
-    if ret is None:
+    if not ret:
         return deepcopy(Resources.defaults['gpu'])
     else:
         return ret
@@ -523,13 +523,13 @@ def get_memory():
                     break
         except Exception:
             pass
-    if ret is None and 'NUM_MEMORY' in os.environ:
+    if (not ret) and 'NUM_MEMORY' in os.environ:
         try:
             ret = float(os.environ['NUM_MEMORY'])
             logger.info('got memory from NUM_MEMORY: %r',ret)
         except Exception:
             pass
-    if ret is None:
+    if not ret:
         return Resources.defaults['memory']
     else:
         return ret
@@ -547,13 +547,13 @@ def get_disk():
                     break
         except Exception:
             pass
-    if ret is None and 'NUM_DISK' in os.environ:
+    if (not ret) and 'NUM_DISK' in os.environ:
         try:
             ret = float(os.environ['NUM_DISK'])
             logger.info('got disk from NUM_DISK: %r',ret)
         except Exception:
             pass
-    if ret is None:
+    if not ret:
         return Resources.defaults['disk']
     else:
         return ret
@@ -571,13 +571,13 @@ def get_time():
                     break
         except Exception:
             pass
-    if ret is None and 'NUM_TIME' in os.environ:
+    if (not ret)and 'NUM_TIME' in os.environ:
         try:
             ret = float(os.environ['NUM_TIME'])
             logger.info('got time from NUM_TIME: %r',ret)
         except Exception:
             pass
-    if ret is None:
+    if not ret:
         return Resources.defaults['time']
     else:
         return ret
