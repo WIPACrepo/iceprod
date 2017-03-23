@@ -111,7 +111,7 @@ class web(_Methods_Base):
             ret = dataset_groups
         else:
             ret = [self._list_to_dict('dataset',x) for x in ret]
-            ret.sort(key=lambda x:GlobalID.localID_ret(x['dataset_id']))
+            ret.sort(key=lambda x:x['start_date']))
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
