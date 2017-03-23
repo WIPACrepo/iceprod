@@ -453,11 +453,11 @@ class grid(object):
         for t in tasks:
             values = {}
             for k in t['reqs']:
-                if t['reqs'][k]:
+                if k in default_resource and t['reqs'][k]:
                     try:
-                        if isinstance(default_resource, int):
+                        if isinstance(default_resource[k], int):
                             values[k] = int(t['reqs'][k])
-                        elif isinstance(default_resource, float):
+                        elif isinstance(default_resource[k], float):
                             values[k] = float(t['reqs'][k])
                         else:
                             values[k] = t['reqs'][k]
