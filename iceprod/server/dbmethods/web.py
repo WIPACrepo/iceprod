@@ -17,7 +17,7 @@ import tornado.gen
 
 import iceprod.core.functions
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
-
+from iceprod.server import GlobalID
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, filtered_input
 
 logger = logging.getLogger('dbmethods.web')
@@ -111,6 +111,7 @@ class web(_Methods_Base):
             ret = dataset_groups
         else:
             ret = [self._list_to_dict('dataset',x) for x in ret]
+            ret.sort(key=lambda x:GlobalID.localID_ret(x['dataset_id']))
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
