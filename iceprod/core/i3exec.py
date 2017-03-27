@@ -45,6 +45,7 @@ def handler(signum, frame):
 
 def load_config(cfgfile):
     """Load a config from file, serialized string, dictionary, etc"""
+    logger = logging.getLogger('i3exec')
     config = None
     if isinstance(cfgfile,str):
         try:
@@ -62,7 +63,7 @@ def load_config(cfgfile):
     elif isinstance(cfgfile,dict):
         config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
     else:
-        logging.warn('cfgfile: %r',cfgfile)
+        logger.warn('cfgfile: %r',cfgfile)
         raise Exception('cfgfile is not a str or a Job')
     return config
 
@@ -119,7 +120,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                     'so cannot update status')
                 iceprod.core.exe_json.processing(config['options']['task_id'])
             except:
-                logging.error('json error', exc_info=True)
+                logger.error('json error', exc_info=True)
 
         # set up stdout and stderr
         stdout = partial(to_file,sys.stdout,constants['stdout'])
