@@ -92,7 +92,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     if cfgfile is None:
         logger.critical('There is no cfgfile')
         raise Exception('missing cfgfile')
-    config = load_config(cfgfile)
+    elif isinstance(cfgfile, str):
+        config = load_config(cfgfile)
+    else:
+        config = cfgfile
     logger.info('config: %r',config)
 
     if offline is True:
@@ -332,6 +335,8 @@ if __name__ == '__main__':
                         help='Enable offline mode (don\'t talk with server)')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
+    parser.add_argument('--task', type=str, default=None,
+                        help='Specify task to run')
 
     args = vars(parser.parse_args())
     print args
@@ -342,6 +347,12 @@ if __name__ == '__main__':
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
+    if args['cfgfile']:
+        cfgfile = load_config(args['cfgfile'])
+        task = args.pop('task')
+        if task:
+            cfgfile['options']['task'] = task
+        args['cfgfile'] = cfgfile
 
     # start iceprod
     main(**args)
