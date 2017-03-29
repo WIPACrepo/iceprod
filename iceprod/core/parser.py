@@ -10,6 +10,8 @@ from __future__ import absolute_import, division, print_function
 import re
 import string
 import random
+import functools
+import __builtin__
 
 class safe_eval:
     import ast
@@ -144,6 +146,7 @@ class ExpParser:
     * metadata : A value from :class:`iceprod.core.dataclasses.Dif` or
       :class:`iceprod.core.dataclasses.Plus`
     * eval : An arithmatic expression
+    * sum, min, max, len : Apply a reduction to a sequence
     * choice : A random choice from a list of possibilites
     * sprintf : The sprintf string syntax
     
@@ -172,6 +175,8 @@ class ExpParser:
                          'choice' : self.choice_func,
                          'sprintf' : self.sprintf_func
                         }
+        for reduction in 'sum', 'min', 'max', 'len':
+            self.keywords[reduction] = functools.partial(self.reduce_func, getattr(__builtin__, reduction))
     
     def parse(self,input,job=None,env=None):
         """
@@ -323,7 +328,7 @@ class ExpParser:
         ret = None
         if keyword in self.keywords and param != None:
             try:
-                ret = self.keywords[keyword](str(param))
+                ret = self.keywords[keyword](param)
             except GrammarException as e:
                 pass
         if ret is None and param is None:
@@ -357,6 +362,7 @@ class ExpParser:
     
     def steering_func(self,param):
         """Find param in steering"""
+        param = str(param)
         if self.job['steering'] and param in self.job['steering']['parameters']:
             return ParseObj(self.job['steering']['parameters'][param],False)
         else:
@@ -364,6 +370,7 @@ class ExpParser:
 
     def system_func(self,param):
         """Find param in steering.system"""
+        param = str(param)
         if self.job['steering'] and param in self.job['steering']['system']:
             return ParseObj(self.job['steering']['system'][param],False)
         else:
@@ -371,6 +378,7 @@ class ExpParser:
     
     def options_func(self,param):
         """Find param in options"""
+        param = str(param)
         if param in self.job['options']:
             return ParseObj(self.job['options'][param],False)
         else:
@@ -378,6 +386,7 @@ class ExpParser:
     
     def difplus_func(self,param):
         """Find param in dif plus"""
+        param = str(param)
         try:
             # try dif, then plus
             return ParseObj(self.job['difplus']['dif'][param])
@@ -393,6 +402,8 @@ class ExpParser:
             if isinstance(param,(tuple,list)):
                 return ParseObj(random.choice(param))
             else:
+                if isinstance(param, ParseObj):
+                    param = str(param)
                 return ParseObj(random.choice(param.split(',')))
         except:
             raise GrammarException('not a valid choice')
@@ -400,6 +411,7 @@ class ExpParser:
     def eval_func(self,param):
         """Evaluate param as arithmetic expression"""
         #bad = re.search(r'(import)|(open)|(for)|(while)|(def)|(class)|(lambda)', param )
+        param = str(param)
         bad = reduce(lambda a, b: a or (b in param),('import','open','for','while','def','class','lambda'),False)
         if bad:
             raise GrammarException('Unsafe operator call')
@@ -409,9 +421,16 @@ class ExpParser:
             except Exception as e:
                 raise GrammarException('Eval is not basic arithmetic')
     
+    def reduce_func(self, func, param):
+        try:
+            return ParseObj(func(param.obj), False)
+        except Exception as e:
+            raise GrammarException('Not a reducible sequence')
+    
     def sprintf_func(self,param):
         """Evaluate param as sprintf.  param = arg_str, arg0, arg1, ... """
         # separate into format string and args
+        param = str(param)
         strchar = param[0]
         if strchar in '\'"':
             pos = param.find(strchar,1)
