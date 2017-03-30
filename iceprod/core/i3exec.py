@@ -335,8 +335,10 @@ if __name__ == '__main__':
                         help='Enable offline mode (don\'t talk with server)')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
+    parser.add_argument('--job', type=int, default=None,
+                        help='Index of the job to run')
     parser.add_argument('--task', type=str, default=None,
-                        help='Specify task to run')
+                        help='Name of the task to run')
 
     args = vars(parser.parse_args())
     print args
@@ -347,11 +349,13 @@ if __name__ == '__main__':
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
+    
+    options = {k: args.pop(k) for k in ('task','job',)}
     if args['cfgfile']:
         cfgfile = load_config(args['cfgfile'])
-        task = args.pop('task')
-        if task:
-            cfgfile['options']['task'] = task
+        for k in options:
+            if options[k] is not None:
+                cfgfile['options'][k] = options[k]
         args['cfgfile'] = cfgfile
 
     # start iceprod
