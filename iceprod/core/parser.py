@@ -10,6 +10,8 @@ from __future__ import absolute_import, division, print_function
 import re
 import string
 import random
+import functools
+import __builtin__
 
 class safe_eval:
     import ast
@@ -50,8 +52,8 @@ class ParseObj(object):
     """
     A object container for temporary parsed objects.
     """
-    def __init__(self,obj=None):
-        if obj is not None:
+    def __init__(self,obj=None,stringify=True):
+        if obj is not None and stringify:
             obj = str(obj)
         self.obj = obj
     def output(self):
@@ -67,13 +69,14 @@ class ParseObj(object):
                 else:
                     return float(self.obj)
         except Exception:
-            return self.obj           
+            pass
+        return self.obj
     def __repr__(self):
         return repr(self.obj)
     def __str__(self):
         return str(self.obj)
     def __nonzero__(self):
-        return bool(self.obj)
+        return self.obj is not None and self.obj != ''
     def __len__(self):
         return len(self.obj)
     def __getitem__(self,key):
@@ -126,7 +129,7 @@ class ExpParser:
     
     Grammar Definition::
     
-        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#%&'*+,-./:;<=>?@\^_`|~[]{}
+        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#%&'*+,-./:;<=>?@\^_`|~{}
         word     := char | char + word
         starter  := $
         scopeL   := (
@@ -143,6 +146,7 @@ class ExpParser:
     * metadata : A value from :class:`iceprod.core.dataclasses.Dif` or
       :class:`iceprod.core.dataclasses.Plus`
     * eval : An arithmatic expression
+    * sum, min, max, len : Apply a reduction to a sequence
     * choice : A random choice from a list of possibilites
     * sprintf : The sprintf string syntax
     
@@ -171,6 +175,8 @@ class ExpParser:
                          'choice' : self.choice_func,
                          'sprintf' : self.sprintf_func
                         }
+        for reduction in 'sum', 'min', 'max', 'len':
+            self.keywords[reduction] = functools.partial(self.reduce_func, getattr(__builtin__, reduction))
     
     def parse(self,input,job=None,env=None):
         """
@@ -231,7 +237,18 @@ class ExpParser:
         (sR,right) = self.scopeR(right)
         
         # do actual processing
-        ret = ParseObj(self.process_phrase(sym,sen))
+        ret = self.process_phrase(sym,sen)
+        
+        if len(right) > 1 and right[0] == '[':
+            try:
+                (sL,right) = self.subscriptL(right)
+                (key,right) = self.sentence(right)
+                (sR,right) = self.subscriptR(right)
+            
+                key = key.output()
+                ret = ParseObj(ret[key], False)
+            except Exception:
+                raise GrammarException("Couldn't parse subscript")
         
         # return processed work + input to the right
         return (ret,right)
@@ -251,12 +268,24 @@ class ExpParser:
             return (ParseObj(input[0]),ParseObj(input[1:]))
         else:
             raise GrammarException('missing scopeL')
+    
+    def subscriptL(self,input):
+        if input and input[0] in '[':
+            return (ParseObj(input[0]),ParseObj(input[1:]))
+        else:
+            raise GrammarException('missing subscriptL')
 
     def scopeR(self,input):
         if input and input[0] in ')':
             return (ParseObj(input[0]),ParseObj(input[1:]))
         else:
             raise GrammarException('missing scopeR')
+    
+    def subscriptR(self,input):
+        if input and input[0] in ']':
+            return (ParseObj(input[0]),ParseObj(input[1:]))
+        else:
+            raise GrammarException('missing subscriptR')
 
     def starter(self,input):
         if input and input[0] == '$':
@@ -264,7 +293,7 @@ class ExpParser:
         else:
             raise GrammarException('missing symbol starter')
 
-    special_chars = set('$()')
+    special_chars = set('$()[]')
     chars = set(string.printable)-special_chars
     def word(self,input):
         i = 0
@@ -299,7 +328,7 @@ class ExpParser:
         ret = None
         if keyword in self.keywords and param != None:
             try:
-                ret = self.keywords[keyword](str(param))
+                ret = self.keywords[keyword](param)
             except GrammarException as e:
                 pass
         if ret is None and param is None:
@@ -322,35 +351,42 @@ class ExpParser:
                     pass
         
         if ret is None:
+            # keyword could not be evaluated. return input.
             ret = sym+'('+sentence+')'
-        else:
+        elif isinstance(ret.obj, dataclasses.String):
+            # result is a string that may contain further expressions
             left,right = self.sentence(ret)
             ret = left + right
+        
         return ret
     
     def steering_func(self,param):
         """Find param in steering"""
+        param = str(param)
         if self.job['steering'] and param in self.job['steering']['parameters']:
-            return ParseObj(self.job['steering']['parameters'][param])
+            return ParseObj(self.job['steering']['parameters'][param],False)
         else:
             raise GrammarException('steering:'+str(param))
 
     def system_func(self,param):
         """Find param in steering.system"""
+        param = str(param)
         if self.job['steering'] and param in self.job['steering']['system']:
-            return ParseObj(self.job['steering']['system'][param])
+            return ParseObj(self.job['steering']['system'][param],False)
         else:
             raise GrammarException('system:'+str(param))
     
     def options_func(self,param):
         """Find param in options"""
+        param = str(param)
         if param in self.job['options']:
-            return ParseObj(self.job['options'][param])
+            return ParseObj(self.job['options'][param],False)
         else:
             raise GrammarException('options:'+str(param))
     
     def difplus_func(self,param):
         """Find param in dif plus"""
+        param = str(param)
         try:
             # try dif, then plus
             return ParseObj(self.job['difplus']['dif'][param])
@@ -366,6 +402,8 @@ class ExpParser:
             if isinstance(param,(tuple,list)):
                 return ParseObj(random.choice(param))
             else:
+                if isinstance(param, ParseObj):
+                    param = str(param)
                 return ParseObj(random.choice(param.split(',')))
         except:
             raise GrammarException('not a valid choice')
@@ -373,6 +411,7 @@ class ExpParser:
     def eval_func(self,param):
         """Evaluate param as arithmetic expression"""
         #bad = re.search(r'(import)|(open)|(for)|(while)|(def)|(class)|(lambda)', param )
+        param = str(param)
         bad = reduce(lambda a, b: a or (b in param),('import','open','for','while','def','class','lambda'),False)
         if bad:
             raise GrammarException('Unsafe operator call')
@@ -382,9 +421,16 @@ class ExpParser:
             except Exception as e:
                 raise GrammarException('Eval is not basic arithmetic')
     
+    def reduce_func(self, func, param):
+        try:
+            return ParseObj(func(param.obj), False)
+        except Exception as e:
+            raise GrammarException('Not a reducible sequence')
+    
     def sprintf_func(self,param):
         """Evaluate param as sprintf.  param = arg_str, arg0, arg1, ... """
         # separate into format string and args
+        param = str(param)
         strchar = param[0]
         if strchar in '\'"':
             pos = param.find(strchar,1)

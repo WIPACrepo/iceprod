@@ -16,6 +16,7 @@ import string
 import subprocess
 import threading
 import unittest
+import __builtin__
 
 from flexmock import flexmock
 
@@ -44,7 +45,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.steering_func('test')
-        expected = str(job['steering']['parameters']['test'])
+        expected = job['steering']['parameters']['test']
         if ret != expected:
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('test: ret != expected')
@@ -77,7 +78,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.system_func('test')
-        expected = str(job['steering']['system']['test'])
+        expected = job['steering']['system']['test']
         if ret != expected:
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('test: ret != expected')
@@ -109,7 +110,7 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.options_func('test')
-        expected = str(job['options']['test'])
+        expected = job['options']['test']
         if ret != expected:
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('test: ret != expected')
@@ -310,6 +311,7 @@ class parser_test(unittest.TestCase):
         job['steering']['parameters'] = {
             'test': 1,
             'test2': 't2',
+            'list': [1,2,3,4.0],
         }
 
         p = parser.ExpParser()
@@ -327,6 +329,24 @@ class parser_test(unittest.TestCase):
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('test2: ret != expected')
 
+        ret = p.parse('$steering(list)',job=job)
+        expected = job['steering']['parameters']['list']
+        if ret != expected:
+            logger.info('ret=%r, expected=%r',ret,expected)
+            raise Exception('list: ret != expected')
+
+        ret = p.parse('$steering(list)[$steering(test)]',job=job)
+        expected = job['steering']['parameters']['list'][job['steering']['parameters']['test']]
+        if ret != expected:
+            logger.info('ret=%r, expected=%r',ret,expected)
+            raise Exception('list[test]: ret != expected')
+
+        for reduction in 'sum', 'len', 'min', 'max':
+            ret = p.parse('${}($steering(list))'.format(reduction),job=job)
+            expected = getattr(__builtin__, reduction)(job['steering']['parameters']['list'])
+            if ret != expected:
+                logger.info('ret=%r, expected=%r',ret,expected)
+                raise Exception('{}: ret != expected'.format('${}($steering(list))'.format(reduction)))
 
         ret = p.parse('$steering(test3)',job=job)
         expected = '$steering(test3)'

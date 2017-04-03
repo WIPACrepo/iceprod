@@ -45,6 +45,7 @@ def handler(signum, frame):
 
 def load_config(cfgfile):
     """Load a config from file, serialized string, dictionary, etc"""
+    logger = logging.getLogger('i3exec')
     config = None
     if isinstance(cfgfile,str):
         try:
@@ -62,7 +63,7 @@ def load_config(cfgfile):
     elif isinstance(cfgfile,dict):
         config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
     else:
-        logging.warn('cfgfile: %r',cfgfile)
+        logger.warn('cfgfile: %r',cfgfile)
         raise Exception('cfgfile is not a str or a Job')
     return config
 
@@ -91,7 +92,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     if cfgfile is None:
         logger.critical('There is no cfgfile')
         raise Exception('missing cfgfile')
-    config = load_config(cfgfile)
+    elif isinstance(cfgfile, str):
+        config = load_config(cfgfile)
+    else:
+        config = cfgfile
     logger.info('config: %r',config)
 
     if offline is True:
@@ -119,7 +123,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                     'so cannot update status')
                 iceprod.core.exe_json.processing(config['options']['task_id'])
             except:
-                logging.error('json error', exc_info=True)
+                logger.error('json error', exc_info=True)
 
         # set up stdout and stderr
         stdout = partial(to_file,sys.stdout,constants['stdout'])
@@ -331,6 +335,10 @@ if __name__ == '__main__':
                         help='Enable offline mode (don\'t talk with server)')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
+    parser.add_argument('--job', type=int, default=None,
+                        help='Index of the job to run')
+    parser.add_argument('--task', type=str, default=None,
+                        help='Name of the task to run')
 
     args = vars(parser.parse_args())
     print args
@@ -341,6 +349,14 @@ if __name__ == '__main__':
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
+    
+    options = {k: args.pop(k) for k in ('task','job',)}
+    if args['cfgfile']:
+        cfgfile = load_config(args['cfgfile'])
+        for k in options:
+            if options[k] is not None:
+                cfgfile['options'][k] = options[k]
+        args['cfgfile'] = cfgfile
 
     # start iceprod
     main(**args)
