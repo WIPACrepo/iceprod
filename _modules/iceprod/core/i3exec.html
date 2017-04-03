@@ -212,7 +212,10 @@
     <span class="k">if</span> <span class="n">cfgfile</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;There is no cfgfile&#39;</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;missing cfgfile&#39;</span><span class="p">)</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">cfgfile</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;config: %r&#39;</span><span class="p">,</span><span class="n">config</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">offline</span> <span class="ow">is</span> <span class="k">True</span><span class="p">:</span>
@@ -452,6 +455,8 @@
                         <span class="n">help</span><span class="o">=</span><span class="s">&#39;Enable offline mode (don</span><span class="se">\&#39;</span><span class="s">t talk with server)&#39;</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--logfile&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
                         <span class="n">help</span><span class="o">=</span><span class="s">&#39;Specify the logfile to use&#39;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;--task&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s">&#39;Specify task to run&#39;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
     <span class="nb">print</span> <span class="n">args</span>
@@ -462,6 +467,12 @@
             <span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]:</span>
+        <span class="n">cfgfile</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">])</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+            <span class="n">cfgfile</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cfgfile</span>
 
     <span class="c"># start iceprod</span>
     <span class="n">main</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span>
