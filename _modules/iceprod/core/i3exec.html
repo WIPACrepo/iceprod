@@ -165,6 +165,7 @@
 
 <div class="viewcode-block" id="load_config"><a class="viewcode-back" href="../../../core/i3exec.html#iceprod.core.i3exec.load_config">[docs]</a><span class="k">def</span> <span class="nf">load_config</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load a config from file, serialized string, dictionary, etc&quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;i3exec&#39;</span><span class="p">)</span>
     <span class="n">config</span> <span class="o">=</span> <span class="k">None</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -182,7 +183,7 @@
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">serialization</span><span class="o">.</span><span class="n">dict_to_dataclasses</span><span class="p">(</span><span class="n">cfgfile</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cfgfile: %r&#39;</span><span class="p">,</span><span class="n">cfgfile</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cfgfile: %r&#39;</span><span class="p">,</span><span class="n">cfgfile</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cfgfile is not a str or a Job&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">config</span></div>
 
@@ -239,7 +240,7 @@
                                     <span class="s">&#39;so cannot update status&#39;</span><span class="p">)</span>
                 <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">processing</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;task_id&#39;</span><span class="p">])</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;json error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;json error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
         <span class="c"># set up stdout and stderr</span>
         <span class="n">stdout</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">to_file</span><span class="p">,</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stdout&#39;</span><span class="p">])</span>

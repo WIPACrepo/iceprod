@@ -309,37 +309,6 @@
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to clean site_temp&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
 
-    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<div class="viewcode-block" id="cron.cron_clean_completed_jobs"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_clean_completed_jobs">[docs]</a>    <span class="k">def</span> <span class="nf">cron_clean_completed_jobs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check old files in the dagtemp from completed jobs&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="s">&#39;site_temp&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]:</span>
-            <span class="k">return</span>
-
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_id,job_index from job where status = &quot;complete&quot;&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="n">jobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">job_id</span><span class="p">:</span><span class="n">index</span> <span class="k">for</span> <span class="n">job_id</span><span class="p">,</span><span class="n">index</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
-
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, job_id from search &#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_status = &quot;complete&quot;&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="n">datasets</span> <span class="o">=</span> <span class="p">{</span><span class="n">job_id</span><span class="p">:</span><span class="n">dataset_id</span> <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">job_id</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
-
-        <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
-            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
-            <span class="n">job_index</span> <span class="o">=</span> <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
-
-            <span class="c"># clean dagtemp</span>
-            <span class="n">temp_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;site_temp&#39;</span><span class="p">]</span>
-            <span class="n">dataset</span> <span class="o">=</span> <span class="n">GlobalID</span><span class="o">.</span><span class="n">localID_ret</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">dagtemp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">job_index</span><span class="p">))</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cleaning site_temp %r&#39;</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">)</span>
-                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">functions</span><span class="o">.</span><span class="n">delete</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">))</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to clean site_temp&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
-
 <div class="viewcode-block" id="cron.cron_remove_old_passkeys"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_remove_old_passkeys">[docs]</a>    <span class="k">def</span> <span class="nf">cron_remove_old_passkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from passkey where expire &lt; ?&#39;</span>
