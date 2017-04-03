@@ -719,7 +719,6 @@ class functions_test(unittest.TestCase):
                 with open(filename,'w') as f:
                     f.write(data)
                 get.url = url
-                return True
             else:
                 raise Exception()
         get.url = None
@@ -820,11 +819,9 @@ class functions_test(unittest.TestCase):
                 with open(filename,'w') as f:
                     f.write(data)
                 get.url = url
-                return True
             elif url.endswith('.md5sum'):
                 with open(filename,'w') as f:
                     f.write(md5sum+' '+'globus.tar.gz')
-                return True
             else:
                 raise Exception()
         get.url = None
@@ -953,9 +950,8 @@ class functions_test(unittest.TestCase):
             if url.endswith('globus.tar.gz'):
                 put.url = url
                 put.filename = filename
-                return True
             elif url.endswith('globus2.tar.gz'):
-                return False
+                raise Exception('expected failure')
             else:
                 raise Exception()
         put.url = None
@@ -1097,12 +1093,12 @@ class functions_test(unittest.TestCase):
         def delete(url):
             logger.info('fake delete: url=%r', url)
             if url.endswith('globus.tar.gz'):
-                return True
+                return
             elif url.endswith('globus2.tar.gz'):
-                return False
+                raise Exception('expected failure')
             else:
                 raise Exception()
-        gridftp.delete = delete
+        gridftp.rmtree = delete
 
         url = 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz'
         iceprod.core.functions.delete(url)

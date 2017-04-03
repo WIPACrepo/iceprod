@@ -100,3 +100,6 @@ class schedule(module.module):
         self.scheduler.schedule('every 31 minutes',
                 self.modules['db']['cron_job_completion'])
 
+        self.scheduler.schedule('every 1 days',
+                self.modules['db']['cron_clean_completed_jobs'])
+

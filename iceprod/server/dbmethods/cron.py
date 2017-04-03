@@ -189,6 +189,37 @@ class cron(_Methods_Base):
                 except Exception as e:
                     logger.warn('failed to clean site_temp', exc_info=True)
 
+    @tornado.gen.coroutine
+    def cron_clean_completed_jobs(self):
+        """Check old files in the dagtemp from completed jobs"""
+        if 'site_temp' not in self.parent.cfg['queue']:
+            return
+
+        sql = 'select job_id,job_index from job where status = "complete"'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        jobs = {job_id:index for job_id,index in ret}
+
+        sql = 'select dataset_id, job_id from search '
+        sql += ' where task_status = "complete"'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        datasets = {job_id:dataset_id for dataset_id,job_id in ret}
+
+        for job_id in jobs:
+            dataset_id = datasets[job_id]
+            job_index = jobs[job_id]
+
+            # clean dagtemp
+            temp_dir = self.parent.cfg['queue']['site_temp']
+            dataset = GlobalID.localID_ret(dataset_id, type='int')
+            try:
+                dagtemp = os.path.join(temp_dir, str(dataset), str(job_index))
+                logger.info('cleaning site_temp %r', dagtemp)
+                yield self._executor_wrapper(partial(functions.delete, dagtemp))
+            except Exception as e:
+                logger.warn('failed to clean site_temp', exc_info=True)
+
     def cron_remove_old_passkeys(self):
         now = nowstr()
         sql = 'delete from passkey where expire < ?'

@@ -407,8 +407,7 @@ def upload(local, url, options={}):
         if sha512sum(url) != chksum:
             raise Exception('file checksum error')
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-        if not GridFTP.put(url, filename=local):
-            raise Exception('gridftp error')
+        GridFTP.put(url, filename=local)
         ret = GridFTP.sha512sum(url)
         if ret != chksum:
             raise Exception('gridftp checksum error')
@@ -453,10 +452,11 @@ def _wget(url, local, options):
             copy(url, local)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
         logger.info('gsiftp from %s to %s', url, local)
-        if not GridFTP.get(url, filename=local):
+        try:
+            GridFTP.get(url, filename=local)
+        except:
             if os.path.exists(local):
                 removedirs(local)
-            raise Exception('gridftp generic failure')
     else:
         raise Exception("unsupported protocol %s" % url)
 
@@ -507,8 +507,7 @@ def delete(url, options={}):
             removedirs(url)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
         logger.info('delete gsiftp: %r', url)
-        if not GridFTP.rmtree(url):
-            raise Exception('gridftp generic failure')
+        GridFTP.rmtree(url)
     else:
         raise Exception("unsupported protocol %s" % url)
 
