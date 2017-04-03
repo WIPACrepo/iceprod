@@ -26,7 +26,7 @@ from iceprod.server import grid
 logger = logging.getLogger('condor')
 
 
-class condor(grid.grid):
+class condor(grid.BaseGrid):
 
     ### Plugin Overrides ###
 

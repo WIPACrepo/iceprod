@@ -474,6 +474,8 @@ if MySQLdb:
                         sql_create += ' TEXT NOT NULL DEFAULT "" '
                     elif t == 'MediumText':
                         sql_create += ' MEDIUMTEXT NOT NULL DEFAULT "" '
+                    else:
+                        raise Exception('unknown column type: %r'%t)
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '

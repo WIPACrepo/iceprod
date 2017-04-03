@@ -33,6 +33,7 @@ except ImportError:
     from mock import patch
 
 import iceprod.server
+from iceprod.server import module
 from iceprod.server.plugins.condor import condor
 from iceprod.core import dataclasses
 
@@ -59,7 +60,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # init
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call normally
@@ -167,7 +168,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # init
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call normally
@@ -227,7 +228,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # init
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # call empty queue
@@ -365,7 +366,7 @@ class plugins_condor_test(grid_test.grid_test):
 
         # init
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor)
+                 self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
         # remove task

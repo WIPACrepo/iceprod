@@ -26,8 +26,12 @@ import logging.handlers
 import argparse
 import unittest
 
+# add iceprod to PYTHONPATH
 sys.path.insert(0,os.getcwd())
-os.environ['PYTHONPATH'] = os.getcwd()+':'+os.environ['PYTHONPATH']
+if 'PYTHONPATH' in os.environ:
+    os.environ['PYTHONPATH'] = os.getcwd()+':'+os.environ['PYTHONPATH']
+else:
+    os.environ['PYTHONPATH'] = os.getcwd()
 
 logging.basicConfig()
 logger = logging.getLogger('tests')

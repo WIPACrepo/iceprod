@@ -62,9 +62,9 @@ check_dependencies()
 def runner(stdout=False):
     # set logger
     if stdout:
-        iceprod.core.logger.setlogger()
+        iceprod.core.logger.set_logger()
     else:
-        iceprod.core.logger.setlogger(logfile='iceprod_server.log')
+        iceprod.core.logger.set_logger(logfile='iceprod_server.log')
 
     # Change name of process for ps
     try:

@@ -31,7 +31,7 @@ from iceprod.server import dataset_prio
 logger = logging.getLogger('grid')
 
 
-class grid(object):
+class BaseGrid(object):
     """
     Interface for a generic job distribution system.
     Do not use this class directly.  Use one of the plugins.

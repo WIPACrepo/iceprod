@@ -622,7 +622,7 @@ def runmodule(cfg, globalenv, module, stats={}):
         # make subprocess to run the module
         if os.path.exists(constants['task_exception']):
             os.remove(constants['task_exception'])
-        process = run_module(cfg, env, module)
+        process = fork_module(cfg, env, module)
         try:
             interval = float(cfg.config['options']['stillrunninginterval'])
         except:
@@ -665,7 +665,7 @@ def runmodule(cfg, globalenv, module, stats={}):
             else:
                 stats.update(new_stats)
 
-def run_module(cfg, env, module):
+def fork_module(cfg, env, module):
     """
     Modules are run in a forked process to prevent segfaults from killing IceProd.
     Their stdout and stderr is dumped into the log file with prefixes on each

@@ -7,14 +7,15 @@ optional arguments:
   -h, --help            show this help message and exit
   -f CFGFILE, --cfgfile CFGFILE
                         Specify config file
-  -v VALIDATE, --validate VALIDATE
-                        Specify if the config file should be validated
   -u URL, --url URL     URL of the iceprod server
   -p PASSKEY, --passkey PASSKEY
                         passkey for communcation with iceprod server
   --pilot_id PILOTID    ID of the pilot (if this is a pilot)
   -d, --debug           Enable debug actions and logging
   --offline             Enable offline mode (don't talk with server)
+  --logfile LOGFILE     Specify the logfile to use
+  --job JOB             Index of the job to run
+  --task TASK           Name of the task to run
 """
 
 import os
@@ -79,10 +80,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         logf = os.path.abspath(os.path.expandvars(logfile))
     else:
         logf = os.path.abspath(os.path.expandvars(constants['stdlog']))
-    iceprod.core.logger.setlogger(loglevel=logl,
-                                  logfile=logf,
-                                  logsize=67108864,
-                                  lognum=1)
+    iceprod.core.logger.set_logger(loglevel=logl,
+                                   logfile=logf,
+                                   logsize=67108864,
+                                   lognum=1)
     logger = logging.getLogger('i3exec')
     logger.warn('starting...%s ' % logger.name)
 
@@ -102,6 +103,11 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         # run in offline mode
         runner(config, url, debug=debug, offline=offline)
         return
+
+    # if we are not in offline mode, we need a url
+    if not url:
+        logger.critical('url missing')
+        raise Exception('url missing')
 
     # setup jsonRPC
     kwargs = {}
@@ -135,6 +141,9 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         if 'gridspec' not in config['options']:
             logger.critical('gridspec missing')
             raise Exception('gridspec missing')
+        if not pilot_id:
+            logger.critical('pilot_id missing')
+            raise Exception('pilot_id missing')
         pilot_kwargs = {}
         if 'run_timeout' in config['options']:
             pilot_kwargs['run_timeout'] = config['options']['run_timeout']

@@ -10,14 +10,6 @@ import logging
 from pkgutil import get_loader
 import importlib
 
-try:
-    # do a monkey patching of tornado json library
-    from iceprod.core.jsonUtil import json_encode,json_decode
-    import tornado.escape
-    tornado.escape.json_encode = json_encode
-    tornado.escape.json_decode = json_decode
-except ImportError:
-    pass
 
 def find_module_recursive(name, path=None):
     """ Recursively search for submodule. Submodules must be separated with a '.' """

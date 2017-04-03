@@ -21,7 +21,7 @@ except ImportError:
 logger = logging.getLogger('config')
 
 
-def locateconfig(filename='iceprod_config.json'):
+def locateconfig(filename):
     """Locate a config file"""
     cfgpaths = [os.path.expandvars('$I3PROD')]
     if os.getcwd() not in cfgpaths:
@@ -62,14 +62,16 @@ class IceProdConfig(dict):
         if filename:
             self.filename = filename
         else:
+            basename = 'iceprod_config.json'
             try:
-                self.filename = locateconfig()
+                self.filename = locateconfig(basename)
             except:
                 logger.warn('config file does not exist, so making a new one')
                 if 'I3PROD' in os.environ:
-                    self.filename = os.path.join(os.environ['I3PROD'],'etc','iceprod_config.json')
+                    prefix = os.path.join(os.environ['I3PROD'], 'etc')
                 else:
-                    self.filename = os.path.join(os.getcwd(),'iceprod_config.json')
+                    prefix = os.getcwd()
+                self.filename = os.path.join(prefix, basename)
 
         self.validate = validate
         self.loading = False

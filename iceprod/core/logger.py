@@ -22,13 +22,13 @@ setlevel = {
 
 host = os.uname()[1].split(".")[0]
 
-def setlogger(loglevel='INFO', logfile='sys.stdout', logsize=2**24, lognum=4):
+def set_logger(loglevel='INFO', logfile=None, logsize=2**24, lognum=4):
     """Add an output to the root logger"""
     logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
 
     rootLogger = logging.getLogger()
 
-    if logfile.strip() != 'sys.stdout':
+    if logfile:
         if not logfile.startswith('/'):
             if 'I3PROD' in os.environ:
                 logfile = os.path.expanduser(os.path.expandvars(
@@ -73,13 +73,13 @@ def new_file(filename):
             log.removeHandler(handler)
             handlers = True
     if not handlers:
-        setlogger(filename)
+        set_logger(logfile=filename)
     logging.info('loggers=%r', log.handlers)
 
-def removestdout():
+def remove_stdout():
     """Remove the stdout log output from the root logger"""
     log = logging.getLogger()
-    logging.info('removestdout(): loggers=%s', log.handlers)
+    logging.info('remove_stdout(): loggers=%s', log.handlers)
     for handler in log.handlers:
         if isinstance(handler,logging.StreamHandler):
             log.removeHandler(handler)

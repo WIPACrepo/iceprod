@@ -28,8 +28,8 @@ from iceprod.core import jsonUtil
 # mock the logger methods so we don't overwrite the root logger
 def log2(*args,**kwargs):
     pass
-iceprod.core.logger.setlogger = log2
-iceprod.core.logger.removestdout = log2
+iceprod.core.logger.set_logger = log2
+iceprod.core.logger.remove_stdout = log2
 from iceprod.core import i3exec
 
 from flexmock import flexmock

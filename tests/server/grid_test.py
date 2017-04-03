@@ -36,7 +36,7 @@ from tornado.testing import AsyncTestCase
 
 import iceprod.server
 from iceprod.server import module
-from iceprod.server.grid import grid
+from iceprod.server.grid import BaseGrid
 
 from .module_test import module_test
 from .dbmethods_test import TestExecutor
@@ -70,7 +70,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # call normal init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
 
         self.assertTrue(g)
@@ -81,7 +81,7 @@ class grid_test(AsyncTestCase):
 
         # call init with too few args
         try:
-            g = grid(gridspec, cfg['queue'][name], cfg)
+            g = BaseGrid(gridspec, cfg['queue'][name], cfg)
         except:
             pass
         else:
@@ -107,7 +107,7 @@ class grid_test(AsyncTestCase):
         check_iceprod.return_value = f
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         if not g:
             raise Exception('init did not return grid object')
@@ -160,7 +160,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
@@ -276,7 +276,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
@@ -388,7 +388,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
@@ -550,7 +550,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
@@ -794,7 +794,7 @@ class grid_test(AsyncTestCase):
               }
 
         # init
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
@@ -965,7 +965,7 @@ class grid_test(AsyncTestCase):
         self.services.ret['db']['queue_new_pilot_ids'] = ['a']
         self.services.ret['db']['auth_new_passkey'] = 'blah'
         self.services.called = []
-        g = grid(gridspec, cfg['queue'][name], cfg, self.services,
+        g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient())
         self.assertTrue(g)
 
