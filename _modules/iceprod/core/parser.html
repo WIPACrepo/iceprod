@@ -170,8 +170,8 @@
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A object container for temporary parsed objects.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obj</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obj</span><span class="o">=</span><span class="k">None</span><span class="p">,</span><span class="n">stringify</span><span class="o">=</span><span class="k">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="n">stringify</span><span class="p">:</span>
             <span class="n">obj</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span>
     <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -187,13 +187,14 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span>           
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span>
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">__nonzero__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">!=</span> <span class="s">&#39;&#39;</span>
     <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">):</span>
@@ -246,7 +247,7 @@
 <span class="sd">    </span>
 <span class="sd">    Grammar Definition::</span>
 <span class="sd">    </span>
-<span class="sd">        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~[]{}</span>
+<span class="sd">        char     := 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!&quot;#%&amp;&#39;*+,-./:;&lt;=&gt;?@\^_`|~{}</span>
 <span class="sd">        word     := char | char + word</span>
 <span class="sd">        starter  := $</span>
 <span class="sd">        scopeL   := (</span>
@@ -351,7 +352,18 @@
         <span class="p">(</span><span class="n">sR</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scopeR</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
         
         <span class="c"># do actual processing</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">process_phrase</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">sen</span><span class="p">))</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_phrase</span><span class="p">(</span><span class="n">sym</span><span class="p">,</span><span class="n">sen</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">right</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;[&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="p">(</span><span class="n">sL</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriptL</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">sR</span><span class="p">,</span><span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subscriptR</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+            
+                <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">output</span><span class="p">()</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">ParseObj</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="k">False</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&quot;Couldn&#39;t parse subscript&quot;</span><span class="p">)</span>
         
         <span class="c"># return processed work + input to the right</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">ret</span><span class="p">,</span><span class="n">right</span><span class="p">)</span>
@@ -371,12 +383,24 @@
             <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing scopeL&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">subscriptL</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;[&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing subscriptL&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">scopeR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;)&#39;</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing scopeR&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">subscriptR</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="s">&#39;]&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">ParseObj</span><span class="p">(</span><span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing subscriptR&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">starter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">input</span> <span class="ow">and</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;$&#39;</span><span class="p">:</span>
@@ -384,7 +408,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;missing symbol starter&#39;</span><span class="p">)</span>
 
-    <span class="n">special_chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="s">&#39;$()&#39;</span><span class="p">)</span>
+    <span class="n">special_chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="s">&#39;$()[]&#39;</span><span class="p">)</span>
     <span class="n">chars</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">string</span><span class="o">.</span><span class="n">printable</span><span class="p">)</span><span class="o">-</span><span class="n">special_chars</span>
     <span class="k">def</span> <span class="nf">word</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">input</span><span class="p">):</span>
         <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
@@ -442,30 +466,33 @@
                     <span class="k">pass</span>
         
         <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="k">None</span><span class="p">:</span>
+            <span class="c"># keyword could not be evaluated. return input.</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">sym</span><span class="o">+</span><span class="s">&#39;(&#39;</span><span class="o">+</span><span class="n">sentence</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+            <span class="c"># result is a string that may contain further expressions</span>
             <span class="n">left</span><span class="p">,</span><span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sentence</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="n">left</span> <span class="o">+</span> <span class="n">right</span>
+        
         <span class="k">return</span> <span class="n">ret</span>
     
     <span class="k">def</span> <span class="nf">steering_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find param in steering&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;parameters&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;parameters&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">],</span><span class="k">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;steering:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">system_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find param in steering.system&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;system&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">][</span><span class="s">&#39;system&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">],</span><span class="k">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;system:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
     
     <span class="k">def</span> <span class="nf">options_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">param</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find param in options&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">ParseObj</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">],</span><span class="k">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GrammarException</span><span class="p">(</span><span class="s">&#39;options:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">param</span><span class="p">))</span>
     
