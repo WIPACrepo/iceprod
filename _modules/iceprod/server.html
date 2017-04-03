@@ -130,14 +130,6 @@
 <span class="kn">from</span> <span class="nn">pkgutil</span> <span class="k">import</span> <span class="n">get_loader</span>
 <span class="kn">import</span> <span class="nn">importlib</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="c"># do a monkey patching of tornado json library</span>
-    <span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
-    <span class="kn">import</span> <span class="nn">tornado.escape</span>
-    <span class="n">tornado</span><span class="o">.</span><span class="n">escape</span><span class="o">.</span><span class="n">json_encode</span> <span class="o">=</span> <span class="n">json_encode</span>
-    <span class="n">tornado</span><span class="o">.</span><span class="n">escape</span><span class="o">.</span><span class="n">json_decode</span> <span class="o">=</span> <span class="n">json_decode</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="k">pass</span>
 
 <div class="viewcode-block" id="find_module_recursive"><a class="viewcode-back" href="../../server/init.html#iceprod.server.find_module_recursive">[docs]</a><span class="k">def</span> <span class="nf">find_module_recursive</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Recursively search for submodule. Submodules must be separated with a &#39;.&#39; &quot;&quot;&quot;</span>

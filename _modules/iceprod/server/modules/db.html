@@ -594,6 +594,8 @@
                         <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; TEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
                     <span class="k">elif</span> <span class="n">t</span> <span class="o">==</span> <span class="s">&#39;MediumText&#39;</span><span class="p">:</span>
                         <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; MEDIUMTEXT NOT NULL DEFAULT &quot;&quot; &#39;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;unknown column type: %r&#39;</span><span class="o">%</span><span class="n">t</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">sep</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
                         <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; PRIMARY KEY&#39;</span> <span class="c"># make first column the primary key</span>
                         <span class="n">sep</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span>

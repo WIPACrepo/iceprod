@@ -127,14 +127,15 @@
 <span class="sd">  -h, --help            show this help message and exit</span>
 <span class="sd">  -f CFGFILE, --cfgfile CFGFILE</span>
 <span class="sd">                        Specify config file</span>
-<span class="sd">  -v VALIDATE, --validate VALIDATE</span>
-<span class="sd">                        Specify if the config file should be validated</span>
 <span class="sd">  -u URL, --url URL     URL of the iceprod server</span>
 <span class="sd">  -p PASSKEY, --passkey PASSKEY</span>
 <span class="sd">                        passkey for communcation with iceprod server</span>
 <span class="sd">  --pilot_id PILOTID    ID of the pilot (if this is a pilot)</span>
 <span class="sd">  -d, --debug           Enable debug actions and logging</span>
 <span class="sd">  --offline             Enable offline mode (don&#39;t talk with server)</span>
+<span class="sd">  --logfile LOGFILE     Specify the logfile to use</span>
+<span class="sd">  --job JOB             Index of the job to run</span>
+<span class="sd">  --task TASK           Name of the task to run</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
@@ -199,10 +200,10 @@
         <span class="n">logf</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">logfile</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">logf</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s">&#39;stdlog&#39;</span><span class="p">]))</span>
-    <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setlogger</span><span class="p">(</span><span class="n">loglevel</span><span class="o">=</span><span class="n">logl</span><span class="p">,</span>
-                                  <span class="n">logfile</span><span class="o">=</span><span class="n">logf</span><span class="p">,</span>
-                                  <span class="n">logsize</span><span class="o">=</span><span class="mi">67108864</span><span class="p">,</span>
-                                  <span class="n">lognum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">set_logger</span><span class="p">(</span><span class="n">loglevel</span><span class="o">=</span><span class="n">logl</span><span class="p">,</span>
+                                   <span class="n">logfile</span><span class="o">=</span><span class="n">logf</span><span class="p">,</span>
+                                   <span class="n">logsize</span><span class="o">=</span><span class="mi">67108864</span><span class="p">,</span>
+                                   <span class="n">lognum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;i3exec&#39;</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;starting...%s &#39;</span> <span class="o">%</span> <span class="n">logger</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -222,6 +223,11 @@
         <span class="c"># run in offline mode</span>
         <span class="n">runner</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span> <span class="n">offline</span><span class="o">=</span><span class="n">offline</span><span class="p">)</span>
         <span class="k">return</span>
+
+    <span class="c"># if we are not in offline mode, we need a url</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;url missing&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;url missing&#39;</span><span class="p">)</span>
 
     <span class="c"># setup jsonRPC</span>
     <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
@@ -255,6 +261,9 @@
         <span class="k">if</span> <span class="s">&#39;gridspec&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;gridspec missing&#39;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;gridspec missing&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pilot_id</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;pilot_id missing&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;pilot_id missing&#39;</span><span class="p">)</span>
         <span class="n">pilot_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="s">&#39;run_timeout&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
             <span class="n">pilot_kwargs</span><span class="p">[</span><span class="s">&#39;run_timeout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;run_timeout&#39;</span><span class="p">]</span>

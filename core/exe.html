@@ -273,25 +273,6 @@ such as <a class="reference internal" href="dataclasses.html#iceprod.core.datacl
 <dd><p>Run the specified module</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.run_module">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">run_module</code><span class="sig-paren">(</span><em>cfg</em>, <em>env</em>, <em>module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#run_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.run_module" title="Permalink to this definition">¶</a></dt>
-<dd><p>Modules are run in a forked process to prevent segfaults from killing IceProd.
-Their stdout and stderr is dumped into the log file with prefixes on each
-line to designate its source.  Any error or the return value is returned to
-the main process via a Queue.</p>
-<p>If a module defines a src, that is assumed to be a Class which should be
-added to the env.  The running_class is where the exact script or binary
-is chosen.  It can match several things:</p>
-<ul class="simple">
-<li>A fully defined python module.class import (also takes module.function)</li>
-<li>A python class defined in the src provided</li>
-<li>A regular python script</li>
-<li>An executable of some type (this is run in a subprocess with shell
-execution disabled)</li>
-</ul>
-</dd></dl>
-
 </div>
 <div class="section" id="object-setup">
 <h2>Object Setup<a class="headerlink" href="#object-setup" title="Permalink to this headline">¶</a></h2>
