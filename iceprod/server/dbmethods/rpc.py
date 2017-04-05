@@ -1003,6 +1003,7 @@ class rpc(_Methods_Base):
     def rpc_reset_dataset(self, dataset_id):
         sql = 'select task_id from search '
         sql += 'where task_status != "complete" and dataset_id = ?'
+        bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
         tasks = [row[0] for row in ret]
 
@@ -1024,6 +1025,7 @@ class rpc(_Methods_Base):
     def rpc_hard_reset_dataset(self, dataset_id):
         sql = 'select task_id from search '
         sql += 'where dataset_id = ?'
+        bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
         tasks = [row[0] for row in ret]
 
