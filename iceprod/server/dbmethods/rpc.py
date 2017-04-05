@@ -999,6 +999,53 @@ class rpc(_Methods_Base):
     def rpc_suspend_task(self, task):
         return self.parent.service['queue_set_task_status'](task=task, status='suspended')
 
+    @tornado.gen.coroutine
+    def rpc_reset_dataset(self, dataset_id):
+        sql = 'select task_id from search '
+        sql += 'where task_status != "complete" and dataset_id = ?'
+        ret = yield self.parent.db.query(sql, bindings)
+        tasks = [row[0] for row in ret]
+
+        sql = 'update search set task_status="idle" '
+        sql += 'where task_status != "complete" and dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
+
+        sql = 'update task set status="idle" '
+        sql += 'where status != "complete" and task_id in (%s)'
+        for f in self._bulk_select(sql, tasks):
+            yield f
+
+        sql = 'update dataset set status="processing" where dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
+
+    @tornado.gen.coroutine
+    def rpc_hard_reset_dataset(self, dataset_id):
+        sql = 'select task_id from search '
+        sql += 'where dataset_id = ?'
+        ret = yield self.parent.db.query(sql, bindings)
+        tasks = [row[0] for row in ret]
+
+        sql = 'update search set task_status="idle" '
+        sql += 'where dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
+
+        sql = 'update task set status="idle" '
+        sql += 'where task_id in (%s)'
+        for f in self._bulk_select(sql, tasks):
+            yield f
+
+        sql = 'update dataset set status="processing" where dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
+        
+    @tornado.gen.coroutine
+    def rpc_suspend_dataset(self, dataset_id):
+        sql = 'update dataset set status="suspended" where dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
 
     ### Public Methods ###
 
