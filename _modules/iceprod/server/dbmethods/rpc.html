@@ -1123,6 +1123,7 @@
 <div class="viewcode-block" id="rpc.rpc_reset_dataset"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_reset_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_reset_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where task_status != &quot;complete&quot; and dataset_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
 
@@ -1144,6 +1145,7 @@
 <div class="viewcode-block" id="rpc.rpc_hard_reset_dataset"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_hard_reset_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_hard_reset_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;where dataset_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
 
