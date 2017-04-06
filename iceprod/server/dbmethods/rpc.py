@@ -998,3 +998,26 @@ class rpc(_Methods_Base):
             data.append({'name':name, 'value':value, 'timestamp':timestamp})
         ret = sorted(data, key=lambda r:r['timestamp'])
         raise tornado.gen.Return(ret)
+    
+    @tornado.gen.coroutine
+    def rpc_public_get_number_of_tasks_in_each_state(self, callback=None):
+        sql = 'SELECT status,count(*) FROM task GROUP BY status;'
+        bindings = ()
+        ret = yield self.parent.db.query(sql, bindings)
+
+        raise tornado.gen.Return(ret)
+
+    @tornado.gen.coroutine
+    def rpc_public_get_datasets_by_status(self, status):
+        sql = 'SELECT dataset_id FROM dataset WHERE status = ?;'
+        bindings = (status,)
+        ret = yield self.parent.db.query(sql, bindings)
+        datasets = [i[0] for i in ret]
+        raise tornado.gen.Return(datasets)
+
+    @tornado.gen.coroutine
+    def rpc_public_get_config(self, dataset_id):
+        sql = 'SELECT config_data FROM config WHERE dataset_id = ?;'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        raise tornado.gen.Return(ret[0][0] if len(ret)>0 else {})
