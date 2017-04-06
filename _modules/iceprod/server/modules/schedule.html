@@ -181,9 +181,13 @@
     <span class="k">def</span> <span class="nf">_make_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make the default schedule&quot;&quot;&quot;</span>
 
-        <span class="c"># mark dataset complete</span>
+        <span class="c"># mark datasets complete</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 hours&#39;</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_dataset_completion&#39;</span><span class="p">])</span>
+
+        <span class="c"># mark jobs complete</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 31 minutes&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_job_completion&#39;</span><span class="p">])</span>
 
         <span class="c"># collate node resources</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 hours&#39;</span><span class="p">,</span>
@@ -215,10 +219,6 @@
         <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 5 minutes&#39;</span><span class="p">,</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span>
-
-        <span class="c"># mark jobs complete</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 31 minutes&#39;</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_job_completion&#39;</span><span class="p">])</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 days&#39;</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_clean_completed_jobs&#39;</span><span class="p">])</span></div>
