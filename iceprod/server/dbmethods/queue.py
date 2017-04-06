@@ -585,6 +585,8 @@ class queue(_Methods_Base):
                 datasets = {k:{} for k in dataset_prios}
                 for f in self._bulk_select(sql, task_rel_ids):
                     for task_id, depends, reqs, task_rel_id in (yield f):
+                        if task_id not in tasks:
+                            continue
                         dataset = tasks[task_id]['dataset']
                         status = tasks[task_id]['status']
                         if (status == 'idle' or
