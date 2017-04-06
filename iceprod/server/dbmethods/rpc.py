@@ -290,7 +290,7 @@ class rpc(_Methods_Base):
                 self.parent.statsd.incr('task_error.kill.communication_failure')
             elif 'failed to download' in err:
                 self.parent.statsd.incr('task_error.kill.download_failure')
-            elif 'failed to download' in err:
+            elif 'failed to upload' in err:
                 self.parent.statsd.incr('task_error.kill.upload_failure')
             elif 'module failed' in err:
                 self.parent.statsd.incr('task_error.kill.module_failure')
