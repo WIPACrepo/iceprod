@@ -157,8 +157,8 @@
         <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="sd">        Get a new task from the queue specified by the gridspec,</span>
-<span class="sd">        based on the platform, hostname, network interfaces, python unicode.</span>
-<span class="sd">        Save plaform,hostname,network in nodes table.</span>
+<span class="sd">        based on the hostname, network interfaces, resources.</span>
+<span class="sd">        Save hostname,network in nodes table.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: a job config</span>
@@ -166,11 +166,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">gridspec</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;gridspec is not given&#39;</span><span class="p">)</span>
         <span class="n">args</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;gridspec&#39;</span><span class="p">:</span><span class="n">gridspec</span><span class="p">,</span>
-                <span class="s">&#39;platform&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
                 <span class="s">&#39;hostname&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
                 <span class="s">&#39;domain&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
                 <span class="s">&#39;ifaces&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
-                <span class="s">&#39;python_unicode&#39;</span><span class="p">:</span><span class="k">None</span><span class="p">,</span>
                <span class="p">}</span>
         <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="c">#if args[&#39;hostname&#39;]:</span>

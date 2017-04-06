@@ -689,23 +689,6 @@
 
     <span class="c"># no matches in cache</span>
     <span class="k">return</span> <span class="k">None</span></div>
-
-<div class="viewcode-block" id="platform"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.platform">[docs]</a><span class="k">def</span> <span class="nf">platform</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Get the platform</span>
-
-<span class="sd">    same as $PLATFORM from loader.sh</span>
-<span class="sd">    returns $ARCH.$OSTYPE.$VER.$PYTHONUNICODE</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">uname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">uname</span><span class="p">()</span>
-    <span class="n">arch</span> <span class="o">=</span> <span class="n">uname</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;i686&#39;</span><span class="p">,</span><span class="s">&#39;i386&#39;</span><span class="p">)</span>
-    <span class="n">ostype</span> <span class="o">=</span> <span class="n">uname</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">ostype</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;linux&#39;</span><span class="p">:</span>
-        <span class="n">ver</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s">&#39;/usr/bin/ldd&#39;</span><span class="p">,</span><span class="s">&#39;--version&#39;</span><span class="p">])</span>
-        <span class="n">ver</span> <span class="o">=</span> <span class="n">ver</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">ver</span> <span class="o">=</span> <span class="n">uname</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">python_unicode</span> <span class="o">=</span> <span class="s">&#39;ucs4&#39;</span> <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxunicode</span> <span class="o">==</span> <span class="mi">1114111</span> <span class="k">else</span> <span class="s">&#39;ucs2&#39;</span>
-    <span class="k">return</span> <span class="s">&#39;%s.%s.%s.%s&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">arch</span><span class="p">,</span><span class="n">ostype</span><span class="p">,</span><span class="n">ver</span><span class="p">,</span><span class="n">python_unicode</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
