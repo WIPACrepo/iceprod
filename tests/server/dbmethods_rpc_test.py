@@ -43,7 +43,7 @@ def get_tables(test_dir):
                    ],
         'task_lookup':[
                        {'task_id':task_id, 'req_cpu':1, 'req_gpu':0,
-                        'req_memory':1.0, 'req_disk':1.0}
+                        'req_memory':1.0, 'req_disk':1.0, 'req_time':1}
                       ],
         'search':[
                   {'task_id':task_id, 'job_id':'bfsd', 'dataset_id':'d1',
@@ -76,7 +76,7 @@ class dbmethods_rpc_test(dbmethods_base):
                                                    'jobs_submitted': 2,
                                                    'dataset_id': 'd1',
                                                    'debug':True,
-                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1.0}}}
+                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1.0,'time':1}}}
         self.assertEqual(ret, ret_should_be)
 
         # no queued jobs
@@ -116,7 +116,7 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertEqual(endtables['search'][0]['task_status'], 'complete')
 
         # db error
-        for i in range(6):
+        for i in range(2):
             yield self.set_tables(tables)
             starttables = yield self.get_tables(tables)
             self.set_failures([False for _ in range(i)]+[True])

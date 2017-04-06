@@ -61,9 +61,13 @@ class schedule(module.module):
     def _make_schedule(self):
         """Make the default schedule"""
 
-        # mark dataset complete
+        # mark datasets complete
         self.scheduler.schedule('every 1 hours',
                 self.modules['db']['cron_dataset_completion'])
+
+        # mark jobs complete
+        self.scheduler.schedule('every 31 minutes',
+                self.modules['db']['cron_job_completion'])
 
         # collate node resources
         self.scheduler.schedule('every 1 hours',
@@ -95,10 +99,6 @@ class schedule(module.module):
         proxy.update_proxy()
 
         self.scheduler.schedule('every 5 minutes', master_grid.check_iceprod)
-
-        # mark jobs complete
-        self.scheduler.schedule('every 31 minutes',
-                self.modules['db']['cron_job_completion'])
 
         self.scheduler.schedule('every 1 days',
                 self.modules['db']['cron_clean_completed_jobs'])

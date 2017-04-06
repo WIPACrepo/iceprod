@@ -6,7 +6,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from functools import partial
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 
 import tornado.gen
 
@@ -122,7 +122,16 @@ class cron(_Methods_Base):
 
     @tornado.gen.coroutine
     def cron_job_completion(self):
-        """Check for newly completed jobs and mark them as such"""
+        """
+        Check for job status changes.
+
+        If this is the master, mark jobs complete, suspended, or failed
+        as necessary.  Completed jobs also delete the job temp space.
+
+        If this is not the master, and if all tasks in a job are not in
+        an active state, then delete the job and tasks.
+        """
+
         sql = 'select dataset_id,jobs_submitted,tasks_submitted '
         sql += ' from dataset where status = ? '
         bindings = ('processing',)
@@ -133,61 +142,121 @@ class cron(_Methods_Base):
         if not datasets:
             return
 
-        sql = 'select dataset_id, job_id, count(*) from search '
-        sql += ' where task_status = "complete" and dataset_id in ('
+        sql = 'select dataset_id, job_id, task_status, count(*) from search '
+        sql += ' where dataset_id in ('
         sql += ','.join(['?' for _ in datasets])
-        sql += ') group by job_id'
+        sql += ') group by job_id, task_status'
         bindings = tuple(datasets)
         ret = yield self.parent.db.query(sql, bindings)
 
-        jobs = {}
-        for dataset_id,job_id,num in ret:
-            if datasets[dataset_id] <= num:
-                jobs[job_id] = dataset_id
+        jobs = defaultdict(lambda:[{},None])
+        for dataset_id,job_id,task_status,num in ret:
+            jobs[job_id][0][task_status] = num
+            jobs[job_id][1] = dataset_id
 
-        sql = 'select job_id from job where status = "processing" and job_id in (%s)'
-        job_ids = set()
-        for f in self._bulk_select(sql, jobs):
-            for row in (yield f):
-                job_ids.add(row[0])
+        complete_jobs = []
+        errors_jobs = []
+        suspended_jobs = []
+        clean_jobs = []
+        for job_id in jobs:
+            statuses = jobs[job_id][0]
+            dataset_id = jobs[job_id][1]
+            have_all_jobs = sum(statuses.values()) >= datasets[dataset_id]
+            statuses = set(statuses)
+            if not statuses&{'waiting','queued','processing','resume','reset'}:
+                if self._is_master():
+                    if not have_all_jobs:
+                        logger.error('not all tasks in job %r buffered',job_id)
+                        continue
+                    if not statuses-{'complete'}:
+                        complete_jobs.append(job_id)
+                    elif not statuses-{'complete','failed'}:
+                        errors_jobs.append(job_id)
+                    elif not statuses-{'complete','failed','suspended'}:
+                        suspended_jobs.append(job_id)
+                else:
+                    logger.info('job %r can be removed', job_id)
+                    clean_jobs.append(job_id)
 
-        now = nowstr()
-        sql = 'update job set status = "complete", status_changed = ? '
-        sql += ' where job_id = ?'
-        for job_id in job_ids:
-            dataset_id = jobs[job_id]
+        if clean_jobs:
+            # we are not the master, and just cleaning these jobs
+            with (yield self.parent.db.acquire_lock('queue')):
+                sql = 'select task_id from search where job_id in (%s)'
+                task_ids = set()
+                for f in self._bulk_select(sql, clean_jobs):
+                    task_ids.update([row[0] for row in (yield f)])
 
-            # update job status
-            logger.info('job %s marked as complete',job_id)
-            bindings = (now,job_id)
-            yield self.parent.db.query(sql, bindings)
-            if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('job',job_id,now)
-                try:
-                    yield self.parent.db.query(sql3, bindings3)
-                except Exception as e:
-                    logger.info('error updating master_update_history',
-                                exc_info=True)
-            else:
-                yield self._send_to_master(('job',job_id,now,sql,bindings))
+                sql = 'delete from search where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+                sql = 'delete from task where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+                sql = 'delete from task_stat where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+                sql = 'delete from task_log where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+                sql = 'delete from task_lookup where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+                sql = 'delete from job where job_id in (%s)'
+                for f in self._bulk_select(sql, clean_jobs):
+                    yield f
+                sql = 'delete from job_stat where job_id in (%s)'
+                for f in self._bulk_select(sql, clean_jobs):
+                    yield f
 
-            # TODO: collate task stats
+        else:
+            # we are the master, and are updating job statuses
+            sql = 'select job_id from job where status = "processing" and job_id in (%s)'
+            bindings = complete_jobs+errors_jobs+suspended_jobs
+            job_ids = set()
+            for f in self._bulk_select(sql, bindings):
+                for row in (yield f):
+                    job_ids.add(row[0])
+            complete_jobs = [j for j in complete_jobs if j in job_ids]
+            errors_jobs = [j for j in errors_jobs if j in job_ids]
+            suspended_jobs = [j for j in suspended_jobs if j in job_ids]
 
-            # clean dagtemp
-            if 'site_temp' in self.parent.cfg['queue']:
-                temp_dir = self.parent.cfg['queue']['site_temp']
-                dataset = GlobalID.localID_ret(dataset_id, type='int')
-                sql2 = 'select job_index from job where job_id = ?'
-                bindings = (job_id,)
-                try:
-                    ret = yield self.parent.db.query(sql2, bindings)
-                    job = ret[0][0]
-                    dagtemp = os.path.join(temp_dir, str(dataset), str(job))
-                    logger.info('cleaning site_temp %r', dagtemp)
-                    yield self._executor_wrapper(partial(functions.delete, dagtemp))
-                except Exception as e:
-                    logger.warn('failed to clean site_temp', exc_info=True)
+            now = nowstr()
+            sql = 'update job set status = "complete", status_changed = ? '
+            sql += ' where job_id = ?'
+            for job_id in job_ids:
+                dataset_id = jobs[job_id]
+
+                # update job status
+                logger.info('job %s marked as complete',job_id)
+                bindings = (now,job_id)
+                yield self.parent.db.query(sql, bindings)
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                    bindings3 = ('job',job_id,now)
+                    try:
+                        yield self.parent.db.query(sql3, bindings3)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+
+                # TODO: collate task stats
+
+                # clean dagtemp
+                if 'site_temp' in self.parent.cfg['queue']:
+                    temp_dir = self.parent.cfg['queue']['site_temp']
+                    dataset = GlobalID.localID_ret(dataset_id, type='int')
+                    sql2 = 'select job_index from job where job_id = ?'
+                    bindings = (job_id,)
+                    try:
+                        ret = yield self.parent.db.query(sql2, bindings)
+                        job = ret[0][0]
+                        dagtemp = os.path.join(temp_dir, str(dataset), str(job))
+                        logger.info('cleaning site_temp %r', dagtemp)
+                        yield self._executor_wrapper(partial(functions.delete, dagtemp))
+                    except Exception as e:
+                        logger.warn('failed to clean site_temp', exc_info=True)
 
     @tornado.gen.coroutine
     def cron_clean_completed_jobs(self):
