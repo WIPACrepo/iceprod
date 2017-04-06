@@ -36,10 +36,6 @@ def setupjsonRPC(url, passkey, **kwargs):
 
 def downloadtask(gridspec, resources={}):
     """Download a new task from the server"""
-    try:
-        platform = os.environ['PLATFORM']
-    except:
-        platform = functions.platform()
     hostname = functions.gethostname()
     domain = '.'.join(hostname.split('.')[-2:])
     try:
@@ -49,10 +45,8 @@ def downloadtask(gridspec, resources={}):
     resources = deepcopy(resources)
     if 'gpu' in resources and isinstance(resources['gpu'],list):
         resources['gpu'] = len(resources['gpu'])
-    python_unicode = 'ucs4' if sys.maxunicode == 1114111 else 'ucs2'
-    task = JSONRPC.new_task(gridspec=gridspec, platform=platform,
+    task = JSONRPC.new_task(gridspec=gridspec,
                             hostname=hostname, domain=domain, ifaces=ifaces,
-                            python_unicode=python_unicode,
                             **resources)
     if isinstance(task,Exception):
         # an error occurred

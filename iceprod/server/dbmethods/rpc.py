@@ -37,8 +37,8 @@ class rpc(_Methods_Base):
         """
 
         Get a new task from the queue specified by the gridspec,
-        based on the platform, hostname, network interfaces, python unicode.
-        Save plaform,hostname,network in nodes table.
+        based on the hostname, network interfaces, resources.
+        Save hostname,network in nodes table.
 
         Returns:
             dict: a job config
@@ -46,11 +46,9 @@ class rpc(_Methods_Base):
         if not gridspec:
             raise Exception('gridspec is not given')
         args = {'gridspec':gridspec,
-                'platform':None,
                 'hostname':None,
                 'domain':None,
                 'ifaces':None,
-                'python_unicode':None,
                }
         args.update(kwargs)
         #if args['hostname']:

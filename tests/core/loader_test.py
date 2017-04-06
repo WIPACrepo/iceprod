@@ -57,18 +57,6 @@ class loader_test(unittest.TestCase):
                     continue
                 f.write(line+'\n')
 
-        # give us a fake parrot
-        parrot_path = os.path.join(self.chdir,'parrot_run')
-        with open(parrot_path,'w') as f:
-            f.write('#!/bin/sh\necho $@\n')
-        subprocess.call('chmod +x %s'%parrot_path,shell=True)
-        if 'PATH' in os.environ:
-            os.environ['PATH'] = self.chdir+':'+os.environ['PATH']
-        else:
-            os.environ['PATH'] = self.chdir
-        if self.chdir not in subprocess.check_output('type parrot_run',shell=True):
-            raise Exception('failed to set PATH')
-
         # call help
         cmd = '/bin/sh %s -h'%test_loader
         proc = subprocess.Popen(cmd,shell=True,
@@ -112,21 +100,6 @@ class loader_test(unittest.TestCase):
         if 'i3exec' not in out:
             logger.info(out)
             raise Exception('env cache: did not echo cmd')
-
-        # explicitly set platform
-        platform = 'test'
-        cmd = '/bin/sh %s -m %s'
-        cmd = cmd%(test_loader,platform)
-        proc = subprocess.Popen(cmd,shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
-        if proc.returncode:
-            logger.info(out)
-            raise Exception('platform: error raised')
-        if 'i3exec' not in out:
-            logger.info(out)
-            raise Exception('platform: did not echo cmd')
 
         # explicitly set env dir
         env_name = self.chdir

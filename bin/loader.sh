@@ -14,7 +14,6 @@ OPTIONS:
  -h        Show this message
  -s <arg>  Software repository
  -c <arg>  Cache/proxy for Parrot/CVMFS
- -m <arg>  Platform for Parrot
  -e <arg>  IceProd env path
  -x <arg>  x509 proxy filename
 
@@ -24,7 +23,6 @@ EOF
 # clear variables that we use
 unset PROXY
 unset SROOT
-unset PLATFORM
 unset ENV
 unset X509
 
@@ -41,9 +39,6 @@ while getopts ":hd:c:s:m:e:x:" opt; do
             ;;
         s)
             SROOT=$OPTARG
-            ;;
-        m)
-            PLATFORM=$OPTARG
             ;;
         e)
             ENV=$OPTARG
@@ -73,21 +68,6 @@ touch iceprod_log
 touch iceprod_out
 touch iceprod_err
 
-# calculate platform
-OSTYPE=`uname`
-if [ $OSTYPE = 'Linux' ]; then
-    VER=`ldd --version|awk 'NR>1{exit};{print $(NF)}'`
-    HASH=hash
-else
-    VER=`uname -r`
-    HASH=type
-fi
-if [ -z $PLATFORM ]; then
-    ARCH=`uname -m | sed -e 's/Power Macintosh/ppc/ ; s/i686/i386/'`
-    PLATFORM="$ARCH.$OSTYPE.$VER"
-fi
-echo "Platform: $PLATFORM"
-export PLATFORM
 
 if [ -z $SROOT ]; then
     SROOT="/cvmfs/icecube.opensciencegrid.org/iceprod/latest"
@@ -108,14 +88,8 @@ if [ -d $PWD/iceprod ]; then
     fi
 else
     if [ ! -d $SROOT ]; then
-        # first, try parrot
-        TEST_PARROT="parrot_run -p $PROXY ls $SROOT"
-        if ( $HASH parrot_run ) && $TEST_PARROT >/dev/null 2>/dev/null; then
-            PYBIN="parrot_run -p $PROXY $SROOT/env-shell.sh python"
-        else
-            echo "No contact with CVMFS"
-            exit 1
-        fi
+        echo "No contact with CVMFS"
+        exit 1
     else
         echo "Using software at $SROOT"
         if [ -f $SROOT/setup.sh ]; then

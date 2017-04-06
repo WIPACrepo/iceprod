@@ -692,8 +692,6 @@ class BaseGrid(object):
                 web_address += ':'+str(self.cfg['webserver']['port'])
 
         args = []
-        if 'platform' in self.queue_cfg and self.queue_cfg['platform']:
-            args.append('-m {}'.format(self.queue_cfg['platform']))
         if 'software_dir' in self.queue_cfg and self.queue_cfg['software_dir']:
             args.append('-s {}'.format(self.queue_cfg['software_dir']))
         if 'iceprod_dir' in self.queue_cfg and self.queue_cfg['iceprod_dir']:

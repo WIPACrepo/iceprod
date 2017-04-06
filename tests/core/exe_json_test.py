@@ -114,10 +114,9 @@ class exe_json_test(unittest.TestCase):
         """Test downloadtask"""
         # mock the JSONRPC class
         task = {'dataset':10}
-        def new_task(platform=None, hostname=None, ifaces=None,
+        def new_task(hostname=None, ifaces=None,
                      gridspec=None, **kwargs):
             new_task.called = True
-            new_task.platform = platform
             new_task.hostname = hostname
             new_task.ifaces = ifaces
             new_task.gridspec = gridspec
@@ -141,9 +140,6 @@ class exe_json_test(unittest.TestCase):
         jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
         jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
 
-        if 'PLATFORM' not in os.environ:
-            os.environ['PLATFORM'] = 'other'
-        platform = os.environ['PLATFORM']
         hostname = iceprod.core.functions.gethostname()
         ifaces = iceprod.core.functions.getInterfaces()
         gridspec = 'thegrid'
@@ -154,8 +150,6 @@ class exe_json_test(unittest.TestCase):
             raise
         if not new_task.called:
             raise Exception('JSONRPC.new_task() not called')
-        if new_task.platform != platform:
-            raise Exception('JSONRPC.new_task() platform !=')
         if new_task.hostname != hostname:
             raise Exception('JSONRPC.new_task() hostname !=')
         if new_task.ifaces != ifaces:
