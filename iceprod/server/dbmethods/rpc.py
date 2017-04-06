@@ -201,9 +201,12 @@ class rpc(_Methods_Base):
             self.parent.statsd.incr('finish_task.domain.'+stats['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
 
+        # add current time
+        now = nowstr()
+        stats['time'] = now
+
         with (yield self.parent.db.acquire_lock('queue')):
             # update task status
-            now = nowstr()
             sql = 'update search set task_status = ? '
             sql += ' where task_id = ?'
             sql2 = 'update task set prev_status = status, '

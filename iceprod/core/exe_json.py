@@ -81,6 +81,7 @@ def send_through_pilot(func):
         if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
             raise Exception('DBKill')
         if 'message_queue' in cfg.config['options']:
+            logger.info('send_through_pilot(%s)',func.__name__)
             send,recv = cfg.config['options']['message_queue']
             task_id = cfg.config['options']['task_id']
             send.put((task_id,func.__name__,cfg,args,kwargs))

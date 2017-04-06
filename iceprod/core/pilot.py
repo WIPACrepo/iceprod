@@ -355,7 +355,7 @@ class Pilot(object):
 
         # add message queue
         send_queue = SimpleQueue
-        self.config['message_queue'] = [self.message_queue, send_queue]
+        config['options']['message_queue'] = [self.message_queue, send_queue]
 
         # run task in tmp dir
         main_dir = os.getcwd()
