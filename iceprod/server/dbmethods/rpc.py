@@ -286,6 +286,14 @@ class rpc(_Methods_Base):
                                             count=int(time_used))
             elif 'failed to create task' in err:
                 self.parent.statsd.incr('task_error.kill.create_failure')
+            elif '500 Server Error' in err:
+                self.parent.statsd.incr('task_error.kill.communication_failure')
+            elif 'failed to download' in error:
+                self.parent.statsd.incr('task_error.kill.download_failure')
+            elif 'failed to download' in error:
+                self.parent.statsd.incr('task_error.kill.upload_failure')
+            elif 'module failed':
+                self.parent.statsd.incr('task_error.kill.module_failure')
         with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select failures, requirements, task_rel_id from task '
