@@ -292,7 +292,7 @@ class rpc(_Methods_Base):
                 self.parent.statsd.incr('task_error.kill.download_failure')
             elif 'failed to download' in err:
                 self.parent.statsd.incr('task_error.kill.upload_failure')
-            elif 'module failed':
+            elif 'module failed' in err:
                 self.parent.statsd.incr('task_error.kill.module_failure')
         with (yield self.parent.db.acquire_lock('queue')):
             try:
