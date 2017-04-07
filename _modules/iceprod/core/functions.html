@@ -137,6 +137,7 @@
 <span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">import</span> <span class="nn">hashlib</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
@@ -149,6 +150,8 @@
     <span class="n">psutil</span> <span class="o">=</span> <span class="k">None</span>
 
 <span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">requests.packages.urllib3.util.retry</span> <span class="k">import</span> <span class="n">Retry</span>
+<span class="kn">from</span> <span class="nn">requests.adapters</span> <span class="k">import</span> <span class="n">HTTPAdapter</span>
 <span class="kn">from</span> <span class="nn">requests_toolbelt.multipart.encoder</span> <span class="k">import</span> <span class="n">MultipartEncoder</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">util</span>
@@ -394,7 +397,27 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error getting global ip&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ret</span></div>
 
-<div class="viewcode-block" id="download"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.download">[docs]</a><span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="k">False</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;Set up an http session using requests&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
+        <span class="n">retries</span> <span class="o">=</span> <span class="n">Retry</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">backoff_factor</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">status_forcelist</span><span class="o">=</span><span class="p">[</span> <span class="mi">408</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span> <span class="p">])</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s">&#39;http://&#39;</span><span class="p">,</span> <span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retries</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s">&#39;https://&#39;</span><span class="p">,</span> <span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retries</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">s</span>
+
+<div class="viewcode-block" id="download"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.download">[docs]</a><span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Download a file, checksumming if possible&quot;&quot;&quot;</span>
     <span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">local</span><span class="p">))</span>
     <span class="n">url</span>  <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">url</span><span class="p">))</span>
@@ -420,48 +443,32 @@
 
     <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;wget(): src: %s, local: %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
 
-    <span class="c"># get checksum</span>
-    <span class="k">for</span> <span class="n">checksum_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span> <span class="s">&#39;sha256&#39;</span><span class="p">,</span> <span class="s">&#39;sha1&#39;</span><span class="p">,</span> <span class="s">&#39;md5&#39;</span><span class="p">):</span>
-        <span class="n">ending</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">checksum_type</span><span class="o">+</span><span class="s">&#39;sum&#39;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">_wget</span><span class="p">(</span><span class="n">clean_url</span><span class="o">+</span><span class="n">ending</span><span class="p">,</span> <span class="n">local</span><span class="o">+</span><span class="n">ending</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-            <span class="k">break</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;failed to get checksum for %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="o">+</span><span class="n">ending</span><span class="p">,</span>
-                         <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">checksum_type</span> <span class="o">=</span> <span class="k">None</span>
+    <span class="c"># actually download the file</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;http from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;copy from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;gsiftp from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+            <span class="n">GridFTP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">cache</span> <span class="ow">and</span> <span class="n">checksum_type</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="c"># test for cache hit</span>
-            <span class="n">cache_match</span> <span class="o">=</span> <span class="n">incache</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">cache_match</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;checking checksum for %s&#39;</span><span class="p">,</span> <span class="n">cache_match</span><span class="p">)</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="n">load_cksm</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="n">ending</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">cache_match</span><span class="p">,</span> <span class="n">checksum_type</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;checksum failed&#39;</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cache hit for %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-                <span class="n">copy</span><span class="p">(</span><span class="n">cache_match</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-                <span class="k">return</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cache miss for %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cache failed, try direct download&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-
-    <span class="c"># actually download the file locally</span>
-    <span class="n">_wget</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">checksum_type</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;checking checksum with type %s for %s&#39;</span><span class="p">,</span> <span class="n">checksum_type</span><span class="p">,</span>
-                    <span class="n">local</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">check_cksm</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">checksum_type</span><span class="p">,</span> <span class="n">local</span><span class="o">+</span><span class="n">ending</span><span class="p">):</span>
-            <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
-            <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="n">ending</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;checksum failed&#39;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
-        <span class="n">insertincache</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed - file does not exist&#39;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+        <span class="k">raise</span>
 
     <span class="k">return</span> <span class="n">local</span></div>
 
@@ -492,31 +499,25 @@
     <span class="c"># actually upload the file</span>
     <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;http from %s to %s&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">MultipartEncoder</span><span class="p">(</span>
+                    <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;field0&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">)}</span>
+                    <span class="p">)</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
+                           <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">content_type</span><span class="p">})</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+                <span class="c"># get checksum</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                        <span class="n">m</span> <span class="o">=</span> <span class="n">MultipartEncoder</span><span class="p">(</span>
-                            <span class="n">fields</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;field0&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s">&#39;filename&#39;</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s">&#39;text/plain&#39;</span><span class="p">)}</span>
-                            <span class="p">)</span>
-                        <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">m</span><span class="p">,</span>
-                                   <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">content_type</span><span class="p">})</span>
-                        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-                    <span class="k">break</span>
-                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error uploading to url %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span>
-                                     <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                        <span class="k">raise</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;http checksum error&#39;</span><span class="p">)</span>
+                <span class="k">finally</span><span class="p">:</span>
+                    <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="o">+</span><span class="s">&#39;.tmp&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
         <span class="c"># use copy command</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
@@ -534,62 +535,6 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span></div>
 
-<span class="k">def</span> <span class="nf">_wget</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;wrapper for downloading from multiple protocols&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;http from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">65536</span><span class="p">):</span>
-                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
-                    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-                    <span class="k">break</span>
-                <span class="k">except</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-                        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error fetching url %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span>
-                                     <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                        <span class="k">raise</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;retrying download&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
-        <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;copy from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
-            <span class="n">copy</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;gsiftp from %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">GridFTP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-                <span class="n">removedirs</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;unsupported protocol %s&quot;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed - file does not exist&#39;</span><span class="p">)</span>
-    <span class="n">fail</span> <span class="o">=</span> <span class="k">False</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-            <span class="n">fail</span> <span class="o">=</span> <span class="k">True</span>
-    <span class="k">if</span> <span class="n">fail</span><span class="p">:</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;download failed - file is empty&#39;</span><span class="p">)</span>
-
 <div class="viewcode-block" id="delete"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.delete">[docs]</a><span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Delete a url or file&quot;&quot;&quot;</span>
     <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -598,28 +543,9 @@
 
     <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;http&#39;</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;delete http: %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;username&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="s">&#39;password&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">auth</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="s">&#39;sslcert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s">&#39;sslkey&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">],</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslkey&#39;</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">s</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;sslcert&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s">&#39;cacert&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-                <span class="n">s</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cacert&#39;</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-                    <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-                    <span class="k">break</span>
-                <span class="k">except</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;error with url %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span>
-                                     <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                        <span class="k">raise</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;retrying delete&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">_http_helper</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
     <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;file:&#39;</span><span class="p">):</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">url</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;delete file: %r&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
@@ -641,54 +567,6 @@
             <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">prefixes</span><span class="p">,</span> <span class="k">False</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">False</span></div>
-
-<span class="k">def</span> <span class="nf">_getcachedir</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
-    <span class="c"># get cache directory</span>
-    <span class="n">cache_dir</span> <span class="o">=</span> <span class="s">&#39;cache&#39;</span>
-    <span class="k">if</span> <span class="s">&#39;cache_dir&#39;</span> <span class="ow">in</span> <span class="n">options</span> <span class="ow">and</span> <span class="n">options</span><span class="p">[</span><span class="s">&#39;cache_dir&#39;</span><span class="p">]:</span>
-        <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s">&#39;cache_dir&#39;</span><span class="p">])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">cache_dir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">):</span>
-        <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">cache_dir</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">cache_dir</span>
-
-<div class="viewcode-block" id="insertincache"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.insertincache">[docs]</a><span class="k">def</span> <span class="nf">insertincache</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">file</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
-    <span class="sd">&quot;&quot;&quot;Copy file to cache&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">None</span>
-
-    <span class="c"># get cache directory</span>
-    <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">_getcachedir</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-
-    <span class="c"># get hash of url</span>
-    <span class="nb">hash</span> <span class="o">=</span> <span class="n">cksm</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
-
-    <span class="c"># copy file</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;insertincache(%s) = %s&#39;</span><span class="p">,</span><span class="n">url</span><span class="p">,</span><span class="nb">hash</span><span class="p">)</span>
-    <span class="n">match</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span><span class="nb">hash</span><span class="p">)</span>
-    <span class="n">copy</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="n">match</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="incache"><a class="viewcode-back" href="../../../core/functions.html#iceprod.core.functions.incache">[docs]</a><span class="k">def</span> <span class="nf">incache</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">options</span><span class="o">=</span><span class="p">{}):</span>
-    <span class="sd">&quot;&quot;&quot;Test if the url is in the cache, and return it if available&quot;&quot;&quot;</span>
-    <span class="c"># test for debug variable, skipping cache if debug is enabled</span>
-    <span class="k">if</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">None</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;incache(%s)&#39;</span><span class="p">,</span><span class="n">url</span><span class="p">)</span>
-
-    <span class="c"># get cache directory</span>
-    <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">_getcachedir</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
-
-    <span class="c"># get hash of url</span>
-    <span class="nb">hash</span> <span class="o">=</span> <span class="n">cksm</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="s">&#39;sha512&#39;</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
-
-    <span class="c"># check cache dir for url</span>
-    <span class="n">match</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span><span class="nb">hash</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">match</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">match</span>
-
-    <span class="c"># no matches in cache</span>
-    <span class="k">return</span> <span class="k">None</span></div>
 </pre></div>
 
            </div>
