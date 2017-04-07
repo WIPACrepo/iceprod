@@ -251,7 +251,7 @@ def runner(config, url, debug=False, offline=False):
                         # find task by name
                         for task in config['tasks']:
                             if task['name'] == name:
-                                stats = iceprod.core.exe.runtask(cfg, env, task)
+                                iceprod.core.exe.runtask(cfg, env, task)
                                 break
                         else:
                             logger.critical('cannot find task named %r', name)
@@ -260,7 +260,7 @@ def runner(config, url, debug=False, offline=False):
                         # find task by index
                         if (name >= 0 and
                             name < len(config['tasks'])):
-                            stats = iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
+                            iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
                         else:
                             logger.critical('cannot find task index %d', name)
                             raise Exception('cannot find specified task')
@@ -271,7 +271,7 @@ def runner(config, url, debug=False, offline=False):
                         raise Exception('cannot find specified task')
                     # finish task
                     if not offline:
-                        iceprod.core.exe_json.finishtask(cfg, stats,
+                        iceprod.core.exe_json.finishtask(cfg, env['stats'],
                                                          start_time=start_time)
                 elif offline:
                     # run all tasks in order
@@ -285,7 +285,8 @@ def runner(config, url, debug=False, offline=False):
                 # set task status on server
                 if not offline:
                     try:
-                        iceprod.core.exe_json.taskerror(cfg, start_time=start_time,
+                        iceprod.core.exe_json.taskerror(cfg, stats=env['stats'],
+                                                        start_time=start_time,
                                                         reason=str(e))
                     except Exception as e:
                         logger.error(e)

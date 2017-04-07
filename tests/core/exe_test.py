@@ -1525,7 +1525,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'options': options}
+        env = {'options': options,'stats':{'tasks':[]}}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1634,7 +1634,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'options': options}
+        env = {'options': options,'stats':{'tasks':[]}}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
@@ -1744,7 +1744,7 @@ def Test():
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set env
-        env = {'options': options}
+        env = {'options': options,'stats':{'tasks':[]}}
 
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):

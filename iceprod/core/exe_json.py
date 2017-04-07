@@ -135,7 +135,7 @@ def stillrunning(cfg):
         raise Exception('task should be stopped')
 
 @send_through_pilot
-def taskerror(cfg, start_time=None, reason=None, resources=None):
+def taskerror(cfg, stats={}, start_time=None, reason=None, resources=None):
     """
     Tell the server about the error experienced
 
@@ -151,6 +151,7 @@ def taskerror(cfg, start_time=None, reason=None, resources=None):
             'hostname': hostname, 'domain': domain,
             'time_used': None,
             'error_summary': '',
+            'task_stats': stats,
         }
         if start_time:
             error_info['time_used'] = time.time() - start_time

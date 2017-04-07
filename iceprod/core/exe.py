@@ -36,6 +36,7 @@ import filecmp
 import tempfile
 import shutil
 import inspect
+from datetime import datetime
 from functools import partial
 from collections import Container
 from contextlib import contextmanager
@@ -160,7 +161,8 @@ def setupenv(cfg, obj, oldenv={}):
         env = {}
         # attempt to do depth=2 copying
         for key in oldenv:
-            env[key] = copy.copy(oldenv[key])
+            if key not in ('deletions','uploads','environment','pythonpath','stats'):
+                env[key] = copy.copy(oldenv[key])
 
         if not obj:
             raise util.NoncriticalError('object to load environment from is empty')
@@ -174,6 +176,12 @@ def setupenv(cfg, obj, oldenv={}):
         # get clear environment variables
         env['environment'] = os.environ.copy()
         env['pythonpath'] = copy.copy(sys.path)
+
+        # inherit statistics
+        if 'stats' in oldenv:
+            env['stats'] = oldenv['stats']
+        else:
+            env['stats'] = {'upload':[], 'download':[], 'tasks':[]}
 
         # copy parameters
         if 'parameters' not in env:
@@ -291,11 +299,28 @@ def downloadResource(env, resource, remote_base=None,
             download_options['password'] = env['options']['password']
         if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
             download_options.update(env['options']['ssl'])
+        failed = False
         try:
+            start_time = time.time()
             functions.download(url, local, options=download_options)
-        except:
+            if not os.path.exists(local):
+                raise Exception('file does not exist')
+        except Exception:
+            failed = True
             logger.critical('failed to download %s to %s', url, local, exc_info=True)
             raise Exception('failed to download {} to {}'.format(url, local))
+        finally:
+            if 'stats' in env:
+                stats = {
+                    'name': url,
+                    'error': failed,
+                    'now': datetime.utcnow().isoformat(),
+                    'duration': time.time()-start_time,
+                }
+                if not failed:
+                    stats['size'] = os.path.getsize(local)
+                    stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
+                env['stats']['download'].append(stats)
 
     # check compression
     if (resource['compression'] and
@@ -359,11 +384,26 @@ def uploadData(env, data):
         upload_options['password'] = env['options']['password']
     if 'options' in env and 'ssl' in env['options'] and env['options']['ssl']:
         upload_options.update(env['options']['ssl'])
+    failed = False
     try:
+        start_time = time.time()
         functions.upload(local, url, options=upload_options)
     except:
+        failed = True
         logger.critical('failed to upload %s to %s', local, url, exc_info=True)
         raise Exception('failed to upload {} to {}'.format(local, url))
+    finally:
+        if 'stats' in env:
+            stats = {
+                'name': url,
+                'error': failed,
+                'now': datetime.utcnow().isoformat(),
+                'duration': time.time()-start_time,
+            }
+            if not failed:
+                stats['size'] = os.path.getsize(local)
+                stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
+            env['stats']['upload'].append(stats)
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
@@ -570,7 +610,7 @@ def runtask(cfg, globalenv, task):
             logger.warning('error removing task_temp directory: %r',
                            e, exc_info=True)
 
-    return stats
+    globalenv['stats']['tasks'].append(stats)
 
 def runtray(cfg, globalenv,tray,stats={}):
     """Run the specified tray"""
