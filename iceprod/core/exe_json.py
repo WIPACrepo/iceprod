@@ -84,7 +84,9 @@ def send_through_pilot(func):
             logger.info('send_through_pilot(%s)',func.__name__)
             send,recv = cfg.config['options']['message_queue']
             task_id = cfg.config['options']['task_id']
-            send.put((task_id,func.__name__,cfg,args,kwargs))
+            new_cfg = deepcopy(cfg.config)
+            del new_cfg['options']['message_queue']
+            send.put((task_id,func.__name__,new_cfg,args,kwargs))
             ret = recv.get()
             if isinstance(ret, Exception):
                 raise ret
