@@ -17,6 +17,7 @@ import urllib
 import tempfile
 import hashlib
 from functools import partial
+from contextlib import contextmanager
 
 try:
     import cPickle as pickle
@@ -29,6 +30,8 @@ except ImportError:
     psutil = None
 
 import requests
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 from iceprod.core import util
@@ -274,7 +277,27 @@ def gethostname():
         logger.info('error getting global ip', exc_info=True)
     return ret
 
-def download(url, local, cache=False, options={}):
+@contextmanager
+def _http_helper(options={}):
+    """Set up an http session using requests"""
+    with requests.Session() as s:
+        if 'username' in options and 'password' in options:
+            s.auth = (options['username'], options['password'])
+        if 'sslcert' in options:
+            if 'sslkey' in options:
+                s.cert = (options['sslcert'], options['sslkey'])
+            else:
+                s.cert = options['sslcert']
+        if 'cacert' in options:
+            s.verify = options['cacert']
+        retries = Retry(total=5,
+                backoff_factor=0.5,
+                status_forcelist=[ 408, 500, 502, 503, 504 ])
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+        yield s
+
+def download(url, local, options={}):
     """Download a file, checksumming if possible"""
     local = os.path.expanduser(os.path.expandvars(local))
     url  = os.path.expanduser(os.path.expandvars(url))
@@ -300,48 +323,32 @@ def download(url, local, cache=False, options={}):
 
     logger.warn('wget(): src: %s, local: %s', url, local)
 
-    # get checksum
-    for checksum_type in ('sha512', 'sha256', 'sha1', 'md5'):
-        ending = '.'+checksum_type+'sum'
-        try:
-            _wget(clean_url+ending, local+ending, options)
-            break
-        except:
-            logger.debug('failed to get checksum for %s', url+ending,
-                         exc_info=True)
-    else:
-        checksum_type = None
+    # actually download the file
+    try:
+        if url.startswith('http'):
+            logger.info('http from %s to %s', url, local)
+            with _http_helper(options) as s:
+                r = s.get(url, stream=True, timeout=300)
+                with open(local, 'wb') as f:
+                    for chunk in r.iter_content(65536):
+                        f.write(chunk)
+                r.raise_for_status()
+        elif url.startswith('file:'):
+            url = url[5:]
+            logger.info('copy from %s to %s', url, local)
+            if os.path.exists(url):
+                copy(url, local)
+        elif url.startswith('gsiftp:') or url.startswith('ftp:'):
+            logger.info('gsiftp from %s to %s', url, local)
+            GridFTP.get(url, filename=local)
+        else:
+            raise Exception("unsupported protocol %s" % url)
 
-    if cache and checksum_type:
-        try:
-            # test for cache hit
-            cache_match = incache(url, options=options)
-            if cache_match:
-                logger.info('checking checksum for %s', cache_match)
-                s = load_cksm(local+ending, local)
-                if not check_cksm(cache_match, checksum_type, s):
-                    raise Exception('checksum failed')
-                logger.info('cache hit for %s', url)
-                copy(cache_match, local)
-                return
-            else:
-                logger.info('cache miss for %s', url)
-        except:
-            logger.warn('cache failed, try direct download', exc_info=True)
-
-    # actually download the file locally
-    _wget(url, local, options)
-
-    if checksum_type:
-        logger.info('checking checksum with type %s for %s', checksum_type,
-                    local)
-        if not check_cksm(local, checksum_type, local+ending):
-            removedirs(local)
-            removedirs(local+ending)
-            raise Exception('checksum failed')
-
-    if cache:
-        insertincache(url, local, options=options)
+        if not os.path.exists(local):
+            raise Exception('download failed - file does not exist')
+    except:
+        removedirs(local)
+        raise
 
     return local
 
@@ -372,31 +379,25 @@ def upload(local, url, options={}):
     # actually upload the file
     if url.startswith('http'):
         logger.info('http from %s to %s', local, url)
-        with requests.Session() as s:
-            if 'username' in options and 'password' in options:
-                s.auth = (options['username'], options['password'])
-            if 'sslcert' in options:
-                if 'sslkey' in options:
-                    s.cert = (options['sslcert'], options['sslkey'])
-                else:
-                    s.cert = options['sslcert']
-            if 'cacert' in options:
-                s.verify = options['cacert']
-            for i in range(5, 0, -1):
+        with _http_helper(options) as s:
+            with open(local, 'rb') as f:
+                m = MultipartEncoder(
+                    fields={'field0': ('filename', f, 'text/plain')}
+                    )
+                r = s.post(url, timeout=300, data=m,
+                           headers={'Content-Type': m.content_type})
+                r.raise_for_status()
+                # get checksum
+                r = s.get(url, stream=True, timeout=300)
                 try:
-                    with open(local, 'rb') as f:
-                        m = MultipartEncoder(
-                            fields={'field0': ('filename', f, 'text/plain')}
-                            )
-                        r = s.post(url, timeout=60, data=m,
-                                   headers={'Content-Type': m.content_type})
-                        r.raise_for_status()
-                    break
-                except Exception:
-                    if i <= 0:
-                        logger.error('error uploading to url %s', url,
-                                     exc_info=True)
-                        raise
+                    with open(local+'.tmp', 'wb') as f:
+                        for chunk in r.iter_content(65536):
+                            f.write(chunk)
+                    r.raise_for_status()
+                    if sha512sum(local+'.tmp') != chksum:
+                        raise Exception('http checksum error')
+                finally:
+                    removedirs(local+'.tmp')
     elif url.startswith('file:'):
         # use copy command
         url = url[5:]
@@ -414,62 +415,6 @@ def upload(local, url, options={}):
     else:
         raise Exception("unsupported protocol %s" % url)
 
-def _wget(url, local, options):
-    """wrapper for downloading from multiple protocols"""
-    if url.startswith('http'):
-        logger.info('http from %s to %s', url, local)
-        with requests.Session() as s:
-            if 'username' in options and 'password' in options:
-                s.auth = (options['username'], options['password'])
-            if 'sslcert' in options:
-                if 'sslkey' in options:
-                    s.cert = (options['sslcert'], options['sslkey'])
-                else:
-                    s.cert = options['sslcert']
-            if 'cacert' in options:
-                s.verify = options['cacert']
-            for i in range(4, -1, -1):
-                try:
-                    r = s.get(url, stream=True, timeout=60)
-                    with open(local, 'wb') as f:
-                        for chunk in r.iter_content(65536):
-                            f.write(chunk)
-                    r.raise_for_status()
-                    break
-                except:
-                    if os.path.exists(local):
-                        os.remove(local)
-                    if i <= 0:
-                        logger.error('error fetching url %s', url,
-                                     exc_info=True)
-                        raise
-                    else:
-                        logger.info('retrying download')
-    elif url.startswith('file:'):
-        url = url[5:]
-        logger.info('copy from %s to %s', url, local)
-        if os.path.exists(url):
-            copy(url, local)
-    elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-        logger.info('gsiftp from %s to %s', url, local)
-        try:
-            GridFTP.get(url, filename=local)
-        except:
-            if os.path.exists(local):
-                removedirs(local)
-    else:
-        raise Exception("unsupported protocol %s" % url)
-
-    if not os.path.exists(local):
-        raise Exception('download failed - file does not exist')
-    fail = False
-    with open(local) as f:
-        if not f.read(10):
-            fail = True
-    if fail:
-        os.remove(local)
-        raise Exception('download failed - file is empty')
-
 def delete(url, options={}):
     """Delete a url or file"""
     url = os.path.expandvars(url)
@@ -478,28 +423,9 @@ def delete(url, options={}):
 
     if url.startswith('http'):
         logger.info('delete http: %s', url)
-        with requests.Session() as s:
-            if 'username' in options and 'password' in options:
-                s.auth = (options['username'], options['password'])
-            if 'sslcert' in options:
-                if 'sslkey' in options:
-                    s.cert = (options['sslcert'], options['sslkey'])
-                else:
-                    s.cert = options['sslcert']
-            if 'cacert' in options:
-                s.verify = options['cacert']
-            for i in range(4, -1, -1):
-                try:
-                    r = s.delete(url, timeout=60)
-                    r.raise_for_status()
-                    break
-                except:
-                    if i <= 0:
-                        logger.error('error with url %s', url,
-                                     exc_info=True)
-                        raise
-                    else:
-                        logger.info('retrying delete')
+        with _http_helper(options) as s:
+            r = s.delete(url, timeout=300)
+            r.raise_for_status()
     elif url.startswith('file:'):
         url = url[5:]
         logger.info('delete file: %r', url)
@@ -521,51 +447,3 @@ def isurl(url):
             return reduce(lambda a,b: a or url.startswith(b), prefixes, False)
         except:
             return False
-
-def _getcachedir(options={}):
-    # get cache directory
-    cache_dir = 'cache'
-    if 'cache_dir' in options and options['cache_dir']:
-        cache_dir = os.path.expandvars(options['cache_dir'])
-    if not cache_dir.startswith('/'):
-        cache_dir = os.path.join(os.getcwd(),cache_dir)
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
-    return cache_dir
-
-def insertincache(url,file,options={}):
-    """Copy file to cache"""
-    if 'debug' in options:
-        return None
-
-    # get cache directory
-    cache_dir = _getcachedir(options)
-
-    # get hash of url
-    hash = cksm(url,'sha512',file=False)
-
-    # copy file
-    logger.info('insertincache(%s) = %s',url,hash)
-    match = os.path.join(cache_dir,hash)
-    copy(file,match)
-
-def incache(url,options={}):
-    """Test if the url is in the cache, and return it if available"""
-    # test for debug variable, skipping cache if debug is enabled
-    if 'debug' in options:
-        return None
-    logger.info('incache(%s)',url)
-
-    # get cache directory
-    cache_dir = _getcachedir(options)
-
-    # get hash of url
-    hash = cksm(url,'sha512',file=False)
-
-    # check cache dir for url
-    match = os.path.join(cache_dir,hash)
-    if os.path.exists(match):
-        return match
-
-    # no matches in cache
-    return None
