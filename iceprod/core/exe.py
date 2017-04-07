@@ -70,6 +70,13 @@ class Config:
         self.config = config if config else dataclasses.Job()
         self.parser = parser if parser else iceprod.core.parser.ExpParser()
 
+    def __getstate__(self):
+        return json_encode(self.config)
+
+    def __setstate__(self, state):
+        self.config = json_decode(state)
+        self.parser = iceprod.core.parser.ExpParser()
+
     def parseValue(self, value, env={}):
         """
         Parse a value from the available env and global config.
