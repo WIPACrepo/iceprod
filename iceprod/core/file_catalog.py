@@ -21,11 +21,13 @@ class FileCatalog(object):
 
     Args:
         url (str): url of the file catalog server
+        overwrite (bool): overwrite entries when adding new files
     """
-    def __init__(self, url):
+    def __init__(self, url, overwrite=False):
         self.fc = FileCatalogLowLevel(url)
+        self.overwrite = overwrite
 
-    def add(self, name, path, checksum, metadata=None, overwrite=False):
+    def add(self, name, path, checksum, metadata=None, overwrite=None):
         """
         Add a file to the catalog.
 
@@ -34,9 +36,12 @@ class FileCatalog(object):
             path (str): url of file
             checksum (str): sha512 checksum of file
             metadata (dict): (optional) additional metadata
+            overwrite (bool): overwrite entries when adding new files
         """
         if not metadata:
             metadata = {}
+        if overwrite is None:
+            overwrite = self.overwrite
         metadata.update({'uid': name, 'checksum': checksum,
                          'locations': [path]})
         try:

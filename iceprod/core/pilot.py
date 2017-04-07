@@ -333,8 +333,6 @@ class Pilot(object):
 
         if errors < 1:
             logger.critical('too many errors when running tasks')
-            logger.error('enabling black hole protection - sleep 1 hour')
-            time.sleep(3600)
         else:
             logger.warn('cleanly stopping pilot')
 

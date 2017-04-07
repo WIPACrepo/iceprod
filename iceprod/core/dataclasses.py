@@ -617,6 +617,24 @@ class Data(_ResourceCommon):
         else:
             raise Exception('%s not defined in env' % type)
 
+    def filecatalog(self,env):
+        """
+        Get filecatalog from the environment.
+
+        :param env: environment
+        :returns: FileCatalog object, or raises Exception
+        """
+        type = self['type'].lower()
+        if type not in Data.type_options:
+            raise Exception('Data.type is undefined')
+        elif type in ('job_temp','dataset_temp','site_temp'):
+            if 'options' in env and 'filecatalog_temp' in env['options']:
+                return env['options']['filecatalog_temp']
+        elif type == 'permanent':
+            if 'options' in env and 'filecatalog' in env['options']:
+                return env['options']['filecatalog']
+        raise Exception('%s not defined in env' % type)
+
 class DifPlus(dict):
     """
     A DifPlus object.

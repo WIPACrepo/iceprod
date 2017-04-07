@@ -259,7 +259,7 @@ def setupenv(cfg, obj, oldenv={}):
                 os.environ[e] = env['environment'][e]
 
 def downloadResource(env, resource, remote_base=None,
-                     local_base=None):
+                     local_base=None, checksum=None):
     """Download a resource and put location in the env"""
     if not remote_base:
         remote_base = env['options']['resource_url']
@@ -305,6 +305,11 @@ def downloadResource(env, resource, remote_base=None,
             functions.download(url, local, options=download_options)
             if not os.path.exists(local):
                 raise Exception('file does not exist')
+            if checksum:
+                # check the checksum
+                cksm = functions.sha512sum(local)
+                if cksm != checksum:
+                    raise Exception('checksum validation failed')
         except Exception:
             failed = True
             logger.critical('failed to download %s to %s', url, local, exc_info=True)
@@ -341,7 +346,14 @@ def downloadData(env, data):
         local_base = env['options']['data_directory']
     else:
         local_base = os.getcwd()
-    downloadResource(env,data,remote_base,local_base)
+
+    try:
+        filecatalog = data.filecatalog(env)
+        path, checksum = filecatalog.get(data['local'])
+    except Exception:
+        # no filecatalog available
+        checksum = None
+    downloadResource(env, data, remote_base, local_base, checksum=checksum)
 
 def uploadData(env, data):
     """Upload data"""
@@ -393,17 +405,39 @@ def uploadData(env, data):
         logger.critical('failed to upload %s to %s', local, url, exc_info=True)
         raise Exception('failed to upload {} to {}'.format(local, url))
     finally:
+        stats = {
+            'name': url,
+            'error': failed,
+            'now': datetime.utcnow().isoformat(),
+            'duration': time.time()-start_time,
+        }
+        if not failed:
+            stats['size'] = os.path.getsize(local)
+            stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
         if 'stats' in env:
-            stats = {
-                'name': url,
-                'error': failed,
-                'now': datetime.utcnow().isoformat(),
-                'duration': time.time()-start_time,
-            }
-            if not failed:
-                stats['size'] = os.path.getsize(local)
-                stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
             env['stats']['upload'].append(stats)
+
+    # if successful, add to filecatalog
+    try:
+        filecatalog = data.filecatalog(env)
+    except Exception:
+        pass # no filecatalog available
+    else:
+        try:
+            cksm = functions.sha512sum(local)
+            metadata = {
+                'file_size': stats['size'],
+                'create_date': stats['now'],
+                'modify_date': stats['now'],
+                'data_type': 'simulation',
+                'transfer_duration': stats['duration'],
+                'transfer_MBps': stats['rate_MBps'],
+            }
+            options = ('dataset','dataset_id','task_id','task','job','debug')
+            metadata.update({env['options'][k] for k in options if k in env['options']})
+            filecatalog.add(data['local'], url, cksm, metadata)
+        except Exception:
+            logger.warn('failed to add %r to filecatalog', url, exc_info=True)
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
