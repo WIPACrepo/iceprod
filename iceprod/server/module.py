@@ -81,7 +81,8 @@ class module(object):
             try:
                 self.elastic = ElasticClient(self.cfg['elasticsearch'])
             except:
-                logger.warn('failed to 
+                logger.warn('failed to connet to elasicsearch: %r',
+                            self.cfg['elasticsearch'], exc_info=True)
 
     def stop(self):
         logger.warn('stopping module %s', self.__class__.__name__)
