@@ -84,12 +84,16 @@ def send_through_pilot(func):
             logger.info('send_through_pilot(%s)',func.__name__)
             send,recv = cfg.config['options']['message_queue']
             task_id = cfg.config['options']['task_id']
-            new_cfg = deepcopy(cfg.config)
-            del new_cfg['options']['message_queue']
-            send.put((task_id,func.__name__,new_cfg,args,kwargs))
-            ret = recv.get()
-            if isinstance(ret, Exception):
-                raise ret
+            # mq can't be pickled, so remove temporarily
+            mq = cfg.config['options']['message_queue']
+            del cfg.config['options']['message_queue']
+            try:
+                send.put((task_id,func.__name__,cfg.config,args,kwargs))
+                ret = recv.get()
+                if isinstance(ret, Exception):
+                    raise ret
+            finally:
+                cfg.config['options']['message_queue'] = mq
             return ret
         else:
             return func(cfg, *args, **kwargs)
