@@ -156,6 +156,7 @@
 <span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">Container</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
@@ -280,7 +281,8 @@
         <span class="n">env</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c"># attempt to do depth=2 copying</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">oldenv</span><span class="p">:</span>
-            <span class="n">env</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">oldenv</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;deletions&#39;</span><span class="p">,</span><span class="s">&#39;uploads&#39;</span><span class="p">,</span><span class="s">&#39;environment&#39;</span><span class="p">,</span><span class="s">&#39;pythonpath&#39;</span><span class="p">,</span><span class="s">&#39;stats&#39;</span><span class="p">):</span>
+                <span class="n">env</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">oldenv</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">util</span><span class="o">.</span><span class="n">NoncriticalError</span><span class="p">(</span><span class="s">&#39;object to load environment from is empty&#39;</span><span class="p">)</span>
@@ -294,6 +296,12 @@
         <span class="c"># get clear environment variables</span>
         <span class="n">env</span><span class="p">[</span><span class="s">&#39;environment&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">env</span><span class="p">[</span><span class="s">&#39;pythonpath&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c"># inherit statistics</span>
+        <span class="k">if</span> <span class="s">&#39;stats&#39;</span> <span class="ow">in</span> <span class="n">oldenv</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">oldenv</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;upload&#39;</span><span class="p">:[],</span> <span class="s">&#39;download&#39;</span><span class="p">:[],</span> <span class="s">&#39;tasks&#39;</span><span class="p">:[]}</span>
 
         <span class="c"># copy parameters</span>
         <span class="k">if</span> <span class="s">&#39;parameters&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
@@ -411,11 +419,28 @@
             <span class="n">download_options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
             <span class="n">download_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">])</span>
+        <span class="n">failed</span> <span class="o">=</span> <span class="k">False</span>
         <span class="k">try</span><span class="p">:</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="n">functions</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">download_options</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">local</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;file does not exist&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">failed</span> <span class="o">=</span> <span class="k">True</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;failed to download %s to %s&#39;</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;failed to download {} to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">local</span><span class="p">))</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s">&#39;stats&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+                <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                    <span class="s">&#39;error&#39;</span><span class="p">:</span> <span class="n">failed</span><span class="p">,</span>
+                    <span class="s">&#39;now&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                    <span class="s">&#39;duration&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">failed</span><span class="p">:</span>
+                    <span class="n">stats</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+                    <span class="n">stats</span><span class="p">[</span><span class="s">&#39;rate_MBps&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="n">stats</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span>
+                <span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">][</span><span class="s">&#39;download&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
 
     <span class="c"># check compression</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">resource</span><span class="p">[</span><span class="s">&#39;compression&#39;</span><span class="p">]</span> <span class="ow">and</span>
@@ -479,11 +504,26 @@
         <span class="n">upload_options</span><span class="p">[</span><span class="s">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;password&#39;</span><span class="p">]</span>
     <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;ssl&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">]:</span>
         <span class="n">upload_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;ssl&#39;</span><span class="p">])</span>
+    <span class="n">failed</span> <span class="o">=</span> <span class="k">False</span>
     <span class="k">try</span><span class="p">:</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="n">functions</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">upload_options</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
+        <span class="n">failed</span> <span class="o">=</span> <span class="k">True</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;failed to upload %s to %s&#39;</span><span class="p">,</span> <span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;failed to upload {} to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span></div>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;failed to upload {} to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s">&#39;stats&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">:</span>
+            <span class="n">stats</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                <span class="s">&#39;error&#39;</span><span class="p">:</span> <span class="n">failed</span><span class="p">,</span>
+                <span class="s">&#39;now&#39;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s">&#39;duration&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start_time</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">failed</span><span class="p">:</span>
+                <span class="n">stats</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+                <span class="n">stats</span><span class="p">[</span><span class="s">&#39;rate_MBps&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s">&#39;size&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="mi">1000</span><span class="o">/</span><span class="n">stats</span><span class="p">[</span><span class="s">&#39;duration&#39;</span><span class="p">]</span>
+            <span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">][</span><span class="s">&#39;upload&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="setupClass"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.setupClass">[docs]</a><span class="k">def</span> <span class="nf">setupClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">class_obj</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Set up a class for use in modules, and put it in the env&quot;&quot;&quot;</span>
@@ -690,7 +730,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error removing task_temp directory: %r&#39;</span><span class="p">,</span>
                            <span class="n">e</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">stats</span></div>
+    <span class="n">globalenv</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">][</span><span class="s">&#39;tasks&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="runtray"><a class="viewcode-back" href="../../../core/exe.html#iceprod.core.exe.runtray">[docs]</a><span class="k">def</span> <span class="nf">runtray</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">globalenv</span><span class="p">,</span><span class="n">tray</span><span class="p">,</span><span class="n">stats</span><span class="o">=</span><span class="p">{}):</span>
     <span class="sd">&quot;&quot;&quot;Run the specified tray&quot;&quot;&quot;</span>

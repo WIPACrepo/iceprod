@@ -255,7 +255,7 @@
         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;task should be stopped&#39;</span><span class="p">)</span></div>
 
 <span class="nd">@send_through_pilot</span>
-<div class="viewcode-block" id="taskerror"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.taskerror">[docs]</a><span class="k">def</span> <span class="nf">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+<div class="viewcode-block" id="taskerror"><a class="viewcode-back" href="../../../core/exe_json.html#iceprod.core.exe_json.taskerror">[docs]</a><span class="k">def</span> <span class="nf">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">{},</span> <span class="n">start_time</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Tell the server about the error experienced</span>
 
@@ -271,6 +271,7 @@
             <span class="s">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">hostname</span><span class="p">,</span> <span class="s">&#39;domain&#39;</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
             <span class="s">&#39;time_used&#39;</span><span class="p">:</span> <span class="k">None</span><span class="p">,</span>
             <span class="s">&#39;error_summary&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;</span><span class="p">,</span>
+            <span class="s">&#39;task_stats&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">start_time</span><span class="p">:</span>
             <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;time_used&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
