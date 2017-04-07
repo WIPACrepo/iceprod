@@ -355,7 +355,7 @@ class Pilot(object):
                 config['options'][k] = self.config['options'][k]
 
         # add message queue
-        send_queue = SimpleQueue
+        send_queue = SimpleQueue()
         config['options']['message_queue'] = [self.message_queue, send_queue]
 
         # run task in tmp dir
