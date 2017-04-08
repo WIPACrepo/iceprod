@@ -329,7 +329,7 @@ class rpc(_Methods_Base):
                         reqs = json_decode(row[0])
                         for r in reqs:
                             if r not in task_reqs:
-                                task_reqs[r] = r
+                                task_reqs[r] = reqs[r]
                     except Exception:
                         logger.warn('could not decode task_rel requirements: %r',
                                     row, exc_info=True)
