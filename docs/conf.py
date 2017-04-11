@@ -128,4 +128,5 @@ latex_documents = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.6/', None),
+    'tornado': ('http://tornado.readthedocs.io/en/stable/', None),
     }
