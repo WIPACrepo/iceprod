@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Dataset Submission &mdash; IceProd master documentation</title>
+  <title>Administrator’s Guide &mdash; IceProd master documentation</title>
   
 
   
@@ -31,9 +31,8 @@
 
   
     <link rel="top" title="IceProd master documentation" href="../index.html"/>
-        <link rel="up" title="User’s Guide" href="index.html"/>
-        <link rel="next" title="Dataset Monitoring" href="datasets.html"/>
-        <link rel="prev" title="Login" href="login.html"/> 
+        <link rel="next" title="Server Startup" href="startup.html"/>
+        <link rel="prev" title="JSON-RPC Interface" href="../guide/jsonrpc.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -85,15 +84,13 @@
             
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">User&#8217;s Guide</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="login.html">Login</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Dataset Submission</a></li>
-<li class="toctree-l2"><a class="reference internal" href="datasets.html">Dataset Monitoring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tasks.html">Task Monitoring</a></li>
-<li class="toctree-l2"><a class="reference internal" href="jsonrpc.html">JSON-RPC Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Administrator&#8217;s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="startup.html">Server Startup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="common.html">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html">Extras</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
@@ -126,56 +123,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="dataset-submission">
-<h1>Dataset Submission<a class="headerlink" href="#dataset-submission" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submission-types">
-<h2>Submission Types<a class="headerlink" href="#submission-types" title="Permalink to this headline">¶</a></h2>
-<p>There are three types of submission: basic, advanced, and expert.</p>
-<div class="section" id="basic-view">
-<h3>Basic View<a class="headerlink" href="#basic-view" title="Permalink to this headline">¶</a></h3>
-<p>The basic view is designed for the case of &#8220;I want to run this script.&#8221;</p>
-<p>It requires a URL (http or gridftp) to the script. All other boxes are
-optional, though filling in the description is highly recommended.</p>
-<p>Then enter the number of jobs and hit submit.</p>
-</div>
-<div class="section" id="advanced-view">
-<h3>Advanced View<a class="headerlink" href="#advanced-view" title="Permalink to this headline">¶</a></h3>
-<p>The advanced view is for running multiple tasks and more complex scenarios.
-It is currently a direct translation from the json config to html structure.</p>
-<p>This is under revision to make it easier to use.  Comments welcome.</p>
-</div>
-<div class="section" id="expert-view">
-<h3>Expert View<a class="headerlink" href="#expert-view" title="Permalink to this headline">¶</a></h3>
-<p>The expert view shows the raw json configuration. Copying/pasting
-the configuration is very easy here.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Be careful of json syntax errors!</p>
-</div>
-</div>
-</div>
-<div class="section" id="macros">
-<h2>Macros<a class="headerlink" href="#macros" title="Permalink to this headline">¶</a></h2>
-<p>IceProd has several built-in macros relating to what task is actually running.</p>
-<dl class="docutils">
-<dt><cite>$(dataset_id)</cite></dt>
-<dd>The dataset_id string.</dd>
-<dt><cite>$(dataset)</cite></dt>
-<dd><p class="first">The dataset_id in numerical form.</p>
-<div class="icecube last admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Numbering starts at 20000 for IceProd 2 datasets.</p>
-</div>
-</dd>
-<dt><cite>$(jobs_submitted)</cite></dt>
-<dd>The number of jobs in the dataset.</dd>
-<dt><cite>$(job)</cite></dt>
-<dd>The job index within the dataset. Within the range <cite>[0, jobs_submitted)</cite>.</dd>
-<dt><cite>$(task_id)</cite></dt>
-<dd>The task_id string. Guaranteed to be unique to the running task.</dd>
-<dt><cite>$(task)</cite></dt>
-<dd>The task name.</dd>
-</dl>
+  <div class="section" id="administrator-s-guide">
+<h1>Administrator&#8217;s Guide<a class="headerlink" href="#administrator-s-guide" title="Permalink to this headline">¶</a></h1>
+<p>A configuration guide to the server, listing all the knobs.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="startup.html">Server Startup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="common.html">Common Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="common.html#disabling-ssl">Disabling SSL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="common.html#setting-the-website-password">Setting the website password</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="extra_details.html">Extras</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html#site-pools">Site Pools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html#the-role-of-the-master">The Role of the Master</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html#the-backup-master">The Backup Master</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html#joining-a-pool">Joining a Pool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html#pool-security">Pool Security</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 
@@ -186,10 +153,10 @@ the configuration is very easy here.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="datasets.html" class="btn btn-neutral float-right" title="Dataset Monitoring" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="startup.html" class="btn btn-neutral float-right" title="Server Startup" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="login.html" class="btn btn-neutral" title="Login" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="../guide/jsonrpc.html" class="btn btn-neutral" title="JSON-RPC Interface" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
