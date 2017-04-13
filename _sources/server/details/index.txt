@@ -62,6 +62,7 @@ as a user.
 
     async
     website
+    auth
 
 Proxying
 --------
