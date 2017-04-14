@@ -83,15 +83,11 @@
           
             
             
-                <ul>
+                <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="details/index.html">IceProd Server Details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/db.html">Database Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
@@ -113,6 +109,9 @@
 <li class="toctree-l2"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
 </li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -146,7 +145,7 @@
 <p>Database methods</p>
 <dl class="function">
 <dt id="iceprod.server.dbmethods.authorization">
-<code class="descclassname">iceprod.server.dbmethods.</code><code class="descname">authorization</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods.html#authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.authorization" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.server.dbmethods.</code><code class="descname">authorization</code><span class="sig-paren">(</span><em>auth_role=None</em>, <em>match_user=False</em>, <em>site_valid=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods.html#authorization"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.authorization" title="Permalink to this definition">¶</a></dt>
 <dd><p>Authorization decorator.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -935,6 +934,21 @@ the necessary resources should be available on the site.</p>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.rpc.rpc.rpc_public_get_number_of_tasks_in_each_state">
+<code class="descname">rpc_public_get_number_of_tasks_in_each_state</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/rpc.html#rpc.rpc_public_get_number_of_tasks_in_each_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_number_of_tasks_in_each_state" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.rpc.rpc.rpc_public_get_datasets_by_status">
+<code class="descname">rpc_public_get_datasets_by_status</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/rpc.html#rpc.rpc_public_get_datasets_by_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_datasets_by_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.rpc.rpc.rpc_public_get_config">
+<code class="descname">rpc_public_get_config</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/rpc.html#rpc.rpc_public_get_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

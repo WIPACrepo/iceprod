@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -139,7 +139,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods&#39;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="authorization"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.authorization">[docs]</a><span class="k">def</span> <span class="nf">authorization</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="authorization"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.authorization">[docs]</a><span class="k">def</span> <span class="nf">authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">match_user</span><span class="o">=</span><span class="k">False</span><span class="p">,</span> <span class="n">site_valid</span><span class="o">=</span><span class="k">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Authorization decorator.</span>
 
 <span class="sd">    Args:</span>
@@ -150,15 +150,14 @@
     <span class="k">def</span> <span class="nf">make_wrapper</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="n">auth</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_auth&#39;</span><span class="p">)</span>
-            <span class="n">auth_role</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;auth_role&#39;</span><span class="p">],</span> <span class="k">None</span><span class="p">)</span>
-            <span class="n">auth_user</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;auth_user&#39;</span><span class="p">],</span> <span class="k">None</span><span class="p">)</span>
-            <span class="n">site_valid</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;site_valid&#39;</span><span class="p">],</span> <span class="k">False</span><span class="p">)</span>
+            <span class="n">auth_role</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;auth_role&#39;</span><span class="p">]</span>
+            <span class="n">match_user</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;match_user&#39;</span><span class="p">]</span>
+            <span class="n">site_valid</span> <span class="o">=</span> <span class="n">auth</span><span class="p">[</span><span class="s">&#39;site_valid&#39;</span><span class="p">]</span>
 
             <span class="c"># get user and role</span>
             <span class="n">user</span> <span class="o">=</span> <span class="k">None</span>
             <span class="n">role</span> <span class="o">=</span> <span class="k">None</span>
-            <span class="n">site_auth</span> <span class="o">=</span> <span class="k">False</span>
-            <span class="n">passkey_auth</span> <span class="o">=</span> <span class="k">False</span>
+            <span class="n">site_auth</span> <span class="o">=</span> <span class="n">site_valid</span>
             <span class="k">if</span> <span class="s">&#39;passkey&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                 <span class="n">passkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
                 
@@ -167,10 +166,10 @@
                     <span class="n">site_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site_id&#39;</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">site_valid</span><span class="p">:</span>
                         <span class="n">site_auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="p">(</span><span class="s">&#39;auth_authorize_site&#39;</span><span class="p">,</span>
-                                                   <span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                                                       <span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c"># authorize task</span>
-                    <span class="n">passkey_auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_task&#39;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                    <span class="n">user_auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_task&#39;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
                     
             <span class="k">elif</span> <span class="s">&#39;cookie_id&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                 <span class="n">user_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;cookie_id&#39;</span><span class="p">)</span>
@@ -195,7 +194,7 @@
                     <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
 
             <span class="c"># run function</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_argcount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>

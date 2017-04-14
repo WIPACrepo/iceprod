@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -371,7 +371,7 @@
                         <span class="c"># find task by name</span>
                         <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]:</span>
                             <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
-                                <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe</span><span class="o">.</span><span class="n">runtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+                                <span class="n">stats</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe</span><span class="o">.</span><span class="n">runtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
                                 <span class="k">break</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;cannot find task named %r&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -380,7 +380,7 @@
                         <span class="c"># find task by index</span>
                         <span class="k">if</span> <span class="p">(</span><span class="n">name</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span>
                             <span class="n">name</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">])):</span>
-                            <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe</span><span class="o">.</span><span class="n">runtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">])</span>
+                            <span class="n">stats</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe</span><span class="o">.</span><span class="n">runtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">])</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&#39;cannot find task index %d&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
                             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot find specified task&#39;</span><span class="p">)</span>
@@ -391,7 +391,7 @@
                         <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot find specified task&#39;</span><span class="p">)</span>
                     <span class="c"># finish task</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">offline</span><span class="p">:</span>
-                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">finishtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">],</span>
+                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">finishtask</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">stats</span><span class="p">,</span>
                                                          <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">offline</span><span class="p">:</span>
                     <span class="c"># run all tasks in order</span>
@@ -405,8 +405,7 @@
                 <span class="c"># set task status on server</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">offline</span><span class="p">:</span>
                     <span class="k">try</span><span class="p">:</span>
-                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="n">env</span><span class="p">[</span><span class="s">&#39;stats&#39;</span><span class="p">],</span>
-                                                        <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                        <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe_json</span><span class="o">.</span><span class="n">taskerror</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
                                                         <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>

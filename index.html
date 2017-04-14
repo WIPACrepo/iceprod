@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
 <li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -120,7 +120,7 @@
   <div class="section" id="iceprod">
 <h1>IceProd<a class="headerlink" href="#iceprod" title="Permalink to this headline">¶</a></h1>
 <p>IceProd is a Python framework for distributed management of batch jobs.
-It runs as a layer on top of other batch middleware, such as <a class="reference external" href="http://research.cs.wisc.edu/htcondor/">HTCondor</a>,
+It runs as a layer on top of other batch middleware, such as HTCondor,
 and can pool together resources from different batch systems. The primary
 purpose is to coordinate and administer many large sets of jobs at once,
 keeping a history of the entire job lifecycle.</p>
@@ -130,7 +130,7 @@ keeping a history of the entire job lifecycle.</p>
 running instance.  For advanced users and administrators, you can install
 with <code class="docutils literal"><span class="pre">pip</span></code>:</p>
 <pre class="literal-block">
-pip install https://github.com/WIPACrepo/iceprod/archive/v2.2.1.tar.gz
+pip install https://github.com/WIPACrepo/iceprod/archive/v2.1.1.tar.gz
 </pre>
 <p><strong>Optional dependencies</strong>: Nginx, Globus toolkit, MySQL</p>
 <div class="icecube admonition note">
@@ -157,19 +157,6 @@ the environment execute:</p>
 <li class="toctree-l2"><a class="reference internal" href="guide/jsonrpc.html">JSON-RPC Interface</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="admin/index.html">Administrator&#8217;s Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="admin/startup.html">Server Startup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="admin/common.html">Common Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="admin/extra_details.html">Extras</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-<div class="section" id="developer-documentation">
-<h2>Developer Documentation<a class="headerlink" href="#developer-documentation" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="core/i3exec.html">I3Exec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="core/exe.html">Execution Functions</a></li>
@@ -187,16 +174,6 @@ the environment execute:</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="server/details/index.html">IceProd Server Details</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="server/details/submit_to_queue.html">From Submission to Queue</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/task_relationships.html">Task Relationships</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/lifecycles.html">Lifecycles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/global_queueing.html">Global Queueing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/async.html">Asynchronous Programming</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/website.html">Website</a></li>
-<li class="toctree-l3"><a class="reference internal" href="server/details/auth.html">RPC Authorization</a></li>
-</ul>
-</li>
 <li class="toctree-l2"><a class="reference internal" href="server/modules/db.html">Database Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="server/modules/master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="server/modules/proxy.html">Proxy Module</a></li>
@@ -218,6 +195,14 @@ the environment execute:</p>
 <li class="toctree-l2"><a class="reference internal" href="server/ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
 </li>
+</ul>
+</div>
+</div>
+<div class="section" id="admin-notes">
+<h2>Admin Notes<a class="headerlink" href="#admin-notes" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 </div>
 </div>

@@ -83,12 +83,9 @@
           
             
             
-                <ul>
+                <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="i3exec.html">I3Exec</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Execution Functions</a></li>
@@ -106,6 +103,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -273,32 +273,13 @@ such as <a class="reference internal" href="dataclasses.html#iceprod.core.datacl
 <dd><p>Run the specified module</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="iceprod.core.exe.fork_module">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">fork_module</code><span class="sig-paren">(</span><em>cfg</em>, <em>env</em>, <em>module</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#fork_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.fork_module" title="Permalink to this definition">¶</a></dt>
-<dd><p>Modules are run in a forked process to prevent segfaults from killing IceProd.
-Their stdout and stderr is dumped into the log file with prefixes on each
-line to designate its source.  Any error or the return value is returned to
-the main process via a Queue.</p>
-<p>If a module defines a src, that is assumed to be a Class which should be
-added to the env.  The running_class is where the exact script or binary
-is chosen.  It can match several things:</p>
-<ul class="simple">
-<li>A fully defined python module.class import (also takes module.function)</li>
-<li>A python class defined in the src provided</li>
-<li>A regular python script</li>
-<li>An executable of some type (this is run in a subprocess with shell
-execution disabled)</li>
-</ul>
-</dd></dl>
-
 </div>
 <div class="section" id="object-setup">
 <h2>Object Setup<a class="headerlink" href="#object-setup" title="Permalink to this headline">¶</a></h2>
 <p>Download/upload and setup the main IceProd objects (Resources, Data, Classes).</p>
 <dl class="function">
 <dt id="iceprod.core.exe.downloadResource">
-<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadResource</code><span class="sig-paren">(</span><em>env</em>, <em>resource</em>, <em>remote_base=None</em>, <em>local_base=None</em>, <em>checksum=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadResource" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.exe.</code><code class="descname">downloadResource</code><span class="sig-paren">(</span><em>env</em>, <em>resource</em>, <em>remote_base=None</em>, <em>local_base=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/exe.html#downloadResource"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.exe.downloadResource" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download a resource and put location in the env</p>
 </dd></dl>
 

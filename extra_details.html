@@ -24,19 +24,16 @@
 
   
   
-    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/style.css" type="text/css" />
   
 
   
 
   
-    <link rel="top" title="IceProd master documentation" href="../index.html"/>
-        <link rel="up" title="Administrator’s Guide" href="index.html"/>
-        <link rel="next" title="IceProd Core" href="../core/index.html"/>
-        <link rel="prev" title="Common Options" href="common.html"/> 
+    <link rel="top" title="IceProd master documentation" href="index.html"/> 
 
   
-  <script src="../_static/js/modernizr.min.js"></script>
+  <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -52,7 +49,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home"> IceProd
+            <a href="index.html" class="icon icon-home"> IceProd
           
 
           
@@ -69,7 +66,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -83,19 +80,14 @@
           
             
             
-                <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">Administrator&#8217;s Guide</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="startup.html">Server Startup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="common.html">Common Options</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Extras</a></li>
-</ul>
-</li>
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -110,7 +102,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">IceProd</a>
+          <a href="index.html">IceProd</a>
         
       </nav>
 
@@ -136,7 +128,7 @@
 <p>The master is also a central repository for resources needed by datasets running on multiple sites or sites other than the one they are submitted from.  An external gridftp server can be designated as the repository location for the master to use.</p>
 <div class="section" id="queueing-to-multiple-sites">
 <h3>Queueing to Multiple Sites<a class="headerlink" href="#queueing-to-multiple-sites" title="Permalink to this headline">¶</a></h3>
-<p>Queueing a dataset to multiple sites is handled by the master.  Whenever a site asks the master for more tasks (in the <a class="reference internal" href="../server/modules/queue.html#queueing-module"><span class="std std-ref">Queueing Module</span></a>), the master will assign waiting tasks to that site.  This is a pull paradigm; there is no push capability.</p>
+<p>Queueing a dataset to multiple sites is handled by the master.  Whenever a site asks the master for more tasks (in the <a class="reference internal" href="server/modules/queue.html#queueing-module"><span class="std std-ref">Queueing Module</span></a>), the master will assign waiting tasks to that site.  This is a pull paradigm; there is no push capability.</p>
 <p>If the site fails to change the state of an assigned task for more than a timeout period, the task is reassigned to another site.  This allows the task to run even if the site goes down.</p>
 </div>
 <div class="section" id="communicating-with-the-master">
@@ -200,7 +192,7 @@
 </dd>
 </dl>
 </div></blockquote>
-<p>The 15 char length was selected for IceProd 2.  This is hard coded into <a class="reference internal" href="../server/init.html#iceprod.server.GlobalID" title="iceprod.server.GlobalID"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.GlobalID</span></code></a>.  If this is changed, all old DB data is lost and you will not be able to connect properly to a pool using a different value.  So make sure this is set for your use case before starting to use IceProd</p>
+<p>The 15 char length was selected for IceProd 2.  This is hard coded into <a class="reference internal" href="server/init.html#iceprod.server.GlobalID" title="iceprod.server.GlobalID"><code class="xref py py-class docutils literal"><span class="pre">iceprod.server.GlobalID</span></code></a>.  If this is changed, all old DB data is lost and you will not be able to connect properly to a pool using a different value.  So make sure this is set for your use case before starting to use IceProd</p>
 </div>
 </div>
 <div class="section" id="pool-security">
@@ -213,15 +205,6 @@
            </div>
           </div>
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../core/index.html" class="btn btn-neutral float-right" title="IceProd Core" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="common.html" class="btn btn-neutral" title="Common Options" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
   
 
   <hr/>
@@ -249,23 +232,23 @@
 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../',
+            URL_ROOT:'./',
             VERSION:'master',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
-      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
       <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
   
   
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
+    <script type="text/javascript" src="_static/js/theme.js"></script>
   
 
   

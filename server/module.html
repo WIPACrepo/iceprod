@@ -83,15 +83,11 @@
           
             
             
-                <ul>
+                <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Server</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="details/index.html">IceProd Server Details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/db.html">Database Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/master_updater.html">Master Updater Module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modules/proxy.html">Proxy Module</a></li>
@@ -113,6 +109,9 @@
 <li class="toctree-l2"><a class="reference internal" href="ssl_cert.html">SSL/TLS Certificate Utilities</a></li>
 </ul>
 </li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -150,16 +149,6 @@
 <dd></dd></dl>
 
 <dl class="class">
-<dt id="iceprod.server.module.ElasticClient">
-<em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">ElasticClient</code><span class="sig-paren">(</span><em>hostname</em>, <em>basename='iceprod'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="iceprod.server.module.ElasticClient.put">
-<code class="descname">put</code><span class="sig-paren">(</span><em>name</em>, <em>index_name</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#ElasticClient.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.ElasticClient.put" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
 <dt id="iceprod.server.module.module">
 <em class="property">class </em><code class="descclassname">iceprod.server.module.</code><code class="descname">module</code><span class="sig-paren">(</span><em>cfg</em>, <em>io_loop</em>, <em>executor</em>, <em>modules</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/module.html#module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.module.module" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is an abstract class representing a server module.</p>
@@ -169,7 +158,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>cfg</strong> &#8211; An <code class="xref py py-class docutils literal"><span class="pre">IceProdConfig</span></code>.</li>
-<li><strong>io_loop</strong> &#8211; An <a class="reference external" href="http://tornado.readthedocs.io/en/stable/ioloop.html#tornado.ioloop.IOLoop" title="(in Tornado v4.4.3)"><code class="xref py py-class docutils literal"><span class="pre">tornado.ioloop.IOLoop</span></code></a>.</li>
+<li><strong>io_loop</strong> &#8211; An <code class="xref py py-class docutils literal"><span class="pre">tornado.ioloop.IOLoop</span></code>.</li>
 <li><strong>executor</strong> &#8211; A <a class="reference external" href="https://docs.python.org/3.6/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor" title="(in Python v3.6)"><code class="xref py py-class docutils literal"><span class="pre">concurrent.futures.ThreadPoolExecutor</span></code></a>.</li>
 <li><strong>modules</strong> &#8211; A dict of other module&#8217;s public services.</li>
 </ul>

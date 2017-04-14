@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
-</ul>
-<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -735,25 +735,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;data_url not defined in env[</span><span class="se">\&#39;</span><span class="s">options</span><span class="se">\&#39;</span><span class="s">]&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;%s not defined in env&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Data.filecatalog"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.Data.filecatalog">[docs]</a>    <span class="k">def</span> <span class="nf">filecatalog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">env</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get filecatalog from the environment.</span>
-
-<span class="sd">        :param env: environment</span>
-<span class="sd">        :returns: FileCatalog object, or raises Exception</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">type</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Data</span><span class="o">.</span><span class="n">type_options</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Data.type is undefined&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;job_temp&#39;</span><span class="p">,</span><span class="s">&#39;dataset_temp&#39;</span><span class="p">,</span><span class="s">&#39;site_temp&#39;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;filecatalog_temp&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;filecatalog_temp&#39;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">type</span> <span class="o">==</span> <span class="s">&#39;permanent&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s">&#39;options&#39;</span> <span class="ow">in</span> <span class="n">env</span> <span class="ow">and</span> <span class="s">&#39;filecatalog&#39;</span> <span class="ow">in</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="n">env</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">][</span><span class="s">&#39;filecatalog&#39;</span><span class="p">]</span>
-        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;%s not defined in env&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">)</span></div></div>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;%s not defined in env&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="DifPlus"><a class="viewcode-back" href="../../../core/dataclasses.html#iceprod.core.dataclasses.DifPlus">[docs]</a><span class="k">class</span> <span class="nc">DifPlus</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
