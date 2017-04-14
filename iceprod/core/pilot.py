@@ -20,6 +20,7 @@ import traceback
 from iceprod.core.functions import gethostname
 from iceprod.core import to_file, constants
 from iceprod.core import exe_json
+from iceprod.core.exe import Config
 from iceprod.core.resources import Resources
 from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
@@ -189,7 +190,7 @@ class Pilot(object):
             if not self.message_queue.empty():
                 task_id,func_name,cfg,args,kwargs = self.message_queue.get()
                 logger.info('forwarding message for %s to %s', task_id, func_name)
-                del cfg.config['options']['message_queue']
+                cfg = Config(cfg)
                 if func_name in ('finishtask','taskerror'):
                     kwargs['resources'] = self.resources.get_peak(task_id)
                 try:
@@ -332,8 +333,6 @@ class Pilot(object):
 
         if errors < 1:
             logger.critical('too many errors when running tasks')
-            logger.error('enabling black hole protection - sleep 1 hour')
-            time.sleep(3600)
         else:
             logger.warn('cleanly stopping pilot')
 
@@ -354,8 +353,8 @@ class Pilot(object):
                 config['options'][k] = self.config['options'][k]
 
         # add message queue
-        send_queue = SimpleQueue
-        self.config['message_queue'] = [self.message_queue, send_queue]
+        send_queue = SimpleQueue()
+        config['options']['message_queue'] = [self.message_queue, send_queue]
 
         # run task in tmp dir
         main_dir = os.getcwd()

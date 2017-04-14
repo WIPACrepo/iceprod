@@ -6,7 +6,12 @@
 IceProd Server
 ==============
 
-Details about the server are available at :ref:`Technical_Server`.
+An overview of concepts and design patterns are available in:
+
+.. toctree::
+    :titlesonly:
+
+    details/index
 
 Modules
 -------

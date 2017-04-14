@@ -647,8 +647,13 @@ class functions_test(unittest.TestCase):
 
         fqdn.return_value = 'myhost.foo.bar'
         host = iceprod.core.functions.gethostname()
-        self.assertEqual(host, 'myhost.foo.bar')
-        self.assertEqual(http_mock.call_count, 2)
+        self.assertEqual(host, 'myhost.test.com')
+        self.assertEqual(http_mock.call_count, 3)
+
+        fqdn.return_value = 'myhost.foo.bar.baz'
+        host = iceprod.core.functions.gethostname()
+        self.assertEqual(host, 'myhost.test.com')
+        self.assertEqual(http_mock.call_count, 4)
 
     @unittest_reporter
     def test_302_isurl(self):
@@ -751,99 +756,12 @@ class functions_test(unittest.TestCase):
         data2 = open(out_file).read()
         self.assertEqual(data2, data, msg='data not equal')
 
-    @requests_mock.mock()
-    @unittest_reporter(name='download() http, cached')
-    def test_313_download(self, http_mock):
-        """Test the download function"""
-        download_options = {'username': 'user',
-                            'password': 'pass',
-                            'cache_dir': os.path.join(self.test_dir,'cache_test')}
-
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-
-        # download file from resources
-        http_mock.get('/globus.tar.gz', content=data)
-        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
-        iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
-                self.test_dir, cache=True, options=download_options)
-        call_count = http_mock.call_count
-        iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
-                self.test_dir, cache=True, options=download_options)
-        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception('downloaded file does not exist')
-        logger.debug('call_count %d, new_count: %d', call_count, http_mock.call_count)
-        self.assertLess(http_mock.call_count, call_count*2, msg='cache not used')
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        self.assertEqual(data2, data, msg='data not equal')
-
-    @unittest_reporter(name='download() file, cached')
-    def test_314_download(self):
-        """Test the download function"""
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
-
-        # download file from local file system
-        filename = os.path.join(self.test_dir, 'generators.py')
-        out_dir = os.path.join(self.test_dir, 'output')
-        os.makedirs(out_dir)
-        output_file = os.path.join(out_dir, 'generators.py')
-        with open(filename, 'w') as f:
-            f.write(data)
-        with open(filename+'.md5sum', 'w') as f:
-            f.write(md5sum+' '+'generators.py')
-        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
-                cache=True, options=download_options)
-        os.remove(filename)
-        os.remove(output_file)
-        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
-                cache=True, options=download_options)
-        if not os.path.isfile(output_file):
-            raise Exception('copied file does not exist')
-        data2 = open(output_file).read()
-        self.assertEqual(data2, data, msg='data not equal')
-
-    @patch('iceprod.core.functions.GridFTP')
-    @unittest_reporter(name='download() gridftp, cached')
-    def test_315_download(self, gridftp):
-        """Test the download function"""
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
-        
-        # download file from gsiftp
-        def get(url,filename=None):
-            logger.info('fake get: url=%r, filename=%r', url, filename)
-            if url.endswith('globus.tar.gz'):
-                with open(filename,'w') as f:
-                    f.write(data)
-                get.url = url
-            elif url.endswith('.md5sum'):
-                with open(filename,'w') as f:
-                    f.write(md5sum+' '+'globus.tar.gz')
-            else:
-                raise Exception()
-        get.url = None
-        gridftp.get = get
-
-        iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
-                self.test_dir, cache=True, options=download_options)
-        get.url = None
-        iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
-                self.test_dir, cache=True, options=download_options)
-        if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
-            raise Exception('gsiftp: downloaded file does not exist')
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
-        self.assertIsNone(get.url, msg='cache not used')
-        self.assertEqual(data2, data, msg='data not equal')
-
     @unittest_reporter(name='download() errors')
     def test_320_download(self):
         """Test the download function"""
         data = 'the data'
         md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
-        download_options = {'cache_dir': os.path.join(self.test_dir,'cache_test')}
+        download_options = {}
 
         filename = os.path.join(self.test_dir, 'generators.py')
         out_dir = os.path.join(self.test_dir, 'output')
@@ -862,34 +780,6 @@ class functions_test(unittest.TestCase):
         else:
             raise Exception('did not raise Exception')
 
-        # bad checksum
-        with open(filename+'.md5sum', 'w') as f:
-            f.write('badcksm'+' '+'generators.py')
-        try:
-            iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
-                    cache=True, options=download_options)
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
-
-        # bad cache checksum
-        with open(filename+'.md5sum', 'w') as f:
-            f.write(md5sum+' '+'generators.py')
-        iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
-                cache=True, options=download_options)
-        os.remove(filename)
-        os.remove(output_file)
-        with open(filename+'.md5sum', 'w') as f:
-            f.write('badcksm'+' '+'generators.py')
-        try:
-            iceprod.core.functions.download('file:'+filename, 'file:'+out_dir,
-                    cache=True, options=download_options)
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
-
     @requests_mock.mock()
     @unittest_reporter(name='upload() http')
     def test_403_upload(self, http_mock):
@@ -900,6 +790,7 @@ class functions_test(unittest.TestCase):
 
         # upload file to http
         http_mock.post('/globus.tar.gz', content='')
+        http_mock.get('/globus.tar.gz', content=data)
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
         with open(filename, 'w') as f:
             f.write(data)
@@ -910,6 +801,13 @@ class functions_test(unittest.TestCase):
         req = http_mock.request_history[0]
         self.assertEqual(req.method, 'POST', msg='not a POST request')
         self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
+
+        # test bad upload
+        http_mock.get('/globus.tar.gz', content='blah')
+        with self.assertRaises(Exception):
+            iceprod.core.functions.upload(filename,
+                    'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+                    options=download_options)
 
     @unittest_reporter(name='upload() file')
     def test_404_upload(self):

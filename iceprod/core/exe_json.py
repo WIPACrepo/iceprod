@@ -81,12 +81,19 @@ def send_through_pilot(func):
         if 'DBkill' in cfg.config['options'] and cfg.config['options']['DBkill']:
             raise Exception('DBKill')
         if 'message_queue' in cfg.config['options']:
+            logger.info('send_through_pilot(%s)',func.__name__)
             send,recv = cfg.config['options']['message_queue']
             task_id = cfg.config['options']['task_id']
-            send.put((task_id,func.__name__,cfg,args,kwargs))
-            ret = recv.get()
-            if isinstance(ret, Exception):
-                raise ret
+            # mq can't be pickled, so remove temporarily
+            mq = cfg.config['options']['message_queue']
+            del cfg.config['options']['message_queue']
+            try:
+                send.put((task_id,func.__name__,cfg.config,args,kwargs))
+                ret = recv.get()
+                if isinstance(ret, Exception):
+                    raise ret
+            finally:
+                cfg.config['options']['message_queue'] = mq
             return ret
         else:
             return func(cfg, *args, **kwargs)
@@ -128,7 +135,7 @@ def stillrunning(cfg):
         raise Exception('task should be stopped')
 
 @send_through_pilot
-def taskerror(cfg, start_time=None, reason=None, resources=None):
+def taskerror(cfg, stats={}, start_time=None, reason=None, resources=None):
     """
     Tell the server about the error experienced
 
@@ -144,6 +151,7 @@ def taskerror(cfg, start_time=None, reason=None, resources=None):
             'hostname': hostname, 'domain': domain,
             'time_used': None,
             'error_summary': '',
+            'task_stats': stats,
         }
         if start_time:
             error_info['time_used'] = time.time() - start_time

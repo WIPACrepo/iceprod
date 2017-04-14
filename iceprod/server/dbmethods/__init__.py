@@ -19,7 +19,7 @@ import iceprod.server
 logger = logging.getLogger('dbmethods')
 
 
-def authorization(auth_role=None, match_user=False, site_valid=False):
+def authorization(**kwargs):
     """Authorization decorator.
 
     Args:
@@ -30,14 +30,15 @@ def authorization(auth_role=None, match_user=False, site_valid=False):
     def make_wrapper(obj):
         def wrapper(self, *args, **kwargs):
             auth = kwargs.pop('_auth')
-            auth_role = auth['auth_role']
-            match_user = auth['match_user']
-            site_valid = auth['site_valid']
+            auth_role = auth.pop(['auth_role'], None)
+            auth_user = auth.pop(['auth_user'], None)
+            site_valid = auth.pop(['site_valid'], False)
 
             # get user and role
             user = None
             role = None
-            site_auth = site_valid
+            site_auth = False
+            passkey_auth = False
             if 'passkey' in kwargs:
                 passkey = kwargs.pop('passkey')
                 
@@ -46,10 +47,10 @@ def authorization(auth_role=None, match_user=False, site_valid=False):
                     site_id = kwargs.pop('site_id')
                     if site_valid:
                         site_auth = self.parent.db('auth_authorize_site',
-                                                       site=site_id, key=passkey)
+                                                   site=site_id, key=passkey)
                 else:
                     # authorize task
-                    user_auth = yield self.parent.db_call('auth_authorize_task', key=passkey)
+                    passkey_auth = yield self.parent.db_call('auth_authorize_task', key=passkey)
                     
             elif 'cookie_id' in kwargs:
                 user_id = kwargs.pop('cookie_id')
@@ -74,7 +75,7 @@ def authorization(auth_role=None, match_user=False, site_valid=False):
                     raise Exception('authorization failure')
 
             # run function
-            ret = obj(self, *args,**kwargs)
+            ret = yield obj(self, *args,**kwargs)
             raise tornado.gen.Return(ret)
 
         if (obj.func_code.co_argcount > 0 and

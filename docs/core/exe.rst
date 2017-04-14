@@ -25,7 +25,7 @@ The main execution flow goes through here.
 
 .. autofunction:: iceprod.core.exe.runmodule
 
-.. autofunction:: iceprod.core.exe.run_module
+.. autofunction:: iceprod.core.exe.fork_module
 
 Object Setup
 ------------

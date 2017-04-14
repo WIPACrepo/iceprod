@@ -201,9 +201,12 @@ class rpc(_Methods_Base):
             self.parent.statsd.incr('finish_task.domain.'+stats['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
 
+        # add current time
+        now = nowstr()
+        stats['time'] = now
+
         with (yield self.parent.db.acquire_lock('queue')):
             # update task status
-            now = nowstr()
             sql = 'update search set task_status = ? '
             sql += ' where task_id = ?'
             sql2 = 'update task set prev_status = status, '
@@ -235,8 +238,10 @@ class rpc(_Methods_Base):
         task_stat_id = yield self.parent.db.increment_id('task_stat')
         sql = 'replace into task_stat (task_stat_id,task_id,stat) values '
         sql += ' (?, ?, ?)'
-        bindings = (task_stat_id, task_id, json_encode(stats))
+        json_stats = json_encode(stats)
+        bindings = (task_stat_id, task_id, json_stats)
         yield self.parent.db.query(sql, bindings)
+        self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
         if self._is_master():
             sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
             bindings3 = ('task_stat',task_stat_id,now)
@@ -324,7 +329,7 @@ class rpc(_Methods_Base):
                         reqs = json_decode(row[0])
                         for r in reqs:
                             if r not in task_reqs:
-                                task_reqs[r] = r
+                                task_reqs[r] = reqs[r]
                     except Exception:
                         logger.warn('could not decode task_rel requirements: %r',
                                     row, exc_info=True)
@@ -392,8 +397,10 @@ class rpc(_Methods_Base):
                 task_stat_id = yield self.parent.db.increment_id('task_stat')
                 error_info['error'] = True
                 error_info['time'] = now
-                bindings3 = (task_stat_id, task_id, json_encode(error_info))
+                json_stats = json_encode(error_info)
+                bindings3 = (task_stat_id, task_id, json_stats)
                 yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
+                self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
                 if self._is_master():
                     msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
                     mbindings1 = ('search',task_id,now)

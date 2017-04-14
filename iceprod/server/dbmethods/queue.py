@@ -888,7 +888,13 @@ class queue(_Methods_Base):
             logger.debug('error deleting pilots', exc_info=True)
             raise
         if task_ids:
-            yield self.queue_set_task_status(task_ids,'reset')
+            with (yield self.parent.db.acquire_lock('queue')):
+                sql = 'select task_ids from search '
+                sql += 'where task_status = "processing" and task_id in (%s)'
+                reset_tasks = set()
+                for f in self._bulk_select(sql, task_ids):
+                    reset_tasks.update([row[0] for row in (yield f)])
+                yield self.queue_set_task_status(reset_tasks,'reset')
 
     @tornado.gen.coroutine
     def queue_get_cfg_for_task(self, task_id):
