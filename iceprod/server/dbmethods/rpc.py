@@ -1021,3 +1021,16 @@ class rpc(_Methods_Base):
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(ret[0][0] if len(ret)>0 else {})
+    @tornado.gen.coroutine
+    def rpc_public_get_task_stats(self, task_id):
+        sql = 'SELECT stat FROM task_stat WHERE task_id = ?;'
+        bindings = (task_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        raise tornado.gen.Return(ret)
+
+    @tornado.gen.coroutine
+    def rpc_public_get_task_ids(self, dataset_id):
+        sql = 'SELECT task.task_id FROM task_rel JOIN task ON task_rel.task_rel_id = task.task_rel_id WHERE dataset_id = ?;'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        raise tornado.gen.Return(ret)
