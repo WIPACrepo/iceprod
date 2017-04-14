@@ -83,9 +83,12 @@
           
             
             
-                <ul class="current">
+                <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin/index.html">Administrator&#8217;s Guide</a></li>
+</ul>
+<ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">IceProd Core</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="i3exec.html">I3Exec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="exe.html">Execution Functions</a></li>
@@ -103,9 +106,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../dev_notes.html">Dev Notes</a></li>
 </ul>
 
             
@@ -269,7 +269,7 @@ The compression argument is used as the new file extension</p>
 
 <dl class="function">
 <dt id="iceprod.core.functions.download">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">download</code><span class="sig-paren">(</span><em>url</em>, <em>local</em>, <em>cache=False</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.download" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">iceprod.core.functions.</code><code class="descname">download</code><span class="sig-paren">(</span><em>url</em>, <em>local</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.download" title="Permalink to this definition">¶</a></dt>
 <dd><p>Download a file, checksumming if possible</p>
 </dd></dl>
 
@@ -289,18 +289,6 @@ The compression argument is used as the new file extension</p>
 <dt id="iceprod.core.functions.isurl">
 <code class="descclassname">iceprod.core.functions.</code><code class="descname">isurl</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#isurl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.isurl" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine if this is a supported protocol</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.insertincache">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">insertincache</code><span class="sig-paren">(</span><em>url</em>, <em>file</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#insertincache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.insertincache" title="Permalink to this definition">¶</a></dt>
-<dd><p>Copy file to cache</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="iceprod.core.functions.incache">
-<code class="descclassname">iceprod.core.functions.</code><code class="descname">incache</code><span class="sig-paren">(</span><em>url</em>, <em>options={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/core/functions.html#incache"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.core.functions.incache" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test if the url is in the cache, and return it if available</p>
 </dd></dl>
 
 </div>

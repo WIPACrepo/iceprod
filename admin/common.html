@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Dev Notes &mdash; IceProd master documentation</title>
+  <title>Common Options &mdash; IceProd master documentation</title>
   
 
   
@@ -24,17 +24,19 @@
 
   
   
-    <link rel="stylesheet" href="_static/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/css/style.css" type="text/css" />
   
 
   
 
   
-    <link rel="top" title="IceProd master documentation" href="index.html"/>
-        <link rel="prev" title="SSL/TLS Certificate Utilities" href="server/ssl_cert.html"/> 
+    <link rel="top" title="IceProd master documentation" href="../index.html"/>
+        <link rel="up" title="Administrator’s Guide" href="index.html"/>
+        <link rel="next" title="Extras" href="extra_details.html"/>
+        <link rel="prev" title="Server Startup" href="startup.html"/> 
 
   
-  <script src="_static/js/modernizr.min.js"></script>
+  <script src="../_static/js/modernizr.min.js"></script>
 
 </head>
 
@@ -50,7 +52,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> IceProd
+            <a href="../index.html" class="icon icon-home"> IceProd
           
 
           
@@ -67,7 +69,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -81,14 +83,19 @@
           
             
             
-                <ul>
-<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="server/index.html">IceProd Server</a></li>
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/index.html">User&#8217;s Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Administrator&#8217;s Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="startup.html">Server Startup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Common Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="extra_details.html">Extras</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Dev Notes</a></li>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server/index.html">IceProd Server</a></li>
 </ul>
 
             
@@ -103,7 +110,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">IceProd</a>
+          <a href="../index.html">IceProd</a>
         
       </nav>
 
@@ -117,19 +124,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="dev-notes">
-<h1>Dev Notes<a class="headerlink" href="#dev-notes" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="server">
-<h2>Server<a class="headerlink" href="#server" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="how-to-run-the-server">
-<h3>How to Run the Server<a class="headerlink" href="#how-to-run-the-server" title="Permalink to this headline">¶</a></h3>
-<p>To run the server:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ python bin/iceprod_server.py
-</pre></div>
-</div>
-</div>
+  <div class="section" id="common-options">
+<h1>Common Options<a class="headerlink" href="#common-options" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="disabling-ssl">
-<h3>Disabling SSL<a class="headerlink" href="#disabling-ssl" title="Permalink to this headline">¶</a></h3>
+<h2>Disabling SSL<a class="headerlink" href="#disabling-ssl" title="Permalink to this headline">¶</a></h2>
 <p>To disable SSL support (if you don&#8217;t have <cite>nginx</cite> installed),
 modify <cite>iceprod_config.json</cite> with the following option:</p>
 <div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;system&quot;</span><span class="p">:{</span><span class="s">&quot;ssl&quot;</span><span class="p">:</span><span class="n">false</span><span class="p">}}</span>
@@ -137,12 +135,11 @@ modify <cite>iceprod_config.json</cite> with the following option:</p>
 </div>
 </div>
 <div class="section" id="setting-the-website-password">
-<h3>Setting the website password<a class="headerlink" href="#setting-the-website-password" title="Permalink to this headline">¶</a></h3>
+<h2>Setting the website password<a class="headerlink" href="#setting-the-website-password" title="Permalink to this headline">¶</a></h2>
 <p>To edit the website password for admin pages,
 modify <cite>iceprod_config.json</cite> with the following option:</p>
 <div class="highlight-default"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;webserver&quot;</span><span class="p">:{</span><span class="s">&quot;password&quot;</span><span class="p">:</span><span class="s">&quot;my-secret-password-here&quot;</span><span class="p">}}</span>
 </pre></div>
-</div>
 </div>
 </div>
 </div>
@@ -154,8 +151,10 @@ modify <cite>iceprod_config.json</cite> with the following option:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
+        <a href="extra_details.html" class="btn btn-neutral float-right" title="Extras" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-        <a href="server/ssl_cert.html" class="btn btn-neutral" title="SSL/TLS Certificate Utilities" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+        <a href="startup.html" class="btn btn-neutral" title="Server Startup" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -185,23 +184,23 @@ modify <cite>iceprod_config.json</cite> with the following option:</p>
 
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
+            URL_ROOT:'../',
             VERSION:'master',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
         };
     </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
       <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
   
   
-    <script type="text/javascript" src="_static/js/theme.js"></script>
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
   
 
   

@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../admin/index.html">Administrator&#8217;s Guide</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../../dev_notes.html">Dev Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../server/index.html">IceProd Server</a></li>
 </ul>
 
             
@@ -321,9 +321,12 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;finish_task.domain.&#39;</span><span class="o">+</span><span class="n">stats</span><span class="p">[</span><span class="s">&#39;domain&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">),</span>
                                     <span class="n">count</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">time_used</span><span class="p">)</span> <span class="k">if</span> <span class="n">time_used</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span>
 
+        <span class="c"># add current time</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">now</span>
+
         <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
             <span class="c"># update task status</span>
-            <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update search set task_status = ? &#39;</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_id = ?&#39;</span>
             <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;update task set prev_status = status, &#39;</span>
@@ -355,8 +358,10 @@
         <span class="n">task_stat_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">)</span>
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;replace into task_stat (task_stat_id,task_id,stat) values &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; (?, ?, ?)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">stats</span><span class="p">))</span>
+        <span class="n">json_stats</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">json_stats</span><span class="p">)</span>
         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">elasticsearch</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">json_stats</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
             <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
             <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
@@ -444,7 +449,7 @@
                         <span class="n">reqs</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
                         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
                             <span class="k">if</span> <span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_reqs</span><span class="p">:</span>
-                                <span class="n">task_reqs</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+                                <span class="n">task_reqs</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="n">reqs</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
                     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;could not decode task_rel requirements: %r&#39;</span><span class="p">,</span>
                                     <span class="n">row</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
@@ -512,8 +517,10 @@
                 <span class="n">task_stat_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">)</span>
                 <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">True</span>
                 <span class="n">error_info</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">now</span>
-                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">error_info</span><span class="p">))</span>
+                <span class="n">json_stats</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">error_info</span><span class="p">)</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">task_stat_id</span><span class="p">,</span> <span class="n">task_id</span><span class="p">,</span> <span class="n">json_stats</span><span class="p">)</span>
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">([</span><span class="n">sql</span><span class="p">,</span><span class="n">sql2</span><span class="p">,</span><span class="n">sql3</span><span class="p">],</span> <span class="p">[</span><span class="n">bindings</span><span class="p">,</span><span class="n">bindings2</span><span class="p">,</span><span class="n">bindings3</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">elasticsearch</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s">&#39;task_stat&#39;</span><span class="p">,</span><span class="n">task_stat_id</span><span class="p">,</span><span class="n">json_stats</span><span class="p">)</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
                     <span class="n">msql</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
                     <span class="n">mbindings1</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">task_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>

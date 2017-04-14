@@ -84,11 +84,11 @@
                 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../guide/index.html">User&#8217;s Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../admin/index.html">Administrator&#8217;s Guide</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../dev_notes.html">Dev Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">IceProd Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../server/index.html">IceProd Server</a></li>
 </ul>
 
             
@@ -127,6 +127,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="kn">from</span> <span class="nn">statsd</span> <span class="k">import</span> <span class="n">StatsClient</span>
+<span class="kn">import</span> <span class="nn">requests</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;module&#39;</span><span class="p">)</span>
 
@@ -137,6 +138,28 @@
         <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="k">pass</span>
         <span class="k">return</span> <span class="n">foo</span></div>
+
+<div class="viewcode-block" id="ElasticClient"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.ElasticClient">[docs]</a><span class="k">class</span> <span class="nc">ElasticClient</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">,</span> <span class="n">basename</span><span class="o">=</span><span class="s">&#39;iceprod&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="c"># try a connection</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="c"># concat hostname and basename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">hostname</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">basename</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
+<div class="viewcode-block" id="ElasticClient.put"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.ElasticClient.put">[docs]</a>    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">index_name</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;json&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">index_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cannot put %s/%s to elasticsearch at %r&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
+                         <span class="n">index_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;%r&#39;</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="module"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.module">[docs]</a><span class="k">class</span> <span class="nc">module</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -152,6 +175,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span> <span class="o">=</span> <span class="n">io_loop</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">executor</span> <span class="o">=</span> <span class="n">executor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span> <span class="o">=</span> <span class="n">FakeStatsClient</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elasticsearch</span> <span class="o">=</span> <span class="n">FakeStatsClient</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">modules</span> <span class="o">=</span> <span class="n">modules</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;start&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">,</span>
                         <span class="s">&#39;stop&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span>
@@ -171,7 +195,14 @@
                                           <span class="n">prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to connect to statsd: %r&#39;</span><span class="p">,</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;statsd&#39;</span><span class="p">],</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;statsd&#39;</span><span class="p">],</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;elasticsearch&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;elasticsearch&#39;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">elastic</span> <span class="o">=</span> <span class="n">ElasticClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;elasticsearch&#39;</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to connet to elasicsearch: %r&#39;</span><span class="p">,</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;elasticsearch&#39;</span><span class="p">],</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="module.stop"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.module.stop">[docs]</a>    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;stopping module %s&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span></div>
