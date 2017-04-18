@@ -1044,6 +1044,24 @@ class rpc(_Methods_Base):
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
+    def rpc_public_get_dataset_description(self, dataset_id):
+        sql = 'SELECT description FROM dataset WHERE dataset_id = ?;'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        raise tornado.gen.Return(ret[0][0] if len(ret)>0 else '')
+
+    @tornado.gen.coroutine
+    def rpc_public_get_dataset_steering(self, dataset_id):
+        sql = 'SELECT config_data FROM config WHERE dataset_id = ?;'
+        bindings = (dataset_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        if len(ret):
+            config = json_decode(ret[0][0])
+            if 'steering' in config:
+                raise tornado.gen.Return( config['steering'] )
+        raise tornado.gen.Return({})
+
+    @tornado.gen.coroutine
     def rpc_public_get_task_walltime(self, task_id):
         sql = 'SELECT walltime from task  WHERE task_id = ?;'
         bindings = (task_id,)
