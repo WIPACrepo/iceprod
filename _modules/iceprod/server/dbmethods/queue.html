@@ -643,7 +643,7 @@
 <span class="sd">            list: dataset_ids</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from dataset where status = &quot;processing&quot; &#39;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from dataset where status in (&quot;processing&quot;,&quot;truncated&quot;) &#39;</span>
         <span class="k">if</span> <span class="n">gridspec</span><span class="p">:</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and gridspec like ?&#39;</span>
             <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;%&#39;</span><span class="o">+</span><span class="n">gridspec</span><span class="o">+</span><span class="s">&#39;%&#39;</span><span class="p">)</span>

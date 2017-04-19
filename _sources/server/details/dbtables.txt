@@ -40,7 +40,7 @@ Tables
 * name : str
 * description : str
 * gridspec : Text  :gray:`# json of {task:[gridspec]}`
-* status : str  :gray:`# possible statuses: processing, complete, suspended, errors`
+* status : str  :gray:`# possible statuses: processing, truncated, complete, suspended, errors`
 * username : str
 * institution : str
 * submit_host : str
