@@ -30,11 +30,11 @@
 </table>
 
 {% if (current_user) %}
-<div style="padding:10px;">
-    <a href='javascript:call("reset_dataset");'>Reset</a>
-    <a href='javascript:call("hard_reset_dataset");'>Hard Reset</a>
-    <a href='javascript:call("suspend_dataset");'>Suspend</a>
-    <a href='javascript:call("truncate_dataset");'>Truncate</a>
+<div class="actions">
+    <button onclick='call("reset_dataset");'>Reset</button>
+    <button onclick='call("hard_reset_dataset");'>Hard Reset</button>
+    <button onclick='call("suspend_dataset");'>Suspend</button>
+    <button onclick='call("truncate_dataset");'>Truncate</button>
 </div>
 {% end %}
 

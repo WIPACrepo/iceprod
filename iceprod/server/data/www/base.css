@@ -396,3 +396,10 @@ div.logs div.log_body {
 {
     padding: 5px 10px;
 }
+
+div.action {
+    padding: 1em;
+}
+div.action button {
+    margin: .1em .5em;
+}
