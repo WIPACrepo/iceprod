@@ -224,7 +224,7 @@ class cron(_Methods_Base):
             sql = 'update job set status = "complete", status_changed = ? '
             sql += ' where job_id = ?'
             for job_id in job_ids:
-                dataset_id = jobs[job_id]
+                dataset_id = jobs[job_id][1]
 
                 # update job status
                 logger.info('job %s marked as complete',job_id)
