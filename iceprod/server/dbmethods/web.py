@@ -169,8 +169,9 @@ class web(_Methods_Base):
         Returns:
             dict: {status:num}
         """
-        sql = 'select search.*,task.* from search '
+        sql = 'select search.*,task.*,job.* from search '
         sql += ' join task on search.task_id = task.task_id '
+        sql += ' join job on search.job_id = job.job_id'
         bindings = tuple()
         if task_id:
             sql += ' where search.task_id = ? '
@@ -197,8 +198,9 @@ class web(_Methods_Base):
         ret = yield self.parent.db.query(sql, bindings)
         tasks = {}
         for row in ret:
-            tmp = self._list_to_dict(['search','task'],row)
+            tmp = self._list_to_dict(['search','task','job'],row)
             tasks[tmp['task_id']] = tmp
+        print(tasks)
         raise tornado.gen.Return(tasks)
 
     @tornado.gen.coroutine

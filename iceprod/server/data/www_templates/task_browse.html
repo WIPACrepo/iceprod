@@ -5,18 +5,32 @@
 {% block page_title %}Tasks by Status{% end %}
 
 {% block body %}
-<ul>
-{% for t in tasks %}
-    <li>
-        <a href="/task/{{ t }}">{{ tasks[t]['task_id'] }}</a>
+
+<table class='task_table'>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Failures</th>
+        <th>Job Index</th>
+        <th></th>
+    </tr>
+    {% for t in tasks %}
+    <tr>
+        <td><a href="/task/{{ t }}">{{ tasks[t]['task_id'] }}</a></td>
+        <td>{{ tasks[t]['name'] }}</td>
+        <td>{{ tasks[t]['failures'] }}</td>
+        <td>{{ tasks[t]['job_index'] }}</td>
         {% if (current_user) %}
+        <td>
         <a href='javascript:call("reset_task", "{{ tasks[t]['task_id'] }}");'>Reset</a>
         <a href='javascript:call("resume_task", "{{ tasks[t]['task_id'] }}");'>Resume</a>
         <a href='javascript:call("suspend_task", "{{ tasks[t]['task_id'] }}");'>Suspend</a>
+        </td>
         {% end %}
-    </li>
-{% end %}
-</ul>
+    </tr>
+    {% end %}
+</table>
+
 
 <!--
 <table>

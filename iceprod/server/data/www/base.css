@@ -388,4 +388,11 @@ div.logs div.log_body {
     text-align: right;
 }
 
-
+.task_table tr:nth-child(even)
+{
+    background-color: #ddd;
+}
+.task_table td, .task_table th
+{
+    padding: 5px 10px;
+}
