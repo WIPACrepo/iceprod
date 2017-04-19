@@ -289,8 +289,9 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: {status:num}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.*,task.* from search &#39;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.*,task.*,job.* from search &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; join task on search.task_id = task.task_id &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; join job on search.job_id = job.job_id&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">task_id</span><span class="p">:</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where search.task_id = ? &#39;</span>
@@ -317,8 +318,9 @@
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="n">tasks</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="s">&#39;task&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="s">&#39;job&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span>
             <span class="n">tasks</span><span class="p">[</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;task_id&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
