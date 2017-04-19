@@ -523,7 +523,7 @@ class queue(_Methods_Base):
             list: dataset_ids
         """
         bindings = []
-        sql = 'select * from dataset where status = "processing" '
+        sql = 'select * from dataset where status in ("processing","truncated") '
         if gridspec:
             sql += ' and gridspec like ?'
             bindings.append('%'+gridspec+'%')

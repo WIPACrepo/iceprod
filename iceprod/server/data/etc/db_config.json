@@ -259,7 +259,7 @@
     ],
     "status_options": {
         "dataset": [
-            "processing", "complete", "suspended", "errors"
+            "processing", "truncated", "complete", "suspended", "errors"
         ],
         "job": [
             "processing", "complete", "suspended", "errors"
@@ -274,6 +274,9 @@
             ["processing","complete","std"],
             ["processing","suspended","debug"],
             ["processing","errors","auto"],
+            ["truncated","suspended","debug"],
+            ["truncated","errors","auto"],
+            ["processing","truncated","manual"],
             ["suspended","processing","manual"],
             ["errors","processing","manual"]
         ],

@@ -981,6 +981,12 @@ class rpc(_Methods_Base):
         sql = 'update dataset set status="suspended" where dataset_id = ?'
         bindings = (dataset_id,)
         yield self.parent.db.query(sql, bindings)
+        
+    @tornado.gen.coroutine
+    def rpc_truncate_dataset(self, dataset_id):
+        sql = 'update dataset set status="truncated" where dataset_id = ?'
+        bindings = (dataset_id,)
+        yield self.parent.db.query(sql, bindings)
 
     ### Public Methods ###
 
