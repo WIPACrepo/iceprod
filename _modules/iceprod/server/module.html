@@ -148,6 +148,7 @@
         <span class="c"># concat hostname and basename</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">hostname</span><span class="o">+</span><span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">basename</span><span class="o">+</span><span class="s">&#39;/&#39;</span>
 <div class="viewcode-block" id="ElasticClient.put"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.ElasticClient.put">[docs]</a>    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">index_name</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="k">None</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
@@ -159,7 +160,8 @@
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;cannot put %s/%s to elasticsearch at %r&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span>
                          <span class="n">index_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;%r&#39;</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span></div></div>
+            <span class="k">if</span> <span class="n">r</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;%r&#39;</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="module"><a class="viewcode-back" href="../../../server/module.html#iceprod.server.module.module">[docs]</a><span class="k">class</span> <span class="nc">module</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
