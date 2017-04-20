@@ -28,6 +28,7 @@ class ElasticClient(object):
         # concat hostname and basename
         self.hostname = hostname+'/'+basename+'/'
     def put(self, name, index_name, data):
+        r = None
         try:
             kwargs = {}
             if isinstance(data,dict):
@@ -39,7 +40,8 @@ class ElasticClient(object):
         except Exception:
             logger.warn('cannot put %s/%s to elasticsearch at %r', name,
                          index_name, self.hostname, exc_info=True)
-            logger.info('%r',r.content)
+            if r:
+                logger.info('%r',r.content)
 
 class module(object):
     """

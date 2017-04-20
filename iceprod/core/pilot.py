@@ -9,7 +9,7 @@ import logging
 import tempfile
 import shutil
 from functools import partial
-from multiprocessing import Process
+from multiprocessing import Process, active_children
 from multiprocessing.queues import SimpleQueue
 from collections import namedtuple
 from datetime import timedelta
@@ -144,6 +144,9 @@ class Pilot(object):
         # run the loop
         self.ioloop.run_sync(self.run)
 
+        # make sure any child processes are dead
+        self.hard_kill()
+
         if self.debug:
             # append out, err, log
             for dirs in glob('tmp*'):
@@ -160,10 +163,6 @@ class Pilot(object):
         """Handle a SIGTERM gracefully"""
         logger.info('checking resources after SIGTERM')
         start_time = time.time()
-        if psutil:
-            overages = self.resources.check_claims(force=True)
-        else:
-            overages = {}
         for task_id in list(self.tasks):
             if task_id in overages:
                 reason = overages[task_id]
@@ -182,6 +181,24 @@ class Pilot(object):
         # stop the pilot
         exe_json.update_pilot(self.pilot_id, tasks='')
         self.ioloop.stop()
+
+    def hard_kill(self):
+        """Forcefully kill any child processes"""
+        if psutil:
+            # kill children correctly
+            processes = psutil.Process().children(recursive=True)
+            processes.reverse()
+            for p in processes:
+                try:
+                    p.kill()
+                except psutil.NoSuchProcess:
+                    pass
+                except:
+                    logger.warn('error killing process',
+                                exc_info=True)
+        processes = active_children()
+        for p in processes:
+            p.terminate()
 
     def message_queue_monitor(self):
         """Forward JSONRPC messages from tasks"""
@@ -436,8 +453,7 @@ class Pilot(object):
                     except:
                         logger.warn('failed to kill processes',
                                     exc_info=True)
-                else:
-                    task['p'].terminate()
+                task['p'].terminate()
             except:
                 logger.warn('error deleting process', exc_info=True)
 
