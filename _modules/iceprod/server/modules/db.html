@@ -705,6 +705,9 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error reading&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">conn</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">MySQLdb</span><span class="o">.</span><span class="n">InterfaceError</span><span class="p">,</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">,</span>
+                        <span class="n">MySQLdb</span><span class="o">.</span><span class="n">InternalError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DBResetError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">except</span><span class="p">:</span>
                     <span class="k">pass</span>
                 <span class="k">raise</span>
@@ -726,6 +729,9 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error writing&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">conn</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">MySQLdb</span><span class="o">.</span><span class="n">InterfaceError</span><span class="p">,</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">,</span>
+                        <span class="n">MySQLdb</span><span class="o">.</span><span class="n">InternalError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DBResetError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">except</span><span class="p">:</span>
                     <span class="k">pass</span>
                 <span class="k">raise</span>
@@ -759,6 +765,9 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;error incrementing id&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">conn</span><span class="o">.</span><span class="n">rollback</span><span class="p">()</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">MySQLdb</span><span class="o">.</span><span class="n">InterfaceError</span><span class="p">,</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">,</span>
+                        <span class="n">MySQLdb</span><span class="o">.</span><span class="n">InternalError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DBResetError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
                 <span class="k">except</span><span class="p">:</span>
                     <span class="k">pass</span>
                 <span class="k">raise</span>
