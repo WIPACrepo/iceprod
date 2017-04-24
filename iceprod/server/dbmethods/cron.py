@@ -178,7 +178,7 @@ class cron(_Methods_Base):
                     logger.info('job %r can be removed', job_id)
                     clean_jobs.append(job_id)
 
-        if clean_jobs:
+        if (not self._is_master()) and clean_jobs:
             # we are not the master, and just cleaning these jobs
             with (yield self.parent.db.acquire_lock('queue')):
                 sql = 'select task_id from search where job_id in (%s)'
@@ -208,7 +208,7 @@ class cron(_Methods_Base):
                 for f in self._bulk_select(sql, clean_jobs):
                     yield f
 
-        else:
+        if self._is_master():
             # we are the master, and are updating job statuses
             sql = 'select job_id from job where status = "processing" and job_id in (%s)'
             bindings = complete_jobs+errors_jobs+suspended_jobs
