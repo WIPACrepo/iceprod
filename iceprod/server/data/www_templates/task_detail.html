@@ -15,6 +15,10 @@
   <div>
   {% if k == 'dataset_id' %}
     <a href="/dataset/{{ task[k] }}">{{ escape(task[k]) }}</a>
+  {% elif k == 'depends' %}
+    {% for t in task[k].split(',') %}
+        <a href="/task/{{ t }}">{{ escape(t) }}</a>&nbsp;&nbsp;
+    {% end %}
   {% else %}
     {{ task[k] }}
   {% end %}
