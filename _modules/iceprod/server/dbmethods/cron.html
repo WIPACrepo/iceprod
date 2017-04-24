@@ -341,9 +341,49 @@
             <span class="n">suspended_jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">suspended_jobs</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">]</span>
 
             <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
+
+            <span class="c"># errors jobs</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = &quot;errors&quot;, status_changed = ? &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id = ?&#39;</span>
+            <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">errors_jobs</span><span class="p">:</span>
+                <span class="c"># update job status</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as errors&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+
+            <span class="c"># suspended jobs</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = &quot;suspended&quot;, status_changed = ? &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id = ?&#39;</span>
+            <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">suspended_jobs</span><span class="p">:</span>
+                <span class="c"># update job status</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as suspended&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+
+            <span class="c"># complete jobs</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = &quot;complete&quot;, status_changed = ? &#39;</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id = ?&#39;</span>
-            <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">complete_jobs</span><span class="p">:</span>
                 <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 
                 <span class="c"># update job status</span>
