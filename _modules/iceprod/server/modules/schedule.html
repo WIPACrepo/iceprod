@@ -218,10 +218,10 @@
         <span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
         <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 5 minutes&#39;</span><span class="p">,</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 5 minutes&#39;</span><span class="p">,</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span></div>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 days&#39;</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_clean_completed_jobs&#39;</span><span class="p">])</span></div>
+        <span class="c">#self.scheduler.schedule(&#39;every 1 days&#39;,</span>
+        <span class="c">#        self.modules[&#39;db&#39;][&#39;cron_clean_completed_jobs&#39;])</span>
 
 </pre></div>
 
