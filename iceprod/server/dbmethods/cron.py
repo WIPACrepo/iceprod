@@ -221,9 +221,49 @@ class cron(_Methods_Base):
             suspended_jobs = [j for j in suspended_jobs if j in job_ids]
 
             now = nowstr()
+
+            # errors jobs
+            sql = 'update job set status = "errors", status_changed = ? '
+            sql += ' where job_id = ?'
+            for job_id in errors_jobs:
+                # update job status
+                logger.info('job %s marked as errors',job_id)
+                bindings = (now,job_id)
+                yield self.parent.db.query(sql, bindings)
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                    bindings3 = ('job',job_id,now)
+                    try:
+                        yield self.parent.db.query(sql3, bindings3)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+
+            # suspended jobs
+            sql = 'update job set status = "suspended", status_changed = ? '
+            sql += ' where job_id = ?'
+            for job_id in suspended_jobs:
+                # update job status
+                logger.info('job %s marked as suspended',job_id)
+                bindings = (now,job_id)
+                yield self.parent.db.query(sql, bindings)
+                if self._is_master():
+                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                    bindings3 = ('job',job_id,now)
+                    try:
+                        yield self.parent.db.query(sql3, bindings3)
+                    except Exception as e:
+                        logger.info('error updating master_update_history',
+                                    exc_info=True)
+                else:
+                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+
+            # complete jobs
             sql = 'update job set status = "complete", status_changed = ? '
             sql += ' where job_id = ?'
-            for job_id in job_ids:
+            for job_id in complete_jobs:
                 dataset_id = jobs[job_id][1]
 
                 # update job status
