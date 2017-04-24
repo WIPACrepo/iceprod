@@ -585,6 +585,9 @@ if MySQLdb:
                 logger.warning('error reading', exc_info=True)
                 try:
                     conn.rollback()
+                except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
+                        MySQLdb.InternalError) as e:
+                    raise DBResetError(str(e))
                 except:
                     pass
                 raise
@@ -606,6 +609,9 @@ if MySQLdb:
                 logger.warning('error writing', exc_info=True)
                 try:
                     conn.rollback()
+                except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
+                        MySQLdb.InternalError) as e:
+                    raise DBResetError(str(e))
                 except:
                     pass
                 raise
@@ -639,6 +645,9 @@ if MySQLdb:
                 logger.warning('error incrementing id', exc_info=True)
                 try:
                     conn.rollback()
+                except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
+                        MySQLdb.InternalError) as e:
+                    raise DBResetError(str(e))
                 except:
                     pass
                 raise
