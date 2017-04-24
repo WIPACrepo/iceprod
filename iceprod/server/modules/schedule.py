@@ -100,6 +100,6 @@ class schedule(module.module):
 
         self.scheduler.schedule('every 5 minutes', master_grid.check_iceprod)
 
-        self.scheduler.schedule('every 1 days',
-                self.modules['db']['cron_clean_completed_jobs'])
+        #self.scheduler.schedule('every 1 days',
+        #        self.modules['db']['cron_clean_completed_jobs'])
 
