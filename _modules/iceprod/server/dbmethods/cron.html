@@ -298,7 +298,7 @@
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %r can be removed&#39;</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
                     <span class="n">clean_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">clean_jobs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">())</span> <span class="ow">and</span> <span class="n">clean_jobs</span><span class="p">:</span>
             <span class="c"># we are not the master, and just cleaning these jobs</span>
             <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
                 <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_id from search where job_id in (%s)&#39;</span>
@@ -328,7 +328,7 @@
                 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">clean_jobs</span><span class="p">):</span>
                     <span class="k">yield</span> <span class="n">f</span>
 
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
             <span class="c"># we are the master, and are updating job statuses</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_id from job where status = &quot;processing&quot; and job_id in (%s)&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="n">complete_jobs</span><span class="o">+</span><span class="n">errors_jobs</span><span class="o">+</span><span class="n">suspended_jobs</span>
