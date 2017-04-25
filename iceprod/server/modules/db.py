@@ -303,7 +303,7 @@ else:
                         sep = ', '
                     elif False:#col.endswith('_id'):
                         sql_index_create.append('CREATE INDEX IF NOT EXISTS '+col+'_index ON '+table_name+' ('+col+')')
-                sql_create += ')'
+                sql_create += ') WITHOUT ROWID'
                 scols = set(cols)
                 with (conn if table_name != 'setting' else self._inc_id_connection) as c:
                     cur = c.cursor()
@@ -341,10 +341,16 @@ else:
 
         def _dbsetup(self, dbname=None):
             logger.debug('_dbsetup()')
-            kwargs = {}
+            cachesize = -50000
+            kwargs = {
+                'statementcachesize':1000,
+            }
+            if ('db' in self.cfg and 'sqlite_statementcachesize' in self.cfg['db'] and
+                isinstance(self.cfg['db']['sqlite_statementcachesize'],int)):
+                kwargs['statementcachesize'] = self.cfg['db']['sqlite_statementcachesize']
             if ('db' in self.cfg and 'sqlite_cachesize' in self.cfg['db'] and
                 isinstance(self.cfg['db']['sqlite_cachesize'],int)):
-                kwargs['statementcachesize'] = self.cfg['db']['sqlite_cachesize']
+                cachesize = -1*self.cfg['db']['sqlite_cachesize']
             name = 'name'
             if dbname:
                 name += '_'+dbname
@@ -352,6 +358,7 @@ else:
             conn.cursor().execute('PRAGMA journal_mode = WAL')
             conn.cursor().execute('PRAGMA synchronous = OFF')
             conn.cursor().execute('PRAGMA automatic_index = OFF')
+            conn.cursor().execute('PRAGMA cache_size = %d'%cachesize)
             conn.setbusytimeout(100)
             return conn
 
@@ -481,7 +488,7 @@ if MySQLdb:
                         sep = ', '
                     elif False:#col.endswith('_id'):
                         sql_create += ' INDEX' 
-                sql_create += ')'
+                sql_create += ') CHARACTER SET utf8 COLLATE utf8_general_ci'
                 scols = set(cols)
                 try:
                     cur = conn.cursor()
@@ -495,7 +502,7 @@ if MySQLdb:
                         if not curcols or len(curcols) < 1:
                             # table does not exist
                             logger.info('create table '+table_name)
-                            cur.execute('create table '+table_name+sql_create+' CHARACTER SET utf8 COLLATE utf8_general_ci')
+                            cur.execute('create table '+table_name+sql_create)
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
