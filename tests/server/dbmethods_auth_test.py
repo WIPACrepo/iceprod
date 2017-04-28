@@ -53,6 +53,14 @@ class dbmethods_auth_test(dbmethods_base):
         else:
             raise Exception('did not raise Exception')
 
+        # test cache
+        stats = self.db['auth_get_site_auth'].cache_info()
+        ret = yield self.db['auth_get_site_auth'](1)
+        self.assertEqual(ret, 'key1')
+        stats2 = self.db['auth_get_site_auth'].cache_info()
+        logger.info('cache stats: %r', stats2)
+        self.assertEqual(stats.hits, stats2.hits-1)
+
         # bad db info
         tables2 = {
             'site':[
@@ -60,6 +68,7 @@ class dbmethods_auth_test(dbmethods_base):
             ],
         }
         yield self.set_tables(tables2)
+        self.db['auth_get_site_auth'].cache_clear()
 
         try:
             ret = yield self.db['auth_get_site_auth'](1)
@@ -114,6 +123,8 @@ class dbmethods_auth_test(dbmethods_base):
             ],
         }
         yield self.set_tables(tables2)
+        self.db['auth_authorize_site'].cache_clear()
+        self.db['auth_get_site_auth'].cache_clear()
         try:
             yield self.db['auth_authorize_site'](1, 'key')
         except:
@@ -136,8 +147,8 @@ class dbmethods_auth_test(dbmethods_base):
         """Test auth_authorize_task"""
         tables = {
             'passkey':[
-                {'auth_key':1,'expire':'2100-01-01T01:01:01'},
-                {'auth_key':2,'expire':'2000-01-01T01:01:01'},
+                {'passkey_id':1,'auth_key':1,'expire':'2100-01-01T01:01:01'},
+                {'passkey_id':2,'auth_key':2,'expire':'2000-01-01T01:01:01'},
             ],
         }
         yield self.set_tables(tables)
@@ -165,10 +176,11 @@ class dbmethods_auth_test(dbmethods_base):
         # bad db info
         tables2 = {
             'passkey':[
-                {'auth_key':1,}
+                {'passkey_id':1,'auth_key':1,}
             ],
         }
         yield self.set_tables(tables2)
+        self.db['auth_authorize_task'].cache_clear()
         try:
             yield self.db['auth_authorize_task'](1)
         except:
@@ -243,7 +255,7 @@ class dbmethods_auth_test(dbmethods_base):
         key = 'thekey'
         tables = {
             'passkey':[
-                {'auth_key':key,'expire':dbmethods.datetime2str(exp)}
+                {'passkey_id':1,'auth_key':key,'expire':dbmethods.datetime2str(exp)}
             ],
         }
         yield self.set_tables(tables)
@@ -269,6 +281,7 @@ class dbmethods_auth_test(dbmethods_base):
             raise Exception('did not raise Exception')
 
         # sql error
+        self.db['auth_get_passkey'].cache_clear()
         self.set_failures(True)
         try:
             ret = yield self.db['auth_get_passkey'](key)

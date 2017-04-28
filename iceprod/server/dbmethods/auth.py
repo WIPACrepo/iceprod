@@ -11,7 +11,7 @@ import tornado.gen
 
 from iceprod.core.dataclasses import Number,String
 
-from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime,nowstr
+from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime,nowstr,memcache
 
 logger = logging.getLogger('dbmethods.auth')
 
@@ -28,6 +28,7 @@ class auth(_Methods_Base):
     Takes a handle to a subclass of iceprod.server.modules.db.DBAPI
     as an argument.
     """
+    @memcache(size=4096, ttl=300)
     @tornado.gen.coroutine
     def auth_get_site_auth(self, site_id):
         """
@@ -54,6 +55,7 @@ class auth(_Methods_Base):
         else:
             raise tornado.gen.Return(ret[0][0])
 
+    @memcache(size=4096, ttl=300)
     @tornado.gen.coroutine
     def auth_authorize_site(self, site_id, key):
         """
@@ -65,6 +67,7 @@ class auth(_Methods_Base):
         if key != ret:
             raise Exception("key does not match")
 
+    @memcache(size=4096, ttl=300)
     @tornado.gen.coroutine
     def auth_authorize_task(self, key):
         """
@@ -110,6 +113,7 @@ class auth(_Methods_Base):
         yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(passkey)
 
+    @memcache(size=65536, ttl=3600)
     @tornado.gen.coroutine
     def auth_get_passkey(self, passkey):
         """Get the expiration datetime of a passkey"""

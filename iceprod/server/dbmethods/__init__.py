@@ -4,12 +4,17 @@ Database methods
 
 import logging
 from datetime import datetime,timedelta
-from collections import OrderedDict, Iterable
+from collections import OrderedDict, Iterable, namedtuple
 import inspect
 from functools import update_wrapper, partial
 
+import cachetools
+import cachetools.keys
+
 import tornado.gen
+import tornado.concurrent
 from tornado.concurrent import run_on_executor
+import concurrent.futures
 
 from iceprod.functools_future import partialmethod
 
@@ -18,6 +23,58 @@ import iceprod.server
 
 logger = logging.getLogger('dbmethods')
 
+CacheInfo = namedtuple('CacheInfo',['hits','misses','maxsize','currsize'])
+def memcache(size=1024, ttl=None):
+    """Caching decorator.
+
+    Instrumented like :py:func:`functools.lru_cache` with
+    `cache_clear()` and `cache_info()`.
+
+    Args:
+        size (int): Max number of entries
+        ttl (int): Time to live (default None = infinite)
+    """
+    if ttl:
+        cache = cachetools.TTLCache(size, ttl)
+    else:
+        cache = cachetools.LRUCache(size)
+    info = {'hits':0, 'misses': 0, 'maxsize':size, 'currsize':0}
+
+    def make_wrapper(obj):
+        @tornado.gen.coroutine
+        def wrapper(self, *args, **kwargs):
+            key = cachetools.keys.hashkey(*args,**kwargs)
+            logger.debug('%r: cache: %r',obj.__name__,dict(cache))
+            if key in cache:
+                info['hits'] += 1
+                logger.debug('%r: cache hit for %r',obj.__name__,key)
+                raise tornado.gen.Return(cache[key])
+            else:
+                info['misses'] += 1
+            ret = obj(self, *args, **kwargs)
+            if isinstance(ret, (tornado.concurrent.Future, concurrent.futures.Future)):
+                ret = yield tornado.gen.with_timeout(timedelta(seconds=120),ret)
+            logger.debug('cache ret: %r',ret)
+            cache[key] = ret
+            raise tornado.gen.Return(ret)
+        if (obj.func_code.co_argcount > 0 and
+            obj.func_code.co_varnames[0] == 'self'):
+            obj2 = wrapper
+        else:
+            obj2 = update_wrapper(wrapper, obj,
+                    ('__name__','__module__','__doc__'),('__dict__',))
+        # instrument like functools.lru_cache
+        def cache_clear():
+            logger.debug('clearing cache for %s', obj.__name__)
+            for k in list(cache):
+                del cache[k]
+        def cache_info():
+            info['currsize'] = len(cache)
+            return CacheInfo(**info)
+        obj2.cache_clear = cache_clear
+        obj2.cache_info = cache_info
+        return obj2
+    return make_wrapper
 
 def authorization(**kwargs):
     """Authorization decorator.
