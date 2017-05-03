@@ -1073,3 +1073,19 @@ class rpc(_Methods_Base):
         bindings = (task_id,)
         ret = yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(ret)
+
+    @tornado.gen.coroutine
+    def rpc_public_get_tasks_by_name(self, task_name):
+        sql = 'SELECT task.task_id FROM task_rel JOIN task ON task_rel.task_rel_id = task.task_rel_id WHERE name = ?;'
+        bindings = (task_name,)
+        ret = yield self.parent.db.query(sql, bindings)
+        ret = [i[0] for i in ret]
+        raise tornado.gen.Return(ret)
+
+    @tornado.gen.coroutine
+    def rpc_public_get_tasks_by_requirements(self, task_reqirements):
+        sql = 'SELECT task.task_id FROM task_rel JOIN task ON task_rel.task_rel_id = task.task_rel_id WHERE requirements LIKE %?%;'
+        bindings = (task_reqirements,)
+        ret = yield self.parent.db.query(sql, bindings)
+        ret = [i[0] for i in ret]
+        raise tornado.gen.Return(ret)
