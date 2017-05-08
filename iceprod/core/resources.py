@@ -284,7 +284,7 @@ class Resources:
             claim = self.claimed[task_id]
             try:
                 usage = self.get_usage(task_id, force=force)
-                logger.info('%s is using %r', task_id, usage)
+                logger.debug('%s is using %r', task_id, usage)
             except Exception:
                 logger.warn('error getting usage for %r', task_id,
                             exc_info=True)
