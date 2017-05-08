@@ -11,6 +11,7 @@ from collections import defaultdict, OrderedDict
 import tornado.gen
 
 from iceprod.core import functions
+from iceprod.core.gridftp import GridFTP
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, nowstr
 from iceprod.server import GlobalID
@@ -307,27 +308,31 @@ class cron(_Methods_Base):
         sql = 'select job_id,job_index from job where status = "complete"'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
-        jobs = {job_id:index for job_id,index in ret}
+        jobs = {job_id:str(index) for job_id,index in ret}
 
         sql = 'select dataset_id, job_id from search '
         sql += ' where task_status = "complete"'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
-        datasets = {job_id:dataset_id for dataset_id,job_id in ret}
+        datasets = defaultdict(set)
+        for dataset_id,job_id in ret:
+            if job_id in jobs:
+                dataset = str(GlobalID.localID_ret(dataset_id, type='int'))
+                datasets[dataset].add(jobs[job_id])
 
-        for job_id in jobs:
-            dataset_id = datasets[job_id]
-            job_index = jobs[job_id]
-
-            # clean dagtemp
-            temp_dir = self.parent.cfg['queue']['site_temp']
-            dataset = GlobalID.localID_ret(dataset_id, type='int')
-            try:
-                dagtemp = os.path.join(temp_dir, str(dataset), str(job_index))
-                logger.info('cleaning site_temp %r', dagtemp)
-                yield self._executor_wrapper(partial(functions.delete, dagtemp))
-            except Exception as e:
-                logger.warn('failed to clean site_temp', exc_info=True)
+        # get all the job_ids currently in tmp
+        temp_dir = self.parent.cfg['queue']['site_temp']
+        dataset_dirs = yield self._executor_wrapper(partial(GridFTP.list, temp_dir))
+        for d in dataset_dirs:
+            job_dirs = yield self._executor_wrapper(partial(GridFTP.list, os.path.join(temp_dir, d)))            
+            for j in job_dirs:
+                if d in datasets and j in datasets[d]:
+                    try:
+                        dagtemp = os.path.join(temp_dir, d, j)
+                        logger.info('cleaning site_temp %r', dagtemp)
+                        yield self._executor_wrapper(partial(functions.delete, dagtemp))
+                    except Exception as e:
+                        logger.warn('failed to clean site_temp', exc_info=True)
 
     def cron_remove_old_passkeys(self):
         now = nowstr()
