@@ -94,7 +94,10 @@ class BaseGrid(object):
             pilots = False
         
         # calculate num tasks to queue
-        tasks_on_queue = self.queue_cfg['tasks_on_queue']
+        if pilots and 'pilots_on_queue' in self.queue_cfg:
+            tasks_on_queue = self.queue_cfg['pilots_on_queue']
+        else:
+            tasks_on_queue = self.queue_cfg['tasks_on_queue']
         min_tasks = tasks_on_queue[0]
         max_tasks = tasks_on_queue[1]
         change = min_tasks
