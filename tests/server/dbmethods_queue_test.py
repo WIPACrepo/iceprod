@@ -25,7 +25,7 @@ import tornado.escape
 from iceprod.core import functions
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.core.util import Node_Resources
+from iceprod.core.resources import Resources
 from iceprod.server import dbmethods
 import iceprod.server.dbmethods.queue
 
@@ -1956,7 +1956,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_500_queue_add_task_lookup(self):
         """Test queue_add_task_lookup"""
-        r = Node_Resources.copy()
+        r = Resources.defaults.copy()
         tasks = {'t1':r}
         yield self.set_tables({'task_lookup':[]})
         yield self.db['queue_add_task_lookup'](tasks)
@@ -1985,7 +1985,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_510_queue_get_task_lookup(self):
         """Test queue_get_task_lookup"""
-        r = Node_Resources.copy()
+        r = Resources.defaults.copy()
         tasks = {'t1':r}
 
         tables = {

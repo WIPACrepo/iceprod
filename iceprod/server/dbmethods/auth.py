@@ -29,7 +29,6 @@ class auth(_Methods_Base):
     as an argument.
     """
     @memcache(size=4096, ttl=300)
-    @tornado.gen.coroutine
     def auth_get_site_auth(self, site_id):
         """
         Get the auth_key for the selected site.

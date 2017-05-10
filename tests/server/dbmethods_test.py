@@ -19,6 +19,10 @@ from itertools import izip
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import unittest
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 
 from tornado.concurrent import Future
 import tornado.escape
@@ -26,10 +30,185 @@ import tornado.gen
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncTestCase, gen_test
 
+
+from iceprod.functools_future import partialmethod
+
 from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import dbmethods
 from iceprod.server.modules.db import db, SQLite
+
+
+class Base:
+    """Fake dbmethods"""
+    def __init__(self):
+        self.calls = {}
+        class Parent:
+            def __init__(self, calls):
+                self.calls = calls
+            @tornado.gen.coroutine
+            def db_call(self, name, *args, **kwargs):
+                logger.debug('db call for %r',name)
+                if name in self.calls:
+                    raise tornado.gen.Return(self.calls[name](*args,**kwargs))
+                else:
+                    raise Exception('method not found')
+        self.parent = Parent(self.calls)
+
+class decorators_test(AsyncTestCase):
+    def setUp(self):
+        super(decorators_test,self).setUp()
+        self.maxDiff = 10000
+
+    @unittest_reporter(name='memcache - standalone')
+    def test_001_memcache(self):
+        @dbmethods.memcache()
+        def foo(x):
+            return x
+
+        ret = yield foo(1)
+        self.assertEqual(ret,1)
+        self.assertEqual(foo.cache_info().hits, 0)
+        self.assertEqual(foo.cache_info().misses, 1)
+        self.assertEqual(foo.cache_info().currsize, 1)
+
+        ret = yield foo(1)
+        self.assertEqual(ret,1)
+        self.assertEqual(foo.cache_info().hits, 1)
+        self.assertEqual(foo.cache_info().misses, 1)
+        self.assertEqual(foo.cache_info().currsize, 1)
+
+        ret = yield foo(2)
+        self.assertEqual(ret,2)
+        self.assertEqual(foo.cache_info().hits, 1)
+        self.assertEqual(foo.cache_info().misses, 2)
+        self.assertEqual(foo.cache_info().currsize, 2)
+
+    @unittest_reporter(name='memcache - member func')
+    def test_002_memcache(self):
+        class Bar:
+            @dbmethods.memcache()
+            def foo(self, x):
+                return x
+
+        b = Bar()
+
+        ret = yield b.foo(1)
+        self.assertEqual(ret,1)
+        self.assertEqual(b.foo.cache_info().hits, 0)
+        self.assertEqual(b.foo.cache_info().misses, 1)
+        self.assertEqual(b.foo.cache_info().currsize, 1)
+
+        ret = yield b.foo(1)
+        self.assertEqual(ret,1)
+        self.assertEqual(b.foo.cache_info().hits, 1)
+        self.assertEqual(b.foo.cache_info().misses, 1)
+        self.assertEqual(b.foo.cache_info().currsize, 1)
+
+        ret = yield b.foo(2)
+        self.assertEqual(ret,2)
+        self.assertEqual(b.foo.cache_info().hits, 1)
+        self.assertEqual(b.foo.cache_info().misses, 2)
+        self.assertEqual(b.foo.cache_info().currsize, 2)
+
+    @unittest_reporter(name='memcache - maxsize')
+    def test_003_memcache(self):
+        @dbmethods.memcache(size=2)
+        def foo(x):
+            return x
+
+        ret = yield foo(1)
+        self.assertEqual(ret,1)
+
+        ret = yield foo(2)
+        self.assertEqual(ret,2)
+
+        ret = yield foo(3)
+        self.assertEqual(ret,3)
+
+        hits = foo.cache_info().hits
+        ret = yield foo(1)
+        self.assertEqual(ret,1)
+        self.assertEqual(foo.cache_info().hits, hits)
+
+    @unittest_reporter(name='authorization - no auth')
+    def test_100_authorization(self):
+        class Bar(Base):
+            @dbmethods.authorization()
+            def foo(self, x):
+                return x
+
+        b = Bar()
+        with self.assertRaisesRegexp(Exception, 'no authorization'):
+            yield b.foo(1)
+
+    @unittest_reporter(name='authorization - any user')
+    def test_101_authorization(self):
+        class Bar(Base):
+            @dbmethods.authorization(user=True)
+            def foo(self, x):
+                return x
+
+        b = Bar()
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'foo','roles':['bar']})
+
+        ret = yield b.foo(1, passkey='blah')
+        self.assertEqual(ret, 1)
+        
+        b.calls['auth_get_passkey_membership'] = Mock(side_effect=Exception())
+        with self.assertRaises(Exception):
+            yield b.foo(1, passkey='blah')
+
+    @unittest_reporter(name='authorization - specific user')
+    def test_102_authorization(self):
+        class Bar(Base):
+            @dbmethods.authorization(user='foo')
+            def foo(self, x):
+                return x
+
+        b = Bar()
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'foo','roles':['bar']})
+        ret = yield b.foo(1, passkey='blah')
+        self.assertEqual(ret, 1)
+
+        b.calls['auth_get_passkey_membership'] = Mock(side_effect=Exception())
+        with self.assertRaises(Exception):
+            yield b.foo(1, passkey='blah')
+
+    @unittest_reporter(name='authorization - user list')
+    def test_103_authorization(self):
+        class Bar(Base):
+            @dbmethods.authorization(user=['foo','bar'])
+            def foo(self, x):
+                return x
+
+        b = Bar()
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'bar','roles':['bar']})
+        ret = yield b.foo(1, passkey='blah')
+        self.assertEqual(ret, 1)
+        
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'baz','roles':['bar']})
+        with self.assertRaisesRegexp(Exception, 'authorization error'):
+            yield b.foo(1, passkey='blah')
+
+    @unittest_reporter(name='authorization - user func')
+    def test_104_authorization(self):
+        class Bar(Base):
+            def helper(self, user_id, x):
+                logger.debug('helper %s %s', user_id, x)
+                return user_id == 'bar'
+            @dbmethods.authorization(user=helper)
+            def foo(self, x):
+                return x
+
+        b = Bar()
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'bar','roles':['bar']})
+        ret = yield b.foo(1, passkey='blah')
+        self.assertEqual(ret, 1)
+
+        b.calls['auth_get_passkey_membership'] = Mock(return_value={'username':'baz','roles':['bar']})
+        with self.assertRaisesRegexp(Exception, 'authorization error'):
+            yield b.foo(1, passkey='blah')
 
 
 class TestExecutor(object):
@@ -272,6 +451,8 @@ class dbmethods_test(dbmethods_base):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
+    alltests = glob_tests(loader.getTestCaseNames(decorators_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,decorators_test))
     alltests = glob_tests(loader.getTestCaseNames(dbmethods_test))
     suite.addTests(loader.loadTestsFromNames(alltests,dbmethods_test))
     return suite
