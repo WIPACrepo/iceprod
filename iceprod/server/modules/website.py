@@ -880,7 +880,6 @@ class Login(PublicHandler):
         if 'password' in self.cfg['webserver']:
             self.render('login.html', status=None, next=n)
         else:
-            # TODO: remove this entirely
             if secure:
                 self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
             self.set_secure_cookie('user', 'admin', expires_days=1)
@@ -888,16 +887,13 @@ class Login(PublicHandler):
 
     @catch_error
     def post(self):
-        n = self.get_argument('next', default='/')
-        secure = self.get_argument('secure', default=None)
-        if ('password' in self.cfg['webserver'] and
-            self.get_argument('pwd') == self.cfg['webserver']['password']):
-            if secure:
-                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
-            self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(n)
-        else:
-            self.render('login.html', status='failed', next=n)
+         n = self.get_argument('next', default='/')
+         if ('password' in self.cfg['webserver'] and
+             self.get_argument('pwd') == self.cfg['webserver']['password']):
+             self.set_secure_cookie('user', 'admin', expires_days=1)
+             self.redirect(n)
+         else:
+             self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):
     @catch_error

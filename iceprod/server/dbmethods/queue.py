@@ -889,7 +889,7 @@ class queue(_Methods_Base):
             raise
         if task_ids:
             with (yield self.parent.db.acquire_lock('queue')):
-                sql = 'select task_id from search '
+                sql = 'select task_ids from search '
                 sql += 'where task_status = "processing" and task_id in (%s)'
                 reset_tasks = set()
                 for f in self._bulk_select(sql, task_ids):

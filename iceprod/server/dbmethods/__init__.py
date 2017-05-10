@@ -35,40 +35,33 @@ def memcache(size=1024, ttl=None):
         ttl (int): Time to live (default None = infinite)
     """
     if ttl:
-        logger.debug('ttl cache')
         cache = cachetools.TTLCache(size, ttl)
     else:
-        logger.debug('lru cache')
         cache = cachetools.LRUCache(size)
     info = {'hits':0, 'misses': 0, 'maxsize':size, 'currsize':0}
 
     def make_wrapper(obj):
-        is_member_func = (obj.func_code.co_argcount > 0 and
-                          obj.func_code.co_varnames[0] == 'self')
-
         @tornado.gen.coroutine
         def wrapper(self, *args, **kwargs):
             key = cachetools.keys.hashkey(*args,**kwargs)
+            logger.debug('%r: cache: %r',obj.__name__,dict(cache))
             if key in cache:
                 info['hits'] += 1
                 logger.debug('%r: cache hit for %r',obj.__name__,key)
                 raise tornado.gen.Return(cache[key])
             else:
                 info['misses'] += 1
-            if is_member_func:
-                ret = obj(self, *args, **kwargs)
-            else:
-                ret = obj(*args, **kwargs)
+            ret = obj(self, *args, **kwargs)
             if isinstance(ret, (tornado.concurrent.Future, concurrent.futures.Future)):
                 ret = yield tornado.gen.with_timeout(timedelta(seconds=120),ret)
+            logger.debug('cache ret: %r',ret)
             cache[key] = ret
             raise tornado.gen.Return(ret)
-        if is_member_func:
-            logger.warn('self wrapper')
+        if (obj.func_code.co_argcount > 0 and
+            obj.func_code.co_varnames[0] == 'self'):
             obj2 = wrapper
         else:
-            logger.warn('standalone wrapper')
-            obj2 = update_wrapper(partial(wrapper, None), obj,
+            obj2 = update_wrapper(wrapper, obj,
                     ('__name__','__module__','__doc__'),('__dict__',))
         # instrument like functools.lru_cache
         def cache_clear():
@@ -86,134 +79,69 @@ def memcache(size=1024, ttl=None):
 def authorization(**kwargs):
     """Authorization decorator.
 
-    Must be used on a member function of dbmethods in order
-    to access the DB for authorization information.
-
-    Non-decorator optional args:
-        passkey (str): the passkey (for site, task, or user)
-        cookie_id (str): the user_id supplied by a cookie
-        site_id (str): the site id
-
     Args:
-        site (bool): Valid for site queries
-        user (str, list, callable): The user id(s) to match against
-        role (str, list, callable): The role id(s) to match against
-        expression (str): The expression of site, user, and role
+        auth_role (str, list): The role name(s) to match against
+        match_user (bool): Match logged in user with kwargs `user_id`
+        site_valid (bool): Valid for site queries
     """
     def make_wrapper(obj):
-        @tornado.gen.coroutine
         def wrapper(self, *args, **kwargs):
-            # take a copy so we don't destroy future calls
-            auth = kwargs.pop('_auth').copy()
-            auth_site = auth.pop('site', False)
-            auth_user = auth.pop('user', None)
-            auth_role = auth.pop('role', None)
-            auth_expression = auth.pop('expression', None)
-            if not auth_expression:
-                enabled_auths = []
-                if auth_site:
-                    enabled_auths.append('site')
-                if auth_user:
-                    enabled_auths.append('user')
-                if auth_role:
-                    enabled_auths.append('role')
-                auth_expression = ' and '.join(enabled_auths)
-                if not auth_expression:
-                    raise Exception('cannot have no authorization')
+            auth = kwargs.pop('_auth')
+            auth_role = auth.pop(['auth_role'], None)
+            auth_user = auth.pop(['auth_user'], None)
+            site_valid = auth.pop(['site_valid'], False)
 
-            successful_site = False
-            successful_user = False
-            successful_role = False
-            
-            passkey = kwargs.pop('passkey', None)
-            cookie_id = kwargs.pop('cookie_id', None)
-            site_id = kwargs.pop('site_id', None)
+            # get user and role
+            user = None
+            role = None
+            site_auth = False
+            passkey_auth = False
+            if 'passkey' in kwargs:
+                passkey = kwargs.pop('passkey')
+                
+                if 'site_id' in kwargs:
+                    # authorize site
+                    site_id = kwargs.pop('site_id')
+                    if site_valid:
+                        site_auth = self.parent.db('auth_authorize_site',
+                                                   site=site_id, key=passkey)
+                else:
+                    # authorize task
+                    passkey_auth = yield self.parent.db_call('auth_authorize_task', key=passkey)
+                    
+            elif 'cookie_id' in kwargs:
+                user_id = kwargs.pop('cookie_id')
 
-            # check for site validity
-            if auth_site and passkey and site_id:
-                # authorize site
-                successful_site = self.parent.db('auth_authorize_site',
-                                                 site=site_id, key=passkey)
-
-            # get username, roles
-            username = None
-            roles = []
-            if passkey and not site_id:
-                ret = yield self.parent.db_call('auth_get_passkey_membership',
-                                                key=passkey)
-                username = ret['username']
-                roles = ret['roles']
-            elif cookie_id:
-                ret = yield self.parent.db_call('auth_get_user_membership',
-                                                user_id=cookie_id)
-                username = ret['username']
-                roles = ret['roles']
-
-            # check for user validity
-            if auth_user is True and username: # if we just want any logged in user
-                successful_user = True
-            elif auth_user and isinstance(auth_user, str):
-                if auth_user == username:
-                    successful_user = True
-            elif (auth_user and isinstance(auth_user, Iterable)
-                  and username in auth_user):
-                successful_user = True
-            elif callable(auth_user):
-                if (auth_user.func_code.co_argcount > 0 and
-                    auth_user.func_code.co_varnames[0] == 'self'):
-                    auth_user = partial(auth_user, self)
-                try:
-                    ret = auth_user(username, *args, **kwargs)
-                    if isinstance(ret, (tornado.concurrent.Future, concurrent.futures.Future)):
-                        ret = yield ret
-                    successful_user = ret
-                except Exception:
-                    logger.info('error during auth_user', exc_info=True)
-            else:
-                logger.warn('auth_user undefined: %r', auth_user)
-
-            # check for role validity
-            if auth_role and isinstance(auth_role, str):
-                if auth_role in roles:
-                    successful_role = True
-            if auth_role and isinstance(auth_role, Iterable):
-                if set(auth_role).intersection(roles):
-                    successful_role = True
-            elif callable(auth_role):
-                if (auth_role.func_code.co_argcount > 0 and
-                    auth_role.func_code.co_varnames[0] == 'self'):
-                    auth_role = partial(auth_role, self)
-                try:
-                    ret = auth_role(roles, *args, **kwargs)
-                    if isinstance(ret, (tornado.concurrent.Future, concurrent.futures.Future)):
-                        ret = yield ret
-                    successful_role = ret
-                except Exception:
-                    logger.info('error during auth_role', exc_info=True)
-            else:
-                logger.warn('auth_role undefined: %r', auth_role)
-
-            # check auth expression
-            auth_expression = auth_expression.replace('site', 'True' if successful_site else 'False')
-            auth_expression = auth_expression.replace('user', 'True' if successful_user else 'False')
-            auth_expression = auth_expression.replace('role', 'True' if successful_role else 'False')
-            logger.debug('auth expression: %r', auth_expression)
-            try:
-                ret = eval(auth_expression)
-            except Exception:
-                logger.warn('error evaluating auth_expression', exc_info=True)
-                raise Exception('authorization error')
-            else:
-                if not ret:
-                    raise Exception('authorization error')
+            # check authorization
+            if auth_role:
+                if not role:
+                    logger.debug('no role to match')
+                    raise Exception('authorization failure')
+                if not isinstance(auth_role,list):
+                    auth_role = [auth_role]
+                if all(role != r for r in auth_role):
+                    logger.debug('role match failure: %r!=%r', role, auth_role)
+                    raise Exception('authorization failure')
+            if match_user:
+                if not user:
+                    logger.debug('no user to match')
+                    raise Exception('authorization failure')
+                kwargs_user = kwargs.pop('user', False)
+                if user != kwargs_user:
+                    logger.debug('user match failure: %r!=%r', user, kwargs_user)
+                    raise Exception('authorization failure')
 
             # run function
-            ret = obj(self, *args,**kwargs)
-            if isinstance(ret, (tornado.concurrent.Future, concurrent.futures.Future)):
-                ret = yield tornado.gen.with_timeout(timedelta(seconds=120),ret)
+            ret = yield obj(self, *args,**kwargs)
             raise tornado.gen.Return(ret)
 
-        return partialmethod(wrapper,_auth=kwargs)
+        if (obj.func_code.co_argcount > 0 and
+            obj.func_code.co_varnames[0] == 'self'):
+            obj2 = partialmethod(wrapper,_auth=kwargs)
+        else:
+            obj2 = update_wrapper(partial(wrapper,_auth=kwargs),obj,
+                    ('__name__','__module__','__doc__'),('__dict__',))
+        return obj2
     return make_wrapper
 
 
