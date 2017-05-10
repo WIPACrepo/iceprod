@@ -408,7 +408,12 @@ def upload(local, url, options={}):
         if sha512sum(url) != chksum:
             raise Exception('file checksum error')
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-        GridFTP.put(url, filename=local)
+        try:
+            GridFTP.put(url, filename=local)
+        except Exception:
+            # because d-cache doesn't allow overwriting, try deletion
+            GridFTP.delete(url, filename=local)
+            GridFTP.put(url, filename=local)
         ret = GridFTP.sha512sum(url)
         if ret != chksum:
             raise Exception('gridftp checksum error')
