@@ -434,9 +434,12 @@ class dbmethods_rpc_test(dbmethods_base):
         job2 = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
         self.assertEqual(job2, config_job2)
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
-        self.assertEqual(endtables['task_rel'][1]['depends'],
-                         endtables['task_rel'][0]['task_rel_id'],
-                         "missing dependency")
+        task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
+        tr1 = task_rels.pop('tr1')
+        tr2 = task_rels.values()[0]
+        self.assertEqual(tr2['depends'],
+                         tr1['task_rel_id'],
+                         "missing dependency1")
 
         # dataset dependency missing
         yield self.set_tables(tables)
@@ -470,9 +473,12 @@ class dbmethods_rpc_test(dbmethods_base):
         job2 = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
         self.assertEqual(job2, config_job2)
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
-        self.assertEqual(endtables['task_rel'][1]['depends'],
-                         endtables['task_rel'][0]['task_rel_id'],
-                         "missing dependency")
+        task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
+        tr1 = task_rels.pop('tr1')
+        tr2 = task_rels.values()[0]
+        self.assertEqual(tr2['depends'],
+                         tr1['task_rel_id'],
+                         "missing dependency1")
 
         # test sql errors
         for i in range(2):
