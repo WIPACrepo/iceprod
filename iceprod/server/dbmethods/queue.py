@@ -13,6 +13,7 @@ import random
 import tornado.gen
 
 from iceprod.core.dataclasses import Number,String
+from iceprod.core.exe import Config
 from iceprod.core import serialization
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
@@ -370,21 +371,37 @@ class queue(_Methods_Base):
 
             # get task_rels for buffering datasets
             task_rel_ids = {}
+            task_rel_reqs = {}
             try:
-                sql = 'select task_rel_id,dataset_id,task_index,name,depends from task_rel '
+                sql = 'select task_rel_id,dataset_id,task_index,name,depends,requirements from task_rel '
                 sql += 'where dataset_id in ('
                 sql += ','.join('?' for _ in need_to_buffer)+')'
                 bindings = tuple(need_to_buffer)
                 ret = yield self.parent.db.query(sql, bindings)
-                for tr_id, dataset_id, index, name, deps in ret:
+                for tr_id, dataset_id, index, name, deps, reqs in ret:
                     if 'task_rels' not in need_to_buffer[dataset_id]:
                         need_to_buffer[dataset_id]['task_rels'] = {}
                     need_to_buffer[dataset_id]['task_rels'][tr_id] = (index,name,deps)
                     task_rel_ids[tr_id] = (dataset_id,index,deps)
+                    task_rel_reqs[tr_id] = json_decode(reqs)
             except Exception as e:
                 logger.info('error getting task_rels', exc_info=True)
                 raise
-
+            
+            dataset_configs = {}
+            try:
+                sql = 'select dataset_id,config_data from config '
+                sql += ' where dataset_id in ('
+                sql += ','.join(['?' for _ in need_to_buffer])
+                sql += ')'
+                bindings = tuple(need_to_buffer)
+                ret = yield self.parent.db.query(sql, bindings)
+                for dataset_id, config in ret:
+                    dataset_configs[dataset_id] = json_decode(config)
+            except Exception as e:
+                logger.info('error getting dataset configs', exc_info=True)
+                raise
+            
             # buffer for each dataset
             # TODO: use priorities to do this better
             for dataset in random.sample(need_to_buffer,len(need_to_buffer)):
@@ -476,10 +493,24 @@ class queue(_Methods_Base):
                             deps = [task_ids[i] for i in depends[index][0]]
                             deps.extend(depends[index][1])
 
+                            # parse requirements
+                            cfg = dict(dataset_configs[dataset])
+                            cfg['options']['job'] = job_index
+                            cfg['options']['iter'] = 0
+                            cfg['options']['jobs_submitted'] = total_jobs
+                            reqs = Config(config=cfg).parseObject(task_rel_reqs[task_rel_id], {})
+                            
+                            # only store job-specific requirements if they
+                            # are distinct from the value in task_rel
+                            if reqs != task_rel_reqs[task_rel_id]:
+                                reqs = json_encode(reqs)
+                            else:
+                                reqs = ''
+
                             # task table
                             bindings = (task_ids[index], 'idle', 'idle', now,
                                         '', '', 0, 0, 0.0, 0.0, 0,
-                                        ','.join(deps), '', task_rel_id)
+                                        ','.join(deps), reqs, task_rel_id)
                             db_updates_sql.append(sql)
                             db_updates_bindings.append(bindings)
 

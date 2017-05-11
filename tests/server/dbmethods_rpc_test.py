@@ -434,9 +434,12 @@ class dbmethods_rpc_test(dbmethods_base):
         job2 = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
         self.assertEqual(job2, config_job2)
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
-        self.assertEqual(endtables['task_rel'][1]['depends'],
-                         endtables['task_rel'][0]['task_rel_id'],
-                         "missing dependency")
+        task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
+        tr1 = task_rels.pop('tr1')
+        tr2 = task_rels.values()[0]
+        self.assertEqual(tr2['depends'],
+                         tr1['task_rel_id'],
+                         "missing dependency1")
 
         # dataset dependency missing
         yield self.set_tables(tables)
@@ -470,9 +473,12 @@ class dbmethods_rpc_test(dbmethods_base):
         job2 = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
         self.assertEqual(job2, config_job2)
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
-        self.assertEqual(endtables['task_rel'][1]['depends'],
-                         endtables['task_rel'][0]['task_rel_id'],
-                         "missing dependency")
+        task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
+        tr1 = task_rels.pop('tr1')
+        tr2 = task_rels.values()[0]
+        self.assertEqual(tr2['depends'],
+                         tr1['task_rel_id'],
+                         "missing dependency1")
 
         # test sql errors
         for i in range(2):
@@ -486,6 +492,62 @@ class dbmethods_rpc_test(dbmethods_base):
                 raise Exception('did not raise Exception')
             endtables = yield self.get_tables(tables2)
             self.assertEqual(endtables, tables2)
+
+    @unittest_reporter
+    def test_101_rpc_submit_dataset_with_requirements(self):
+        tables = {'dataset':[], 'config':[], 'task_rel': [], 'task': []}
+        
+        # literal requirements
+        config_dict = {
+            'tasks':[{
+                'trays':[{'modules':[]}],
+                'requirements': {'memory':1}
+            }],
+            'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+
+        yield self.set_tables(tables)
+        yield self.db['rpc_submit_dataset'](config_dict)
+
+        endtables = yield self.get_tables(tables)
+        dataset_id = endtables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        job = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
+        self.assertEqual(job, config_job)
+        self.assertEqual(len(endtables['task_rel']), 1, "task_rel table")
+        reqs = json_decode(endtables['task_rel'][0]['requirements'])
+        self.assertEqual(reqs, config_dict['tasks'][0]['requirements'])
+        
+        # expression requirements
+        config_dict = {
+            'tasks':[{
+                'trays':[{'modules':[]}],
+                'requirements': {'memory':'$eval($(job)+1)'}
+            }],
+            'steering':{}}
+        config_job = serialization.dict_to_dataclasses(config_dict)
+
+        yield self.set_tables(tables)
+        yield self.db['rpc_submit_dataset'](config_dict, njobs=2)
+
+        endtables = yield self.get_tables(tables)
+        dataset_id = endtables['dataset'][0]['dataset_id']
+        config_job['dataset'] = GlobalID.localID_ret(dataset_id, type='int')
+        job = serialization.serialize_json.loads(endtables['config'][0]['config_data'])
+        self.assertEqual(job, config_job)
+        self.assertEqual(len(endtables['task_rel']), 1, "task_rel table")
+        self.assertEqual(len(endtables['task']), 0, "task table")
+        reqs = json_decode(endtables['task_rel'][0]['requirements'])
+        self.assertEqual(reqs, config_dict['tasks'][0]['requirements'])
+        print(endtables['task'])
+        
+        # queue jobs, creating tasks as a side-effect
+        yield self.db['rpc_queue_master']()
+        endtables = yield self.get_tables(tables)
+        self.assertEqual(len(endtables['task']), 2, "task table has 2 rows")
+        for i, task in enumerate(endtables['task']):
+            self.assertEqual(json_decode(task['requirements'])['memory'], i+1)
+
 
     @unittest_reporter
     def test_110_rpc_update_dataset_config(self):
