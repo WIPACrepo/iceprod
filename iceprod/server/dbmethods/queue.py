@@ -383,7 +383,7 @@ class queue(_Methods_Base):
                         need_to_buffer[dataset_id]['task_rels'] = {}
                     need_to_buffer[dataset_id]['task_rels'][tr_id] = (index,name,deps)
                     task_rel_ids[tr_id] = (dataset_id,index,deps)
-                    task_rel_reqs[tr_id] = json_decode(reqs)
+                    task_rel_reqs[tr_id] = json_decode(reqs) if reqs else None
             except Exception as e:
                 logger.info('error getting task_rels', exc_info=True)
                 raise
@@ -493,19 +493,22 @@ class queue(_Methods_Base):
                             deps = [task_ids[i] for i in depends[index][0]]
                             deps.extend(depends[index][1])
 
-                            # parse requirements
-                            cfg = dict(dataset_configs[dataset])
-                            cfg['options']['job'] = job_index
-                            cfg['options']['iter'] = 0
-                            cfg['options']['jobs_submitted'] = total_jobs
-                            reqs = Config(config=cfg).parseObject(task_rel_reqs[task_rel_id], {})
-                            
-                            # only store job-specific requirements if they
-                            # are distinct from the value in task_rel
-                            if reqs != task_rel_reqs[task_rel_id]:
-                                reqs = json_encode(reqs)
-                            else:
+                            if not task_rel_reqs[task_rel_id]:
                                 reqs = ''
+                            else:
+                                # parse requirements
+                                cfg = dict(dataset_configs[dataset])
+                                cfg['options']['job'] = job_index
+                                cfg['options']['iter'] = 0
+                                cfg['options']['jobs_submitted'] = total_jobs
+                                reqs = Config(config=cfg).parseObject(task_rel_reqs[task_rel_id], {})
+                                
+                                # only store job-specific requirements if they
+                                # are distinct from the value in task_rel
+                                if reqs != task_rel_reqs[task_rel_id]:
+                                    reqs = json_encode(reqs)
+                                else:
+                                    reqs = ''
 
                             # task table
                             bindings = (task_ids[index], 'idle', 'idle', now,
