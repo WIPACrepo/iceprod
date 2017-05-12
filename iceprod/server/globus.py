@@ -35,6 +35,14 @@ class SiteGlobusProxy(object):
         """Set the duration"""
         self.cfg['duration'] = d
 
+    def set_voms_vo(self, vo):
+        """Set the voms VO"""
+        self.cfg['voms_vo'] = vo
+
+    def set_voms_role(self, r):
+        """Set the voms role"""
+        self.cfg['voms_role'] = r
+
     def update_proxy(self):
         """Update the proxy"""
         if 'passphrase' not in self.cfg:
@@ -47,12 +55,32 @@ class SiteGlobusProxy(object):
                             '-valid','%d:0'%self.cfg['duration'],
                            ], stdout=FNULL, stderr=FNULL):
             # proxy needs updating
-            p = subprocess.Popen(['grid-proxy-init','-pwstdin',
-                                  '-valid','%d:0'%(self.cfg['duration']+1),
-                                 ], stdin=subprocess.PIPE)
-            p.communicate(input=self.cfg['passphrase']+'\n')
+            if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
+                cmd = ['voms-proxy-init']
+                if 'voms_role' in self.cfg and self.cfg['voms_role']:
+                    vo = self.cfg['voms_vo']
+                    role = self.cfg['voms_role']
+                    cmd.extend(['-voms', '{0}:/{0}/Role={1}'.format(vo, role)])
+                else:
+                    cmd.extend(['-voms', self.cfg['voms_vo']])
+            else:
+                cmd = ['grid-proxy-init']
+            cmd.extend(['-pwstdin','-valid','%d:0'%(self.cfg['duration']+1)])
+            p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            stdout,stderr = p.communicate(input=self.cfg['passphrase']+'\n')
+            logger.info('proxy cmd: %r', cmd)
+            logger.info('stdout: %s', stdout)
+            logger.info('stderr: %s', stderr)
             p.wait()
-            if p.returncode > 0:
+            if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
+                for line in stdout.split('\n'):
+                    if line.startswith('Creating proxy') and line.endswith('Done'):
+                        break # this is a good proxy
+                else:
+                    raise Exception('voms-proxy-init failed')
+            elif p.returncode > 0:
                 raise Exception('grid-proxy-init failed')
 
     def get_proxy(self):

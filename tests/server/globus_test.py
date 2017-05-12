@@ -76,6 +76,30 @@ class siteglobusproxy_test(unittest.TestCase):
         else:
             raise Exception('did not raise Exception')
 
+    @unittest_reporter(name='update_proxy() voms', skip=skip_tests, module='globus.SiteGlobusProxy')
+    def test_10_5_update_proxy(self):
+        cfgfile = os.path.join(self.test_dir,'cfg')
+        p = SiteGlobusProxy(cfgfile=cfgfile)
+        p.set_voms_vo('test_vo')
+        p.set_voms_role('test_role')
+        try:
+            p.update_proxy()
+        except Exception as e:
+            pass
+        else:
+            raise Exception('did not raise Exception')
+
+        p.set_passphrase('gibberish')
+        try:
+            with to_log(sys.stderr), to_log(sys.stdout):
+                p.update_proxy()
+        except Exception as e2:
+            if str(e) == str(e2):
+                logger.info('%r\n%r',e,e2)
+                raise Exception('Exception is the same')
+        else:
+            raise Exception('did not raise Exception')
+
     @unittest_reporter(skip=skip_tests, module='globus.SiteGlobusProxy')
     def test_11_get_proxy(self):
         cfgfile = os.path.join(self.test_dir,'cfg')
