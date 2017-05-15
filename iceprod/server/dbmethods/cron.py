@@ -306,12 +306,14 @@ class cron(_Methods_Base):
             return
 
         sql = 'select job_id,job_index from job where status = "complete"'
-        bindings = tuple()
+        sql += ' or (status in ("suspended","errors") and status_changed < ?)'
+        timelimit = datetime.utcnow() - timedelta(days=30)
+        bindings = (timelimit.isoformat(),)
         ret = yield self.parent.db.query(sql, bindings)
         jobs = {job_id:str(index) for job_id,index in ret}
 
         sql = 'select dataset_id, job_id from search '
-        sql += ' where task_status = "complete"'
+        sql += ' where task_status != "idle"'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         datasets = defaultdict(set)
