@@ -133,21 +133,25 @@ class cron(_Methods_Base):
         an active state, then delete the job and tasks.
         """
 
-        sql = 'select dataset_id,jobs_submitted,tasks_submitted '
-        sql += ' from dataset where status = ? '
-        bindings = ('processing',)
+        sql = 'select dataset_id,status,jobs_submitted,tasks_submitted '
+        sql += ' from dataset '
+        bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         datasets = {}
-        for dataset_id,njobs,ntasks in ret:
-            datasets[dataset_id] = ntasks//njobs
+        for dataset_id,status,njobs,ntasks in ret:
+            datasets[dataset_id] = {
+                'status': status,
+                'tasks': ntasks//njobs,
+            }
         if not datasets:
             return
 
+        # get the jobs by status and number of tasks
         sql = 'select dataset_id, job_id, task_status, count(*) from search '
         sql += ' where dataset_id in ('
-        sql += ','.join(['?' for _ in datasets])
+        sql += ','.join('?' for _ in datasets)
         sql += ') group by job_id, task_status'
-        bindings = tuple(datasets)
+        bindings = tuple(datasets[d]['tasks'] for d in datasets)
         ret = yield self.parent.db.query(sql, bindings)
 
         jobs = defaultdict(lambda:[{},None])
@@ -155,16 +159,45 @@ class cron(_Methods_Base):
             jobs[job_id][0][task_status] = num
             jobs[job_id][1] = dataset_id
 
+        # filter by jobs that need updating
+        sql = 'select job_id from job where status = "processing" '
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        job_ids = [row[0] for row in ret]
+
         complete_jobs = []
         errors_jobs = []
         suspended_jobs = []
         clean_jobs = []
-        for job_id in jobs:
+        for job_id in job_ids:
+            if job_id not in jobs:
+                logger.error('unknown job id: %r', job_id)
+                if self._is_master():
+                    suspended_jobs.append(job_id)
+                else:
+                    clean_jobs.append(job_id)
+                continue
+
             statuses = jobs[job_id][0]
             dataset_id = jobs[job_id][1]
-            have_all_jobs = sum(statuses.values()) >= datasets[dataset_id]
+            have_all_jobs = sum(statuses.values()) >= datasets[dataset_id]['tasks']
             statuses = set(statuses)
-            if not statuses&{'waiting','queued','processing','resume','reset'}:
+            if (datasets[dataset_id]['status'] in ('suspended','errors') and
+                not statuses&{'processing'}):
+                if self._is_master():
+                    if not have_all_jobs:
+                        logger.error('not all tasks in job %r buffered',job_id)
+                        continue
+                    if not statuses-{'complete'}:
+                        complete_jobs.append(job_id)
+                    elif statuses&{'failed'}:
+                        errors_jobs.append(job_id)
+                    else:
+                        suspended_jobs.append(job_id)
+                else:
+                    logger.info('job %r can be removed', job_id)
+                    clean_jobs.append(job_id)
+            elif not statuses&{'waiting','queued','processing','resume','reset'}:
                 if self._is_master():
                     if not have_all_jobs:
                         logger.error('not all tasks in job %r buffered',job_id)
