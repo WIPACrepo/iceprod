@@ -220,21 +220,22 @@ class cron(_Methods_Base):
                 for f in self._bulk_select(sql, clean_jobs):
                     task_ids.update([row[0] for row in (yield f)])
 
-                sql = 'delete from search where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
-                    yield f
-                sql = 'delete from task where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
-                    yield f
-                sql = 'delete from task_stat where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
-                    yield f
-                sql = 'delete from task_log where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
-                    yield f
-                sql = 'delete from task_lookup where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
-                    yield f
+                if task_ids:
+                    sql = 'delete from search where task_id in (%s)'
+                    for f in self._bulk_select(sql, task_ids):
+                        yield f
+                    sql = 'delete from task where task_id in (%s)'
+                    for f in self._bulk_select(sql, task_ids):
+                        yield f
+                    sql = 'delete from task_stat where task_id in (%s)'
+                    for f in self._bulk_select(sql, task_ids):
+                        yield f
+                    sql = 'delete from task_log where task_id in (%s)'
+                    for f in self._bulk_select(sql, task_ids):
+                        yield f
+                    sql = 'delete from task_lookup where task_id in (%s)'
+                    for f in self._bulk_select(sql, task_ids):
+                        yield f
                 sql = 'delete from job where job_id in (%s)'
                 for f in self._bulk_select(sql, clean_jobs):
                     yield f
@@ -264,16 +265,13 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as errors',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('job',job_id,now)
-                    try:
-                        yield self.parent.db.query(sql3, bindings3)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings3 = ('job',job_id,now)
+                try:
+                    yield self.parent.db.query(sql3, bindings3)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
 
             # suspended jobs
             sql = 'update job set status = "suspended", status_changed = ? '
@@ -283,16 +281,13 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as suspended',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('job',job_id,now)
-                    try:
-                        yield self.parent.db.query(sql3, bindings3)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings3 = ('job',job_id,now)
+                try:
+                    yield self.parent.db.query(sql3, bindings3)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
 
             # complete jobs
             sql = 'update job set status = "complete", status_changed = ? '
@@ -304,16 +299,13 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as complete',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('job',job_id,now)
-                    try:
-                        yield self.parent.db.query(sql3, bindings3)
-                    except Exception as e:
-                        logger.info('error updating master_update_history',
-                                    exc_info=True)
-                else:
-                    yield self._send_to_master(('job',job_id,now,sql,bindings))
+                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                bindings3 = ('job',job_id,now)
+                try:
+                    yield self.parent.db.query(sql3, bindings3)
+                except Exception as e:
+                    logger.info('error updating master_update_history',
+                                exc_info=True)
 
                 # TODO: collate task stats
 
