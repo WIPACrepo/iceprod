@@ -926,28 +926,48 @@ class rpc(_Methods_Base):
         bindings = (task,)
         yield self.parent.db.query(sql,bindings)
 
+    @tornado.gen.coroutine
     def rpc_resume_task(self, task):
-        return self.parent.service['queue_set_task_status'](task=task, status='resume')
+        sql = 'select job_id from search where task_id = ?'
+        bindings = (task,)
+        ret = yield self.parent.db.query(sql, bindings)
+        job_id = ret[0][0]
+
+        yield self.parent.service['queue_set_task_status'](task=task, status='resume')
+
+        sql = 'update job set status="processing" where job_id = ?'
+        bindings = (job_id,)
+        yield self.parent.db.query(sql, bindings)
 
     def rpc_suspend_task(self, task):
         return self.parent.service['queue_set_task_status'](task=task, status='suspended')
 
     @tornado.gen.coroutine
     def rpc_reset_dataset(self, dataset_id):
-        sql = 'select task_id from search '
-        sql += 'where task_status != "complete" and dataset_id = ?'
+        sql = 'select task_id, job_id from search '
+        sql += 'where task_status in ("suspended","failed") '
+        sql += 'and dataset_id = ?'
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
-        tasks = [row[0] for row in ret]
+        tasks = []
+        jobs = set()
+        for task_id,job_id in ret:
+            tasks.append(task_id)
+            jobs.add(job_id)
 
         sql = 'update search set task_status="idle" '
-        sql += 'where task_status != "complete" and dataset_id = ?'
-        bindings = (dataset_id,)
-        yield self.parent.db.query(sql, bindings)
+        sql += 'where task_id in (%s)'
+        for f in self._bulk_select(sql, tasks):
+            yield f
 
         sql = 'update task set status="idle" '
-        sql += 'where status != "complete" and task_id in (%s)'
+        sql += 'where task_id in (%s)'
         for f in self._bulk_select(sql, tasks):
+            yield f
+
+        sql = 'update job set status="processing" '
+        sql += 'where job_id in (%s)'
+        for f in self._bulk_select(sql, jobs):
             yield f
 
         sql = 'update dataset set status="processing" where dataset_id = ?'
@@ -956,20 +976,29 @@ class rpc(_Methods_Base):
 
     @tornado.gen.coroutine
     def rpc_hard_reset_dataset(self, dataset_id):
-        sql = 'select task_id from search '
+        sql = 'select task_id, job_id from search '
         sql += 'where dataset_id = ?'
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
-        tasks = [row[0] for row in ret]
+        tasks = []
+        jobs = set()
+        for task_id,job_id in ret:
+            tasks.append(task_id)
+            jobs.add(job_id)
 
         sql = 'update search set task_status="idle" '
-        sql += 'where dataset_id = ?'
-        bindings = (dataset_id,)
-        yield self.parent.db.query(sql, bindings)
+        sql += 'where task_id in (%s)'
+        for f in self._bulk_select(sql, tasks):
+            yield f
 
         sql = 'update task set status="idle" '
         sql += 'where task_id in (%s)'
         for f in self._bulk_select(sql, tasks):
+            yield f
+
+        sql = 'update job set status="processing" '
+        sql += 'where job_id in (%s)'
+        for f in self._bulk_select(sql, jobs):
             yield f
 
         sql = 'update dataset set status="processing" where dataset_id = ?'
