@@ -148,10 +148,8 @@ class cron(_Methods_Base):
 
         # get the jobs by status and number of tasks
         sql = 'select dataset_id, job_id, task_status, count(*) from search '
-        sql += ' where dataset_id in ('
-        sql += ','.join('?' for _ in datasets)
-        sql += ') group by job_id, task_status'
-        bindings = tuple(datasets[d]['tasks'] for d in datasets)
+        sql += ' group by job_id, task_status'
+        bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
 
         jobs = defaultdict(lambda:[{},None])
