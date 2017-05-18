@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}IceProd{% end %}
+
+{% block page_title %}Tasks by Status{% end %}
+
+{% block body %}
+
+<table class='job_table'>
+    <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Job Index</th>
+        <th>Status Changed</th>
+        <th></th>
+    </tr>
+    {% for j in jobs %}
+    <tr>
+        <td><a href="/job/{{ url_escape(j['job_id']) }}">{{ escape(j['job_id']) }}</a></td>
+        <td>{{ j['status'] }}</td>
+        <td>{{ j['job_index'] }}</td>
+        <td>{{ j['status_changed'] }}</td>
+        <td>
+        {% if (current_user) %}
+        <a href="javascript:call("reset_job", '{{ j[\'job_id\'] }}');">Reset</a>
+        <a href="javascript:call("suspend_job", '{{ j[\'job_id\'] }}');">Suspend</a>
+        {% end %}
+        </td>
+    </tr>
+    {% end %}
+</table>
+
+
+{% end %}
+
+{% block body_scripts %}
+
+{% if (current_user) %}
+<script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript">
+function call(func_name, job_id){
+    RPCclient(func_name, {passkey: "{{ passkey }}", job_id:job_id }, callback=function(return_data){
+
+    });
+};
+{% end %}
+</script>
+{% end %}

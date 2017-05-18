@@ -7,7 +7,7 @@ import logging
 from datetime import datetime,timedelta
 from functools import partial,reduce
 import operator
-from collections import OrderedDict, Iterable
+from collections import OrderedDict, Iterable, defaultdict
 import math
 import uuid
 import shutil
@@ -369,3 +369,104 @@ class web(_Methods_Base):
             }
 
         raise tornado.gen.Return(stats)
+
+
+    @tornado.gen.coroutine
+    def web_get_jobs_by_status(self, status=None, dataset_id=None):
+        """
+        Get jobs in each state.
+
+        Args:
+            status (str): status to restrict by
+            dataset_id (str): dataset id
+
+        Returns:
+           dict: {status:[job_info]}
+        """
+        job_statuses = defaultdict(list)
+
+        if dataset_id:
+            sql = 'select job_id from search where dataset_id = ?'
+            bindings = (dataset_id,)
+            ret = yield self.parent.db.query(sql, bindings)
+            job_ids = [row[0] for row in ret]
+
+            sql = 'select * from job where job_id in (%s)'
+            for f in self._bulk_select(sql, job_ids):
+                ret = yield f
+                for row in ret:
+                    tmp = self._list_to_dict(['job'],row)
+                    if status and tmp['status'] != status:
+                        continue
+                    job_statuses[tmp['status']].append(tmp)
+        else:
+            sql = 'select * from job'
+            if status:
+                sql += ' where status = ?'
+                bindings = (status,)
+            else:
+                bindings = tuple()
+            ret = yield self.parent.db.query(sql, bindings)
+            for row in ret:
+                tmp = self._list_to_dict(['job'],row)
+                job_statuses[tmp['status']].append(tmp)
+
+        job_statuses.sort(key=lambda j:j['index'])
+        raise tornado.gen.Return(job_statuses)
+
+    @tornado.gen.coroutine
+    def web_get_jobs_details(self, job_id):
+        """
+        Get job details for a job_id.
+
+        Args:
+            job_id (str): job_id
+
+        Returns:
+            dict: {job_id:details}
+        """
+        sql = 'select * from job where job_id = ?'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        job = {}
+        for row in ret:
+            job.update(self._list_to_dict(['job'],row))
+
+        sql = 'select search.*,task.* from search '
+        sql += ' join task on search.task_id = task.task_id '
+        sql += ' where job_id = ?'
+        bindings = (job_id,)
+        ret = yield self.parent.db.query(sql, bindings)
+        tasks = []
+        for row in ret:
+            tmp = self._list_to_dict(['search','task'],row)
+            job['dataset_id'] = tmp.pop('dataset_id')
+            if tmp['requirements']:
+                tmp['requirements'] = json_decode(tmp['requirements'])
+            tasks.append(tmp)
+
+        if 'dataset_id' in job:
+            sql = 'select task_rel_id,task_index from task_rel where dataset_id = ?'
+            bindings = (job['dataset_id'],)
+            ret = yield self.parent.db.query(sql, bindings)
+            task_rels = {}
+            for task_rel_id,task_index,requirements in ret:
+                reqs = {}
+                if requirements:
+                    try:
+                        reqs = json_decode(requirements)
+                    except Exception:
+                        pass
+                task_rels[task_rel_id] = {
+                    'index': task_index,
+                    'reqs': reqs,
+                }
+            for t in tasks:
+                tmp = task_rels[t['task_rel_id']]['reqs'].copy()
+                if t['requirements']:
+                    tmp.update(t['requirements'])
+                t['requirements'] = tmp
+                t['index'] = task_rels[t['task_rel_id']]['index']
+            tasks.sort(key=lambda t:t['index'])
+        job['tasks'] = tasks
+        raise tornado.gen.Return(job)

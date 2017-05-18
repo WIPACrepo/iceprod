@@ -253,6 +253,7 @@ class website(module.module):
                 (r"/config", Config, handler_args),
                 (r"/dataset(/.*)?", Dataset, handler_args),
                 (r"/task(/.*)?", Task, handler_args),
+                (r"/job(/.*)?", Job, handler_args),
                 (r"/site(/.*)?", Site, handler_args),
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
@@ -791,6 +792,47 @@ class Task(PublicHandler):
             if isinstance(status,Exception):
                 raise status
             self.render('tasks.html',status=status)
+
+class Job(PublicHandler):
+    """Handle /job urls"""
+    @catch_error
+    @tornado.gen.coroutine
+    def get(self,url):
+        self.statsd.incr('job')
+        if url:
+            url_parts = [x for x in url.split('/') if x]
+        dataset_id = self.get_argument('dataset_id',default=None)
+        status = self.get_argument('status',default=None)
+
+        passkey = yield self.db_call('auth_new_passkey')
+        if isinstance(passkey,Exception):
+            raise passkey
+
+        if url and url_parts:
+            job_id = url_parts[0]
+            ret = yield self.db_call('web_get_jobs_details',job_id=job_id)
+            if isinstance(ret,Exception):
+                raise ret
+            if ret:
+                job_details = ret.values()[0]
+            else:
+                job_details = None
+            self.render('job_detail.html', job=job_details, passkey=passkey)
+        else:
+            if dataset_id and dataset_id.isdigit():
+                try:
+                    if int(dataset_id) < 10000000:
+                        ret = yield self.db_call('web_get_dataset_by_name',
+                                                 name=dataset_id)
+                        if ret and not isinstance(ret,Exception):
+                            dataset_id = ret
+                except:
+                    pass
+            jobs = yield self.db_call('web_get_jobs_by_status', status=status,
+                                       dataset_id=dataset_id)
+            if isinstance(jobs,Exception):
+                raise jobs
+            self.render('job_browse.html', jobs=jobs, passkey=passkey)
 
 class Documentation(PublicHandler):
     @catch_error
