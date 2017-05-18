@@ -411,7 +411,8 @@ class web(_Methods_Base):
                 tmp = self._list_to_dict(['job'],row)
                 job_statuses[tmp['status']].append(tmp)
 
-        job_statuses.sort(key=lambda j:j['index'])
+        for v in job_statuses.values():
+            v.sort(key=lambda j:j['index'])
         raise tornado.gen.Return(job_statuses)
 
     @tornado.gen.coroutine
