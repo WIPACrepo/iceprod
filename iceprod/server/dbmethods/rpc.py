@@ -472,8 +472,10 @@ class rpc(_Methods_Base):
         bindings = (task_id,)
         ret = yield self.parent.db.query(sql, bindings)
         if not ret:
-            raise Exception('task %s does not exist'%(task_id,))
-        ret = ret[0][0] in ('queued','processing')
+            logger.info('task %s does not exist', task_id)
+            ret = False
+        else:
+            ret = ret[0][0] in ('queued','processing')
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
