@@ -446,7 +446,8 @@ class web(_Methods_Base):
             tasks.append(tmp)
 
         if 'dataset_id' in job:
-            sql = 'select task_rel_id,task_index from task_rel where dataset_id = ?'
+            sql = 'select task_rel_id,task_index,requirements '
+            sql += ' from task_rel where dataset_id = ?'
             bindings = (job['dataset_id'],)
             ret = yield self.parent.db.query(sql, bindings)
             task_rels = {}
