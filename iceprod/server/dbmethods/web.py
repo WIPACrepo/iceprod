@@ -426,7 +426,7 @@ class web(_Methods_Base):
             dict: {job_id:details}
         """
         sql = 'select * from job where job_id = ?'
-        bindings = tuple()
+        bindings = (job_id,)
         ret = yield self.parent.db.query(sql, bindings)
         job = {}
         for row in ret:
