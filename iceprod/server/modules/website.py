@@ -730,10 +730,19 @@ class Dataset(PublicHandler):
             if isinstance(passkey,Exception):
                 raise passkey
 
+            ret = yield self.db_call('web_get_jobs_by_status',
+                                      dataset_id=dataset_id)
+            jobs = {}
+            for j in ret:
+                if j['status'] not in jobs:
+                    jobs[j['status']] = 1
+                else:
+                    jobs[j['status']] += 1
+
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
             task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
             self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                        dataset=dataset,tasks=tasks,task_info=task_info,passkey=passkey)
+                        dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,passkey=passkey)
         else:
             datasets = yield self.db_call('web_get_datasets',**filter_results)
             if isinstance(datasets,Exception):
@@ -779,17 +788,8 @@ class Task(PublicHandler):
             else:
                 task_details = None
             logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
-            ret = yield self.db_call('web_get_jobs_by_status',
-                                      dataset_id=dataset_id)
-            jobs = {}
-            for j in ret:
-                if j['status'] not in jobs:
-                    jobs[j['status']] = 1
-                else:
-                    jobs[j['status']] += 1
-            self.render('task_detail.html',task=task_details,logs=logs,jobs=jobs,passkey=passkey)
+            self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
         elif status:
-
             tasks = yield self.db_call('web_get_tasks_details',status=status,
                                        dataset_id=dataset_id)
             if isinstance(tasks,Exception):
