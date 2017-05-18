@@ -816,7 +816,7 @@ class Job(PublicHandler):
             if ret:
                 job_details = ret
             else:
-                job_details = []
+                job_details = {}
             self.render('job_detail.html', job=job_details, passkey=passkey)
         else:
             if dataset_id and dataset_id.isdigit():
