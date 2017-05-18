@@ -47,11 +47,11 @@
         {% for task in job['tasks'] %}
         <tr>
             <td><a href="/task/{{ url_escape(task['task_id']) }}">{{ task['name'] }}</a></td>
-            <td>{{ 'GPU' if 'gpu' in task['requirements'] else 'GPU' }}</td>
+            <td>{{ 'GPU' if 'gpu' in task['requirements'] else 'CPU' }}</td>
             <td>{{ task['status'] }}</td>
             <td>{{ task['failures'] }}</td>
-            <td>{{ task['walltime'] }}</td>
-            <td>{{ task['walltime_err'] }}</td>
+            <td>{{ '{:.2f}'.format(task['walltime']/3600) }}</td>
+            <td>{{ '{:.2f}'.format(task['walltime_err']/3600) }}</td>
         </tr>
         {% end %}
     </table>
