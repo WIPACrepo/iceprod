@@ -814,9 +814,9 @@ class Job(PublicHandler):
             if isinstance(ret,Exception):
                 raise ret
             if ret:
-                job_details = ret.values()[0]
+                job_details = ret
             else:
-                job_details = None
+                job_details = []
             self.render('job_detail.html', job=job_details, passkey=passkey)
         else:
             if dataset_id and dataset_id.isdigit():
