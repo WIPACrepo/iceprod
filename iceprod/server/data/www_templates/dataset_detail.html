@@ -38,6 +38,17 @@
 </div>
 {% end %}
 
+<h2>Jobs</h2>
+
+<div class="jobs">
+{% for s in jobs %}
+<div>
+  <div style="display:inline;width:40px"><a href="/job?status={{ url_escape(s) }}&dataset_id={{ url_escape(dataset_id) }}">{{ s }}</a></div>
+  <div style="display:inline;width:40px">{{ jobs[s] }}</div>
+</div>
+{% end %}
+</div>
+
 <h2>Tasks</h2>
 
 <div class="tasks">
