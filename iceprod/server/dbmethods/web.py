@@ -412,7 +412,7 @@ class web(_Methods_Base):
                 job_statuses[tmp['status']].append(tmp)
 
         for v in job_statuses.values():
-            v.sort(key=lambda j:j['index'])
+            v.sort(key=lambda j:j['job_index'])
         raise tornado.gen.Return(job_statuses)
 
     @tornado.gen.coroutine
