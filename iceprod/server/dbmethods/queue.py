@@ -476,9 +476,9 @@ class queue(_Methods_Base):
 
                         # make job
                         job_id = yield self.parent.db.increment_id('job')
-                        sql = 'insert into job (job_id, status, job_index, '
+                        sql = 'insert into job (job_id, dataset_id, status, job_index, '
                         sql += 'status_changed) values (?,?,?,?)'
-                        bindings = (job_id, 'processing', job_index, now)
+                        bindings = (job_id, dataset, 'processing', job_index, now)
                         db_updates_sql.append(sql)
                         db_updates_bindings.append(bindings)
 

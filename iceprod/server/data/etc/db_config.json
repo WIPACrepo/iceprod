@@ -62,6 +62,7 @@
         ],
         "job": [
             ["job_id", "str"],
+            ["dataset_id", "str"],
             ["status", "str"],
             ["job_index", "int", "index of the job within the dataset"],
             ["status_changed", "str", "datetime"]

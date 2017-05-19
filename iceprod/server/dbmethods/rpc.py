@@ -868,7 +868,7 @@ class rpc(_Methods_Base):
             raise tornado.gen.Return({})
         elif not isinstance(datasets,dict):
             raise Exception('queue_get_queueing_datasets() did not return a dict')
-        
+
         groups = yield self.rpc_get_groups()
         datasets = dataset_prio.apply_group_prios(datasets,
                 groups=groups, filters=filters)
