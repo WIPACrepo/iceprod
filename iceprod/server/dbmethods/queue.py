@@ -477,7 +477,7 @@ class queue(_Methods_Base):
                         # make job
                         job_id = yield self.parent.db.increment_id('job')
                         sql = 'insert into job (job_id, dataset_id, status, job_index, '
-                        sql += 'status_changed) values (?,?,?,?)'
+                        sql += 'status_changed) values (?,?,?,?,?)'
                         bindings = (job_id, dataset, 'processing', job_index, now)
                         db_updates_sql.append(sql)
                         db_updates_bindings.append(bindings)
@@ -755,7 +755,7 @@ class queue(_Methods_Base):
                 bindings = tuple(job_ids)
                 ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
-                    logger.warn('failed to find job with known job_id %r', list(job_ids))
+                    logger.warn('failed to find job with known job_id %r', job_ids)
                     raise Exception('no job_index')
                 for job_id,job_index in ret:
                     for task_id in job_ids[job_id]:
