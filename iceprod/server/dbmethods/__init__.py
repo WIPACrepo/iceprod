@@ -242,7 +242,7 @@ class _Methods_Base():
                          table,input_row)
             raise
 
-    def _bulk_select(self, sql, bindings):
+    def _bulk_select(self, sql, bindings, extra_bindings=None):
         """
         Select many items by id.
 
@@ -251,6 +251,7 @@ class _Methods_Base():
         Args:
             sql (str): An sql template
             bindings (iterable): The bindings to iterate over
+            extra_bindings (iterable): Extra bindings to add to each query
 
         Returns:
             list: A list of :class:`Future` objects
@@ -263,6 +264,8 @@ class _Methods_Base():
             logger.info('bulk select %s %d',sql,len(bindings2))
             bindings = bindings[990:]
             sql2 = sql%(','.join('?' for _ in bindings2))
+            if extra_bindings:
+                bindings2.extend(extra_bindings)
             ret.append(self.parent.db.query(sql2, bindings2))
         return ret
 

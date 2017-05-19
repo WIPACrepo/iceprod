@@ -573,7 +573,7 @@ class queue(_Methods_Base):
         raise tornado.gen.Return(datasets)
 
     @tornado.gen.coroutine
-    def queue_get_queueing_tasks(self, dataset_prios, gridspec=None, num=20,
+    def queue_get_queueing_tasks(self, dataset_prios, num=20,
                                  resources=None, gridspec_assignment=None,
                                  global_queueing=False):
         """
@@ -581,7 +581,6 @@ class queue(_Methods_Base):
 
         Args:
             dataset_prios (dict): {dataset_id:priority} where sum(priorities)=1
-            gridspec (str): (optional) the grid to queue on
             num (int): (optional) number of tasks to queue
             resources (dict): (optional) available resources on grid
             gridspec_assignment (str): (optional) the grid to assign the tasks to
@@ -592,40 +591,31 @@ class queue(_Methods_Base):
         """
         if dataset_prios is None or not isinstance(dataset_prios,dict):
             raise Exception('dataset_prios not a dict')
-        logger.info('queue() num=%r, global=%r, prios=%r, gridspec=%r, gridspec_assign=%r, resources=%r',
-                     num, global_queueing, dataset_prios, gridspec, gridspec_assignment, resources)
-        
+        logger.info('queue() num=%r, global=%r, prios=%r, gridspec_assign=%r, resources=%r',
+                     num, global_queueing, dataset_prios, gridspec_assignment, resources)
+
         with (yield self.parent.db.acquire_lock('queue')):
             # get all tasks for processing datasets so we can do dependency check
             try:
-                sql = 'select dataset_id, task_id, task_status '
-                sql += 'from search where dataset_id in ('
-                sql += ','.join(['?' for _ in dataset_prios]) + ')'
-                bindings = tuple(dataset_prios)
-                if gridspec:
-                    sql += 'and gridspec = ? '
-                    bindings += (gridspec,)
-                ret = yield self.parent.db.query(sql, bindings)
-                tasks = {}
-                for dataset, task_id, status in ret:
-                    tasks[task_id] = {'dataset':dataset, 'status':status}
-                if not tasks:
-                    raise tornado.gen.Return({})
-                task_rel_ids = {}
-                sql = 'select task_rel_id, requirements from task_rel '
+                sql = 'select task_rel_id, dataset_id, requirements from task_rel '
                 sql += 'where dataset_id in (%s)'
+                task_rel_ids = {}
                 for f in self._bulk_select(sql, dataset_prios):
-                    for task_rel_id, reqs in (yield f):
-                        task_rel_ids[task_rel_id] = json_decode(reqs)
-                sql = 'select task_id, depends, requirements, task_rel_id '
+                    for task_rel_id, dataset_id, reqs in (yield f):
+                        if reqs:
+                            reqs = json_decode(reqs)
+                        task_rel_ids[task_rel_id] = (dataset_id, reqs)
+                if not task_rel_ids:
+                    raise tornado.gen.Return({})
+
+                sql = 'select task_id, status, depends, requirements, task_rel_id '
                 sql += 'from task where task_rel_id in (%s)'
+                tasks = {}
                 datasets = {k:{} for k in dataset_prios}
                 for f in self._bulk_select(sql, task_rel_ids):
-                    for task_id, depends, reqs, task_rel_id in (yield f):
-                        if task_id not in tasks:
-                            continue
-                        dataset = tasks[task_id]['dataset']
-                        status = tasks[task_id]['status']
+                    for task_id, status, depends, reqs, task_rel_id in (yield f):
+                        dataset, task_rel_reqs = task_rel_ids[task_rel_id]
+                        tasks[task_id] = {'dataset':dataset, 'status':status}
                         if (status == 'idle' or
                             ((not global_queueing) and status == 'waiting')):
                             for dep in depends.split(','):
@@ -747,6 +737,9 @@ class queue(_Methods_Base):
             job_ids = {}
             for row in ret:
                 tmp = self._list_to_dict('search',row)
+                if tmp['dataset_id'] not in dataset_debug:
+                    logger.warn('found a bad dataset: %r', tmp['dataset_id'])
+                    continue
                 tmp['jobs_submitted'] = dataset_debug[tmp['dataset_id']][0]
                 tmp['debug'] = dataset_debug[tmp['dataset_id']][1]
                 tmp['reqs'] = datasets[tmp['dataset_id']][tmp['task_id']][1]

@@ -1402,20 +1402,14 @@ class dbmethods_queue_test(dbmethods_base):
         dataset_prios = {'d1':1}
         yield self.set_tables(tables)
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
-
-        ret_should_be = {'t1':dict(tables['search'][0])}
-        ret_should_be['t1']['task_status'] = 'queued'
-        ret_should_be['t1']['debug'] = tables['dataset'][0]['debug']
-        ret_should_be['t1']['reqs'] = tables['task'][0]['requirements']
-        ret_should_be['t1']['job'] = tables['job'][0]['job_index']
-        ret_should_be['t1']['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
-        self.assertEqual(ret, ret_should_be)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,1)
+        self.assertEqual(len(ret), 1)
+        self.assertIn(list(ret)[0], [t['task_id'] for t in tables['task']])
 
         # no tasks
         yield self.set_tables({'search':[],'task':[]})
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,1)
         self.assertEqual(ret, {})
 
         # no tasks sql error
@@ -1423,7 +1417,7 @@ class dbmethods_queue_test(dbmethods_base):
         self.set_failures([True])
 
         try:
-            ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
+            ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,1)
         except:
             pass
         else:
@@ -1438,7 +1432,7 @@ class dbmethods_queue_test(dbmethods_base):
         self.set_failures(None)
 
         try:
-            ret = yield self.db['queue_get_queueing_tasks'](None,gridspec,1)
+            ret = yield self.db['queue_get_queueing_tasks'](None,1)
         except:
             pass
         else:
@@ -1447,16 +1441,9 @@ class dbmethods_queue_test(dbmethods_base):
         # several tasks in same dataset
         yield self.set_tables(tables)
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,1)
-
-        ret_should_be = {x['task_id']:dict(x) for x in tables['search'][:1]}
-        for k in ret_should_be:
-            ret_should_be[k]['task_status'] = 'queued'
-            ret_should_be[k]['debug'] = tables['dataset'][0]['debug']
-            ret_should_be[k]['reqs'] = ''
-            ret_should_be[k]['job'] = tables['job'][0]['job_index']
-            ret_should_be[k]['jobs_submitted'] = tables['dataset'][0]['jobs_submitted']
-        self.assertEqual(ret, ret_should_be)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,1)
+        self.assertEqual(len(ret), 1)
+        self.assertIn(list(ret)[0], [t['task_id'] for t in tables['task']])
 
         # several tasks in diff dataset
         tables2 = {
@@ -1508,7 +1495,7 @@ class dbmethods_queue_test(dbmethods_base):
         dataset_prios = {'d1':1.1,'d2':1}
         yield self.set_tables(tables2)
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,3)
 
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't4'}
         for k in ret_should_be:
@@ -1523,7 +1510,7 @@ class dbmethods_queue_test(dbmethods_base):
         dataset_prios = {'d1':.2,'d2':.8}
         yield self.set_tables(tables2)
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,3)
 
         ret_should_be = {x['task_id']:dict(x) for x in tables2['search'] if x['task_id'] != 't3'}
         for k in ret_should_be:
@@ -1621,7 +1608,7 @@ class dbmethods_queue_test(dbmethods_base):
         dataset_prios = {'d1':1}
         yield self.set_tables(tables3)
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3)
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,3)
         self.assertEqual(ret, {})
 
         # testing resources
@@ -1660,7 +1647,7 @@ class dbmethods_queue_test(dbmethods_base):
         yield self.set_tables(tables4)
         resources = {'cpu':200,'gpu':10}
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3,
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,3,
                                                         resources=resources)
 
         ret_should_be = {x['task_id']:dict(x) for x in tables4['search']}
@@ -1676,7 +1663,7 @@ class dbmethods_queue_test(dbmethods_base):
         yield self.set_tables(tables4)
         resources = {'none':None}
 
-        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,gridspec,3,
+        ret = yield self.db['queue_get_queueing_tasks'](dataset_prios,3,
                                                         resources=resources)
         self.assertEqual(ret, {})
 
