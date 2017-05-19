@@ -624,8 +624,8 @@ class queue(_Methods_Base):
                             else:
                                 if reqs:
                                     reqs = json_decode(reqs)
-                                elif task_rel_ids[task_rel_id]:
-                                    reqs = task_rel_ids[task_rel_id]
+                                else:
+                                    reqs = task_rel_reqs
                                 datasets[dataset][task_id] = (depends,reqs,task_rel_id)
             except:
                 logger.info('error getting processing tasks', exc_info=True)
