@@ -455,17 +455,21 @@ class BaseGrid(object):
                 default_resource[k] = len(default_resource[k])
         for t in tasks:
             values = {}
-            for k in t['reqs']:
-                if k in default_resource and t['reqs'][k]:
-                    try:
-                        if isinstance(default_resource[k], int):
-                            values[k] = int(t['reqs'][k])
-                        elif isinstance(default_resource[k], float):
-                            values[k] = float(t['reqs'][k])
-                        else:
-                            values[k] = t['reqs'][k]
-                    except:
-                        logger.warn('bad reqs value for task %r', t)
+            try:
+                for k in t['reqs']:
+                    if k in default_resource and t['reqs'][k]:
+                        try:
+                            if isinstance(default_resource[k], int):
+                                values[k] = int(t['reqs'][k])
+                            elif isinstance(default_resource[k], float):
+                                values[k] = float(t['reqs'][k])
+                            else:
+                                values[k] = t['reqs'][k]
+                        except:
+                            logger.warn('bad reqs value for task %r', t)
+            except TypeError:
+                logger.warn('t[reqs]: %r',t['reqs'])
+                raise
             resource = deepcopy(default_resource)
             resource.update(values)
             yield resource
