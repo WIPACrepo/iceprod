@@ -98,6 +98,9 @@ class schedule(module.module):
         proxy = SiteGlobusProxy(**proxy_kwargs)
         proxy.update_proxy()
 
+        self.scheduler.schedule('every 10 minutes',
+                self.modules['db']['queue_buffer_jobs_tasks'])
+
         self.scheduler.schedule('every 5 minutes', master_grid.check_iceprod)
 
         self.scheduler.schedule('every 1 days',

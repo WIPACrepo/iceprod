@@ -314,15 +314,14 @@ class queue(_Methods_Base):
             yield self._send_to_master(('task',task,nowstr(),sql,bindings))
 
     @tornado.gen.coroutine
-    def queue_buffer_jobs_tasks(self, gridspec=None, num_tasks=100):
+    def queue_buffer_jobs_tasks(self, gridspec=None, num_jobs=1000):
         """
         Create a buffer of jobs and tasks ahead of queueing.
 
         Args:
             gridspec (str or iterable): Single or multiple gridspecs to match.
                                         `None` for global queueing.
-            num_tasks (int): Number of tasks to buffer (rounds up to buffer
-                             a full job at once).
+            num_jobs (int): Number of jobs to buffer.
         """
         now = nowstr()
         # get possible datasets to buffer from
@@ -368,6 +367,10 @@ class queue(_Methods_Base):
             for d in need_to_buffer:
                 if d in already_buffered:
                     need_to_buffer[d]['job_index'] = len(already_buffered[d])
+            num_jobs -= len(already_buffered)
+            if num_jobs < 1:
+                logger.info('already buffered enough jobs')
+                return
 
             # get task_rels for buffering datasets
             task_rel_ids = {}
@@ -421,7 +424,7 @@ class queue(_Methods_Base):
                     db_updates_sql = []
                     db_updates_bindings = []
 
-                    while num_tasks > 0 and job_index < total_jobs:
+                    while num_jobs > 0 and job_index < total_jobs:
                         # figure out the task dependencies for the tasks in
                         # the current job
                         depends = []
@@ -524,7 +527,7 @@ class queue(_Methods_Base):
                             db_updates_bindings.append(bindings2)
 
                         job_index += 1
-                        num_tasks -= len(task_rels)
+                        num_jobs -= 1
 
                     # write to database
                     yield self.parent.db.query(db_updates_sql, db_updates_bindings)
