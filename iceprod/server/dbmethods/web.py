@@ -374,16 +374,16 @@ class web(_Methods_Base):
     @tornado.gen.coroutine
     def web_get_jobs_by_status(self, status=None, dataset_id=None):
         """
-        Get jobs in each state.
+        Get basic job info.
 
         Args:
             status (str): status to restrict by
             dataset_id (str): dataset id
 
         Returns:
-           dict: {status:[job_info]}
+           dict: [job_info]
         """
-        job_statuses = defaultdict(list)
+        jobs = []
 
         if dataset_id:
             sql = 'select job_id from search where dataset_id = ?'
@@ -398,7 +398,7 @@ class web(_Methods_Base):
                     tmp = self._list_to_dict(['job'],row)
                     if status and tmp['status'] != status:
                         continue
-                    job_statuses[tmp['status']].append(tmp)
+                    jobs.append(tmp)
         else:
             sql = 'select * from job'
             if status:
@@ -409,10 +409,10 @@ class web(_Methods_Base):
             ret = yield self.parent.db.query(sql, bindings)
             for row in ret:
                 tmp = self._list_to_dict(['job'],row)
-                job_statuses[tmp['status']].append(tmp)
+                jobs.append(tmp)
 
-        job_statuses.sort(key=lambda j:j['index'])
-        raise tornado.gen.Return(job_statuses)
+        jobs.sort(key=lambda j:j['job_index'])
+        raise tornado.gen.Return(jobs)
 
     @tornado.gen.coroutine
     def web_get_jobs_details(self, job_id):

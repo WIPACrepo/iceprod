@@ -43,7 +43,7 @@ class Daemon(object):
         self.stderr = stderr
         self.chdir = chdir
         self.umask = umask
-    
+
     def _daemonize(self):
         """
         do the UNIX double-fork magic, see Stevens' "Advanced 
@@ -108,7 +108,7 @@ class Daemon(object):
                 sys.stdout.write("OSError: %s\n" % err)
                 sys.exit(1)
         return True
-    
+
     def _sendsignalgrp(self,pid,sig,waitfordeath=True):
         """Send the specified signal to the process group"""
         try:
@@ -127,11 +127,11 @@ class Daemon(object):
                 sys.stdout.write("OSError: %s\n" % err)
                 sys.exit(1)
         return True
-    
+
     def delpid(self):
         sys.stdout.write("Deleting pidfile\n")
         os.remove(self.pidfile)
-    
+
     def getpid(self):
         """Get the pid from the pidfile"""
         try:
@@ -142,7 +142,7 @@ class Daemon(object):
             pid = None
             pgrp = None
         return (pid,pgrp)
-    
+
     def start(self):
         """Start the daemon"""
         pid,pgrp = self.getpid()
@@ -162,7 +162,8 @@ class Daemon(object):
             sys.stderr.write(message % self.pidfile)
             return
         if not self._sendsignal(pid,signal.SIGINT):
-            raise Exception("Failed to stop daemon.  Try using kill.")
+            if not self._sendsignal(pid,signal.SIGQUIT):
+                raise Exception("Failed to stop daemon.  Try using kill.")
 
     def kill(self):
         """Kill the daemon"""

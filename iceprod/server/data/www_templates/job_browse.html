@@ -22,8 +22,8 @@
         <td>{{ j['status_changed'] }}</td>
         <td>
         {% if (current_user) %}
-        <a href="javascript:call("reset_job", '{{ j[\'job_id\'] }}');">Reset</a>
-        <a href="javascript:call("suspend_job", '{{ j[\'job_id\'] }}');">Suspend</a>
+        <a href="javascript:call('reset_job', '{{ j['job_id'] }}');">Reset</a>
+        <a href="javascript:call('suspend_job', '{{ j['job_id'] }}');">Suspend</a>
         {% end %}
         </td>
     </tr>

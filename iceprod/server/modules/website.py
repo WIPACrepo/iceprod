@@ -730,10 +730,19 @@ class Dataset(PublicHandler):
             if isinstance(passkey,Exception):
                 raise passkey
 
+            ret = yield self.db_call('web_get_jobs_by_status',
+                                      dataset_id=dataset_id)
+            jobs = {}
+            for j in ret:
+                if j['status'] not in jobs:
+                    jobs[j['status']] = 1
+                else:
+                    jobs[j['status']] += 1
+
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
             task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
             self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                        dataset=dataset,tasks=tasks,task_info=task_info,passkey=passkey)
+                        dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,passkey=passkey)
         else:
             datasets = yield self.db_call('web_get_datasets',**filter_results)
             if isinstance(datasets,Exception):
@@ -761,27 +770,26 @@ class Task(PublicHandler):
             if dataset_id and dataset_id.isdigit():
                 try:
                     if int(dataset_id) < 10000000:
-                        ret = yield self.db_call('web_get_dataset_by_name',
-                                                 name=dataset_id)
-                        if ret and not isinstance(ret,Exception):
-                            dataset_id = ret
+                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
+                        ret = yield self.db_call('web_get_datasets_details',
+                                                 dataset_id=try_dataset_id)
+                        if isinstance(ret,Exception):
+                            ret = None
+                        elif ret:
+                            dataset_num = dataset_id
+                            dataset_id = try_dataset_id
                 except:
                     pass
             task_id = url_parts[0]
             ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
                                      dataset_id=dataset_id)
-            if isinstance(ret,Exception):
-                raise ret
             if ret:
                 task_details = ret.values()[0]
             else:
                 task_details = None
             logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
-            if isinstance(logs,Exception):
-                raise logs
             self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
         elif status:
-
             tasks = yield self.db_call('web_get_tasks_details',status=status,
                                        dataset_id=dataset_id)
             if isinstance(tasks,Exception):
@@ -822,10 +830,14 @@ class Job(PublicHandler):
             if dataset_id and dataset_id.isdigit():
                 try:
                     if int(dataset_id) < 10000000:
-                        ret = yield self.db_call('web_get_dataset_by_name',
-                                                 name=dataset_id)
-                        if ret and not isinstance(ret,Exception):
-                            dataset_id = ret
+                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
+                        ret = yield self.db_call('web_get_datasets_details',
+                                                 dataset_id=try_dataset_id)
+                        if isinstance(ret,Exception):
+                            ret = None
+                        elif ret:
+                            dataset_num = dataset_id
+                            dataset_id = try_dataset_id
                 except:
                     pass
             jobs = yield self.db_call('web_get_jobs_by_status', status=status,

@@ -472,8 +472,10 @@ class rpc(_Methods_Base):
         bindings = (task_id,)
         ret = yield self.parent.db.query(sql, bindings)
         if not ret:
-            raise Exception('task %s does not exist'%(task_id,))
-        ret = ret[0][0] in ('queued','processing')
+            logger.info('task %s does not exist', task_id)
+            ret = False
+        else:
+            ret = ret[0][0] in ('queued','processing')
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
@@ -866,7 +868,7 @@ class rpc(_Methods_Base):
             raise tornado.gen.Return({})
         elif not isinstance(datasets,dict):
             raise Exception('queue_get_queueing_datasets() did not return a dict')
-        
+
         groups = yield self.rpc_get_groups()
         datasets = dataset_prio.apply_group_prios(datasets,
                 groups=groups, filters=filters)
@@ -881,18 +883,6 @@ class rpc(_Methods_Base):
                 global_queueing=True)
         if not isinstance(tasks,dict):
             raise Exception('queue_get_queueing_tasks() did not return a dict')
-        elif len(tasks) < num/2:
-            logger.info('only %d tasks queued, buffering to get more',
-                        len(tasks))
-            num -= len(tasks)
-            yield self.parent.service['queue_buffer_jobs_tasks'](num_tasks=num)
-            logger.info('done buffering')
-            tasks2 = yield self.parent.service['queue_get_queueing_tasks'](
-                    dataset_prios, num=num, resources=resources,
-                    global_queueing=True)
-            if not isinstance(tasks2,dict):
-                raise Exception('queue_get_queueing_tasks() did not return a dict')
-            tasks.update(tasks2)
         logger.info('rpc_queue_master(): num tasks: %d', len(tasks))
         logger.debug('rpc_queue_master(): tasks: %r', tasks)
 
