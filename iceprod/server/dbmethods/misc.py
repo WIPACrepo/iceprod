@@ -68,74 +68,69 @@ class misc(_Methods_Base):
 
         tables = {}
 
-        sql = 'select depends from task where task_id in ('
-        sql += ','.join('?' for _ in task_ids)
-        sql += ')'
-        bindings = tuple(task_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if not ret:
-            raise tornado.gen.Return({})
-        for row in ret:
-            for d in row[0].split(','):
-                d = d.strip()
-                if d:
-                    task_ids.add(d)
-
-        sql = 'select * from search where task_id in ('
-        sql += ','.join('?' for _ in task_ids)
-        sql += ')'
-        bindings = tuple(task_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if not ret:
-            raise tornado.gen.Return({})
-
-        search_table = {}
+        sql = 'select depends from task where task_id in (%s)'
         keys = []
-        for row in ret:
-            search_table[row[0]] = self._list_to_dict('search',row)
-            if not keys:
-                keys = search_table[row[0]].keys()
-        tables['search'] = {'keys':keys,'values':ret}
+        values = []
+        for f in self._bulk_select(sql, task_ids):
+            ret = yield f
+            for row in ret:
+                for d in row[0].split(','):
+                    d = d.strip()
+                    if d:
+                        task_ids.add(d)
 
-        sql = 'select * from task where task_id in ('
-        sql += ','.join('?' for _ in task_ids)
-        sql += ')'
-        bindings = tuple(task_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        task_rel_ids = set()
-        if ret:
-            keys = []
+        job_ids = set()
+        dataset_ids = set()
+        sql = 'select * from search where task_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, task_ids):
+            ret = yield f
+            for row in ret:
+                tmp = self._list_to_dict('search',row)
+                if not keys:
+                    keys = list(tmp.keys())
+                job_ids.add(tmp['job_id'])
+                dataset_ids.add(tmp['dataset_id'])
+            values.extend(ret)
+        if keys and values:
+            tables['search'] = {'keys':keys,'values':values}
+        else:
+            raise tornado.gen.Return({})
+
+        sql = 'select * from task where task_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, task_ids):
+            ret = yield f
             for row in ret:
                 row2 = self._list_to_dict('task',row)
-                task_rel_ids.add(row2['task_rel_id'])
                 if not keys:
-                    keys = row2.keys()
-            tables['task'] = {'keys':keys,'values':ret}
+                    keys = list(row2.keys())
+            values.extend(ret)
+        if keys and values:
+            tables['task'] = {'keys':keys,'values':values}
 
-        job_ids = set(search_table[id]['job_id'] for id in task_ids)
-        sql = 'select * from job where job_id in ('
-        sql += ','.join('?' for _ in job_ids)
-        sql += ')'
-        bindings = tuple(job_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if ret:
-            keys = []
+        sql = 'select * from job where job_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, job_ids):
+            ret = yield f
             for row in ret:
                 if not keys:
-                    keys = self._list_to_dict('job',row).keys()
+                    keys = list(self._list_to_dict('job',row).keys())
                     break
-            tables['job'] = {'keys':keys,'values':ret}
+            values.extend(ret)
+        if keys and values:
+            tables['job'] = {'keys':keys,'values':values}
 
-        dataset_ids = set(search_table[id]['dataset_id'] for id in task_ids)
-        sql = 'select * from dataset where dataset_id in ('
-        sql += ','.join('?' for _ in dataset_ids)
-        sql += ')'
-        bindings = tuple(dataset_ids)
-        ret = yield self.parent.db.query(sql, bindings)
         categoryvalue_ids = set()
         group_ids = set()
-        if ret:
-            keys = []
+        sql = 'select * from dataset where dataset_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, dataset_ids):
+            ret = yield f
             for row in ret:
                 row2 = self._list_to_dict('dataset',row)
                 if row2['categoryvalue_ids']:
@@ -144,77 +139,80 @@ class misc(_Methods_Base):
                 if 'groupd_id' in row2 and row2['group_id']:
                     group_ids.add(row2['group_id'])
                 if not keys:
-                    keys = row2.keys()
-            tables['dataset'] = {'keys':keys,'values':ret}
+                    keys = list(row2.keys())
+            values.extend(ret)
+        if keys and values:
+            tables['dataset'] = {'keys':keys,'values':values}
 
         if group_ids:
-            sql = 'select * from groups where group_ids in ('
-            sql += ','.join('?' for _ in group_ids) + ')'
-            bindings = tuple(group_ids)
-            ret = yield self.parent.db.query(sql, bindings)
-            if ret:
-                keys = []
+            sql = 'select * from groups where group_ids in (%s)'
+            keys = []
+            values = []
+            for f in self._bulk_select(sql, group_ids):
+                ret = yield f
                 for row in ret:
                     if not keys:
-                        keys = self._list_to_dict('groups',row).keys()
+                        keys = list(self._list_to_dict('groups',row).keys())
                         break
-                tables['groups'] = {'keys':keys,'values':ret}
+                values.extend(ret)
+            if keys and values:
+                tables['groups'] = {'keys':keys,'values':values}
 
-        sql = 'select * from task_rel where dataset_id in ('
-        sql += ','.join('?' for _ in dataset_ids)
-        sql += ')'
-        bindings = tuple(dataset_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if ret:
-            keys = []
+        sql = 'select * from task_rel where dataset_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, dataset_ids):
+            ret = yield f
             for row in ret:
                 if not keys:
                     keys = self._list_to_dict('task_rel',row).keys()
                     break
-            tables['task_rel'] = {'keys':keys,'values':ret}
+            values.extend(ret)
+        if keys and values:
+            tables['task_rel'] = {'keys':keys,'values':values}
 
-        sql = 'select * from config where dataset_id in ('
-        sql += ','.join('?' for _ in dataset_ids)
-        sql += ')'
-        bindings = tuple(dataset_ids)
-        ret = yield self.parent.db.query(sql, bindings)
-        if ret:
-            keys = []
+        sql = 'select * from config where dataset_id in (%s)'
+        keys = []
+        values = []
+        for f in self._bulk_select(sql, dataset_ids):
+            ret = yield f
             for row in ret:
                 if not keys:
-                    keys = self._list_to_dict('config',row).keys()
+                    keys = list(self._list_to_dict('config',row).keys())
                     break
-            tables['config'] = {'keys':keys,'values':ret}
+            values.extend(ret)
+        if keys and values:
+            tables['config'] = {'keys':keys,'values':values}
 
         categorydef_ids = set()
         if categoryvalue_ids:
-            sql = 'select * from categoryvalue where categoryvalue_id in ('
-            sql += ','.join('?' for _ in categoryvalue_ids)
-            sql += ')'
-            bindings = tuple(categoryvalue_ids)
-            ret = yield self.parent.db.query(sql, bindings)
-            if ret:
-                keys = []
+            sql = 'select * from categoryvalue where categoryvalue_id in (%s)'
+            keys = []
+            values = []
+            for f in self._bulk_select(sql, categoryvalue_ids):
+                ret = yield f
                 for row in ret:
                     row2 = self._list_to_dict('categoryvalue',row)
                     categorydef_ids.add(row2['categorydef_id'])
                     if not keys:
-                        keys = row2.keys()
-                tables['categoryvalue'] = {'keys':keys,'values':ret}
+                        keys = list(row2.keys())
+                values.extend(ret)
+            if keys and values:
+                tables['categoryvalue'] = {'keys':keys,'values':values}
 
         if categorydef_ids:
-            sql = 'select * from categorydef where categorydef_id in ('
-            sql += ','.join('?' for _ in categorydef_ids)
-            sql += ')'
-            bindings = tuple(categorydef_ids)
-            ret = yield self.parent.db.query(sql, bindings)
-            if ret:
-                keys = []
+            sql = 'select * from categorydef where categorydef_id in (%s)'
+            keys = []
+            values = []
+            for f in self._bulk_select(sql, categorydef_ids):
+                ret = yield f
                 for row in ret:
                     if not keys:
-                        keys = self._list_to_dict('categorydef',row).keys()
+                        keys = list(self._list_to_dict('categorydef',row).keys())
                         break
-                tables['categorydef'] = {'keys':keys,'values':ret}
+                values.extend(ret)
+            if keys and values:
+                tables['categorydef'] = {'keys':keys,'values':values}
 
         raise tornado.gen.Return(tables)
 
