@@ -95,7 +95,7 @@ class rpc(_Methods_Base):
                 sql = 'select * from search where task_id = ? and task_status = ?'
                 bindings = (task_id,'queued')
                 ret = yield self.parent.db.query(sql, bindings)
-                if not ret:
+                if (not ret) or not ret[0]:
                     logger.info('task %s not valid, remove from task_lookup',
                                 task_id)
                     sql = 'delete from task_lookup where task_id = ?'
@@ -116,6 +116,7 @@ class rpc(_Methods_Base):
             ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
                 logger.info('ret: %r', ret)
+                logger.info('newtask: %r', newtask)
                 logger.warn('failed to find job with known job_id %r',
                             newtask['job_id'])
                 raise tornado.gen.Return(None)
