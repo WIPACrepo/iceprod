@@ -115,6 +115,7 @@ class rpc(_Methods_Base):
             bindings = (newtask['job_id'],)
             ret = yield self.parent.db.query(sql, bindings)
             if (not ret) or not ret[0]:
+                logger.info('ret: %r', ret)
                 logger.warn('failed to find job with known job_id %r',
                             newtask['job_id'])
                 raise tornado.gen.Return(None)
