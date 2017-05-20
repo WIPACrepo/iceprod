@@ -887,7 +887,9 @@ class rpc(_Methods_Base):
         logger.debug('rpc_queue_master(): tasks: %r', tasks)
 
         tables = yield self.parent.service['misc_get_tables_for_task'](tasks)
-        logger.info('rpc_queue_master(): tables: %r', tables)
+        for k in tables:
+            ids = [v[0] for v in tables[k]['values']]
+            logger.info('rpc_queue_master(): tables %r: %r', k, ids)
         raise tornado.gen.Return(tables)
 
     @tornado.gen.coroutine
