@@ -755,7 +755,11 @@ class queue(_Methods_Base):
                 bindings = tuple(job_ids)
                 ret = yield self.parent.db.query(sql, bindings)
                 if (not ret) or not ret[0]:
-                    logger.warn('failed to find job with known job_id %r', job_ids)
+                    logger.info('sql %r',sql)
+                    logger.info('bindings %r',bindings)
+                    logger.info('ret %r',ret)
+                    logger.warn('failed to find job with known job_id %r for task_id %r',
+                                job_ids, list(tasks.keys()))
                     raise Exception('no job_index')
                 for job_id,job_index in ret:
                     for task_id in job_ids[job_id]:
