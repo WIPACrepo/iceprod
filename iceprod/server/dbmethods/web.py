@@ -383,34 +383,19 @@ class web(_Methods_Base):
         Returns:
            dict: [job_info]
         """
-        jobs = []
-
+        where_query = {}
         if dataset_id:
-            sql = 'select job_id from search where dataset_id = ?'
-            bindings = (dataset_id,)
-            ret = yield self.parent.db.query(sql, bindings)
-            job_ids = [row[0] for row in ret]
+            where_query['dataset_id'] = dataset_id
+        if status:
+            where_query['status'] = status
 
-            sql = 'select * from job where job_id in (%s)'
-            for f in self._bulk_select(sql, job_ids):
-                ret = yield f
-                for row in ret:
-                    tmp = self._list_to_dict(['job'],row)
-                    if status and tmp['status'] != status:
-                        continue
-                    jobs.append(tmp)
-        else:
-            sql = 'select * from job'
-            if status:
-                sql += ' where status = ?'
-                bindings = (status,)
-            else:
-                bindings = tuple()
-            ret = yield self.parent.db.query(sql, bindings)
-            for row in ret:
-                tmp = self._list_to_dict(['job'],row)
-                jobs.append(tmp)
-
+        sql = 'select * from job'
+        if where_query:
+            sql += ' where '
+            sql += ' and '.join('{} = ?'.format(w) for w in where_query)
+        bindings = tuple(where_query.values())
+        ret = yield self.parent.db.query(sql, bindings)
+        jobs = [self._list_to_dict(['job'],row) for row in ret]
         jobs.sort(key=lambda j:j['job_index'])
         raise tornado.gen.Return(jobs)
 
