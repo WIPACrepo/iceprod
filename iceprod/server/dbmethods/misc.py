@@ -104,9 +104,9 @@ class misc(_Methods_Base):
         for f in self._bulk_select(sql, task_ids):
             ret = yield f
             for row in ret:
-                row2 = self._list_to_dict('task',row)
                 if not keys:
-                    keys = list(row2.keys())
+                    keys = list(self._list_to_dict('task',row).keys())
+                    break
             values.extend(ret)
         if keys and values:
             tables['task'] = {'keys':keys,'values':values}
