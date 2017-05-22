@@ -212,7 +212,6 @@ class cron(_Methods_Base):
 
         if (not self._is_master()) and clean_jobs:
             # we are not the master, and just cleaning these jobs
-            return # TODO: handle dependencies
             with (yield self.parent.db.acquire_lock('queue')):
                 sql = 'select task_id from search where job_id in (%s)'
                 task_ids = set()
