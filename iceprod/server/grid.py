@@ -12,7 +12,7 @@ import logging
 from copy import deepcopy
 from io import BytesIO
 from datetime import datetime,timedelta
-from collections import namedtuple, Counter
+from collections import namedtuple, Counter, defaultdict
 import itertools
 
 import tornado.gen
