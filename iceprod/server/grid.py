@@ -525,7 +525,11 @@ class BaseGrid(object):
 
         for r in groups2:
             try:
-                resources = {k:max(groups[r][k]) for k in groups[r]}
+                resources = defaultdict(list)
+                for x in groups[r]:
+                    for k in x:
+                        resources[k].append(x[k])
+                resources = {k:max(resources[k]) for k in resources}
                 logger.info('submitting %d pilots for resource %r',
                             groups2[r], resources)
                 for name in resources:
