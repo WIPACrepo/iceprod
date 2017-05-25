@@ -503,6 +503,20 @@ class BaseGrid(object):
             k = group_hasher(resources)
             groups[k].append(resources)
 
+        # get already queued requirements
+        pilots = yield self.modules['db']['queue_get_pilots'](active=False)
+        pilot_groups = Counter()
+        for p in pilots:
+            k = group_hasher(p['resources'])
+            pilot_groups[k] += 1
+
+        # remove already queued groups from consideration
+        groups_considered = Counter()
+        for k in groups:
+            n = len(groups[k]) - pilot_groups[k]
+            if n > 0:
+                groups_considered[k] = n
+
         # determine how many pilots to queue
         tasks_on_queue = self.queue_cfg['tasks_on_queue']
         queue_tot_max = tasks_on_queue[1] - self.grid_processing - self.grid_idle
@@ -514,16 +528,20 @@ class BaseGrid(object):
         self.statsd.incr('queueing_pilots', queue_num)
 
         # select at least one from each resource group
-        groups2 = Counter()
-        while queue_num > 0:
-            for r in groups:
-                if r not in groups2 or groups2[r] < len(groups[r]):
-                    groups2[r] += 1
+        groups_to_queue = Counter()
+        keys = set(groups_considered.keys())
+        while queue_num > 0 and keys:
+            for k in list(keys):
+                if groups_considered[k] < 1:
+                    del keys[k]
+                else:
+                    groups_to_queue[k] += 1
+                    groups_considered[k] -= 1
                     queue_num -= 1
                     if queue_num < 1:
                         break
 
-        for r in groups2:
+        for r in groups_to_queue:
             try:
                 resources = defaultdict(list)
                 for x in groups[r]:
@@ -531,14 +549,14 @@ class BaseGrid(object):
                         resources[k].append(x[k])
                 resources = {k:max(resources[k]) for k in resources}
                 logger.info('submitting %d pilots for resource %r',
-                            groups2[r], resources)
+                            groups_to_queue[r], resources)
                 for name in resources:
                     self.statsd.incr('pilot_resources.'+name, resources[name])
                 pilot = {'task_id': 'pilot',
                          'name': 'pilot',
                          'debug': debug,
                          'reqs': resources,
-                         'num': groups2[r],
+                         'num': groups_to_queue[r],
                 }
                 pilot_ids = yield self.modules['db']['queue_new_pilot_ids'](num=pilot['num'])
                 pilot['pilot_ids'] = pilot_ids

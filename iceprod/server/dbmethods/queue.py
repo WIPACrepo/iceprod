@@ -855,27 +855,37 @@ class queue(_Methods_Base):
         try:
             now = nowstr()
             s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
-            s += 'submit_dir, tasks) values (?,?,?,?,?)'
+            s += 'submit_dir, tasks, requirements) values (?,?,?,?,?,?)'
             sql = []
             bindings = []
             for i,pilot_id in enumerate(pilot['pilot_ids']):
                 grid_queue_id = str(pilot['grid_queue_id'])+'.'+str(i)
                 sql.append(s)
-                bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],''))
+                reqs = json_encode(pilot['reqs'])
+                bindings.append((pilot_id, grid_queue_id, now, pilot['submit_dir'],'',reqs))
             yield self.parent.db.query(sql, bindings)
         except Exception as e:
             logger.debug('error adding pilot', exc_info=True)
             raise
 
     @tornado.gen.coroutine
-    def queue_get_pilots(self):
+    def queue_get_pilots(self, active=None):
         """
-        Get all active pilots.
+        Get pilot information.
+
+        When `active=True`, get only pilots with tasks.
+        When `active=False`, get only idle pilots.
+        By default, get all pilots
+
+        Args:
+            active (bool): Get only pilots with active tasks (default: None).
 
         Returns:
             list: [pilot dict]
         """
         sql = 'select * from pilot'
+        if active is not None:
+            sql += ' where tasks '+('!=' if active else '=')+' "" '
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         pilots = []
@@ -883,6 +893,8 @@ class queue(_Methods_Base):
             tmp = self._list_to_dict('pilot',row)
             tmp['submit_time'] = str2datetime(tmp['submit_time'])
             tmp['tasks'] = tmp['tasks'].split(',')
+            if tmp['requirements']:
+                tmp['requirements'] = json_decode(tmp['requirements'])
             pilots.append(tmp)
         raise tornado.gen.Return(pilots)
 

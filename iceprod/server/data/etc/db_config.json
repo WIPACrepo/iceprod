@@ -169,7 +169,8 @@
             ["grid_queue_id", "str"],
             ["submit_time", "str", "datetime"],
             ["submit_dir", "Text"],
-            ["tasks", "Text", "csv list of processing task_ids"]
+            ["tasks", "Text", "csv list of processing task_ids"],
+            ["requirements", "Text", "json of {name:value}"]
         ],
         "user": [
             ["user_id", "str"],
