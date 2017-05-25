@@ -533,7 +533,7 @@ class BaseGrid(object):
         while queue_num > 0 and keys:
             for k in list(keys):
                 if groups_considered[k] < 1:
-                    del keys[k]
+                    keys.remove(k)
                 else:
                     groups_to_queue[k] += 1
                     groups_considered[k] -= 1
