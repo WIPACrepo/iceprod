@@ -507,7 +507,7 @@ class BaseGrid(object):
         pilots = yield self.modules['db']['queue_get_pilots'](active=False)
         pilot_groups = Counter()
         for p in pilots:
-            k = group_hasher(p['resources'])
+            k = group_hasher(p['requirements'])
             pilot_groups[k] += 1
 
         # remove already queued groups from consideration
