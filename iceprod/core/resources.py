@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import time
+import math
 from copy import deepcopy
 
 import subprocess
@@ -609,3 +610,17 @@ def du(path):
                 total += os.path.getsize(p)
     logger.info('du of %s finished: %r', path, total)
     return total
+
+def group_hasher(resources):
+    """
+    Hash a set of resources into a binned group.
+    """
+    ret = int(resources['cpu'])
+    if isinstance(resources['gpu'],(int,long,float)):
+        ret ^= int(resources['gpu'])*100
+    else:
+        ret ^= len(resources['gpu'])*100
+    ret ^= int(math.log(resources['memory'])*math.e)*1000
+    ret ^= int(math.log(resources['disk'])*math.e)*1000000
+    ret ^= int(resources['time'])*1000000000
+    return ret

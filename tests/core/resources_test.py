@@ -482,6 +482,23 @@ class resources_test(unittest.TestCase):
         os.symlink(os.path.join(du_dir,'subdir','a'), os.path.join(du_dir,'subdir','s3'))
         self.assertEqual(iceprod.core.resources.du(du_dir), 600)
 
+    @unittest_reporter(name='group_hasher() - defaults')
+    def test_300_group_hasher(self):
+        r = iceprod.core.resources.Resources.defaults
+        h = iceprod.core.resources.group_hasher(r)
+
+    @unittest_reporter(name='group_hasher() - mem range')
+    def test_301_group_hasher(self):
+        r = iceprod.core.resources.Resources.defaults.copy()
+
+        hashes = set()
+        for i in range(1,100):
+            r['memory'] = i
+            hashes.add(iceprod.core.resources.group_hasher(r))
+        logger.info('hashes: %r', hashes)
+        self.assertLess(len(hashes),15)
+        
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(resources_test))

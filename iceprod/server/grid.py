@@ -21,7 +21,7 @@ from tornado.concurrent import run_on_executor
 from iceprod.core import dataclasses
 from iceprod.core import functions
 from iceprod.core import serialization
-from iceprod.core.resources import Resources
+from iceprod.core.resources import Resources, group_hasher
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import module
 from iceprod.server import get_pkg_binary,GlobalID
@@ -495,14 +495,13 @@ class BaseGrid(object):
         if ('queue' in self.cfg and 'debug' in self.cfg['queue']
             and self.cfg['queue']['debug']):
             debug = True
-
-        # do resource grouping
-        groups = Counter()
+            
+        groups = defaultdict(list)
         if isinstance(tasks,dict):
             tasks = tasks.values()
         for resources in self._get_resources({'reqs':v} for v in tasks):
-            k = json_encode(resources)
-            groups[k] += 1
+            k = group_hasher(resources)
+            groups[k].append(resources)
 
         # determine how many pilots to queue
         tasks_on_queue = self.queue_cfg['tasks_on_queue']
@@ -518,24 +517,24 @@ class BaseGrid(object):
         groups2 = Counter()
         while queue_num > 0:
             for r in groups:
-                if r not in groups2 or groups2[r] < groups[r]:
+                if r not in groups2 or groups2[r] < len(groups[r]):
                     groups2[r] += 1
                     queue_num -= 1
                     if queue_num < 1:
                         break
 
-        for resources in groups2:
+        for r in groups2:
             try:
-                r = json_decode(resources)
+                resources = {k:max(groups[r][k]) for k in groups[r]}
                 logger.info('submitting %d pilots for resource %r',
-                            groups2[resources], r)
-                for name in r:
-                    self.statsd.incr('pilot_resources.'+name, r[name])
+                            groups2[r], resources)
+                for name in resources:
+                    self.statsd.incr('pilot_resources.'+name, resources[name])
                 pilot = {'task_id': 'pilot',
                          'name': 'pilot',
                          'debug': debug,
-                         'reqs': r,
-                         'num': groups2[resources],
+                         'reqs': resources,
+                         'num': groups2[r],
                 }
                 pilot_ids = yield self.modules['db']['queue_new_pilot_ids'](num=pilot['num'])
                 pilot['pilot_ids'] = pilot_ids
