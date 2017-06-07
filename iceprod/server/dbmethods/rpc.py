@@ -1177,3 +1177,8 @@ class rpc(_Methods_Base):
         ret = yield self.parent.db.query(sql, bindings)
         done = ret[0][0]
         raise tornado.gen.Return(done / float(total))
+
+    @tornado.gen.coroutine
+    def rpc_public_get_site_id(self):
+        raise tornado.gen.Return(self.parent.db.cfg['site_id'])
+
