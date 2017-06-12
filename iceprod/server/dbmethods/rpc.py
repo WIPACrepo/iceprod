@@ -1111,6 +1111,17 @@ class rpc(_Methods_Base):
         bindings = (dataset_id,)
         ret = yield self.parent.db.query(sql, bindings)
         raise tornado.gen.Return(ret[0][0] if len(ret)>0 else {})
+
+    @tornado.gen.coroutine
+    def rpc_public_get_all_config(self):
+        sql = 'SELECT dataset_id, config_data FROM config'
+        bindings = ()
+        ret = yield self.parent.db.query(sql, bindings)
+        config_data = {}
+        for row in ret:
+            config_data[row[0]] = json_decode(row[1])
+        raise tornado.gen.Return(config_data)
+
     @tornado.gen.coroutine
     def rpc_public_get_task_stats(self, task_id):
         sql = 'SELECT stat FROM task_stat WHERE task_id = ?;'
