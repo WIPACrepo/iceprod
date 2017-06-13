@@ -259,7 +259,7 @@ class Pilot(object):
     @gen.coroutine
     def run(self):
         """Run the pilot"""
-        errors = int(self.resources.total['cpu'])*5
+        errors = int(self.resources.total['cpu'])*10
         tasks_running = 0
         while self.running:
             while self.running:
@@ -270,6 +270,7 @@ class Pilot(object):
                     errors -= 1
                     if errors < 1:
                         self.running = False
+                        logger.warn('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
                                  errors, exc_info=True)
                     continue
@@ -279,6 +280,7 @@ class Pilot(object):
                     logger.info('no task available')
                     if not self.tasks:
                         self.running = False
+                        logger.warn('no task available, draining')
                     break
                 else:
                     try:
@@ -287,6 +289,7 @@ class Pilot(object):
                         errors -= 1
                         if errors < 1:
                             self.running = False
+                            logger.warn('errors over limit, draining')
                         logger.error('error getting task_id from config')
                         continue
                     try:
@@ -298,6 +301,7 @@ class Pilot(object):
                         errors -= 1
                         if errors < 1:
                             self.running = False
+                            logger.warn('errors over limit, draining')
                         logger.warn('error claiming resources %s', task_id,
                                     exc_info=True)
                         message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
@@ -311,6 +315,7 @@ class Pilot(object):
                         errors -= 1
                         if errors < 1:
                             self.running = False
+                            logger.warn('errors over limit, draining')
                         logger.warn('error creating task %s', task_id,
                                     exc_info=True)
                         message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
@@ -340,6 +345,7 @@ class Pilot(object):
                             errors -= 1
                             if errors < 1:
                                 self.running = False
+                                logger.warn('errors over limit, draining')
                         self.clean_task(task_id)
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
