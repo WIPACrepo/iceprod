@@ -143,7 +143,10 @@ class condor(grid.BaseGrid):
                     p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk)')
                     p('request_disk = !isUndefined(Disk) ? RequestResizedDisk : JobDisk')
                 if 'time' in task['reqs'] and task['reqs']['time']:
-                    p('Rank = Rank + (Target.TimeToLive - {})/86400'.format(int(task['reqs']['time'])*3600))
+                    # extra 10 min for pilot
+                    p('+OriginalTime = {}'.format(int(task['reqs']['time'])*3600+600))
+                    p('Rank = Rank + (Target.TimeToLive - OriginalTime)/86400')
+                    requirements.append('Target.TimeToLive > OriginalTime')
 
             for b in batch_opts:
                 p(b+'='+batch_opts[b])
