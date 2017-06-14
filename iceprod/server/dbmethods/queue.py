@@ -86,8 +86,9 @@ class queue(_Methods_Base):
                 bindings = (site_id,queues)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('site',site_id,nowstr())
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'site',site_id,nowstr())
                 try:
                     yield self.parent.db.query(sql3, bindings3)
                 except:
@@ -214,9 +215,10 @@ class queue(_Methods_Base):
                 
                 for tt in t:
                     if self._is_master():
-                        sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                        bindings3 = ('search',tt,now)
-                        bindings4 = ('task',tt,now)
+                        master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                        sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                        bindings3 = (master_update_history_id,'search',tt,now)
+                        bindings4 = (master_update_history_id,'task',tt,now)
                         yield self.parent.db.query([sql3,sql3],[bindings3,bindings4])
                     else:
                         bindings = (status,tt)
@@ -303,8 +305,9 @@ class queue(_Methods_Base):
         bindings = (submit_dir,task)
         yield self.parent.db.query(sql, bindings)
         if self._is_master():
-            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-            bindings3 = ('task',task,nowstr())
+            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+            sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+            bindings3 = (master_update_history_id,'task',task,nowstr())
             try:
                 yield self.parent.db.query(sql3, bindings3)
             except:
@@ -535,8 +538,9 @@ class queue(_Methods_Base):
                         sql = db_updates_sql[i]
                         bindings = db_updates_bindings[i]
                         if self._is_master():
-                            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                            bindings3 = (sql.split()[2],bindings[0],now)
+                            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                            sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                            bindings3 = (master_update_history_id,sql.split()[2],bindings[0],now)
                             try:
                                 yield self.parent.db.query(sql3, bindings3)
                             except:
@@ -790,9 +794,10 @@ class queue(_Methods_Base):
                 yield self.parent.db.query([sql,sql2], [bindings,bindings2])
                 if self._is_master():
                     for t in tasks:
-                        sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                        bindings3 = ('search',t,now)
-                        bindings4 = ('task',t,now)
+                        master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                        sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                        bindings3 = (master_update_history_id,'search',t,now)
+                        bindings4 = (master_update_history_id,'task',t,now)
                         try:
                             yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                         except:

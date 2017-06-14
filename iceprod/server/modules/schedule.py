@@ -93,20 +93,17 @@ class schedule(module.module):
                 self.io_loop, self.executor, self.statsd]
         master_grid = BaseGrid(*args)
 
-        # make sure the gridftp proxy is set up
-        proxy_kwargs = {}
-        if 'gridftp_cfgfile' in self.cfg['queue']:
-            proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
-        proxy = SiteGlobusProxy(**proxy_kwargs)
-        proxy.update_proxy()
-
         config = self.cfg['schedule']
-
-        self.scheduler.schedule(config['buffer_jobs_tasks'],
-                self.modules['db']['queue_buffer_jobs_tasks'])
-
+        self.scheduler.schedule(config['buffer_jobs_tasks'], self.modules['db']['queue_buffer_jobs_tasks'])
         self.scheduler.schedule(config['check_iceprod'], master_grid.check_iceprod)
 
-        self.scheduler.schedule(config['clean_completed_jobs'],
-                self.modules['db']['cron_clean_completed_jobs'])
-
+        try:
+            # make sure the gridftp proxy is set up
+            proxy_kwargs = {}
+            if 'gridftp_cfgfile' in self.cfg['queue']:
+                proxy_kwargs['cfgfile'] = self.cfg['queue']['gridftp_cfgfile']
+            proxy = SiteGlobusProxy(**proxy_kwargs)
+            proxy.update_proxy()
+            self.scheduler.schedule(config['clean_completed_jobs'], self.modules['db']['cron_clean_completed_jobs'])
+        except Exception:
+            logger.warning('Failed to schedule clean_completed_jobs')

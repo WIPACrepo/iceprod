@@ -282,4 +282,4 @@ class queue(module.module):
         buffer = self.cfg['queue']['task_buffer']
         if buffer > 0:
             yield self.modules['db']['queue_buffer_jobs_tasks'](gridspec=gridspecs,
-                                                                num_tasks=buffer)
+                                                                num_jobs=buffer)
