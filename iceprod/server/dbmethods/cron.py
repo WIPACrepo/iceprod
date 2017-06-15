@@ -107,9 +107,10 @@ class cron(_Methods_Base):
                 yield self.parent.db.query(multi_sql, multi_bindings)
 
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
+                    master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                    sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
                     for sql,bindings in zip(master_sql,master_bindings):
-                        bindings3 = ('dataset',bindings[-1],now)
+                        bindings3 = (master_update_history_id, 'dataset',bindings[-1],now)
                         try:
                             yield self.parent.db.query(sql, bindings3)
                         except Exception:
@@ -263,8 +264,9 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as errors',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('job',job_id,now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'job',job_id,now)
                 try:
                     yield self.parent.db.query(sql3, bindings3)
                 except Exception as e:
@@ -279,8 +281,9 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as suspended',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('job',job_id,now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id, table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'job',job_id,now)
                 try:
                     yield self.parent.db.query(sql3, bindings3)
                 except Exception as e:
@@ -297,8 +300,9 @@ class cron(_Methods_Base):
                 logger.info('job %s marked as complete',job_id)
                 bindings = (now,job_id)
                 yield self.parent.db.query(sql, bindings)
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('job',job_id,now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'job',job_id,now)
                 try:
                     yield self.parent.db.query(sql3, bindings3)
                 except Exception as e:

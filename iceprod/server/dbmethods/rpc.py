@@ -144,9 +144,11 @@ class rpc(_Methods_Base):
             bindings3 = (newtask['task_id'],)
             yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
             if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('search',newtask['task_id'],now)
-                bindings4 = ('task',newtask['task_id'],now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'search',newtask['task_id'],now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                bindings4 = (master_update_history_id,'task',newtask['task_id'],now)
                 try:
                     yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                 except:
@@ -223,9 +225,11 @@ class rpc(_Methods_Base):
             bindings2 = tuple(bindings2+[task_id])
             yield self.parent.db.query([sql,sql2],[bindings,bindings2])
             if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('search',newtask['task_id'],now)
-                bindings4 = ('task',newtask['task_id'],now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'search',newtask['task_id'],now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                bindings4 = (master_update_history_id,'task',newtask['task_id'],now)
                 try:
                     yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                 except:
@@ -245,8 +249,9 @@ class rpc(_Methods_Base):
         yield self.parent.db.query(sql, bindings)
         self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
         if self._is_master():
-            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-            bindings3 = ('task_stat',task_stat_id,now)
+            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+            sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+            bindings3 = (master_update_history_id,'task_stat',task_stat_id,now)
             try:
                 yield self.parent.db.query(sql3, bindings3)
             except:
@@ -404,10 +409,13 @@ class rpc(_Methods_Base):
                 yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
                 self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
                 if self._is_master():
-                    msql = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    mbindings1 = ('search',task_id,now)
-                    mbindings2 = ('task',task_id,now)
-                    mbindings3 = ('task_stat',task_stat_id,now)
+                    msql = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                    master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                    mbindings1 = (master_update_history_id,'search',task_id,now)
+                    master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                    mbindings2 = (master_update_history_id,'task',task_id,now)
+                    master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                    mbindings3 = (master_update_history_id,'task_stat',task_stat_id,now)
                     try:
                         yield self.parent.db.query([msql,msql,msql], [mbindings1,mbindings2,mbindings3])
                     except:
@@ -445,8 +453,9 @@ class rpc(_Methods_Base):
                 bindings = (task_log_id,task,name,data)
             ret = yield self.parent.db.query(sql, bindings)
             if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('task_log',task_log_id,nowstr())
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                bindings3 = (master_update_history_id,'task_log',task_log_id,nowstr())
                 try:
                     yield self.parent.db.query(sql3, bindings3)
                 except:
@@ -663,8 +672,9 @@ class rpc(_Methods_Base):
                     sql = db_updates_sql[i]
                     bindings = db_updates_bindings[i]
                     if self._is_master():
-                        sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                        bindings3 = (sql.split()[2],bindings[0],now)
+                        sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                        master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                        bindings3 = (master_update_history_id,sql.split()[2],bindings[0],now)
                         try:
                             yield self.parent.db.query(sql3, bindings3)
                         except:
@@ -705,8 +715,9 @@ class rpc(_Methods_Base):
         bindings = (config,dataset_id)
         yield self.parent.db.query(sql, bindings)
         if self._is_master():
-            sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-            bindings3 = ('dataset',dataset_id,nowstr())
+            sql3 = 'insert into master_update_history (table_name,update_index,timestamp) values (?,?,?,?)'
+            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+            bindings3 = (master_update_history_id,'dataset',dataset_id,nowstr())
             try:
                 yield self.parent.db.query(sql3, bindings3)
             except:

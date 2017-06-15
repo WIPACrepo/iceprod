@@ -277,8 +277,9 @@ class misc(_Methods_Base):
                 logger.warn('error updating master', exc_info=True)
                 raise
             else:
-                sql2 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings2 = (table,index,timestamp)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql2 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings2 = (master_update_history_id,table,index,timestamp)
                 try:
                     yield self.parent.db.query(sql2, bindings2)
                 except MySQLdb.Error:

@@ -79,8 +79,9 @@ class node(_Methods_Base):
                     logger.warn('error in node_update()', exc_info=True)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
-                sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                bindings3 = ('node',node_id,now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'node',node_id,now)
                 try:
                     ret = yield self.parent.db.query(sql3, bindings3)
                 except:
@@ -159,8 +160,9 @@ class node(_Methods_Base):
                 bindings = (json_encode(queues),site_id)
                 yield self.parent.db.query(sql, bindings)
                 if self._is_master():
-                    sql3 = 'replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)'
-                    bindings3 = ('site',site_id,nowstr())
+                    master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                    sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                    bindings3 = (master_update_history_id,'site',site_id,nowstr())
                     try:
                         yield self.parent.db.query(sql3, bindings3)
                     except:

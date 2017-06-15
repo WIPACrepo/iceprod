@@ -218,6 +218,7 @@ class queue(_Methods_Base):
                         master_update_history_id = yield self.parent.db.increment_id('master_update_history')
                         sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
                         bindings3 = (master_update_history_id,'search',tt,now)
+                        master_update_history_id = yield self.parent.db.increment_id('master_update_history')
                         bindings4 = (master_update_history_id,'task',tt,now)
                         yield self.parent.db.query([sql3,sql3],[bindings3,bindings4])
                     else:
