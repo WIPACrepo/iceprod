@@ -1201,6 +1201,28 @@ class rpc(_Methods_Base):
         raise tornado.gen.Return(done / float(total))
 
     @tornado.gen.coroutine
+    def rpc_public_get_all_dataset_completion(self):
+        # get total number of jobs in each dataset
+        sql = 'SELECT dataset_id, COUNT(task.task_id) FROM task_rel JOIN task ON task_rel.task_rel_id = task.task_rel_id GROUP BY dataset_id;'
+        bindings = ()
+        ret = yield self.parent.db.query(sql, bindings)
+        total = dict(ret)
+
+        # get number of completed jobs in each dataset
+        sql = 'SELECT dataset_id, COUNT(task.task_id) FROM task_rel JOIN task ON task_rel.task_rel_id = task.task_rel_id WHERE status = "complete" GROUP BY dataset_id;'
+        bindings = ()
+        ret = yield self.parent.db.query(sql, bindings)
+        done = dict(ret)
+        
+        # calc percent completion
+        completion = {}
+        for key in total:
+            d = done.get(key, 0)
+            completion[key] = d / total[key]
+
+        raise tornado.gen.Return(completion)
+
+    @tornado.gen.coroutine
     def rpc_public_get_site_id(self):
         raise tornado.gen.Return(self.parent.db.cfg['site_id'])
 
