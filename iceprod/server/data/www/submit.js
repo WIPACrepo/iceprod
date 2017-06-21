@@ -117,9 +117,9 @@ var Submission = (function( $ ) {
                 window.location = '/dataset/' + return_data;
             });
         },
-        update : function() {
+        update : function(description) {
             private_methods.clean_json();
-            RPCclient('update_dataset_config',{passkey:data.passkey,config:data.submit_data,dataset_id:data.dataset.dataset_id},callback=function(return_data){
+            RPCclient('update_dataset_config',{passkey:data.passkey,config:data.submit_data,dataset_id:data.dataset.dataset_id,description:description},callback=function(return_data){
                 $('#error').html('success');
             });
         },
@@ -590,7 +590,7 @@ var Submission = (function( $ ) {
                     }
                     private_methods.submit( njobs, $('#gridspec').val(), $('#description').val() );
                 } else if (data.edit)
-                    private_methods.update();
+                    private_methods.update($('#description').val());
             });
             var show_unique = function(tab_name){
                 var tabs = ['#basic_submit', '#expert_submit', '#advanced_submit'];

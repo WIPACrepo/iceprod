@@ -689,7 +689,7 @@ class rpc(_Methods_Base):
 
 
     @tornado.gen.coroutine
-    def rpc_update_dataset_config(self, dataset_id, config):
+    def rpc_update_dataset_config(self, dataset_id, config, description):
         """
         Update a dataset config
 
@@ -710,12 +710,16 @@ class rpc(_Methods_Base):
                 logger.info('error serializing config: %r', config,
                             exc_info=True)
                 raise
+        
+        sql = 'update dataset set description = ? where dataset_id = ?'
+        bindings = (description, dataset_id)
+        yield self.parent.db.query(sql, bindings)
 
         sql = 'update config set config_data = ? where dataset_id = ?'
         bindings = (config,dataset_id)
         yield self.parent.db.query(sql, bindings)
         if self._is_master():
-            sql3 = 'insert into master_update_history (table_name,update_index,timestamp) values (?,?,?,?)'
+            sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
             master_update_history_id = yield self.parent.db.increment_id('master_update_history')
             bindings3 = (master_update_history_id,'dataset',dataset_id,nowstr())
             try:
