@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from functools import partial,reduce
 import operator
-from collections import OrderedDict, Iterable
+from collections import OrderedDict, defaultdict, Counter, Iterable
 import math
 import random
 
@@ -131,6 +131,37 @@ class queue(_Methods_Base):
                     if status not in task_groups:
                         task_groups[status] = {}
                     task_groups[status][task_id] = tasks[task_id]
+        except:
+            logger.info('error getting active tasks', exc_info=True)
+            raise
+        else:
+            raise tornado.gen.Return(task_groups)
+
+    @tornado.gen.coroutine
+    def queue_get_active_dataset_tasks(self, gridspec=None):
+        """
+        Get a dict of active tasks (waiting,queued,processing,reset,resume)
+        grouped by by dataset and type.
+
+        Args:
+            gridspec (str): The gridspec (None for master)
+
+        Returns:
+            dict: {dataset: {name: {status: num} } }
+        """
+        try:
+            sql = 'select dataset_id, name, task_status from search where '
+            sql += 'task_status in ("waiting","queued","processing","reset","resume")'
+            if gridspec:
+                sql += ' and gridspec like ?'
+                bindings = ('%'+gridspec+'%',)
+            else:
+                bindings = tuple()
+            ret = yield self.parent.db.query(sql, bindings)
+
+            task_groups = defaultdict(lambda:defaultdict(Counter))
+            for dataset_id, name, status in ret:
+                task_groups[dataset_id][name][status] += 1
         except:
             logger.info('error getting active tasks', exc_info=True)
             raise
