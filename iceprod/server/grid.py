@@ -441,7 +441,7 @@ class BaseGrid(object):
         for d in datasets:
             for name in datasets[d]:
                 for status in datasets[d][name]:
-                    stat_name = d+'.'+name+'.'+status
+                    stat_name = 'datasets.'+d+'.'+name+'.'+status
                     self.statsd.gauge(stat_name, datasets[d][name][status])
 
     @run_on_executor
