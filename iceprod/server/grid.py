@@ -442,7 +442,7 @@ class BaseGrid(object):
             for name in datasets[d]:
                 for status in datasets[d][name]:
                     dataset_num = GlobalID.localID_ret(d,type='int')
-                    stat_name = 'datasets.'+dataset_num+'.'+name+'.'+status
+                    stat_name = 'datasets.'+str(dataset_num)+'.'+name+'.'+status
                     self.statsd.gauge(stat_name, datasets[d][name][status])
 
     @run_on_executor
