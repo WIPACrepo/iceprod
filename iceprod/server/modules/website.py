@@ -788,6 +788,7 @@ class Task(PublicHandler):
             else:
                 task_details = None
             logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
+            del task_details['task_status'] # task_status and status are repeats. Remove task_status.
             self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
         elif status:
             tasks = yield self.db_call('web_get_tasks_details',status=status,
