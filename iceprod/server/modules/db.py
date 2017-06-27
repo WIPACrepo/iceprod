@@ -204,9 +204,14 @@ class DBAPI(object):
         Returns:
             str: A table id
         """
-        #with (yield self.acquire_lock('increment_id')):
-        return self._increment_id_helper(self._inc_id_connection, table_name)
-        #raise tornado.gen.Return(ret)
+        try:
+            return self._increment_id_helper(self._inc_id_connection, table_name)
+        except DBResetError:
+            # connection needs a reset
+            logger.warn('resetting db connection')
+            self._inc_id_connection.close()
+            self._inc_id_connection = self._dbsetup()
+            return self._increment_id_helper(self._inc_id_connection, table_name)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
