@@ -39,6 +39,7 @@ class master_updater(module.module):
         self.buffer = []
         self.send_in_progress = False
         self.session = requests.Session()
+        self.save_timeout = None
 
     def start(self):
         """Start master updater"""
@@ -53,10 +54,12 @@ class master_updater(module.module):
 
     def stop(self):
         """Stop master updater"""
+        self.save_timeout = None
         super(master_updater,self).stop()
 
     def kill(self):
         """Kill master updater"""
+        self.save_timeout = None
         super(master_updater,self).kill()
 
     def _load(self):
@@ -64,7 +67,7 @@ class master_updater(module.module):
         with open(self.filename) as f:
             self.buffer = pickle.load(f)
 
-    def _save(self):
+    def _save_to_file(self):
         """Save to cache file"""
         p = os.path.basename(self.filename)
         d = os.path.dirname(os.path.abspath(self.filename))
@@ -76,6 +79,16 @@ class master_updater(module.module):
         except:
             logger.warn('did not save cache file', exc_info=True)
             os.remove(fname)
+        self.save_timeout = None
+
+    def _save(self):
+        """
+        Initiate save event.
+
+        Because saves are expensive, only do one per second.
+        """
+        if self.save_timeout is None:
+            self.save_timeout = self.io_loop.call_later(1, self._save_to_file)
 
     @tornado.gen.coroutine
     def add(self, obj):
