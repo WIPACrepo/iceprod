@@ -6,7 +6,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from functools import partial
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict, Counter
 
 import tornado.gen
 
@@ -147,22 +147,20 @@ class cron(_Methods_Base):
         if not datasets:
             return
 
-        # get the jobs by status and number of tasks
-        sql = 'select dataset_id, job_id, task_status, count(*) from search '
-        sql += ' group by job_id, task_status'
-        bindings = tuple()
-        ret = yield self.parent.db.query(sql, bindings)
-
-        jobs = defaultdict(lambda:[{},None])
-        for dataset_id,job_id,task_status,num in ret:
-            jobs[job_id][0][task_status] = num
-            jobs[job_id][1] = dataset_id
-
         # filter by jobs that need updating
         sql = 'select job_id from job where status = "processing" '
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         job_ids = [row[0] for row in ret]
+
+        # get the jobs by status and number of tasks
+        sql = 'select dataset_id, job_id, task_status from search '
+        sql += ' where job_id in (%s)'
+        jobs = defaultdict(lambda:[Counter(),None])
+        for f in self._bulk_select(sql, job_ids):
+            for dataset_id,job_id,task_status in (yield f):
+                jobs[job_id][0][task_status] += 1
+                jobs[job_id][1] = dataset_id
 
         complete_jobs = []
         errors_jobs = []
@@ -244,16 +242,6 @@ class cron(_Methods_Base):
 
         if self._is_master():
             # we are the master, and are updating job statuses
-            sql = 'select job_id from job where status = "processing" and job_id in (%s)'
-            bindings = complete_jobs+errors_jobs+suspended_jobs
-            job_ids = set()
-            for f in self._bulk_select(sql, bindings):
-                for row in (yield f):
-                    job_ids.add(row[0])
-            complete_jobs = [j for j in complete_jobs if j in job_ids]
-            errors_jobs = [j for j in errors_jobs if j in job_ids]
-            suspended_jobs = [j for j in suspended_jobs if j in job_ids]
-
             now = nowstr()
 
             # errors jobs
