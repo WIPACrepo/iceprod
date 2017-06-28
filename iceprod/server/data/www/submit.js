@@ -578,7 +578,14 @@ var Submission = (function( $ ) {
                     try {
                         data.submit_data = JSON.parse(text);
                     } catch (e) {
-                        $('#error').text('Failed to parse json: ' + e);
+                        try {
+                            jsonlint.parse(text);
+                             $('#error').text('Failed to parse json: ' + e);
+                        } catch(e) {
+                             $('#error').html('<pre>' + e + '</pre>');
+                        }
+
+
                         return;
                     }
                 }
