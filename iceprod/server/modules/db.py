@@ -193,7 +193,7 @@ class DBAPI(object):
             self.locks[lock_name] = tornado.locks.Lock()
         return self.locks[lock_name].acquire(timeout=timedelta(seconds=50))
 
-    @run_on_executor
+    @tornado.gen.coroutine
     def increment_id(self, table_name):
         """
         Increment the id of a table, returning the old value.
@@ -205,13 +205,14 @@ class DBAPI(object):
             str: A table id
         """
         try:
-            return self._increment_id_helper(self._inc_id_connection, table_name)
+            ret = self._increment_id_helper(self._inc_id_connection, table_name)
         except DBResetError:
             # connection needs a reset
             logger.warn('resetting db connection')
             self._inc_id_connection.close()
             self._inc_id_connection = self._dbsetup()
-            return self._increment_id_helper(self._inc_id_connection, table_name)
+            ret = self._increment_id_helper(self._inc_id_connection, table_name)
+        raise tornado.gen.Return(ret)
 
     @run_on_executor
     def query(self, sql, bindings=tuple()):
