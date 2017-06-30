@@ -102,8 +102,7 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
+                self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
                 sys.exit(1)
@@ -121,16 +120,18 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
+                self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
                 sys.exit(1)
         return True
 
     def delpid(self):
-        sys.stdout.write("Deleting pidfile\n")
-        os.remove(self.pidfile)
+        if os.path.exists(self.pidfile):
+            sys.stdout.write("Deleting pidfile\n")
+            os.remove(self.pidfile)
+        else:
+            sys.stdout.write("pidfile does not exist!\n")
 
     def getpid(self):
         """Get the pid from the pidfile"""
@@ -162,8 +163,8 @@ class Daemon(object):
             sys.stderr.write(message % self.pidfile)
             return
         if not self._sendsignal(pid,signal.SIGINT):
-            if not self._sendsignal(pid,signal.SIGQUIT):
-                raise Exception("Failed to stop daemon.  Try using kill.")
+            if not self._sendsignalgrp(pgrp,signal.SIGQUIT):
+                self._sendsignalgrp(pgrp,signal.SIGKILL)
 
     def kill(self):
         """Kill the daemon"""
