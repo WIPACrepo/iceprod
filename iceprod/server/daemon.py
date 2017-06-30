@@ -102,6 +102,7 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
+                sys.stdout.write('No such process\n')
                 self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
@@ -120,6 +121,7 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
+                sys.stdout.write('No such process\n')
                 self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
@@ -163,7 +165,9 @@ class Daemon(object):
             sys.stderr.write(message % self.pidfile)
             return
         if not self._sendsignal(pid,signal.SIGINT):
+            sys.stdout.write('SIGINT failed, try SIGQUIT\n')
             if not self._sendsignalgrp(pgrp,signal.SIGQUIT):
+                sys.stdout.write('SIGQUIT failed, try SIGKILL\n')
                 self._sendsignalgrp(pgrp,signal.SIGKILL)
 
     def kill(self):
