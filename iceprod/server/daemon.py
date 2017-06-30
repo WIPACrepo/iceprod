@@ -102,7 +102,6 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
-                sys.stdout.write('No such process\n')
                 self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
@@ -121,7 +120,6 @@ class Daemon(object):
         except OSError as err:
             err = str(err)
             if 'No such process' in err:
-                sys.stdout.write('No such process\n')
                 self.delpid()
             else:
                 sys.stdout.write("OSError: %s\n" % err)
@@ -132,8 +130,6 @@ class Daemon(object):
         if os.path.exists(self.pidfile):
             sys.stdout.write("Deleting pidfile\n")
             os.remove(self.pidfile)
-        else:
-            sys.stdout.write("pidfile does not exist!\n")
 
     def getpid(self):
         """Get the pid from the pidfile"""
