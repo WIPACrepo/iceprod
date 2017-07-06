@@ -383,7 +383,7 @@ if __name__ == '__main__':
                         help='Name of the task to run')
 
     args = vars(parser.parse_args())
-    print args
+    print(args)
 
     # check cfgfile
     if args['cfgfile'] is not None and not os.path.isfile(args['cfgfile']):
