@@ -630,7 +630,7 @@ def get_gpu_utilization_by_id(gpu_id):
         out = subprocess.check_output(['nvidia-smi','-q','-i',str(gpu_id),'-d','UTILIZATION,POWER'])
         for line in out.split('\n'):
             line = line.strip()
-            if not line:
+            if (not line) or ':' not in line:
                 continue
             k,v = [x.strip() for x in line.rsplit(':',1)]
             if k == 'Gpu':
