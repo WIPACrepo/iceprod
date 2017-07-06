@@ -13,7 +13,7 @@ from copy import deepcopy
 import subprocess
 import tempfile
 import shutil
-from collections import deque
+from collections import deque, defaultdict
 import logging
 
 try:
