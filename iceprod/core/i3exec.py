@@ -242,7 +242,7 @@ def runner(config, url, debug=False, offline=False):
                 while not resource_stop:
                     resources.check_claims()
                     time.sleep(1)
-            resource_thread = threading.Thread(track)
+            resource_thread = threading.Thread(target=track)
             resource_thread.start()
 
     # make exe Config
