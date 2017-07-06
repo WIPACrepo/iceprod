@@ -237,7 +237,7 @@ def runner(config, url, debug=False, offline=False):
             resource_stop = False
             resources = iceprod.core.resources.Resources(debug=debug)
             resources.claim('a')
-            resources.register_process(psutil.Process(), os.get_cwd())
+            resources.register_process(psutil.Process(), os.getcwd())
             def track():
                 while not resource_stop:
                     resources.check_claims()
