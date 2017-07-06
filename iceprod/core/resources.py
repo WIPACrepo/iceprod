@@ -159,7 +159,7 @@ class Resources:
         ret['time'] -= time.time()/3600
         return ret
 
-    def claim(self, task_id, resources):
+    def claim(self, task_id, resources=None):
         """
         Attempt to claim resources for a task.
 
