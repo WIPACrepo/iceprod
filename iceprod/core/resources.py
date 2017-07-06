@@ -402,7 +402,7 @@ class Resources:
                 pass
         gpu = 0
         if lookups['gpu']:
-            for gpu_id in self.claimed[task_id]['resources']['gpu']:
+            for gpu_id in set(self.claimed[task_id]['resources']['gpu']):
                 gpu_id = ''.join(filter(lambda x: x.isdigit() or x==',', gpu_id))
                 val = get_gpu_utilization_by_id(gpu_id)['utilization']
                 if val != -1:
@@ -473,7 +473,7 @@ class Resources:
         """
         if 'gpu' in resources and resources['gpu']:
             # strip all non-numbers:
-            val = ','.join(resources['gpu'])
+            val = ','.join(set(resources['gpu']))
             val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
             os.environ['CUDA_VISIBLE_DEVICES'] = val
             os.environ['GPU_DEVICE_ORDINAL'] = val
