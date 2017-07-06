@@ -83,7 +83,7 @@ class Resources:
             self.lookup_intervals = {
                 'children':10,
                 'cpu':0.1,
-                'gpu':0.2,
+                'gpu':1,
                 'memory':0.1,
                 'disk':30,
                 'time':1,
@@ -366,7 +366,7 @@ class Resources:
                 'memory_last_lookup': now-100000,
                 'disk': 0,
                 'disk_last_lookup': now-100000,
-                'gpu': deque(maxlen=self.num_values),
+                'gpu': 0,
                 'gpu_last_lookup': now-100000,
                 'create_time':process.create_time()/3600,
                 'time': 0,
