@@ -170,7 +170,7 @@ class Pilot(object):
                 reason = 'pilot SIGTERM'
 
             # clean up task
-            used_resources = self.resources.get_peak(task_id)
+            used_resources = self.resources.get_final(task_id)
             self.clean_task(task_id)
             message = reason
             message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
@@ -209,7 +209,7 @@ class Pilot(object):
                 logger.info('forwarding message for %s to %s', task_id, func_name)
                 cfg = Config(cfg)
                 if func_name in ('finishtask','taskerror'):
-                    kwargs['resources'] = self.resources.get_peak(task_id)
+                    kwargs['resources'] = self.resources.get_final(task_id)
                 try:
                     ret = getattr(exe_json, func_name)(cfg,*args,**kwargs)
                 except Exception as e:

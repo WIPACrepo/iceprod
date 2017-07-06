@@ -142,7 +142,8 @@ class Resources:
         self.claimed = {} # dict of task_id:{resource}
 
         #: maximum usage for each claim
-        self.used = {} # dict of task_id:{resource}
+        # dict of task_id:{resource:{max,cnt,avg}}
+        self.used = defaultdict(lambda:defaultdict(lambda:{'max':0.,'cnt':0,'avg':0.}))
 
     def get_available(self):
         """
@@ -252,6 +253,8 @@ class Resources:
                 for vv in v:
                     self.available[r].append(vv)
         del self.claimed[task_id]
+        if task_id in self.used:
+            del self.used[task_id]
 
     def register_process(self, task_id, process, tmpdir):
         """
@@ -292,15 +295,21 @@ class Resources:
                 continue
             usage_time = usage['time'] - self.history[task_id]['create_time']
             for r in usage:
-                overusage = usage[r]-claim['resources'][r]
+                if r == 'gpu':
+                    claim_r = 100*len(claim['resources'][r])
+                    avail_r = len(self.available[r])
+                else:
+                    claim_r = claim['resources'][r]
+                    avail_r = self.available[r]
+                overusage = usage[r]-claim_r
                 if overusage > 0:
-                    overusage_percent = usage[r]*1.0/claim['resources'][r]
+                    overusage_percent = usage[r]*1.0/claim_r
                     limit = self.overusage_limits[r]
                     if overusage_percent < limit['ignore']:
                         logger.info('ignoring overusage of %s for %s', r, task_id)
-                    elif (r == 'time' and usage[r] < self.available[r]):
+                    elif (r == 'time' and usage[r] < avail_r):
                         logger.info('managable overusage of time for %s', task_id)
-                    elif (r != 'time' and overusage < self.available[r]
+                    elif (r != 'time' and overusage < avail_r
                           and overusage_percent < limit['allowed']):
                         logger.info('managable overusage of %s for %s', r, task_id)
                     else:
@@ -309,12 +318,13 @@ class Resources:
                         break
             for r in usage:
                 v = usage[r]
+                u = self.used[task_id][r]
                 if r == 'time':
                     v = usage_time
-                if task_id not in self.used:
-                    self.used[task_id] = {r: v}
-                elif r not in self.used[task_id] or v > self.used[task_id][r]:
-                    self.used[task_id][r] = v
+                u['avg'] = (v + u['cnt'] * u['avg'])/(u['cnt']+1)
+                u['cnt'] += 1
+                if v > u['max']:
+                    u['max'] = v
         return ret
 
     def get_usage(self, task_id, force=False):
@@ -356,6 +366,8 @@ class Resources:
                 'memory_last_lookup': now-100000,
                 'disk': 0,
                 'disk_last_lookup': now-100000,
+                'gpu': deque(maxlen=self.num_values),
+                'gpu_last_lookup': now-100000,
                 'create_time':process.create_time()/3600,
                 'time': 0,
             }
@@ -368,7 +380,7 @@ class Resources:
             logger.debug('children_lookup')
 
         lookups = {}
-        for r in ('cpu','memory','disk'):
+        for r in ('cpu','memory','disk','gpu'):
             if force or now - task[r+'_last_lookup'] > self.lookup_intervals[r]:
                 task[r+'_last_lookup'] = now
                 lookups[r] = True
@@ -388,17 +400,22 @@ class Resources:
                         mem += p.memory_info().rss
             except Exception:
                 pass
+        gpu = 0
+        if lookups['gpu']:
+            for gpu_id in self.claimed[task_id]['gpu']:
+                gpu += get_gpu_utilization_by_id(gpu_id)['utilization']
         used_resources = {
             'cpu': cpu/100.0 if cpu else None,
             'memory': mem/1000000000.0 if mem else None,
             'disk': du(tmpdir)/1000000000.0 if lookups['disk'] else None,
+            'gpu':  gpu if lookups['gpu'] else None,
             'time': now/3600,
         }
         logger.debug('used_resources: %r', used_resources)
 
         # now average for those that need it
         ret = {}
-        for r in ('cpu','memory','disk','time'):
+        for r in ('cpu','memory','disk','gpu','time'):
             if isinstance(task[r], deque):
                 if used_resources[r]:
                     task[r].append(used_resources[r])
@@ -421,8 +438,28 @@ class Resources:
             dict: resources
         """
         if task_id not in self.used:
+            return {}
+        return {r:self.used[task_id][r]['max'] for r in self.used[task_id]}
+
+    def get_final(self, task_id):
+        """
+        Get final resource usage.
+
+        Args:
+            task_id (str): the task_id
+
+        Returns:
+            dict: resources
+        """
+        if task_id not in self.used:
             return None
-        return self.used[task_id]
+        ret = {}
+        for r in self.used[task_id]:
+            if r == 'gpu':
+                ret[r] = self.used[task_id][r]['avg']
+            else:
+                ret[r] = self.used[task_id][r]['max']
+        return ret
 
     @classmethod
     def set_env(cls, resources):
@@ -585,7 +622,22 @@ def get_time():
 
 def get_gpu_utilization_by_id(gpu_id):
     """Get gpu utilization based on gpu id"""
-    pass
+    ret = {'utilization':-1,'power':-1}
+    try:
+        out = subprocess.check_output("nvidia-smi -q -i %s -d UTILIZATION,POWER | grep 'Gpu\|Power Draw'"%(gpu_id,),shell=True)
+        logger.debug('nvidia-smi output:\n%s',out)
+        for line in out.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            k,v = [x.strip() for x in line.rsplit(':',1)]
+            if k == 'Gpu':
+                ret['utilization'] = int(v.replace('%','').strip())
+            elif k == 'Power Draw':
+                ret['power'] = float(v.replace('W','').strip())
+    except Exception:
+        logger.info('nvidia-smi failed for gpu %s', gpu_id)
+    return ret
 
 def du(path):
     """
