@@ -403,7 +403,10 @@ class Resources:
         gpu = 0
         if lookups['gpu']:
             for gpu_id in self.claimed[task_id]['resources']['gpu']:
-                gpu += get_gpu_utilization_by_id(gpu_id)['utilization']
+                gpu_id = ''.join(filter(lambda x: x.isdigit() or x==',', gpu_id))
+                val = get_gpu_utilization_by_id(gpu_id)['utilization']
+                if val != -1:
+                    gpu += val
         used_resources = {
             'cpu': cpu/100.0 if cpu else None,
             'memory': mem/1000000000.0 if mem else None,
