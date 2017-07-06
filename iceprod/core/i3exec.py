@@ -317,7 +317,7 @@ def runner(config, url, debug=False, offline=False):
         # check resources
         if offline and resources:
             resource_stop = True
-            resources_thread.join()
+            resource_thread.join()
             print('Resources:')
             r = resources.get_final()
             for k in r:
