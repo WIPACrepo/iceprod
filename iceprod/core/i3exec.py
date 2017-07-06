@@ -18,6 +18,8 @@ optional arguments:
   --task TASK           Name of the task to run
 """
 
+from __future__ import absolute_import, division, print_function
+
 import os
 import sys
 import logging
@@ -324,7 +326,7 @@ def runner(config, url, debug=False, offline=False):
                 print('  None')
             else:
                 for k in r:
-                    print(' ',k,':',r[k])
+                    print('  {}: {:.2f}'.format(k,r[k]))
         # upload log files to server
         try:
             if (not offline) and 'upload' in config['options']:
