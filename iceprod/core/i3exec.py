@@ -27,7 +27,7 @@ import signal
 from functools import partial
 import tempfile
 import shutil
-
+import threading
 
 from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
@@ -35,6 +35,7 @@ import iceprod.core.serialization
 import iceprod.core.exe
 import iceprod.core.exe_json
 import iceprod.core.pilot
+import iceprod.core.resources
 
 import iceprod.core.logger
 
@@ -226,6 +227,24 @@ def runner(config, url, debug=False, offline=False):
         # make sure steering exists in the config
         config['steering'] = iceprod.core.dataclasses.Steering()
 
+    if offline:
+        try:
+            import psutil
+        except ImportError:
+            resources = None
+        else:
+            # track resource usage in separate thread
+            resource_stop = False
+            resources = iceprod.core.resources.Resources(debug=debug)
+            resources.claim('a')
+            resources.register_process(psutil.Process(), os.get_cwd())
+            def track():
+                while not resource_stop:
+                    resources.check_claims()
+                    time.sleep(1)
+            resource_thread = threading.Thread(track)
+            resource_thread.start()
+
     # make exe Config
     cfg = iceprod.core.exe.Config(config=config)
 
@@ -295,6 +314,14 @@ def runner(config, url, debug=False, offline=False):
                 raise
     
     finally:
+        # check resources
+        if offline and resources:
+            resource_stop = True
+            resources_thread.join()
+            print('Resources:')
+            r = resources.get_final()
+            for k in r:
+                print(' ',k,':',r[k])
         # upload log files to server
         try:
             if (not offline) and 'upload' in config['options']:
