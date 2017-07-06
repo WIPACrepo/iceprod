@@ -319,7 +319,7 @@ def runner(config, url, debug=False, offline=False):
             resource_stop = True
             resource_thread.join()
             print('Resources:')
-            r = resources.get_final()
+            r = resources.get_final('a')
             for k in r:
                 print(' ',k,':',r[k])
         # upload log files to server
