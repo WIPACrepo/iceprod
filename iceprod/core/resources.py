@@ -402,7 +402,7 @@ class Resources:
                 pass
         gpu = 0
         if lookups['gpu']:
-            for gpu_id in self.claimed[task_id]['gpu']:
+            for gpu_id in self.claimed[task_id]['resources']['gpu']:
                 gpu += get_gpu_utilization_by_id(gpu_id)['utilization']
         used_resources = {
             'cpu': cpu/100.0 if cpu else None,
