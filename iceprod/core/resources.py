@@ -420,11 +420,11 @@ class Resources:
         ret = {}
         for r in ('cpu','memory','disk','gpu','time'):
             if isinstance(task[r], deque):
-                if used_resources[r]:
+                if used_resources[r] is not None:
                     task[r].append(used_resources[r])
                 ret[r] = 0 if not task[r] else sum(task[r])/len(task[r])
             else:
-                if used_resources[r]:
+                if used_resources[r] is not None:
                     task[r] = used_resources[r]
                 ret[r] = task[r]
         logger.debug('ret: %r', ret)
