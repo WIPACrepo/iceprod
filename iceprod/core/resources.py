@@ -411,7 +411,7 @@ class Resources:
             'cpu': cpu/100.0 if cpu else None,
             'memory': mem/1000000000.0 if mem else None,
             'disk': du(tmpdir)/1000000000.0 if lookups['disk'] else None,
-            'gpu':  gpu if lookups['gpu'] else None,
+            'gpu':  gpu/100.0 if lookups['gpu'] else None,
             'time': now/3600,
         }
         logger.debug('used_resources: %r', used_resources)
