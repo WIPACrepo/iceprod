@@ -204,6 +204,10 @@ class rpc(_Methods_Base):
         if 'domain' in stats and stats['domain']:
             self.parent.statsd.incr('finish_task.domain.'+stats['domain'].replace('.','_'),
                                     count=int(time_used) if time_used else 1)
+        if 'resources' in stats:
+            for r in stats['resources']:
+                self.parent.statsd.incr('task_resources.'+r,
+                                        count=stats['resources'][r])
 
         # add current time
         now = nowstr()
@@ -306,6 +310,10 @@ class rpc(_Methods_Base):
                 self.parent.statsd.incr('task_error.kill.upload_failure')
             elif 'module failed' in err:
                 self.parent.statsd.incr('task_error.kill.module_failure')
+        if 'resources' in error_info:
+            for r in error_info['resources']:
+                self.parent.statsd.incr('task_resources.'+r,
+                                        count=error_info['resources'][r])
         with (yield self.parent.db.acquire_lock('queue')):
             try:
                 sql = 'select failures, requirements, task_rel_id from task '
