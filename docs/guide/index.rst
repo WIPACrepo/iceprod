@@ -21,3 +21,4 @@ Topics
     datasets
     tasks
     jsonrpc
+    manually
