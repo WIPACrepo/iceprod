@@ -32,7 +32,7 @@
   
     <link rel="top" title="IceProd master documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server Details" href="index.html"/>
-        <link rel="next" title="Database Module" href="../modules/db.html"/>
+        <link rel="next" title="Roles" href="roles.html"/>
         <link rel="prev" title="Website" href="website.html"/> 
 
   
@@ -99,6 +99,7 @@
 <li class="toctree-l3"><a class="reference internal" href="async.html">Asynchronous Programming</a></li>
 <li class="toctree-l3"><a class="reference internal" href="website.html">Website</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">RPC Authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="roles.html">Roles</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../modules/db.html">Database Module</a></li>
@@ -154,7 +155,7 @@
 <h1>RPC Authorization<a class="headerlink" href="#rpc-authorization" title="Permalink to this headline">¶</a></h1>
 <p>After we&#8217;ve been authenticated, we need to be authorized.  This happens
 at the rpc method level.  There are several general categories,
-including public, login, group membership, role, username, etc.</p>
+including public, login, user, role, etc.</p>
 <dl class="docutils">
 <dt>Public Access</dt>
 <dd>Public rpc methods can be accessed by anyone.  These are usually read-only
@@ -162,14 +163,13 @@ and provide basic access.</dd>
 <dt>Login Access</dt>
 <dd>Methods that can be accessed by anyone with an account.  So everyone but
 the general public.  A very minor security bar.</dd>
-<dt>Group Access</dt>
-<dd>These rpc methods depend on the logged in user being a member of a group.
-Typically this is because a dataset has been marked private and is
-restricted to the group that submitted it.</dd>
+<dt>User Access</dt>
+<dd>Match against a user. Typically for modifying your own user account
+information.</dd>
 <dt>Role Access</dt>
-<dd>The only current role-based access is for administrators.</dd>
-<dt>Username Access</dt>
-<dd>Typically for modifying your own user account information.</dd>
+<dd>These rpc methods depend on the logged in user being a member of a role.
+Typically this is because a dataset has been marked private and is
+restricted to the role that submitted it.</dd>
 <dt>Site Access</dt>
 <dd>Another site (usually a slave instance) calling the method.
 Sites have special passkeys to allow this access.</dd>
@@ -183,31 +183,25 @@ Sites have special passkeys to allow this access.</dd>
 </pre></div>
 </div>
 <p>If you only need a logged in user, access is set up as:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_user</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
-<p>Specifc user names can also be used:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_user</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;john.doe&#39;</span><span class="p">])</span>
+<p>Specifc user ids can also be used:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;123&#39;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">rpc_logged_in</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">pass</span>
-</pre></div>
-</div>
-<p>Groups can be specified in a similar way:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_group</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;icetop&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">rpc_icetop_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>Role based access is similarly easy:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;admin&#39;</span><span class="p">]):</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;admin&#39;</span><span class="p">]):</span>
 <span class="k">def</span> <span class="nf">rpc_admin_func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
 </div>
 <p>Site access can be enabled with a flag:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">site_valid</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">site</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">rpc_site_foo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">pass</span>
 </pre></div>
@@ -216,7 +210,7 @@ Sites have special passkeys to allow this access.</dd>
 <h3>Dynamic Matching<a class="headerlink" href="#dynamic-matching" title="Permalink to this headline">¶</a></h3>
 <p>Non-static mappings are more difficult. A two-step solution is needed:</p>
 <ol class="arabic simple">
-<li>Get logged in user/group/role.</li>
+<li>Get logged in user/role.</li>
 <li>Verify that credential against the database.</li>
 </ol>
 <p>This can&#8217;t all be done in the decorator, so we need a helper function:</p>
@@ -233,25 +227,62 @@ Sites have special passkeys to allow this access.</dd>
     <span class="c"># set email address</span>
 </pre></div>
 </div>
-<p>Group checks are generally more difficult, involving a database lookup:</p>
+<p>Role checks are generally more difficult, involving a database lookup:</p>
 <div class="highlight-default"><div class="highlight"><pre><span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<span class="k">def</span> <span class="nf">_rpc_edit_dataset_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_group</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_rpc_edit_dataset_helper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">auth_roles</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Args:</span>
-<span class="sd">        auth_group (list): group_ids of logged in user</span>
+<span class="sd">        auth_roles (list): role_ids of logged in user</span>
 <span class="sd">        dataset_id (str): dataset to modify</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select groups_id from dataset where dataset_id = ?&#39;</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select group_id from dataset where dataset_id = ?&#39;</span>
     <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">auth_group</span><span class="p">)</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select name from groups where groups_id = ?&#39;</span>
+    <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],)</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select groups_prefix from role where role_id in (&#39;</span>
+    <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">auth_roles</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;)&#39;</span>
+    <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">auth_roles</span><span class="p">)</span>
+    <span class="n">ret2</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret2</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">success</span><span class="p">)</span>
 
-<span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_group</span><span class="o">=</span><span class="n">_rpc_edit_dataset_helper</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">rpc_edit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
-    <span class="c"># set email address</span>
+<span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="n">_rpc_edit_dataset_helper</span><span class="p">)</span>
+<span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<span class="k">def</span> <span class="nf">rpc_edit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="c"># edit dataset config</span>
 </pre></div>
 </div>
 </div>
+<div class="section" id="coroutines">
+<h3>Coroutines<a class="headerlink" href="#coroutines" title="Permalink to this headline">¶</a></h3>
+<p>Note in the above examples that we have occasionally used
+<span class="xref std std-ref">tornado.gen.coroutine</span> as a decorator.  Authorization can handle
+either normal functions or coroutines.  One key point is when the function
+to be authorized is a couroutine.  The coroutine decorator must go below
+the authorization decorator:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">auth_role</span><span class="o">=</span><span class="s">&#39;admin&#39;</span><span class="p">)</span>
+<span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<span class="k">def</span> <span class="nf">rpc_edit_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+    <span class="c"># edit dataset config</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="authorization-expression">
+<h2>Authorization Expression<a class="headerlink" href="#authorization-expression" title="Permalink to this headline">¶</a></h2>
+<p>If more than one condition is needed, the authorization expression comes
+into play:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="nd">@authorization</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="k">True</span><span class="p">,</span> <span class="n">expression</span><span class="o">=</span><span class="s">&#39;user or site&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">rpc_user_or_site</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>The expression replaces the keywords <cite>user</cite>, <cite>role</cite>, <cite>site</cite> with the
+evaluated authorizations, then evaluates the expression.  Since this is
+directly evaludated in python, no user input should ever go into this.</p>
+<p>The default expression is any supplied authorization and-ed together.</p>
 </div>
 </div>
 
@@ -262,7 +293,7 @@ Sites have special passkeys to allow this access.</dd>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../modules/db.html" class="btn btn-neutral float-right" title="Database Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="roles.html" class="btn btn-neutral float-right" title="Roles" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="website.html" class="btn btn-neutral" title="Website" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>

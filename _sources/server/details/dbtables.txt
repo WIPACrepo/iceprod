@@ -73,6 +73,7 @@ Tables
 **job**
 
 * job_id : str
+* dataset_id : str
 * status : str  :gray:`# possible statuses: processing, complete, suspended, errors`
 * job_index : int  :gray:`# index of the job within the dataset`
 * status_changed : str  :gray:`# datetime`
@@ -195,6 +196,7 @@ Tables
 * submit_time : str  :gray:`# datetime`
 * submit_dir : Text
 * tasks : Text  :gray:`# csv list of processing task_ids`
+* requirements : Text  :gray:`# json of {name:value}`
 
 **user**
 

@@ -132,7 +132,7 @@
 <span class="kn">from</span> <span class="nn">copy</span> <span class="k">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">io</span> <span class="k">import</span> <span class="n">BytesIO</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span><span class="n">timedelta</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 
 <span class="kn">import</span> <span class="nn">tornado.gen</span>
@@ -141,7 +141,7 @@
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">dataclasses</span>
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">serialization</span>
-<span class="kn">from</span> <span class="nn">iceprod.core.resources</span> <span class="k">import</span> <span class="n">Resources</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.resources</span> <span class="k">import</span> <span class="n">Resources</span><span class="p">,</span> <span class="n">group_hasher</span>
 <span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">module</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">get_pkg_binary</span><span class="p">,</span><span class="n">GlobalID</span>
@@ -197,7 +197,8 @@
 <div class="viewcode-block" id="BaseGrid.check_and_clean"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.BaseGrid.check_and_clean">[docs]</a>    <span class="k">def</span> <span class="nf">check_and_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check and Clean the Grid&quot;&quot;&quot;</span>
         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">()</span>
-        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_grid</span><span class="p">()</span></div>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_grid</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">()</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="BaseGrid.queue"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.BaseGrid.queue">[docs]</a>    <span class="k">def</span> <span class="nf">queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -214,7 +215,10 @@
             <span class="n">pilots</span> <span class="o">=</span> <span class="k">False</span>
         
         <span class="c"># calculate num tasks to queue</span>
-        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pilots</span> <span class="ow">and</span> <span class="s">&#39;pilots_on_queue&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">:</span>
+            <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;pilots_on_queue&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
         <span class="n">min_tasks</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">max_tasks</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">change</span> <span class="o">=</span> <span class="n">min_tasks</span>
@@ -550,6 +554,17 @@
 
         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delete_dirs</span><span class="p">(</span><span class="n">delete_dirs</span><span class="p">)</span></div>
 
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="BaseGrid.metrics"><a class="viewcode-back" href="../../../server/grid.html#iceprod.server.grid.BaseGrid.metrics">[docs]</a>    <span class="k">def</span> <span class="nf">metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;send metrics about queue status, if we haven&#39;t somewhere else&quot;&quot;&quot;</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_get_active_dataset_tasks&#39;</span><span class="p">](</span><span class="n">gridspec</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gridspec</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">[</span><span class="n">d</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">status</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="n">name</span><span class="p">]:</span>
+                    <span class="n">dataset_num</span> <span class="o">=</span> <span class="n">GlobalID</span><span class="o">.</span><span class="n">localID_ret</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
+                    <span class="n">stat_name</span> <span class="o">=</span> <span class="s">&#39;datasets.&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">dataset_num</span><span class="p">)</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s">&#39;.&#39;</span><span class="o">+</span><span class="n">status</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">gauge</span><span class="p">(</span><span class="n">stat_name</span><span class="p">,</span> <span class="n">datasets</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="n">name</span><span class="p">][</span><span class="n">status</span><span class="p">])</span></div>
+
     <span class="nd">@run_on_executor</span>
     <span class="k">def</span> <span class="nf">_delete_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirs</span><span class="p">):</span>
         <span class="c"># delete dirs that need deleting</span>
@@ -572,17 +587,21 @@
                 <span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
             <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_resource</span> <span class="ow">and</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]:</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
-                            <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
-                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
-                            <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span>
-                    <span class="k">except</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;bad reqs value for task %r&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">default_resource</span> <span class="ow">and</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                                <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">default_resource</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                                <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">values</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span>
+                        <span class="k">except</span><span class="p">:</span>
+                            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;bad reqs value for task %r&#39;</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;t[reqs]: %r&#39;</span><span class="p">,</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;reqs&#39;</span><span class="p">])</span>
+                <span class="k">raise</span>
             <span class="n">resource</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">default_resource</span><span class="p">)</span>
             <span class="n">resource</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">resource</span>
@@ -608,14 +627,27 @@
         <span class="k">if</span> <span class="p">(</span><span class="s">&#39;queue&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;debug&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;debug&#39;</span><span class="p">]):</span>
             <span class="n">debug</span> <span class="o">=</span> <span class="k">True</span>
-
-        <span class="c"># do resource grouping</span>
-        <span class="n">groups</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+            
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span><span class="nb">dict</span><span class="p">):</span>
             <span class="n">tasks</span> <span class="o">=</span> <span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">resources</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_resources</span><span class="p">({</span><span class="s">&#39;reqs&#39;</span><span class="p">:</span><span class="n">v</span><span class="p">}</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">):</span>
-            <span class="n">k</span> <span class="o">=</span> <span class="n">json_encode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
-            <span class="n">groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">group_hasher</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+            <span class="n">groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+
+        <span class="c"># get already queued requirements</span>
+        <span class="n">pilots</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_get_pilots&#39;</span><span class="p">](</span><span class="n">active</span><span class="o">=</span><span class="k">False</span><span class="p">)</span>
+        <span class="n">pilot_groups</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pilots</span><span class="p">:</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">group_hasher</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span>
+            <span class="n">pilot_groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c"># remove already queued groups from consideration</span>
+        <span class="n">groups_considered</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">-</span> <span class="n">pilot_groups</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">groups_considered</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
 
         <span class="c"># determine how many pilots to queue</span>
         <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
@@ -628,27 +660,35 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;queueing_pilots&#39;</span><span class="p">,</span> <span class="n">queue_num</span><span class="p">)</span>
 
         <span class="c"># select at least one from each resource group</span>
-        <span class="n">groups2</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
-        <span class="k">while</span> <span class="n">queue_num</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">groups2</span> <span class="ow">or</span> <span class="n">groups2</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">groups</span><span class="p">[</span><span class="n">r</span><span class="p">]:</span>
-                    <span class="n">groups2</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">groups_to_queue</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">groups_considered</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">while</span> <span class="n">queue_num</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">groups_considered</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">groups_to_queue</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">groups_considered</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
                     <span class="n">queue_num</span> <span class="o">-=</span> <span class="mi">1</span>
                     <span class="k">if</span> <span class="n">queue_num</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                         <span class="k">break</span>
 
-        <span class="k">for</span> <span class="n">resources</span> <span class="ow">in</span> <span class="n">groups2</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">groups_to_queue</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">r</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">resources</span><span class="p">)</span>
+                <span class="n">resources</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">[</span><span class="n">r</span><span class="p">]:</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+                        <span class="n">resources</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">resources</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="nb">max</span><span class="p">(</span><span class="n">resources</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">}</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;submitting %d pilots for resource %r&#39;</span><span class="p">,</span>
-                            <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span> <span class="n">r</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;pilot_resources.&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                            <span class="n">groups_to_queue</span><span class="p">[</span><span class="n">r</span><span class="p">],</span> <span class="n">resources</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="s">&#39;pilot_resources.&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">,</span> <span class="n">resources</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
                 <span class="n">pilot</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;task_id&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
                          <span class="s">&#39;name&#39;</span><span class="p">:</span> <span class="s">&#39;pilot&#39;</span><span class="p">,</span>
                          <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">debug</span><span class="p">,</span>
-                         <span class="s">&#39;reqs&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
-                         <span class="s">&#39;num&#39;</span><span class="p">:</span> <span class="n">groups2</span><span class="p">[</span><span class="n">resources</span><span class="p">],</span>
+                         <span class="s">&#39;reqs&#39;</span><span class="p">:</span> <span class="n">resources</span><span class="p">,</span>
+                         <span class="s">&#39;num&#39;</span><span class="p">:</span> <span class="n">groups_to_queue</span><span class="p">[</span><span class="n">r</span><span class="p">],</span>
                 <span class="p">}</span>
                 <span class="n">pilot_ids</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_new_pilot_ids&#39;</span><span class="p">](</span><span class="n">num</span><span class="o">=</span><span class="n">pilot</span><span class="p">[</span><span class="s">&#39;num&#39;</span><span class="p">])</span>
                 <span class="n">pilot</span><span class="p">[</span><span class="s">&#39;pilot_ids&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pilot_ids</span>

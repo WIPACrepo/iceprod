@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Global Queueing &mdash; IceProd master documentation</title>
+  <title>Roles &mdash; IceProd master documentation</title>
   
 
   
@@ -32,8 +32,8 @@
   
     <link rel="top" title="IceProd master documentation" href="../../index.html"/>
         <link rel="up" title="IceProd Server Details" href="index.html"/>
-        <link rel="next" title="Asynchronous Programming" href="async.html"/>
-        <link rel="prev" title="Lifecycles" href="lifecycles.html"/> 
+        <link rel="next" title="Database Module" href="../modules/db.html"/>
+        <link rel="prev" title="RPC Authorization" href="auth.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -95,11 +95,11 @@
 <li class="toctree-l3"><a class="reference internal" href="submit_to_queue.html">From Submission to Queue</a></li>
 <li class="toctree-l3"><a class="reference internal" href="task_relationships.html">Task Relationships</a></li>
 <li class="toctree-l3"><a class="reference internal" href="lifecycles.html">Lifecycles</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Global Queueing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="global_queueing.html">Global Queueing</a></li>
 <li class="toctree-l3"><a class="reference internal" href="async.html">Asynchronous Programming</a></li>
 <li class="toctree-l3"><a class="reference internal" href="website.html">Website</a></li>
 <li class="toctree-l3"><a class="reference internal" href="auth.html">RPC Authorization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="roles.html">Roles</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Roles</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../modules/db.html">Database Module</a></li>
@@ -151,17 +151,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="global-queueing">
-<span id="index-0"></span><span id="id1"></span><h1>Global Queueing<a class="headerlink" href="#global-queueing" title="Permalink to this headline">¶</a></h1>
-<p>Global queueing is initiated on the &#8220;client&#8221; iceprod server. In the
-<a class="reference internal" href="../config.html#config"><span class="std std-ref">Detailed Configuration</span></a>, the master url must be set to enable global queueing.</p>
-<div class="section" id="protocol">
-<h2>Protocol<a class="headerlink" href="#protocol" title="Permalink to this headline">¶</a></h2>
-<p>The &#8220;client&#8221; will send a json-rpc request to the &#8220;master&#8221; iceprod
-server, calling the <cite>queue_master</cite> method with the available
-resources as a parameter.  The &#8220;master&#8221; will then find appropriate
-task matches and respond with such.</p>
-<p>For more details on the exact protocol, see <span class="xref std std-ref">jsonRPCprotocol</span>.</p>
+  <div class="section" id="roles">
+<h1>Roles<a class="headerlink" href="#roles" title="Permalink to this headline">¶</a></h1>
+<p>Roles are general categorizations for users.  Each user may belong to
+more than one role.</p>
+<p>When submitting a dataset, one role must be selected.  This enables
+a group prefix, allowing the dataset to belong to any sub-group.  It also
+can set common options like the gridftp proxy.</p>
+<div class="section" id="groups">
+<h2>Groups<a class="headerlink" href="#groups" title="Permalink to this headline">¶</a></h2>
+<p>Groups are mostly for dataset priority controls.  A role may alter
+the priority of any sub-groups under the groups prefix of that role.</p>
+<p>Administrators have a groups prefix of <cite>/</cite>, allowing them to control all
+groups.</p>
+</div>
+<div class="section" id="example-roles">
+<h2>Example Roles<a class="headerlink" href="#example-roles" title="Permalink to this headline">¶</a></h2>
+<p>As an example, user Bob has the roles <cite>user</cite> and <cite>icetop</cite>.</p>
+<p>When submitting a dataset and selecting the <cite>user</cite> role, the groups prefix
+is set to <cite>/user/Bob</cite> and Bob&#8217;s gridftp proxy is used.</p>
+<p>When submitting a dataset and selecting the <cite>icetop</cite> role, the groups prefix
+is set to <cite>/icetop</cite> and the icetop production gridftp proxy is used.</p>
 </div>
 </div>
 
@@ -172,10 +182,10 @@ task matches and respond with such.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="async.html" class="btn btn-neutral float-right" title="Asynchronous Programming" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../modules/db.html" class="btn btn-neutral float-right" title="Database Module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="lifecycles.html" class="btn btn-neutral" title="Lifecycles" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="auth.html" class="btn btn-neutral" title="RPC Authorization" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

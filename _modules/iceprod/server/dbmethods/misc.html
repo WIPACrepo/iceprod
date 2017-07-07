@@ -188,74 +188,69 @@
 
         <span class="n">tables</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select depends from task where task_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">({})</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
-                <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">d</span><span class="p">:</span>
-                    <span class="n">task_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">({})</span>
-
-        <span class="n">search_table</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select depends from task where task_id in (%s)&#39;</span>
         <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">search_table</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                <span class="n">keys</span> <span class="o">=</span> <span class="n">search_table</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">tables</span><span class="p">[</span><span class="s">&#39;search&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
-
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="n">task_rel_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="n">row2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
-                <span class="n">task_rel_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">row2</span><span class="p">[</span><span class="s">&#39;task_rel_id&#39;</span><span class="p">])</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                    <span class="n">keys</span> <span class="o">=</span> <span class="n">row2</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;task&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">d</span><span class="p">:</span>
+                        <span class="n">task_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
 
-        <span class="n">job_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">search_table</span><span class="p">[</span><span class="nb">id</span><span class="p">][</span><span class="s">&#39;job_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from job where job_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">job_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">job_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">dataset_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="n">job_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;job_id&#39;</span><span class="p">])</span>
+                <span class="n">dataset_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">])</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;search&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">({})</span>
+
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task where task_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                    <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;task&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                     <span class="k">break</span>
-            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;job&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;task&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
-        <span class="n">dataset_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">search_table</span><span class="p">[</span><span class="nb">id</span><span class="p">][</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">task_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from dataset where dataset_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from job where job_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                    <span class="k">break</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;job&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
+
         <span class="n">categoryvalue_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">group_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from dataset where dataset_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dataset_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="n">row2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">row2</span><span class="p">[</span><span class="s">&#39;categoryvalue_ids&#39;</span><span class="p">]:</span>
@@ -264,77 +259,80 @@
                 <span class="k">if</span> <span class="s">&#39;groupd_id&#39;</span> <span class="ow">in</span> <span class="n">row2</span> <span class="ow">and</span> <span class="n">row2</span><span class="p">[</span><span class="s">&#39;group_id&#39;</span><span class="p">]:</span>
                     <span class="n">group_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">row2</span><span class="p">[</span><span class="s">&#39;group_id&#39;</span><span class="p">])</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                    <span class="n">keys</span> <span class="o">=</span> <span class="n">row2</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">row2</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
         <span class="k">if</span> <span class="n">group_ids</span><span class="p">:</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from groups where group_ids in (&#39;</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">group_ids</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span>
-            <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">group_ids</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from groups where group_ids in (%s)&#39;</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">group_ids</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
                 <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;groups&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                         <span class="k">break</span>
-                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;groups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;groups&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task_rel where dataset_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task_rel where dataset_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dataset_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
                     <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;task_rel&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
                     <span class="k">break</span>
-            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;task_rel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;task_rel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from config where dataset_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">dataset_ids</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from config where dataset_id in (%s)&#39;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dataset_ids</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
             <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                    <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;config&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;config&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                     <span class="k">break</span>
-            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+            <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">tables</span><span class="p">[</span><span class="s">&#39;config&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
         <span class="n">categorydef_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">categoryvalue_ids</span><span class="p">:</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from categoryvalue where categoryvalue_id in (&#39;</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">categoryvalue_ids</span><span class="p">)</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-            <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">categoryvalue_ids</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from categoryvalue where categoryvalue_id in (%s)&#39;</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">categoryvalue_ids</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
                 <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                     <span class="n">row2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;categoryvalue&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span>
                     <span class="n">categorydef_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">row2</span><span class="p">[</span><span class="s">&#39;categorydef_id&#39;</span><span class="p">])</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                        <span class="n">keys</span> <span class="o">=</span> <span class="n">row2</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;categoryvalue&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">row2</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;categoryvalue&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
         <span class="k">if</span> <span class="n">categorydef_ids</span><span class="p">:</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from categorydef where categorydef_id in (&#39;</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">categorydef_ids</span><span class="p">)</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;)&#39;</span>
-            <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">categorydef_ids</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from categorydef where categorydef_id in (%s)&#39;</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">categorydef_ids</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">f</span>
                 <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
-                        <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;categorydef&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                        <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;categorydef&#39;</span><span class="p">,</span><span class="n">row</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
                         <span class="k">break</span>
-                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;categorydef&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">ret</span><span class="p">}</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keys</span> <span class="ow">and</span> <span class="n">values</span><span class="p">:</span>
+                <span class="n">tables</span><span class="p">[</span><span class="s">&#39;categorydef&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;keys&#39;</span><span class="p">:</span><span class="n">keys</span><span class="p">,</span><span class="s">&#39;values&#39;</span><span class="p">:</span><span class="n">values</span><span class="p">}</span>
 
         <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">tables</span><span class="p">)</span></div>
 
@@ -399,8 +397,9 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error updating master&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
                 <span class="k">raise</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
-                <span class="n">bindings2</span> <span class="o">=</span> <span class="p">(</span><span class="n">table</span><span class="p">,</span><span class="n">index</span><span class="p">,</span><span class="n">timestamp</span><span class="p">)</span>
+                <span class="n">master_update_history_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;master_update_history&#39;</span><span class="p">)</span>
+                <span class="n">sql2</span> <span class="o">=</span> <span class="s">&#39;insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)&#39;</span>
+                <span class="n">bindings2</span> <span class="o">=</span> <span class="p">(</span><span class="n">master_update_history_id</span><span class="p">,</span><span class="n">table</span><span class="p">,</span><span class="n">index</span><span class="p">,</span><span class="n">timestamp</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql2</span><span class="p">,</span> <span class="n">bindings2</span><span class="p">)</span>
                 <span class="k">except</span> <span class="n">MySQLdb</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>

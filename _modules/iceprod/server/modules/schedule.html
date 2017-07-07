@@ -181,23 +181,25 @@
     <span class="k">def</span> <span class="nf">_make_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make the default schedule&quot;&quot;&quot;</span>
 
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;schedule&#39;</span><span class="p">]</span>
+
         <span class="c"># mark datasets complete</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 hours&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;dataset_completion&#39;</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_dataset_completion&#39;</span><span class="p">])</span>
 
         <span class="c"># mark jobs complete</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 31 minutes&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;job_completion&#39;</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_job_completion&#39;</span><span class="p">])</span>
 
         <span class="c"># collate node resources</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 1 hours&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;collate_resources&#39;</span><span class="p">],</span>
                 <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;node_collate_resources&#39;</span><span class="p">],</span>
                         <span class="n">site_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">]))</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 6 hours&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;remove_old_passkeys&#39;</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_remove_old_passkeys&#39;</span><span class="p">])</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 10 minutes&#39;</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;generate_web_graphs&#39;</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_generate_web_graphs&#39;</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="s">&#39;master&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span> <span class="ow">and</span> <span class="s">&#39;status&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;master&#39;</span><span class="p">]</span> <span class="ow">and</span>
@@ -211,18 +213,20 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">io_loop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="p">]</span>
         <span class="n">master_grid</span> <span class="o">=</span> <span class="n">BaseGrid</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
-        <span class="c"># make sure the gridftp proxy is set up</span>
-        <span class="n">proxy_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">if</span> <span class="s">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]:</span>
-            <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
-        <span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
-        <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;schedule&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;buffer_jobs_tasks&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;queue_buffer_jobs_tasks&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;check_iceprod&#39;</span><span class="p">],</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="s">&#39;every 5 minutes&#39;</span><span class="p">,</span> <span class="n">master_grid</span><span class="o">.</span><span class="n">check_iceprod</span><span class="p">)</span></div>
-
-        <span class="c">#self.scheduler.schedule(&#39;every 1 days&#39;,</span>
-        <span class="c">#        self.modules[&#39;db&#39;][&#39;cron_clean_completed_jobs&#39;])</span>
-
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c"># make sure the gridftp proxy is set up</span>
+            <span class="n">proxy_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="s">&#39;gridftp_cfgfile&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">]:</span>
+                <span class="n">proxy_kwargs</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;gridftp_cfgfile&#39;</span><span class="p">]</span>
+            <span class="n">proxy</span> <span class="o">=</span> <span class="n">SiteGlobusProxy</span><span class="p">(</span><span class="o">**</span><span class="n">proxy_kwargs</span><span class="p">)</span>
+            <span class="n">proxy</span><span class="o">.</span><span class="n">update_proxy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s">&#39;clean_completed_jobs&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s">&#39;db&#39;</span><span class="p">][</span><span class="s">&#39;cron_clean_completed_jobs&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;Failed to schedule clean_completed_jobs&#39;</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

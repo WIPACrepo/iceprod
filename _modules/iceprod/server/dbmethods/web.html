@@ -127,7 +127,7 @@
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span><span class="n">timedelta</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span><span class="p">,</span><span class="n">reduce</span>
 <span class="kn">import</span> <span class="nn">operator</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">defaultdict</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">import</span> <span class="nn">uuid</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
@@ -231,7 +231,7 @@
             <span class="n">ret</span> <span class="o">=</span> <span class="n">dataset_groups</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
-            <span class="n">ret</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s">&#39;start_date&#39;</span><span class="p">])</span>
+            <span class="n">ret</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">[</span><span class="s">&#39;start_date&#39;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
@@ -488,7 +488,94 @@
                 <span class="s">&#39;efficiency&#39;</span><span class="p">:</span> <span class="n">eff</span><span class="p">,</span>
             <span class="p">}</span>
 
-        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span></div></div>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span></div>
+
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="web.web_get_jobs_by_status"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_jobs_by_status">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_jobs_by_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get basic job info.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            status (str): status to restrict by</span>
+<span class="sd">            dataset_id (str): dataset id</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           dict: [job_info]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">where_query</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="n">where_query</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">where_query</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from job&#39;</span>
+        <span class="k">if</span> <span class="n">where_query</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;{} = ?&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">where_query</span><span class="p">)</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">where_query</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;job&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
+        <span class="n">jobs</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">j</span><span class="p">:</span><span class="n">j</span><span class="p">[</span><span class="s">&#39;job_index&#39;</span><span class="p">])</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span></div>
+
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="web.web_get_jobs_details"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_jobs_details">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_jobs_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get job details for a job_id.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            job_id (str): job_id</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: {job_id:details}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from job where job_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">job_id</span><span class="p">,)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">job</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">job</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;job&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">))</span>
+
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select search.*,task.* from search &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; join task on search.task_id = task.task_id &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id = ?&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">job_id</span><span class="p">,)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;search&#39;</span><span class="p">,</span><span class="s">&#39;task&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">job</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;dataset_id&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tmp</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]:</span>
+                <span class="n">tmp</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">tmp</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s">&#39;dataset_id&#39;</span> <span class="ow">in</span> <span class="n">job</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select task_rel_id,task_index,requirements &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from task_rel where dataset_id = ?&#39;</span>
+            <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">job</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">],)</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+            <span class="n">task_rels</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">task_rel_id</span><span class="p">,</span><span class="n">task_index</span><span class="p">,</span><span class="n">requirements</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="n">reqs</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">requirements</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">reqs</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">requirements</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                <span class="n">task_rels</span><span class="p">[</span><span class="n">task_rel_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s">&#39;index&#39;</span><span class="p">:</span> <span class="n">task_index</span><span class="p">,</span>
+                    <span class="s">&#39;reqs&#39;</span><span class="p">:</span> <span class="n">reqs</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">task_rels</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;task_rel_id&#39;</span><span class="p">]][</span><span class="s">&#39;reqs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]:</span>
+                    <span class="n">tmp</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">])</span>
+                <span class="n">t</span><span class="p">[</span><span class="s">&#39;requirements&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+                <span class="n">t</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_rels</span><span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;task_rel_id&#39;</span><span class="p">]][</span><span class="s">&#39;index&#39;</span><span class="p">]</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span><span class="n">t</span><span class="p">[</span><span class="s">&#39;index&#39;</span><span class="p">])</span>
+        <span class="n">job</span><span class="p">[</span><span class="s">&#39;tasks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tasks</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">job</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

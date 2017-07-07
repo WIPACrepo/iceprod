@@ -138,6 +138,8 @@
 <span class="sd">  --task TASK           Name of the task to run</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">logging</span>
@@ -147,7 +149,7 @@
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
 <span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
-
+<span class="kn">import</span> <span class="nn">threading</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">to_file</span><span class="p">,</span> <span class="n">constants</span>
 <span class="kn">import</span> <span class="nn">iceprod.core.dataclasses</span>
@@ -155,6 +157,7 @@
 <span class="kn">import</span> <span class="nn">iceprod.core.exe</span>
 <span class="kn">import</span> <span class="nn">iceprod.core.exe_json</span>
 <span class="kn">import</span> <span class="nn">iceprod.core.pilot</span>
+<span class="kn">import</span> <span class="nn">iceprod.core.resources</span>
 
 <span class="kn">import</span> <span class="nn">iceprod.core.logger</span>
 
@@ -346,6 +349,24 @@
         <span class="c"># make sure steering exists in the config</span>
         <span class="n">config</span><span class="p">[</span><span class="s">&#39;steering&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">Steering</span><span class="p">()</span>
 
+    <span class="k">if</span> <span class="n">offline</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">psutil</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="n">resources</span> <span class="o">=</span> <span class="k">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># track resource usage in separate thread</span>
+            <span class="n">resource_stop</span> <span class="o">=</span> <span class="k">False</span>
+            <span class="n">resources</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">Resources</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+            <span class="n">resources</span><span class="o">.</span><span class="n">claim</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+            <span class="n">resources</span><span class="o">.</span><span class="n">register_process</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">,</span><span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(),</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
+            <span class="k">def</span> <span class="nf">track</span><span class="p">():</span>
+                <span class="k">while</span> <span class="ow">not</span> <span class="n">resource_stop</span><span class="p">:</span>
+                    <span class="n">resources</span><span class="o">.</span><span class="n">check_claims</span><span class="p">()</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">resource_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">track</span><span class="p">)</span>
+            <span class="n">resource_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
     <span class="c"># make exe Config</span>
     <span class="n">cfg</span> <span class="o">=</span> <span class="n">iceprod</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">exe</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 
@@ -415,6 +436,17 @@
                 <span class="k">raise</span>
     
     <span class="k">finally</span><span class="p">:</span>
+        <span class="c"># check resources</span>
+        <span class="k">if</span> <span class="n">offline</span> <span class="ow">and</span> <span class="n">resources</span><span class="p">:</span>
+            <span class="n">resource_stop</span> <span class="o">=</span> <span class="k">True</span>
+            <span class="n">resource_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s">&#39;Resources:&#39;</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">get_final</span><span class="p">(</span><span class="s">&#39;a&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s">&#39;  None&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">r</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s">&#39;  {}: {:.2f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
         <span class="c"># upload log files to server</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">offline</span><span class="p">)</span> <span class="ow">and</span> <span class="s">&#39;upload&#39;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">[</span><span class="s">&#39;options&#39;</span><span class="p">]:</span>
@@ -471,7 +503,7 @@
                         <span class="n">help</span><span class="o">=</span><span class="s">&#39;Name of the task to run&#39;</span><span class="p">)</span>
 
     <span class="n">args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span>
-    <span class="nb">print</span> <span class="n">args</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 
     <span class="c"># check cfgfile</span>
     <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="k">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s">&#39;cfgfile&#39;</span><span class="p">]):</span>

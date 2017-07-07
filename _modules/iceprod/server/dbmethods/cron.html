@@ -126,11 +126,12 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Counter</span>
 
 <span class="kn">import</span> <span class="nn">tornado.gen</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.core</span> <span class="k">import</span> <span class="n">functions</span>
+<span class="kn">from</span> <span class="nn">iceprod.core.gridftp</span> <span class="k">import</span> <span class="n">GridFTP</span>
 <span class="kn">from</span> <span class="nn">iceprod.core.jsonUtil</span> <span class="k">import</span> <span class="n">json_encode</span><span class="p">,</span><span class="n">json_decode</span>
 <span class="kn">from</span> <span class="nn">iceprod.server.dbmethods</span> <span class="k">import</span> <span class="n">_Methods_Base</span><span class="p">,</span><span class="n">datetime2str</span><span class="p">,</span><span class="n">str2datetime</span><span class="p">,</span> <span class="n">nowstr</span>
 <span class="kn">from</span> <span class="nn">iceprod.server</span> <span class="k">import</span> <span class="n">GlobalID</span>
@@ -226,9 +227,10 @@
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">multi_sql</span><span class="p">,</span> <span class="n">multi_bindings</span><span class="p">)</span>
 
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
-                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
+                    <span class="n">master_update_history_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;master_update_history&#39;</span><span class="p">)</span>
+                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)&#39;</span>
                     <span class="k">for</span> <span class="n">sql</span><span class="p">,</span><span class="n">bindings</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">master_sql</span><span class="p">,</span><span class="n">master_bindings</span><span class="p">):</span>
-                        <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">bindings</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
+                        <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">master_update_history_id</span><span class="p">,</span> <span class="s">&#39;dataset&#39;</span><span class="p">,</span><span class="n">bindings</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">now</span><span class="p">)</span>
                         <span class="k">try</span><span class="p">:</span>
                             <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
                         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
@@ -252,38 +254,67 @@
 <span class="sd">        an active state, then delete the job and tasks.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id,jobs_submitted,tasks_submitted &#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from dataset where status = ? &#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;processing&#39;</span><span class="p">,)</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id,status,jobs_submitted,tasks_submitted &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; from dataset &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="n">datasets</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">ntasks</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">ntasks</span><span class="o">//</span><span class="n">njobs</span>
+        <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">status</span><span class="p">,</span><span class="n">njobs</span><span class="p">,</span><span class="n">ntasks</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s">&#39;status&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+                <span class="s">&#39;tasks&#39;</span><span class="p">:</span> <span class="n">ntasks</span><span class="o">//</span><span class="n">njobs</span><span class="p">,</span>
+            <span class="p">}</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, job_id, task_status, count(*) from search &#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where dataset_id in (&#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">])</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;) group by job_id, task_status&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+        <span class="c"># filter by jobs that need updating</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_id from job where status = &quot;processing&quot; &#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">job_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
 
-        <span class="n">jobs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:[{},</span><span class="k">None</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">task_status</span><span class="p">,</span><span class="n">num</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-            <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">task_status</span><span class="p">]</span> <span class="o">=</span> <span class="n">num</span>
-            <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
+        <span class="c"># get the jobs by status and number of tasks</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, job_id, task_status from search &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where job_id in (%s)&#39;</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:[</span><span class="n">Counter</span><span class="p">(),</span><span class="k">None</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">job_ids</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">task_status</span> <span class="ow">in</span> <span class="p">(</span><span class="k">yield</span> <span class="n">f</span><span class="p">):</span>
+                <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">task_status</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
 
         <span class="n">complete_jobs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">errors_jobs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">suspended_jobs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">clean_jobs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">job_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;unknown job id: %r&#39;</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="n">suspended_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">clean_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">continue</span>
+
             <span class="n">statuses</span> <span class="o">=</span> <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">have_all_jobs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">statuses</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span>
+            <span class="n">have_all_jobs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">statuses</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;tasks&#39;</span><span class="p">]</span>
             <span class="n">statuses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">statuses</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;waiting&#39;</span><span class="p">,</span><span class="s">&#39;queued&#39;</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="s">&#39;resume&#39;</span><span class="p">,</span><span class="s">&#39;reset&#39;</span><span class="p">}:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">][</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;suspended&#39;</span><span class="p">,</span><span class="s">&#39;errors&#39;</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="n">statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;processing&#39;</span><span class="p">}):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">have_all_jobs</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;not all tasks in job %r buffered&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">statuses</span><span class="o">-</span><span class="p">{</span><span class="s">&#39;complete&#39;</span><span class="p">}:</span>
+                        <span class="n">complete_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;failed&#39;</span><span class="p">}:</span>
+                        <span class="n">errors_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">suspended_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %r can be removed&#39;</span><span class="p">,</span> <span class="n">job_id</span><span class="p">)</span>
+                    <span class="n">clean_jobs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">statuses</span><span class="o">&amp;</span><span class="p">{</span><span class="s">&#39;waiting&#39;</span><span class="p">,</span><span class="s">&#39;queued&#39;</span><span class="p">,</span><span class="s">&#39;processing&#39;</span><span class="p">,</span><span class="s">&#39;resume&#39;</span><span class="p">,</span><span class="s">&#39;reset&#39;</span><span class="p">}:</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
                     <span class="k">if</span> <span class="ow">not</span> <span class="n">have_all_jobs</span><span class="p">:</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&#39;not all tasks in job %r buffered&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
@@ -306,21 +337,22 @@
                 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">clean_jobs</span><span class="p">):</span>
                     <span class="n">task_ids</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="p">(</span><span class="k">yield</span> <span class="n">f</span><span class="p">)])</span>
 
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from search where task_id in (%s)&#39;</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">f</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task where task_id in (%s)&#39;</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">f</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_stat where task_id in (%s)&#39;</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">f</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_log where task_id in (%s)&#39;</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">f</span>
-                <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_lookup where task_id in (%s)&#39;</span>
-                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
-                    <span class="k">yield</span> <span class="n">f</span>
+                <span class="k">if</span> <span class="n">task_ids</span><span class="p">:</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from search where task_id in (%s)&#39;</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">f</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task where task_id in (%s)&#39;</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">f</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_stat where task_id in (%s)&#39;</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">f</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_log where task_id in (%s)&#39;</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">f</span>
+                    <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from task_lookup where task_id in (%s)&#39;</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">task_ids</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">f</span>
                 <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;delete from job where job_id in (%s)&#39;</span>
                 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">clean_jobs</span><span class="p">):</span>
                     <span class="k">yield</span> <span class="n">f</span>
@@ -330,16 +362,6 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
             <span class="c"># we are the master, and are updating job statuses</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_id from job where status = &quot;processing&quot; and job_id in (%s)&#39;</span>
-            <span class="n">bindings</span> <span class="o">=</span> <span class="n">complete_jobs</span><span class="o">+</span><span class="n">errors_jobs</span><span class="o">+</span><span class="n">suspended_jobs</span>
-            <span class="n">job_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_select</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span>
-                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="p">(</span><span class="k">yield</span> <span class="n">f</span><span class="p">):</span>
-                    <span class="n">job_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">complete_jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">complete_jobs</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">]</span>
-            <span class="n">errors_jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">errors_jobs</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">]</span>
-            <span class="n">suspended_jobs</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">suspended_jobs</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">job_ids</span><span class="p">]</span>
-
             <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
 
             <span class="c"># errors jobs</span>
@@ -350,16 +372,14 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as errors&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
-                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
-                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
-                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                <span class="n">master_update_history_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;master_update_history&#39;</span><span class="p">)</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">master_update_history_id</span><span class="p">,</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
             <span class="c"># suspended jobs</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = &quot;suspended&quot;, status_changed = ? &#39;</span>
@@ -369,16 +389,14 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as suspended&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
-                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
-                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
-                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                <span class="n">master_update_history_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;master_update_history&#39;</span><span class="p">)</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;insert into master_update_history (master_update_history_id, table_name,update_index,timestamp) values (?,?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">master_update_history_id</span><span class="p">,</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
             <span class="c"># complete jobs</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update job set status = &quot;complete&quot;, status_changed = ? &#39;</span>
@@ -390,16 +408,14 @@
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;job %s marked as complete&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">now</span><span class="p">,</span><span class="n">job_id</span><span class="p">)</span>
                 <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_master</span><span class="p">():</span>
-                    <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;replace into master_update_history (table_name,update_index,timestamp) values (?,?,?)&#39;</span>
-                    <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
-                                    <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_to_master</span><span class="p">((</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="n">bindings</span><span class="p">))</span>
+                <span class="n">master_update_history_id</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">increment_id</span><span class="p">(</span><span class="s">&#39;master_update_history&#39;</span><span class="p">)</span>
+                <span class="n">sql3</span> <span class="o">=</span> <span class="s">&#39;insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)&#39;</span>
+                <span class="n">bindings3</span> <span class="o">=</span> <span class="p">(</span><span class="n">master_update_history_id</span><span class="p">,</span><span class="s">&#39;job&#39;</span><span class="p">,</span><span class="n">job_id</span><span class="p">,</span><span class="n">now</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql3</span><span class="p">,</span> <span class="n">bindings3</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;error updating master_update_history&#39;</span><span class="p">,</span>
+                                <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
                 <span class="c"># TODO: collate task stats</span>
 
@@ -425,29 +441,35 @@
             <span class="k">return</span>
 
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select job_id,job_index from job where status = &quot;complete&quot;&#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; or (status in (&quot;suspended&quot;,&quot;errors&quot;) and status_changed &lt; ?)&#39;</span>
+        <span class="n">timelimit</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">timelimit</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="n">jobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">job_id</span><span class="p">:</span><span class="n">index</span> <span class="k">for</span> <span class="n">job_id</span><span class="p">,</span><span class="n">index</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">job_id</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span> <span class="k">for</span> <span class="n">job_id</span><span class="p">,</span><span class="n">index</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
 
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select dataset_id, job_id from search &#39;</span>
-        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_status = &quot;complete&quot;&#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where task_status != &quot;idle&quot;&#39;</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
-        <span class="n">datasets</span> <span class="o">=</span> <span class="p">{</span><span class="n">job_id</span><span class="p">:</span><span class="n">dataset_id</span> <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">job_id</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dataset_id</span><span class="p">,</span><span class="n">job_id</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">GlobalID</span><span class="o">.</span><span class="n">localID_ret</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">))</span>
+                <span class="n">datasets</span><span class="p">[</span><span class="n">dataset</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">])</span>
 
-        <span class="k">for</span> <span class="n">job_id</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
-            <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
-            <span class="n">job_index</span> <span class="o">=</span> <span class="n">jobs</span><span class="p">[</span><span class="n">job_id</span><span class="p">]</span>
-
-            <span class="c"># clean dagtemp</span>
-            <span class="n">temp_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;site_temp&#39;</span><span class="p">]</span>
-            <span class="n">dataset</span> <span class="o">=</span> <span class="n">GlobalID</span><span class="o">.</span><span class="n">localID_ret</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s">&#39;int&#39;</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">dagtemp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">job_index</span><span class="p">))</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cleaning site_temp %r&#39;</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">)</span>
-                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">functions</span><span class="o">.</span><span class="n">delete</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">))</span>
-            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to clean site_temp&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
+        <span class="c"># get all the job_ids currently in tmp</span>
+        <span class="n">temp_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;queue&#39;</span><span class="p">][</span><span class="s">&#39;site_temp&#39;</span><span class="p">]</span>
+        <span class="n">dataset_dirs</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">GridFTP</span><span class="o">.</span><span class="n">list</span><span class="p">,</span> <span class="n">temp_dir</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataset_dirs</span><span class="p">:</span>
+            <span class="n">job_dirs</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">GridFTP</span><span class="o">.</span><span class="n">list</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="n">d</span><span class="p">)))</span>            
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">job_dirs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">datasets</span> <span class="ow">and</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">[</span><span class="n">d</span><span class="p">]:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">dagtemp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;cleaning site_temp %r&#39;</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">)</span>
+                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">functions</span><span class="o">.</span><span class="n">delete</span><span class="p">,</span> <span class="n">dagtemp</span><span class="p">))</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;failed to clean site_temp&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="cron.cron_remove_old_passkeys"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.cron.cron.cron_remove_old_passkeys">[docs]</a>    <span class="k">def</span> <span class="nf">cron_remove_old_passkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>

@@ -528,7 +528,12 @@
         <span class="k">if</span> <span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;file checksum error&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;gsiftp:&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s">&#39;ftp:&#39;</span><span class="p">):</span>
-        <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c"># because d-cache doesn&#39;t allow overwriting, try deletion</span>
+            <span class="n">GridFTP</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
+            <span class="n">GridFTP</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">local</span><span class="p">)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="n">GridFTP</span><span class="o">.</span><span class="n">sha512sum</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ret</span> <span class="o">!=</span> <span class="n">chksum</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;gridftp checksum error&#39;</span><span class="p">)</span>

@@ -124,12 +124,17 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span><span class="p">,</span><span class="n">timedelta</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">namedtuple</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">update_wrapper</span><span class="p">,</span> <span class="n">partial</span>
 
+<span class="kn">import</span> <span class="nn">cachetools</span>
+<span class="kn">import</span> <span class="nn">cachetools.keys</span>
+
 <span class="kn">import</span> <span class="nn">tornado.gen</span>
+<span class="kn">import</span> <span class="nn">tornado.concurrent</span>
 <span class="kn">from</span> <span class="nn">tornado.concurrent</span> <span class="k">import</span> <span class="n">run_on_executor</span>
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
 
 <span class="kn">from</span> <span class="nn">iceprod.functools_future</span> <span class="k">import</span> <span class="n">partialmethod</span>
 
@@ -139,72 +144,192 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;dbmethods&#39;</span><span class="p">)</span>
 
 
+<span class="k">def</span> <span class="nf">_is_member_func</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Detect if obj is a member func.</span>
+
+<span class="sd">    Can also detect decorator-wrapped member funcs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="s">&#39;future&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_varnames</span>
+           <span class="ow">and</span> <span class="s">&#39;yielded&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">func_closure</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cell_contents</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_argcount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;self&#39;</span><span class="p">)</span>
+
+<span class="n">CacheInfo</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;CacheInfo&#39;</span><span class="p">,[</span><span class="s">&#39;hits&#39;</span><span class="p">,</span><span class="s">&#39;misses&#39;</span><span class="p">,</span><span class="s">&#39;maxsize&#39;</span><span class="p">,</span><span class="s">&#39;currsize&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="memcache"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.memcache">[docs]</a><span class="k">def</span> <span class="nf">memcache</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Caching decorator.</span>
+
+<span class="sd">    Instrumented like :py:func:`functools.lru_cache` with</span>
+<span class="sd">    `cache_clear()` and `cache_info()`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        size (int): Max number of entries</span>
+<span class="sd">        ttl (int): Time to live (default None = infinite)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ttl</span><span class="p">:</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">cachetools</span><span class="o">.</span><span class="n">TTLCache</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">ttl</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">cachetools</span><span class="o">.</span><span class="n">LRUCache</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;hits&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span> <span class="s">&#39;misses&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;maxsize&#39;</span><span class="p">:</span><span class="n">size</span><span class="p">,</span> <span class="s">&#39;currsize&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">make_wrapper</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">cachetools</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">hashkey</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;hits&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;%r: cache hit for %r&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;misses&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">_is_member_func</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">Future</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)):</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">with_timeout</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">120</span><span class="p">),</span><span class="n">ret</span><span class="p">)</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_is_member_func</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="n">obj2</span> <span class="o">=</span> <span class="n">wrapper</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj2</span> <span class="o">=</span> <span class="n">update_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span> <span class="k">None</span><span class="p">),</span> <span class="n">obj</span><span class="p">,</span>
+                    <span class="p">(</span><span class="s">&#39;__name__&#39;</span><span class="p">,</span><span class="s">&#39;__module__&#39;</span><span class="p">,</span><span class="s">&#39;__doc__&#39;</span><span class="p">),(</span><span class="s">&#39;__dict__&#39;</span><span class="p">,))</span>
+        <span class="c"># instrument like functools.lru_cache</span>
+        <span class="k">def</span> <span class="nf">cache_clear</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;clearing cache for %s&#39;</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">cache</span><span class="p">):</span>
+                <span class="k">del</span> <span class="n">cache</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">def</span> <span class="nf">cache_info</span><span class="p">():</span>
+            <span class="n">info</span><span class="p">[</span><span class="s">&#39;currsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">CacheInfo</span><span class="p">(</span><span class="o">**</span><span class="n">info</span><span class="p">)</span>
+        <span class="n">obj2</span><span class="o">.</span><span class="n">cache_clear</span> <span class="o">=</span> <span class="n">cache_clear</span>
+        <span class="n">obj2</span><span class="o">.</span><span class="n">cache_info</span> <span class="o">=</span> <span class="n">cache_info</span>
+        <span class="k">return</span> <span class="n">obj2</span>
+    <span class="k">return</span> <span class="n">make_wrapper</span></div>
+
 <div class="viewcode-block" id="authorization"><a class="viewcode-back" href="../../../server/dbmethods.html#iceprod.server.dbmethods.authorization">[docs]</a><span class="k">def</span> <span class="nf">authorization</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Authorization decorator.</span>
 
+<span class="sd">    Must be used on a member function of dbmethods in order</span>
+<span class="sd">    to access the DB for authorization information.</span>
+
+<span class="sd">    Non-decorator optional args:</span>
+<span class="sd">        passkey (str): the passkey (for site, task, or user)</span>
+<span class="sd">        cookie_id (str): the user_id supplied by a cookie</span>
+<span class="sd">        site_id (str): the site id</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        auth_role (str, list): The role name(s) to match against</span>
-<span class="sd">        match_user (bool): Match logged in user with kwargs `user_id`</span>
-<span class="sd">        site_valid (bool): Valid for site queries</span>
+<span class="sd">        site (bool): Valid for site queries</span>
+<span class="sd">        user (str, list, callable): The user id(s) to match against</span>
+<span class="sd">        role (str, list, callable): The role id(s) to match against</span>
+<span class="sd">        expression (str): The expression of site, user, and role</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">make_wrapper</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
         <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">auth</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_auth&#39;</span><span class="p">)</span>
-            <span class="n">auth_role</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;auth_role&#39;</span><span class="p">],</span> <span class="k">None</span><span class="p">)</span>
-            <span class="n">auth_user</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;auth_user&#39;</span><span class="p">],</span> <span class="k">None</span><span class="p">)</span>
-            <span class="n">site_valid</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">([</span><span class="s">&#39;site_valid&#39;</span><span class="p">],</span> <span class="k">False</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c"># take a copy so we don&#39;t destroy future calls</span>
+                <span class="n">auth</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;_auth&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">auth_site</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="k">False</span><span class="p">)</span>
+                <span class="n">auth_user</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+                <span class="n">auth_role</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+                <span class="n">auth_expression</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;expression&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_expression</span><span class="p">:</span>
+                    <span class="n">enabled_auths</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">if</span> <span class="n">auth_site</span><span class="p">:</span>
+                        <span class="n">enabled_auths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;site&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">auth_user</span><span class="p">:</span>
+                        <span class="n">enabled_auths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">auth_role</span><span class="p">:</span>
+                        <span class="n">enabled_auths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">)</span>
+                    <span class="n">auth_expression</span> <span class="o">=</span> <span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">enabled_auths</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_expression</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;cannot have no authorization&#39;</span><span class="p">)</span>
 
-            <span class="c"># get user and role</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="k">None</span>
-            <span class="n">role</span> <span class="o">=</span> <span class="k">None</span>
-            <span class="n">site_auth</span> <span class="o">=</span> <span class="k">False</span>
-            <span class="n">passkey_auth</span> <span class="o">=</span> <span class="k">False</span>
-            <span class="k">if</span> <span class="s">&#39;passkey&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="n">passkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">)</span>
+                <span class="n">successful_site</span> <span class="o">=</span> <span class="k">False</span>
+                <span class="n">successful_user</span> <span class="o">=</span> <span class="k">False</span>
+                <span class="n">successful_role</span> <span class="o">=</span> <span class="k">False</span>
                 
-                <span class="k">if</span> <span class="s">&#39;site_id&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">passkey</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;passkey&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+                <span class="n">cookie_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;cookie_id&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+                <span class="n">site_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site_id&#39;</span><span class="p">,</span> <span class="k">None</span><span class="p">)</span>
+
+                <span class="c"># check for site validity</span>
+                <span class="k">if</span> <span class="n">auth_site</span> <span class="ow">and</span> <span class="n">passkey</span> <span class="ow">and</span> <span class="n">site_id</span><span class="p">:</span>
                     <span class="c"># authorize site</span>
-                    <span class="n">site_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;site_id&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">site_valid</span><span class="p">:</span>
-                        <span class="n">site_auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="p">(</span><span class="s">&#39;auth_authorize_site&#39;</span><span class="p">,</span>
-                                                   <span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                    <span class="n">successful_site</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_site&#39;</span><span class="p">,</span>
+                                                                <span class="n">site</span><span class="o">=</span><span class="n">site_id</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+
+                <span class="c"># get username, roles</span>
+                <span class="n">username</span> <span class="o">=</span> <span class="k">None</span>
+                <span class="n">roles</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">passkey</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">site_id</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_get_passkey_membership&#39;</span><span class="p">,</span>
+                                                    <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
+                    <span class="n">username</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
+                    <span class="n">roles</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s">&#39;roles&#39;</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">cookie_id</span><span class="p">:</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_get_user_membership&#39;</span><span class="p">,</span>
+                                                    <span class="n">user_id</span><span class="o">=</span><span class="n">cookie_id</span><span class="p">)</span>
+                    <span class="n">username</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s">&#39;username&#39;</span><span class="p">]</span>
+                    <span class="n">roles</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s">&#39;roles&#39;</span><span class="p">]</span>
+
+                <span class="c"># check for user validity</span>
+                <span class="k">if</span> <span class="n">auth_user</span> <span class="ow">is</span> <span class="k">True</span> <span class="ow">and</span> <span class="n">username</span><span class="p">:</span> <span class="c"># if we just want any logged in user</span>
+                    <span class="n">successful_user</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="n">auth_user</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_user</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">auth_user</span> <span class="o">==</span> <span class="n">username</span><span class="p">:</span>
+                        <span class="n">successful_user</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">auth_user</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_user</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+                      <span class="ow">and</span> <span class="n">username</span> <span class="ow">in</span> <span class="n">auth_user</span><span class="p">):</span>
+                    <span class="n">successful_user</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="n">callable</span><span class="p">(</span><span class="n">auth_user</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">_is_member_func</span><span class="p">(</span><span class="n">auth_user</span><span class="p">):</span>
+                        <span class="n">auth_user</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">auth_user</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">auth_user</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">Future</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)):</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">ret</span>
+                    <span class="n">successful_user</span> <span class="o">=</span> <span class="n">ret</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="c"># authorize task</span>
-                    <span class="n">passkey_auth</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;auth_authorize_task&#39;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">passkey</span><span class="p">)</span>
-                    
-            <span class="k">elif</span> <span class="s">&#39;cookie_id&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="n">user_id</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;cookie_id&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;auth_user undefined: %r&#39;</span><span class="p">,</span> <span class="n">auth_user</span><span class="p">)</span>
 
-            <span class="c"># check authorization</span>
-            <span class="k">if</span> <span class="n">auth_role</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">role</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no role to match&#39;</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_role</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
-                    <span class="n">auth_role</span> <span class="o">=</span> <span class="p">[</span><span class="n">auth_role</span><span class="p">]</span>
-                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">role</span> <span class="o">!=</span> <span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">auth_role</span><span class="p">):</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;role match failure: %r!=%r&#39;</span><span class="p">,</span> <span class="n">role</span><span class="p">,</span> <span class="n">auth_role</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">match_user</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;no user to match&#39;</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
-                <span class="n">kwargs_user</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="k">False</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">user</span> <span class="o">!=</span> <span class="n">kwargs_user</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;user match failure: %r!=%r&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">kwargs_user</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization failure&#39;</span><span class="p">)</span>
+                <span class="c"># check for role validity</span>
+                <span class="k">if</span> <span class="n">auth_role</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_role</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">auth_role</span> <span class="ow">in</span> <span class="n">roles</span><span class="p">:</span>
+                        <span class="n">successful_role</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="n">auth_role</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_role</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">auth_role</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">roles</span><span class="p">):</span>
+                        <span class="n">successful_role</span> <span class="o">=</span> <span class="k">True</span>
+                <span class="k">elif</span> <span class="n">callable</span><span class="p">(</span><span class="n">auth_role</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">_is_member_func</span><span class="p">(</span><span class="n">auth_role</span><span class="p">):</span>
+                        <span class="n">auth_role</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">auth_role</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="n">auth_role</span><span class="p">(</span><span class="n">roles</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">Future</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)):</span>
+                        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">ret</span>
+                    <span class="n">successful_role</span> <span class="o">=</span> <span class="n">ret</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;auth_role undefined: %r&#39;</span><span class="p">,</span> <span class="n">auth_role</span><span class="p">)</span>
 
-            <span class="c"># run function</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+                <span class="c"># check auth expression</span>
+                <span class="n">auth_expression</span> <span class="o">=</span> <span class="n">auth_expression</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;site&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span> <span class="k">if</span> <span class="n">successful_site</span> <span class="k">else</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                <span class="n">auth_expression</span> <span class="o">=</span> <span class="n">auth_expression</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span> <span class="k">if</span> <span class="n">successful_user</span> <span class="k">else</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                <span class="n">auth_expression</span> <span class="o">=</span> <span class="n">auth_expression</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;role&#39;</span><span class="p">,</span> <span class="s">&#39;True&#39;</span> <span class="k">if</span> <span class="n">successful_role</span> <span class="k">else</span> <span class="s">&#39;False&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;auth expression: %r&#39;</span><span class="p">,</span> <span class="n">auth_expression</span><span class="p">)</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">auth_expression</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;failed auth expression&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;error in authorization&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;authorization error&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c"># run function</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">concurrent</span><span class="o">.</span><span class="n">Future</span><span class="p">,</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)):</span>
+                    <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">with_timeout</span><span class="p">(</span><span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">120</span><span class="p">),</span><span class="n">ret</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_argcount</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span>
-            <span class="n">obj</span><span class="o">.</span><span class="n">func_code</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;self&#39;</span><span class="p">):</span>
-            <span class="n">obj2</span> <span class="o">=</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_auth</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">obj2</span> <span class="o">=</span> <span class="n">update_wrapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_auth</span><span class="o">=</span><span class="n">kwargs</span><span class="p">),</span><span class="n">obj</span><span class="p">,</span>
-                    <span class="p">(</span><span class="s">&#39;__name__&#39;</span><span class="p">,</span><span class="s">&#39;__module__&#39;</span><span class="p">,</span><span class="s">&#39;__doc__&#39;</span><span class="p">),(</span><span class="s">&#39;__dict__&#39;</span><span class="p">,))</span>
-        <span class="k">return</span> <span class="n">obj2</span>
+        <span class="k">return</span> <span class="n">partialmethod</span><span class="p">(</span><span class="n">wrapper</span><span class="p">,</span><span class="n">_auth</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">make_wrapper</span></div>
 
 
@@ -237,7 +362,7 @@
                          <span class="n">table</span><span class="p">,</span><span class="n">input_row</span><span class="p">)</span>
             <span class="k">raise</span>
 
-    <span class="k">def</span> <span class="nf">_bulk_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_bulk_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">,</span> <span class="n">extra_bindings</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Select many items by id.</span>
 
@@ -246,6 +371,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            sql (str): An sql template</span>
 <span class="sd">            bindings (iterable): The bindings to iterate over</span>
+<span class="sd">            extra_bindings (iterable): Extra bindings to add to each query</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            list: A list of :class:`Future` objects</span>
@@ -258,6 +384,8 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;bulk select %s %d&#39;</span><span class="p">,</span><span class="n">sql</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">bindings2</span><span class="p">))</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="n">bindings</span><span class="p">[</span><span class="mi">990</span><span class="p">:]</span>
             <span class="n">sql2</span> <span class="o">=</span> <span class="n">sql</span><span class="o">%</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;?&#39;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">bindings2</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">extra_bindings</span><span class="p">:</span>
+                <span class="n">bindings2</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extra_bindings</span><span class="p">)</span>
             <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql2</span><span class="p">,</span> <span class="n">bindings2</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">ret</span>
 

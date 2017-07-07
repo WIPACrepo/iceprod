@@ -180,6 +180,7 @@
 <p><strong>job</strong></p>
 <ul class="simple">
 <li>job_id : str</li>
+<li>dataset_id : str</li>
 <li>status : str  <span class="gray"># possible statuses: processing, complete, suspended, errors</span></li>
 <li>job_index : int  <span class="gray"># index of the job within the dataset</span></li>
 <li>status_changed : str  <span class="gray"># datetime</span></li>
@@ -302,6 +303,7 @@
 <li>submit_time : str  <span class="gray"># datetime</span></li>
 <li>submit_dir : Text</li>
 <li>tasks : Text  <span class="gray"># csv list of processing task_ids</span></li>
+<li>requirements : Text  <span class="gray"># json of {name:value}</span></li>
 </ul>
 <p><strong>user</strong></p>
 <ul class="simple">
