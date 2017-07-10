@@ -1238,3 +1238,22 @@ class rpc(_Methods_Base):
     def rpc_public_get_site_id(self):
         raise tornado.gen.Return(self.parent.db.cfg['site_id'])
 
+    @tornado.gen.coroutine
+    def rpc_public_get_cpu_gpu_usage(self, dataset_id):
+        sql = 'select stat from task_stat join task on task_stat.task_id = task.task_id join task_rel on task.task_rel_id = task_rel.task_rel_id where dataset_id = ? and task.status = "complete";'
+        bindings = (dataset_id,)
+        rows = yield self.parent.db.query(sql, bindings)
+        total_cpu = 0.0
+        total_gpu = 0.0
+        for r in rows:
+            stats = json_decode(r)
+            resources = stats['resources']
+            if 'cpu' in resources: 
+                total_cpu += resources['cpu']
+            if 'gpu' in resources:
+                total_gpu += resources['gpu']
+        if len(rows) > 0:
+            total_cpu /= len(rows)
+            total_gpu /= len(rows)
+        raise tornado.gen.Return([total_cpu, total_gpu])
+        
