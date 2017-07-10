@@ -730,14 +730,8 @@ class Dataset(PublicHandler):
             if isinstance(passkey,Exception):
                 raise passkey
 
-            ret = yield self.db_call('web_get_jobs_by_status',
+            jobs = yield self.db_call('web_get_job_counts_by_status',
                                       dataset_id=dataset_id)
-            jobs = {}
-            for j in ret:
-                if j['status'] not in jobs:
-                    jobs[j['status']] = 1
-                else:
-                    jobs[j['status']] += 1
 
             tasks = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
             task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)

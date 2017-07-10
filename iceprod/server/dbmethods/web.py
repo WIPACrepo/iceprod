@@ -370,6 +370,33 @@ class web(_Methods_Base):
 
         raise tornado.gen.Return(stats)
 
+    @tornado.gen.coroutine
+    def web_get_job_counts_by_status(self, status=None, dataset_id=None):
+        """
+        Get count of jobs by status.
+
+        Args:
+            status (str): status to restrict by
+            dataset_id (str): dataset id
+
+        Returns:
+           dict: {status: count}
+        """
+        where_query = {}
+        if dataset_id:
+            where_query['dataset_id'] = dataset_id
+        if status:
+            where_query['status'] = status
+
+        sql = 'select status,count(*) from job'
+        if where_query:
+            sql += ' where '
+            sql += ' and '.join(w+' = ?' for w in where_query)
+        sql += ' group by status'
+        bindings = tuple(where_query.values())
+        ret = yield self.parent.db.query(sql, bindings)
+        jobs = {status:num for status,num in ret}
+        raise tornado.gen.Return(jobs)
 
     @tornado.gen.coroutine
     def web_get_jobs_by_status(self, status=None, dataset_id=None):
@@ -392,7 +419,7 @@ class web(_Methods_Base):
         sql = 'select * from job'
         if where_query:
             sql += ' where '
-            sql += ' and '.join('{} = ?'.format(w) for w in where_query)
+            sql += ' and '.join(w+' = ?' for w in where_query)
         bindings = tuple(where_query.values())
         ret = yield self.parent.db.query(sql, bindings)
         jobs = [self._list_to_dict(['job'],row) for row in ret]
