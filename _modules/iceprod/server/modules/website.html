@@ -850,14 +850,8 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passkey</span><span class="p">,</span><span class="ne">Exception</span><span class="p">):</span>
                 <span class="k">raise</span> <span class="n">passkey</span>
 
-            <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_jobs_by_status&#39;</span><span class="p">,</span>
+            <span class="n">jobs</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_job_counts_by_status&#39;</span><span class="p">,</span>
                                       <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
-            <span class="n">jobs</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">j</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">jobs</span><span class="p">:</span>
-                    <span class="n">jobs</span><span class="p">[</span><span class="n">j</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">jobs</span><span class="p">[</span><span class="n">j</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]]</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="n">tasks</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_tasks_by_status&#39;</span><span class="p">,</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
             <span class="n">task_info</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_call</span><span class="p">(</span><span class="s">&#39;web_get_task_completion_stats&#39;</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>

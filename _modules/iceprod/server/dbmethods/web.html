@@ -490,6 +490,33 @@
 
         <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span></div>
 
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="web.web_get_job_counts_by_status"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_job_counts_by_status">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_job_counts_by_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get count of jobs by status.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            status (str): status to restrict by</span>
+<span class="sd">            dataset_id (str): dataset id</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">           dict: {status: count}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">where_query</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">dataset_id</span><span class="p">:</span>
+            <span class="n">where_query</span><span class="p">[</span><span class="s">&#39;dataset_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_id</span>
+        <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">where_query</span><span class="p">[</span><span class="s">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">status</span>
+
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select status,count(*) from job&#39;</span>
+        <span class="k">if</span> <span class="n">where_query</span><span class="p">:</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">w</span><span class="o">+</span><span class="s">&#39; = ?&#39;</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">where_query</span><span class="p">)</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; group by status&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">where_query</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">jobs</span> <span class="o">=</span> <span class="p">{</span><span class="n">status</span><span class="p">:</span><span class="n">num</span> <span class="k">for</span> <span class="n">status</span><span class="p">,</span><span class="n">num</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">}</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="web.web_get_jobs_by_status"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.web.web.web_get_jobs_by_status">[docs]</a>    <span class="k">def</span> <span class="nf">web_get_jobs_by_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
@@ -512,7 +539,7 @@
         <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from job&#39;</span>
         <span class="k">if</span> <span class="n">where_query</span><span class="p">:</span>
             <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where &#39;</span>
-            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;{} = ?&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">where_query</span><span class="p">)</span>
+            <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; and &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">w</span><span class="o">+</span><span class="s">&#39; = ?&#39;</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">where_query</span><span class="p">)</span>
         <span class="n">bindings</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">where_query</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
         <span class="n">jobs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_list_to_dict</span><span class="p">([</span><span class="s">&#39;job&#39;</span><span class="p">],</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">]</span>
