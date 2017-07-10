@@ -330,11 +330,18 @@ else:
                             # get similar cols
                             keepcols = curcols & scols
 
-                            full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
-                            full_sql += 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name+';'
-                            full_sql += 'drop table '+table_name+';'
-                            full_sql += 'alter table '+table_name+'_backup rename to '+table_name;
-                            cur.execute(full_sql)
+                            sql = 'create table '+table_name+'_backup '+sql_create
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'drop table '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'alter table '+table_name+'_backup rename to '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
                             for query in sql_index_create:
                                 cur.execute(query)
                         else:
@@ -516,11 +523,18 @@ if MySQLdb:
                             # get similar cols
                             keepcols = curcols & scols
 
-                            full_sql = 'create temporary table '+table_name+'_backup '+sql_create+';'
-                            full_sql += 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name+';'
-                            full_sql += 'drop table '+table_name+';'
-                            full_sql += 'alter table '+table_name+'_backup rename to '+table_name;
-                            cur.execute(full_sql)
+                            sql = 'create table '+table_name+'_backup '+sql_create
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'insert into '+table_name+'_backup ('+(','.join(keepcols))+') select '+','.join(keepcols)+' from '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'drop table '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
+                            sql = 'alter table '+table_name+'_backup rename to '+table_name
+                            logger.info(sql)
+                            cur.execute(sql)
                         else:
                             # table is good
                             logger.info('table '+table_name+' already exists')
