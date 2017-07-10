@@ -1012,7 +1012,10 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">nowstr</span><span class="p">()</span>
             <span class="n">s</span>  <span class="o">=</span> <span class="s">&#39;insert into pilot (pilot_id, grid_queue_id, submit_time, &#39;</span>
-            <span class="n">s</span> <span class="o">+=</span> <span class="s">&#39;submit_dir, tasks, requirements) values (?,?,?,?,?,?)&#39;</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s">&#39;submit_dir, tasks, requirements, avail_cpu, avail_gpu, &#39;</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s">&#39;avail_memory, avail_disk, avail_time, claim_cpu, claim_gpu, &#39;</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s">&#39;claim_memory, claim_disk, claim_time) values (?,?,?,?,?,?,&#39;</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s">&#39;0,0,0.0,0.0,0.0,0,0,0.0,0.0,0.0)&#39;</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">pilot_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pilot</span><span class="p">[</span><span class="s">&#39;pilot_ids&#39;</span><span class="p">]):</span>

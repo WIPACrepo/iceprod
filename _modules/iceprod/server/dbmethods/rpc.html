@@ -618,25 +618,35 @@
         <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
-<div class="viewcode-block" id="rpc.rpc_update_pilot"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_pilot">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_update_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="rpc.rpc_update_pilot"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_update_pilot">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_update_pilot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pilot_id</span><span class="p">,</span> <span class="n">tasks</span><span class="o">=</span><span class="k">None</span><span class="p">,</span> <span class="n">resources_available</span><span class="o">=</span><span class="k">None</span><span class="p">,</span>
+                         <span class="n">resources_claimed</span><span class="o">=</span><span class="k">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Update the pilot table.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            pilot_id (str): Id of the pilot to update.</span>
-<span class="sd">            **kwargs (dict): {key:value}</span>
+<span class="sd">            tasks (str): csv list of tasks</span>
+<span class="sd">            resources_available (dict): {resource:value}</span>
+<span class="sd">            resources_claimed (dict): {resource:value}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;update pilot: %s&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;no update given&#39;</span><span class="p">)</span>
-        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update pilot set &#39;</span>
-        <span class="n">bindings</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="s">&#39;pilot&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="n">sql</span> <span class="o">+=</span> <span class="n">name</span><span class="o">+</span><span class="s">&#39;=? &#39;</span>
-                <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;update pilot: %s&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">tasks</span><span class="p">))</span>
+
+        <span class="n">avail</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;cpu&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;gpu&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;memory&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">,</span><span class="s">&#39;disk&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">,</span><span class="s">&#39;time&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">resources_available</span><span class="p">:</span>
+            <span class="n">avail</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">resources_available</span><span class="p">)</span>
+
+        <span class="n">claim</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;cpu&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;gpu&#39;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="s">&#39;memory&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">,</span><span class="s">&#39;disk&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">,</span><span class="s">&#39;time&#39;</span><span class="p">:</span><span class="mf">0.</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">resources_claimed</span><span class="p">:</span>
+            <span class="n">avail</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">resources_claimed</span><span class="p">)</span>
+
+        <span class="c"># handle table updates</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;update pilot set tasks=?, avail_cpu=?, avail_gpu=?, &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;avail_memory=?, avail_disk=?, avail_time=?, claim_cpu=?, &#39;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39;claim_gpu=?, claim_memory=?, claim_disk=?, claim_time=? &#39;</span>
         <span class="n">sql</span> <span class="o">+=</span> <span class="s">&#39; where pilot_id = ?&#39;</span>
-        <span class="n">bindings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pilot_id</span><span class="p">)</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">[</span><span class="n">tasks</span><span class="p">,</span> <span class="n">avail</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">],</span> <span class="n">avail</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">],</span> <span class="n">avail</span><span class="p">[</span><span class="s">&#39;memory&#39;</span><span class="p">],</span>
+                    <span class="n">avail</span><span class="p">[</span><span class="s">&#39;disk&#39;</span><span class="p">],</span> <span class="n">avail</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">],</span> <span class="n">claim</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">],</span> <span class="n">claim</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">],</span>
+                    <span class="n">claim</span><span class="p">[</span><span class="s">&#39;memory&#39;</span><span class="p">],</span> <span class="n">claim</span><span class="p">[</span><span class="s">&#39;disk&#39;</span><span class="p">],</span> <span class="n">claim</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">],</span> <span class="n">pilot_id</span><span class="p">]</span>
         <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bindings</span><span class="p">))</span></div>
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>

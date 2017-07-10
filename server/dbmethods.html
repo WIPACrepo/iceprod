@@ -780,7 +780,9 @@ of possible race conditions around changing status to processing.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>pilot_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; Id of the pilot to update.</li>
-<li><strong>**kwargs</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) &#8211; {key:value}</li>
+<li><strong>tasks</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) &#8211; csv list of tasks</li>
+<li><strong>resources_available</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) &#8211; {resource:value}</li>
+<li><strong>resources_claimed</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) &#8211; {resource:value}</li>
 </ul>
 </td>
 </tr>
@@ -1449,6 +1451,11 @@ an active state, then delete the job and tasks.</p>
 <dl class="method">
 <dt id="iceprod.server.dbmethods.cron.cron.cron_generate_web_graphs">
 <code class="descname">cron_generate_web_graphs</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/cron.html#cron.cron_generate_web_graphs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.cron.cron.cron_generate_web_graphs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="iceprod.server.dbmethods.cron.cron.cron_pilot_monitoring">
+<code class="descname">cron_pilot_monitoring</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/cron.html#cron.cron_pilot_monitoring"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.cron.cron.cron_pilot_monitoring" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
