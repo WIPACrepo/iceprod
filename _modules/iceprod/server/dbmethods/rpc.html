@@ -1356,8 +1356,27 @@
 
     <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
 <div class="viewcode-block" id="rpc.rpc_public_get_site_id"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_site_id">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_public_get_site_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">])</span></div></div>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">cfg</span><span class="p">[</span><span class="s">&#39;site_id&#39;</span><span class="p">])</span></div>
 
+    <span class="nd">@tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">coroutine</span>
+<div class="viewcode-block" id="rpc.rpc_public_get_cpu_gpu_usage"><a class="viewcode-back" href="../../../../server/dbmethods.html#iceprod.server.dbmethods.rpc.rpc.rpc_public_get_cpu_gpu_usage">[docs]</a>    <span class="k">def</span> <span class="nf">rpc_public_get_cpu_gpu_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">):</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select stat from task_stat join task on task_stat.task_id = task.task_id join task_rel on task.task_rel_id = task_rel.task_rel_id where dataset_id = ? and task.status = &quot;complete&quot;;&#39;</span>
+        <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset_id</span><span class="p">,)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">bindings</span><span class="p">)</span>
+        <span class="n">total_cpu</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">total_gpu</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">stats</span> <span class="o">=</span> <span class="n">json_decode</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">resources</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s">&#39;resources&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&#39;cpu&#39;</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span> 
+                <span class="n">total_cpu</span> <span class="o">+=</span> <span class="n">resources</span><span class="p">[</span><span class="s">&#39;cpu&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s">&#39;gpu&#39;</span> <span class="ow">in</span> <span class="n">resources</span><span class="p">:</span>
+                <span class="n">total_gpu</span> <span class="o">+=</span> <span class="n">resources</span><span class="p">[</span><span class="s">&#39;gpu&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">total_cpu</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+            <span class="n">total_gpu</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">([</span><span class="n">total_cpu</span><span class="p">,</span> <span class="n">total_gpu</span><span class="p">])</span></div></div>
+        
 </pre></div>
 
            </div>
