@@ -328,7 +328,7 @@ class Pilot(object):
                         tasks_running += 1
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
                                               resources_available=self.resources.get_available(),
-                                              resources_claimed=self.resources.get_claimed()))
+                                              resources_claimed=self.resources.get_claimed())
 
                 if (self.resources.available['cpu'] < 1
                     or self.resources.available['memory'] < 1):
@@ -356,7 +356,7 @@ class Pilot(object):
                     tasks_running = len(self.tasks)
                     exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
                                           resources_available=self.resources.get_available(),
-                                          resources_claimed=self.resources.get_claimed()))
+                                          resources_claimed=self.resources.get_claimed())
                     if self.running:
                         break
 
