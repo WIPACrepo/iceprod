@@ -170,7 +170,17 @@
             ["submit_time", "str", "datetime"],
             ["submit_dir", "Text"],
             ["tasks", "Text", "csv list of processing task_ids"],
-            ["requirements", "Text", "json of {name:value}"]
+            ["requirements", "Text", "json of {name:value}"],
+            ["avail_cpu", "int"],
+            ["avail_gpu", "int"],
+            ["avail_memory", "float"],
+            ["avail_disk", "float"],
+            ["avail_time", "float"],
+            ["claim_cpu", "int"],
+            ["claim_gpu", "int"],
+            ["claim_memory", "float"],
+            ["claim_disk", "float"],
+            ["claim_time", "float"]
         ],
         "user": [
             ["user_id", "str"],

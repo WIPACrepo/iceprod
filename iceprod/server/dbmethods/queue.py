@@ -892,7 +892,10 @@ class queue(_Methods_Base):
         try:
             now = nowstr()
             s  = 'insert into pilot (pilot_id, grid_queue_id, submit_time, '
-            s += 'submit_dir, tasks, requirements) values (?,?,?,?,?,?)'
+            s += 'submit_dir, tasks, requirements, avail_cpu, avail_gpu, '
+            s += 'avail_memory, avail_disk, avail_time, claim_cpu, claim_gpu, '
+            s += 'claim_memory, claim_disk, claim_time) values (?,?,?,?,?,?,'
+            s += '0,0,0.0,0.0,0.0,0,0,0.0,0.0,0.0)'
             sql = []
             bindings = []
             for i,pilot_id in enumerate(pilot['pilot_ids']):

@@ -498,25 +498,35 @@ class rpc(_Methods_Base):
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
-    def rpc_update_pilot(self, pilot_id, **kwargs):
+    def rpc_update_pilot(self, pilot_id, tasks=None, resources_available=None,
+                         resources_claimed=None):
         """
         Update the pilot table.
 
         Args:
             pilot_id (str): Id of the pilot to update.
-            **kwargs (dict): {key:value}
+            tasks (str): csv list of tasks
+            resources_available (dict): {resource:value}
+            resources_claimed (dict): {resource:value}
         """
-        logger.info('update pilot: %s',str(kwargs))
-        if not kwargs:
-            raise Exception('no update given')
-        sql = 'update pilot set '
-        bindings = []
-        for name in self.parent.db.tables['pilot']:
-            if name in kwargs:
-                sql += name+'=? '
-                bindings.append(kwargs[name])
+        logger.info('update pilot: %s',str(tasks))
+
+        avail = {'cpu':0,'gpu':0,'memory':0.,'disk':0.,'time':0.}
+        if resources_available:
+            avail.update(resources_available)
+
+        claim = {'cpu':0,'gpu':0,'memory':0.,'disk':0.,'time':0.}
+        if resources_claimed:
+            avail.update(resources_claimed)
+
+        # handle table updates
+        sql = 'update pilot set tasks=?, avail_cpu=?, avail_gpu=?, '
+        sql += 'avail_memory=?, avail_disk=?, avail_time=?, claim_cpu=?, '
+        sql += 'claim_gpu=?, claim_memory=?, claim_disk=?, claim_time=? '
         sql += ' where pilot_id = ?'
-        bindings.append(pilot_id)
+        bindings = [tasks, avail['cpu'], avail['gpu'], avail['memory'],
+                    avail['disk'], avail['time'], claim['cpu'], claim['gpu'],
+                    claim['memory'], claim['disk'], claim['time'], pilot_id]
         yield self.parent.db.query(sql, tuple(bindings))
 
     @tornado.gen.coroutine

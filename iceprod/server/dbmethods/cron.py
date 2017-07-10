@@ -387,3 +387,26 @@ class cron(_Methods_Base):
         sql += 'values (?,?,?,?)'
         bindings = (graph_id, 'completed_tasks', json_encode(results), now)
         yield self.parent.db.query(sql, bindings)
+
+    @tornado.gen.coroutine
+    def cron_pilot_monitoring(self):
+        sql = 'select sum(avail_cpu), sum(avail_gpu), sum(avail_memory), '
+        sql += 'sum(avail_disk), sum(avail_time), sum(claim_cpu), '
+        sql += 'sum(claim_gpu), sum(claim_memory), sum(claim_disk), '
+        sql += 'sum(claim_time), count(*) from pilot'
+        ret = yield self.parent.db.query(sql, tuple())
+        for (avail_cpu, avail_gpu, avail_memory, avail_disk, avail_time,
+             claim_cpu, claim_gpu, claim_memory, claim_disk, claim_time,
+             num) in ret:
+            self.parent.statsd.gauge('pilot_resources.available.cpu', avail_cpu)
+            self.parent.statsd.gauge('pilot_resources.available.gpu', avail_gpu)
+            self.parent.statsd.gauge('pilot_resources.available.memory', avail_memory)
+            self.parent.statsd.gauge('pilot_resources.available.disk', avail_disk)
+            self.parent.statsd.gauge('pilot_resources.available.time', avail_time)
+            self.parent.statsd.gauge('pilot_resources.claimed.cpu', claim_cpu)
+            self.parent.statsd.gauge('pilot_resources.claimed.gpu', claim_gpu)
+            self.parent.statsd.gauge('pilot_resources.claimed.memory', claim_memory)
+            self.parent.statsd.gauge('pilot_resources.claimed.disk', claim_disk)
+            self.parent.statsd.gauge('pilot_resources.claimed.time', claim_time)
+            self.parent.statsd.gauge('pilot_count', num)
+            break

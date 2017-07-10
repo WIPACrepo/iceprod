@@ -82,6 +82,9 @@ class schedule(module.module):
         self.scheduler.schedule(config['generate_web_graphs'],
                 self.modules['db']['cron_generate_web_graphs'])
 
+        self.scheduler.schedule(config['pilot_monitoring'],
+                self.modules['db']['cron_pilot_monitoring'])
+
         if ('master' in self.cfg and 'status' in self.cfg['master'] and
             self.cfg['master']['status']):
             self._master_schedule()

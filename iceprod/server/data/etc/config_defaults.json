@@ -60,6 +60,7 @@
         "remove_old_passkeys": "every 6 hours",
         "collate_resources": "every 1 hours",
         "job_completion": "every 31 minutes",
-        "dataset_completion": "every 1 hours"
+        "dataset_completion": "every 1 hours",
+        "pilot_monitoring": "every 5 minutes"
     }
 }

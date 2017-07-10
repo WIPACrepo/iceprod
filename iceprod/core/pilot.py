@@ -179,7 +179,9 @@ class Pilot(object):
                                reason=reason, message=message)
 
         # stop the pilot
-        exe_json.update_pilot(self.pilot_id, tasks='')
+        exe_json.update_pilot(self.pilot_id, tasks='',
+                              resources_available=self.resources.get_available(),
+                              resources_claimed=self.resources.get_claimed())
         self.ioloop.stop()
 
     def hard_kill(self):
@@ -324,7 +326,9 @@ class Pilot(object):
                                            message=message)
                     else:
                         tasks_running += 1
-                        exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
+                        exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                                              resources_available=self.resources.get_available(),
+                                              resources_claimed=self.resources.get_claimed()))
 
                 if (self.resources.available['cpu'] < 1
                     or self.resources.available['memory'] < 1):
@@ -350,7 +354,9 @@ class Pilot(object):
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
-                    exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks))
+                    exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                                          resources_available=self.resources.get_available(),
+                                          resources_claimed=self.resources.get_claimed()))
                     if self.running:
                         break
 
