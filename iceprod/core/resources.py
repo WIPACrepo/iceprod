@@ -171,6 +171,7 @@ class Resources:
             'gpu':0,
             'memory':0.,
             'disk':0.,
+            'time':0,
         }
         for claim in self.claimed:
             claim_resources = self.claimed[claim]['resources']
