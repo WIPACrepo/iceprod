@@ -509,7 +509,8 @@ class rpc(_Methods_Base):
             resources_available (dict): {resource:value}
             resources_claimed (dict): {resource:value}
         """
-        logger.info('update pilot: %s',str(tasks))
+        logger.info('update pilot: %s %r %r', tasks, resources_available,
+                    resources_claimed)
 
         avail = {'cpu':0,'gpu':0,'memory':0.,'disk':0.,'time':0.}
         if resources_available:

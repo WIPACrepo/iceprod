@@ -168,7 +168,7 @@ class Resources:
         """
         ret = {
             'cpu':0,
-            'gpu':[],
+            'gpu':0,
             'memory':0.,
             'disk':0.,
         }
