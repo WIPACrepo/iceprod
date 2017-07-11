@@ -518,7 +518,7 @@ class rpc(_Methods_Base):
 
         claim = {'cpu':0,'gpu':0,'memory':0.,'disk':0.,'time':0.}
         if resources_claimed:
-            avail.update(resources_claimed)
+            claim.update(resources_claimed)
 
         # handle table updates
         sql = 'update pilot set tasks=?, avail_cpu=?, avail_gpu=?, '
