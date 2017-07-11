@@ -53,9 +53,7 @@ class web(_Methods_Base):
             bindings += ('%'+gridspec+'%',)
         sql += ' group by search.task_status '
         ret = yield self.parent.db.query(sql, bindings)
-        task_groups = {}
-        for status,num in ret:
-            task_groups[status] = num
+        task_groups = {status:num for status,num in ret}
         raise tornado.gen.Return(task_groups)
 
     @tornado.gen.coroutine
