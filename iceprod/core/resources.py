@@ -173,13 +173,14 @@ class Resources:
             'disk':0.,
         }
         for claim in self.claimed:
-            for r in self.claimed[claim]:
+            claim_resources = self.claimed[claim]['resources']
+            for r in claim_resources:
                 if r == 'time':
-                    ret[r] = max(ret[r],self.claimed[claim][r])
-                elif isinstance(self.claimed[claim][r], list):
-                    ret[r] += len(self.claimed[claim][r])
+                    ret[r] = max(ret[r],claim_resources[r])
+                elif isinstance(claim_resources[r], list):
+                    ret[r] += len(claim_resources[r])
                 else:
-                    ret[r] += self.claimed[claim][r]
+                    ret[r] += claim_resources[r]
         ret['time'] -= time.time()/3600
         return ret
 

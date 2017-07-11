@@ -360,6 +360,11 @@ class Pilot(object):
                     if self.running:
                         break
 
+        # last update for pilot state
+        exe_json.update_pilot(self.pilot_id, tasks='',
+                              resources_available=self.resources.get_available(),
+                              resources_claimed=self.resources.get_claimed())
+
         if errors < 1:
             logger.critical('too many errors when running tasks')
         else:
