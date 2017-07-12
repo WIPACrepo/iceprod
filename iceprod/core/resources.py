@@ -13,7 +13,7 @@ from copy import deepcopy
 import subprocess
 import tempfile
 import shutil
-from collections import deque, defaultdict
+from collections import deque, defaultdict, OrderedDict
 import logging
 
 try:
@@ -28,13 +28,14 @@ class Resources:
     Task (and node) resource definition and tracking.
     """
 
-    defaults = {
-        'cpu': 1,
-        'gpu': [],
-        'memory': 1.0,
-        'disk': 10.0,
-        'time': 1.0,
-    }
+    # ordering based on priority for matching
+    defaults = OrderedDict([
+        ('gpu', []),
+        ('memory', 1.0),
+        ('disk', 10.0),
+        ('time', 1.0),
+        ('cpu', 1),
+    ])
     """Default resource values
 
     cpu
