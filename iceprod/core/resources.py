@@ -183,7 +183,8 @@ class Resources:
                     ret[r] += len(claim_resources[r])
                 else:
                     ret[r] += claim_resources[r]
-        ret['time'] -= time.time()/3600
+        if ret['time'] > 1:
+            ret['time'] -= time.time()/3600
         return ret
 
     def claim(self, task_id, resources=None):
