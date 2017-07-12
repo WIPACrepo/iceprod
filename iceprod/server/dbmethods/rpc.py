@@ -76,6 +76,7 @@ class rpc(_Methods_Base):
                 sql = 'select * from task_lookup '
                 if reqs:
                     sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
+                sql += ' order by '+','.join('req_'+k+' desc' for k in Resources.defaults)
                 sql += ' limit 1'
                 if reqs:
                     bindings = tuple(reqs.values())
