@@ -679,16 +679,16 @@ By default, get all pilots</p>
 <dl class="method">
 <dt id="iceprod.server.dbmethods.rpc.rpc.rpc_new_task">
 <code class="descname">rpc_new_task</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iceprod/server/dbmethods/rpc.html#rpc.rpc_new_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#iceprod.server.dbmethods.rpc.rpc.rpc_new_task" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get a new task from the queue specified by the gridspec,
+<dd><p>Get new task(s) from the queue specified by the gridspec,
 based on the hostname, network interfaces, resources.
 Save hostname,network in nodes table.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a job config</td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a list of job configs (dicts)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#list" title="(in Python v3.6)">list</a></td>
 </tr>
 </tbody>
 </table>
