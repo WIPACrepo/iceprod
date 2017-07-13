@@ -520,9 +520,9 @@ var Submission = (function( $ ) {
             html += '<div id="advanced_submit" style="display:none">advanced</div>';
             html += '<div id="expert_submit" style="display:none"><textarea id="submit_box" style="min-height:400px">'
             html += '</textarea></div>';
-            html += '<textarea id="description" placeholder="Description"></textarea>';
 
             if (data.dataset == null) {
+                html += '<textarea id="description" placeholder="Description"></textarea>';
                 html += '<div>Number of jobs: <input id="number_jobs" value="1" type="number" min="1", step="1"/> <select id="gridspec" style="margin-left:10px">';
                 html += '<option selected="selected" value="">ALL</option>';
                 for (var g in args.grids) {
@@ -531,9 +531,10 @@ var Submission = (function( $ ) {
                 html += '</select>';
                 html += '<button id="submit_action">Submit</button></div>';
             } else {
+                html += '<textarea id="description" placeholder="Description">'+data.dataset.description +'</textarea>';
                 html += '<span class = "submit_text">Grids: '+data.dataset.gridspec+'</span>';
                 //html += '<h4>Description</h4><textarea id="description" style="width:85%;margin-left:1em;min-height:2em">';
-                html += data.dataset.description + '</textarea>';
+                html += '</textarea>';
                 if (data.edit) {
                     html += '<button id="submit_action">Update</button>';
                 }
