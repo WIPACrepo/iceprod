@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from collections import OrderedDict
 import math
+from copy import deepcopy
 
 import tornado.gen
 
@@ -36,12 +37,12 @@ class rpc(_Methods_Base):
     def rpc_new_task(self, gridspec=None, **kwargs):
         """
 
-        Get a new task from the queue specified by the gridspec,
+        Get new task(s) from the queue specified by the gridspec,
         based on the hostname, network interfaces, resources.
         Save hostname,network in nodes table.
 
         Returns:
-            dict: a job config
+            list: a list of job configs (dicts)
         """
         if not gridspec:
             raise Exception('gridspec is not given')
@@ -51,8 +52,6 @@ class rpc(_Methods_Base):
                 'ifaces':None,
                }
         args.update(kwargs)
-        #if args['hostname']:
-        #    self.parent.statsd.incr('new_task.hostname.'+args['hostname'].replace('.','_'))
         if args['domain']:
             self.parent.statsd.incr('new_task.domain.'+args['domain'].replace('.','_'))
         yield self.parent.service['node_update'](**args)
@@ -72,107 +71,109 @@ class rpc(_Methods_Base):
                     reqs[k] = default
             logger.info('new task for resources: %r', reqs)
 
-            for _ in range(100):
-                sql = 'select * from task_lookup '
-                if reqs:
-                    sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
-                sql += ' order by '+','.join('req_'+k+' desc' for k in Resources.defaults)
-                sql += ' limit 1'
-                if reqs:
-                    bindings = tuple(reqs.values())
-                else:
-                    bindings = tuple()
-                ret = yield self.parent.db.query(sql, bindings)
-                task_id = None
-                resources = {}
-                for row in ret:
-                    row = self._list_to_dict('task_lookup',row)
-                    task_id = row.pop('task_id')
-                    for k in row:
-                        resources[k.replace('req_','')] = row[k]
-                if not task_id:
-                    logger.info('no tasks found matching resources available')
-                    raise tornado.gen.Return(None)
-                sql = 'select * from search where task_id = ? and task_status = ?'
-                bindings = (task_id,'queued')
-                ret = yield self.parent.db.query(sql, bindings)
-                if (not ret) or not ret[0]:
-                    logger.info('task %s not valid, remove from task_lookup',
-                                task_id)
-                    sql = 'delete from task_lookup where task_id = ?'
-                    bindings = (task_id,)
-                    yield self.parent.db.query(sql, bindings)
-                else:
-                    break # we found a valid task
+            # get all the tasks
+            sql = 'select * from task_lookup '
+            if reqs:
+                sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
+                bindings = tuple(reqs.values())
             else:
-                logger.warn('100 iterations searching for new_task')
+                bindings = tuple()
+            ret = yield self.parent.db.query(sql, bindings)
+            tasks = []
+            for row in ret:
+                row = self._list_to_dict('task_lookup',row)
+                task_id = row.pop('task_id')
+                resources = {}
+                for k in row:
+                    resources[k.replace('req_','')] = row[k]
+                tasks.append((task_id,resources))
+            if not tasks:
+                logger.info('no tasks found matching resources available')
                 raise tornado.gen.Return(None)
 
-            newtask = self._list_to_dict('search',ret[0])
-            if not newtask:
+            # check that these are still valid
+            sql = 'select * from search where task_id = (%s) and task_status = ?'
+            bindings = ('queued',)
+            task_ids = set(t[0] for t in tasks)
+            search = {}
+            for f in self._bulk_select(sql, task_ids, extra_bindings=bindings):
+                for row in (yield f):
+                    tmp = self._list_to_dict('search',row)
+                    search[tmp['task_id']] = tmp
+            invalid_tasks = task_ids.difference(search)
+            if invalid_tasks:
+                logger.info('tasks not valid, remove from task_lookup: %s',
+                            invalid_tasks)
+                sql = 'delete from task_lookup where task_id in (%s)'
+                for f in self._bulk_select(sql, invalid_tasks):
+                    yield f
+
+            # sort by largest resources
+            tasks.sort(key=lambda t:[t[1][k] for k in Resources.defaults],
+                       reverse=True)
+
+            # get only what can match
+            new_tasks = {}
+            for t in tasks:
+                for k in reqs:
+                    if reqs[k] < t[1][k]:
+                        break
+                    reqs[k] -= t[1][k]
+                else: # task passed
+                    new_tasks[t[0]] = search[t[0]]
+                    new_tasks[t[0]]['resources'] = t[1]
+
+            if not new_tasks:
                 logger.info('error: no task to allocate')
                 raise tornado.gen.Return(None)
-            sql = 'select job_index from job where job_id = ?'
-            bindings = (newtask['job_id'],)
-            ret = yield self.parent.db.query(sql, bindings)
-            if (not ret) or not ret[0]:
-                logger.info('ret: %r', ret)
-                logger.info('newtask: %r', newtask)
-                logger.warn('failed to find job with known job_id %r',
-                            newtask['job_id'])
-                raise tornado.gen.Return(None)
-            newtask['job'] = ret[0][0]
-            sql = 'select jobs_submitted, debug from dataset where dataset_id = ?'
-            bindings = (newtask['dataset_id'],)
-            ret = yield self.parent.db.query(sql, bindings)
-            if (not ret) or not ret[0]:
-                logger.warn('failed to find dataset with known dataset_id')
-                raise tornado.gen.Return(None)
-            for js, debug in ret:
-                newtask['jobs_submitted'] = js
-                newtask['debug'] = bool(debug)
-                break
-            newtask['resources'] = resources
 
-            now = nowstr()
-            sql = 'update search set task_status = ? '
-            sql += ' where task_id = ?'
-            bindings = ('processing',newtask['task_id'])
-            sql2 = 'update task set prev_status = status, '
-            sql2 += ' status = ?, status_changed = ? where task_id = ?'
-            bindings2 = ('processing',now,newtask['task_id'])
-            sql3 = 'delete from task_lookup where task_id = ?'
-            bindings3 = (newtask['task_id'],)
-            yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
-            if self._is_master():
-                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
-                bindings3 = (master_update_history_id,'search',newtask['task_id'],now)
-                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                bindings4 = (master_update_history_id,'task',newtask['task_id'],now)
-                try:
-                    yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
-                except:
-                    logger.info('error updating master_update_history',
-                                exc_info=True)
-            else:
-                yield self._send_to_master(('search',newtask['task_id'],now,sql,bindings))
-                yield self._send_to_master(('task',newtask['task_id'],now,sql2,bindings2))
+            # update task status to processing, remove from task lookup
+            yield self.parent.service['queue_set_task_status'](new_tasks,'processing')
+            sql = 'delete from task_lookup where task_id in (%s)'
+            for f in self._bulk_select(sql, new_tasks):
+                yield f
 
-        ret = yield self.parent.service['queue_get_cfg_for_dataset'](newtask['dataset_id'])
+        # drop the queue lock
 
-        # now make the job config
-        config = json_decode(ret)
-        if 'options' not in config:
-            config['options'] = {}
-        config['options']['task_id'] = newtask['task_id']
-        config['options']['task'] = newtask['name']
-        config['options']['dataset_id'] = newtask['dataset_id']
-        config['options']['job'] = newtask['job']
-        config['options']['jobs_submitted'] = newtask['jobs_submitted']
-        config['options']['debug'] = newtask['debug']
-        config['options']['resources'] = newtask['resources']
-        raise tornado.gen.Return(config)
+        # get job/dataset information
+        sql = 'select job_id,job_index from job where job_id in (%s)'
+        job_ids = {new_tasks[t]['job_id']:t for t in new_tasks}
+        for f in self._bulk_select(sql, job_ids):
+            for job_id,job_index in (yield f):
+                new_tasks[job_ids[job_id]]['job'] = job_index
+        sql = 'select dataset_id, jobs_submitted, debug '
+        sql += 'from dataset where dataset_id in (%s)'
+        dataset_ids = {new_tasks[t]['dataset_id']:t for t in new_tasks}
+        for f in self._bulk_select(sql, dataset_ids):
+            for dataset_id,jobs_submitted,debug in (yield f):
+                t = dataset_ids[dataset_id]
+                new_tasks[t]['jobs_submitted'] = jobs_submitted
+                new_tasks[t]['debug'] = debug
+
+        # get config files
+        configs = {}
+        for dataset_id in dataset_ids:
+            ret = yield self.parent.service['queue_get_cfg_for_dataset'](dataset_id)
+            config = json_decode(ret)
+            configs[dataset_id] = config
+
+        # now make the task configs
+        task_configs = []
+        for newtask in new_tasks.values():
+            config = deepcopy(configs[newtask['dataset_id']])
+            if 'options' not in config:
+                config['options'] = {}
+            config['options']['task_id'] = newtask['task_id']
+            config['options']['task'] = newtask['name']
+            config['options']['dataset_id'] = newtask['dataset_id']
+            config['options']['job'] = newtask['job']
+            config['options']['jobs_submitted'] = newtask['jobs_submitted']
+            config['options']['debug'] = newtask['debug']
+            config['options']['resources'] = newtask['resources']
+            task_configs.append(config)
+
+        # done. return task_configs to the pilot
+        raise tornado.gen.Return(task_configs)
 
     def rpc_set_processing(self, task_id):
         """

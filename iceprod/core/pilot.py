@@ -266,8 +266,8 @@ class Pilot(object):
         while self.running:
             while self.running:
                 try:
-                    task_config = exe_json.downloadtask(self.config['options']['gridspec'],
-                                                        resources=self.resources.get_available())
+                    task_configs = exe_json.downloadtask(self.config['options']['gridspec'],
+                                                         resources=self.resources.get_available())
                 except Exception:
                     errors -= 1
                     if errors < 1:
@@ -276,56 +276,61 @@ class Pilot(object):
                     logger.error('cannot download task. current error count is %d',
                                  errors, exc_info=True)
                     continue
-                logger.info('task config: %r', task_config)
+                logger.info('task configs: %r', task_configs)
 
-                if task_config is None:
+                if task_configs is None:
                     logger.info('no task available')
                     if not self.tasks:
                         self.running = False
                         logger.warn('no task available, draining')
                     break
                 else:
-                    try:
-                        task_id = task_config['options']['task_id']
-                    except Exception:
-                        errors -= 1
-                        if errors < 1:
-                            self.running = False
-                            logger.warn('errors over limit, draining')
-                        logger.error('error getting task_id from config')
-                        continue
-                    try:
-                        if 'resources' not in task_config['options']:
-                            task_config['options']['resources'] = None
-                        task_resources = self.resources.claim(task_id, task_config['options']['resources'])
-                        task_config['options']['resources'] = task_resources
-                    except Exception:
-                        errors -= 1
-                        if errors < 1:
-                            self.running = False
-                            logger.warn('errors over limit, draining')
-                        logger.warn('error claiming resources %s', task_id,
-                                    exc_info=True)
-                        message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
-                        message += traceback.format_exc()
-                        exe_json.task_kill(task_id, reason='failed to claim resources',
-                                           message=message)
-                        continue
-                    try:
-                        self.create_task(task_config)
-                    except Exception:
-                        errors -= 1
-                        if errors < 1:
-                            self.running = False
-                            logger.warn('errors over limit, draining')
-                        logger.warn('error creating task %s', task_id,
-                                    exc_info=True)
-                        message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
-                        message += traceback.format_exc()
-                        exe_json.task_kill(task_id, reason='failed to create task',
-                                           message=message)
+                    if not isinstance(task_configs,list):
+                        task_configs = [task_configs]
+                    for task_config in task_configs:
+                        try:
+                            task_id = task_config['options']['task_id']
+                        except Exception:
+                            errors -= 1
+                            if errors < 1:
+                                self.running = False
+                                logger.warn('errors over limit, draining')
+                            logger.error('error getting task_id from config')
+                            break
+                        try:
+                            if 'resources' not in task_config['options']:
+                                task_config['options']['resources'] = None
+                            task_resources = self.resources.claim(task_id, task_config['options']['resources'])
+                            task_config['options']['resources'] = task_resources
+                        except Exception:
+                            errors -= 1
+                            if errors < 1:
+                                self.running = False
+                                logger.warn('errors over limit, draining')
+                            logger.warn('error claiming resources %s', task_id,
+                                        exc_info=True)
+                            message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
+                            message += traceback.format_exc()
+                            exe_json.task_kill(task_id, reason='failed to claim resources',
+                                               message=message)
+                            break
+                        try:
+                            self.create_task(task_config)
+                        except Exception:
+                            errors -= 1
+                            if errors < 1:
+                                self.running = False
+                                logger.warn('errors over limit, draining')
+                            logger.warn('error creating task %s', task_id,
+                                        exc_info=True)
+                            message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
+                            message += traceback.format_exc()
+                            exe_json.task_kill(task_id, reason='failed to create task',
+                                               message=message)
+                            self.clean_task(task_id)
+                            break
                     else:
-                        tasks_running += 1
+                        tasks_running += len(task_configs)
                         exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
                                               resources_available=self.resources.get_available(),
                                               resources_claimed=self.resources.get_claimed())

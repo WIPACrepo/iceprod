@@ -221,7 +221,6 @@ class queue(_Methods_Base):
             task = [task]
         elif not isinstance(task,Iterable):
             raise Exception('unknown type for task')
-        logger.info('set task status: %r %r',task,status)
 
         msql = 'update search set task_status = ? '
         msql += ' where task_id = ?'
@@ -231,6 +230,7 @@ class queue(_Methods_Base):
         # process in batches of 900
         if not isinstance(task,list):
             task = list(task)
+        logger.info('set task status: %r %r',task,status)
         try:
             while task:
                 t = task[:900]

@@ -71,12 +71,12 @@ class dbmethods_rpc_test(dbmethods_base):
         ret = yield self.db['rpc_new_task'](gridspec=gridspec,
                 hostname=self.hostname, ifaces=None)
 
-        ret_should_be = {'name':'value','options':{'task_id':task_id,
+        ret_should_be = [{'name':'value','options':{'task_id':task_id,
                                                    'task':'0', 'job': 0,
                                                    'jobs_submitted': 2,
                                                    'dataset_id': 'd1',
                                                    'debug':True,
-                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1.0,'time':1}}}
+                                                   'resources':{'cpu':1,'gpu':0,'memory':1.0,'disk':1.0,'time':1}}}]
         self.assertEqual(ret, ret_should_be)
 
         # no queued jobs
@@ -86,7 +86,7 @@ class dbmethods_rpc_test(dbmethods_base):
             raise Exception('returned task when there should be none')
 
         # db errors
-        for i in range(5):
+        for i in range(3):
             yield self.set_tables(tables)
             starttables = yield self.get_tables(tables)
             self.set_failures([False for _ in range(i)]+[True])
