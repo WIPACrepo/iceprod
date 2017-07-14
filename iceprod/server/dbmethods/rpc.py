@@ -143,7 +143,7 @@ class rpc(_Methods_Base):
         for f in self._bulk_select(sql, job_ids):
             for job_id,job_index in (yield f):
                 for t in job_ids[job_id]:
-                new_tasks[t]['job'] = job_index
+                    new_tasks[t]['job'] = job_index
 
         # get dataset information
         sql = 'select dataset_id, jobs_submitted, debug '
