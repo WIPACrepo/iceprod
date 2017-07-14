@@ -215,24 +215,17 @@
             <span class="n">pilots</span> <span class="o">=</span> <span class="k">False</span>
         
         <span class="c"># calculate num tasks to queue</span>
-        <span class="k">if</span> <span class="n">pilots</span> <span class="ow">and</span> <span class="s">&#39;pilots_on_queue&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">:</span>
-            <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;pilots_on_queue&#39;</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
+        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
         <span class="n">min_tasks</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">max_tasks</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">change</span> <span class="o">=</span> <span class="n">min_tasks</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks_on_queue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">change</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">max_tasks</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_processing</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_queued</span><span class="p">:</span>
-            <span class="n">change</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># already at max</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_queued</span> <span class="o">&gt;=</span> <span class="n">min_tasks</span><span class="p">:</span>
-            <span class="n">change</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># min jobs already queued</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">num_to_queue</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_tasks</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_processing</span><span class="p">,</span>
-                               <span class="n">min_tasks</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_queued</span><span class="p">)</span>
-            <span class="n">change</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">change</span><span class="p">,</span><span class="n">num_to_queue</span><span class="p">)</span>
+
+        <span class="n">num_to_queue</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_tasks</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_processing</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_queued</span><span class="p">,</span>
+                           <span class="n">min_tasks</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks_queued</span><span class="p">)</span>
+        <span class="n">change</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">min</span><span class="p">(</span><span class="n">change</span><span class="p">,</span><span class="n">num_to_queue</span><span class="p">))</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;can queue up to %d tasks&#39;</span><span class="p">,</span> <span class="n">change</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">statsd</span><span class="o">.</span><span class="n">gauge</span><span class="p">(</span><span class="s">&#39;can_queue&#39;</span><span class="p">,</span> <span class="n">change</span><span class="p">)</span>
 
@@ -650,7 +643,7 @@
                 <span class="n">groups_considered</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
 
         <span class="c"># determine how many pilots to queue</span>
-        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;tasks_on_queue&#39;</span><span class="p">]</span>
+        <span class="n">tasks_on_queue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queue_cfg</span><span class="p">[</span><span class="s">&#39;pilots_on_queue&#39;</span><span class="p">]</span>
         <span class="n">queue_tot_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_processing</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
         <span class="n">queue_idle_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_idle</span>
         <span class="n">queue_interval_max</span> <span class="o">=</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks_on_queue</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">tasks_on_queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
