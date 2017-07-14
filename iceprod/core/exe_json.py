@@ -35,7 +35,7 @@ def setupjsonRPC(url, passkey, **kwargs):
                             %(ret,url,passkey))
 
 def downloadtask(gridspec, resources={}):
-    """Download a new task from the server"""
+    """Download new task(s) from the server"""
     hostname = functions.gethostname()
     domain = '.'.join(hostname.split('.')[-2:])
     try:
@@ -51,13 +51,20 @@ def downloadtask(gridspec, resources={}):
     if isinstance(task,Exception):
         # an error occurred
         raise task
-    if task and not isinstance(task, dataclasses.Job):
-        try:
-            task = dict_to_dataclasses(task)
-        except Exception:
-            logger.warn('not a Job: %r',task)
-            raise
-    return task
+    if task and not isinstance(task,list):
+        task = [task]
+    else:
+        return None
+    # convert dict to Job
+    ret = []
+    for t in task:
+        if not isinstance(t, dataclasses.Job):
+            try:
+                ret.append(dict_to_dataclasses(t))
+            except Exception:
+                logger.warn('not a Job: %r',t)
+                raise
+    return ret
 
 def processing(task_id):
     """

@@ -278,15 +278,13 @@ class Pilot(object):
                     continue
                 logger.info('task configs: %r', task_configs)
 
-                if task_configs is None:
+                if not task_configs:
                     logger.info('no task available')
                     if not self.tasks:
                         self.running = False
                         logger.warn('no task available, draining')
                     break
                 else:
-                    if not isinstance(task_configs,list):
-                        task_configs = [task_configs]
                     for task_config in task_configs:
                         try:
                             task_id = task_config['options']['task_id']
