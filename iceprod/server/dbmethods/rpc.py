@@ -92,7 +92,7 @@ class rpc(_Methods_Base):
                 raise tornado.gen.Return(None)
 
             # check that these are still valid
-            sql = 'select * from search where task_id = (%s) and task_status = ?'
+            sql = 'select * from search where task_id in (%s) and task_status = ?'
             bindings = ('queued',)
             task_ids = set(t[0] for t in tasks)
             search = {}
