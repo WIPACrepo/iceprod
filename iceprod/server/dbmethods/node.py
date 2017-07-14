@@ -142,7 +142,7 @@ class node(_Methods_Base):
                     if gridspec in grid_resources:
                         gg = grid_resources[gridspec]
                         if 'resources' not in queues[gridspec]:
-                            queues[gridspec]['resources'] = dict.from_keys(gg.keys(),[0,0])
+                            queues[gridspec]['resources'] = dict.fromkeys(gg.keys(),[0,0])
                         qq = queues[gridspec]['resources']
                         for r in gg:
                             if r not in qq:
