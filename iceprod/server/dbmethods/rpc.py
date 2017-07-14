@@ -135,12 +135,17 @@ class rpc(_Methods_Base):
 
         # drop the queue lock
 
-        # get job/dataset information
+        # get job information
         sql = 'select job_id,job_index from job where job_id in (%s)'
-        job_ids = {new_tasks[t]['job_id']:t for t in new_tasks}
+        job_ids = defaultdict(list)
+        for t in new_tasks:
+            job_ids[new_tasks[t]['job_id']].append(t)
         for f in self._bulk_select(sql, job_ids):
             for job_id,job_index in (yield f):
-                new_tasks[job_ids[job_id]]['job'] = job_index
+                for t in job_ids[job_id]:
+                new_tasks[t]['job'] = job_index
+
+        # get dataset information
         sql = 'select dataset_id, jobs_submitted, debug '
         sql += 'from dataset where dataset_id in (%s)'
         dataset_ids = defaultdict(list)
