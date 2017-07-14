@@ -51,10 +51,10 @@ def downloadtask(gridspec, resources={}):
     if isinstance(task,Exception):
         # an error occurred
         raise task
+    if not task:
+        return None
     if task and not isinstance(task,list):
         task = [task]
-    else:
-        return None
     # convert dict to Job
     ret = []
     for t in task:
