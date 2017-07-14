@@ -212,7 +212,7 @@
                 <span class="k">raise</span> <span class="n">tornado</span><span class="o">.</span><span class="n">gen</span><span class="o">.</span><span class="n">Return</span><span class="p">(</span><span class="k">None</span><span class="p">)</span>
 
             <span class="c"># check that these are still valid</span>
-            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id = (%s) and task_status = ?&#39;</span>
+            <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from search where task_id in (%s) and task_status = ?&#39;</span>
             <span class="n">bindings</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;queued&#39;</span><span class="p">,)</span>
             <span class="n">task_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">)</span>
             <span class="n">search</span> <span class="o">=</span> <span class="p">{}</span>
