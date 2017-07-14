@@ -95,24 +95,17 @@ class BaseGrid(object):
             pilots = False
         
         # calculate num tasks to queue
-        if pilots and 'pilots_on_queue' in self.queue_cfg:
-            tasks_on_queue = self.queue_cfg['pilots_on_queue']
-        else:
-            tasks_on_queue = self.queue_cfg['tasks_on_queue']
+        tasks_on_queue = self.queue_cfg['tasks_on_queue']
         min_tasks = tasks_on_queue[0]
         max_tasks = tasks_on_queue[1]
         change = min_tasks
         if len(tasks_on_queue) > 2:
             change = tasks_on_queue[2]
 
-        if max_tasks <= self.tasks_processing + self.tasks_queued:
-            change = 0 # already at max
-        elif self.tasks_queued >= min_tasks:
-            change = 0 # min jobs already queued
-        else:
-            num_to_queue = min(max_tasks - self.tasks_processing,
-                               min_tasks - self.tasks_queued)
-            change = min(change,num_to_queue)
+
+        num_to_queue = min(max_tasks - self.tasks_processing - self.tasks_queued,
+                           min_tasks - self.tasks_queued)
+        change = max(0,min(change,num_to_queue))
         logger.info('can queue up to %d tasks', change)
         self.statsd.gauge('can_queue', change)
 
@@ -530,7 +523,7 @@ class BaseGrid(object):
                 groups_considered[k] = n
 
         # determine how many pilots to queue
-        tasks_on_queue = self.queue_cfg['tasks_on_queue']
+        tasks_on_queue = self.queue_cfg['pilots_on_queue']
         queue_tot_max = tasks_on_queue[1] - self.grid_processing - self.grid_idle
         queue_idle_max = tasks_on_queue[0] - self.grid_idle
         queue_interval_max = tasks_on_queue[2] if len(tasks_on_queue) > 2 else tasks_on_queue[0]
