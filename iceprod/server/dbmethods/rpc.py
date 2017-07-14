@@ -5,7 +5,7 @@ RPC database methods
 import logging
 from datetime import datetime, timedelta
 from functools import partial
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import math
 from copy import deepcopy
 
@@ -143,12 +143,14 @@ class rpc(_Methods_Base):
                 new_tasks[job_ids[job_id]]['job'] = job_index
         sql = 'select dataset_id, jobs_submitted, debug '
         sql += 'from dataset where dataset_id in (%s)'
-        dataset_ids = {new_tasks[t]['dataset_id']:t for t in new_tasks}
+        dataset_ids = defaultdict(list)
+        for t in new_tasks:
+            dataset_ids[new_tasks[t]['dataset_id']].append(t)
         for f in self._bulk_select(sql, dataset_ids):
             for dataset_id,jobs_submitted,debug in (yield f):
-                t = dataset_ids[dataset_id]
-                new_tasks[t]['jobs_submitted'] = jobs_submitted
-                new_tasks[t]['debug'] = debug
+                for t in dataset_ids[dataset_id]:
+                    new_tasks[t]['jobs_submitted'] = jobs_submitted
+                    new_tasks[t]['debug'] = debug
 
         # get config files
         configs = {}
