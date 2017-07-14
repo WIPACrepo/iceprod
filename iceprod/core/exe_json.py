@@ -64,6 +64,8 @@ def downloadtask(gridspec, resources={}):
             except Exception:
                 logger.warn('not a Job: %r',t)
                 raise
+        else:
+            ret.append(t)
     return ret
 
 def processing(task_id):
