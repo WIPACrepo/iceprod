@@ -229,8 +229,9 @@
                     <span class="k">yield</span> <span class="n">f</span>
 
             <span class="c"># sort by largest resources</span>
-            <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:[</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">Resources</span><span class="o">.</span><span class="n">defaults</span><span class="p">],</span>
-                       <span class="n">reverse</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&quot;memory&quot;</span><span class="p">],</span>
+                       <span class="n">reverse</span><span class="o">=</span><span class="k">False</span><span class="p">)</span> <span class="c">#DS: sort low to high to increase throughput</span>
+            <span class="n">tasks</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s">&quot;gpu&quot;</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
 
             <span class="c"># get only what can match</span>
             <span class="n">new_tasks</span> <span class="o">=</span> <span class="p">{}</span>
