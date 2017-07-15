@@ -109,8 +109,9 @@ class rpc(_Methods_Base):
                     yield f
 
             # sort by largest resources
-            tasks.sort(key=lambda t:[t[1][k] for k in Resources.defaults],
-                       reverse=True)
+            tasks.sort(key=lambda t:t[1]["memory"],
+                       reverse=False) #DS: sort low to high to increase throughput
+            tasks.sort(key=lambda t:t[1]["gpu"], reverse=True)
 
             # get only what can match
             new_tasks = {}
