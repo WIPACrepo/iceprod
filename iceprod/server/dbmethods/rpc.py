@@ -2,6 +2,7 @@
 RPC database methods
 """
 
+import time
 import logging
 from datetime import datetime, timedelta
 from functools import partial
