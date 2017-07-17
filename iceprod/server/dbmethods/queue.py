@@ -1059,7 +1059,7 @@ class queue(_Methods_Base):
         Returns:
             dict: {task_id: resources}
         """
-        with (yield self.parent.db.acquire_lock('queue')):
+        with (yield self.parent.db.acquire_lock('task_lookup')):
             # get tasks from lookup
             sql = 'select * from task_lookup'
             bindings = tuple()

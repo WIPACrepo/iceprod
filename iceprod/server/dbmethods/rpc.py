@@ -71,9 +71,9 @@ class rpc(_Methods_Base):
                 reqs[k] = default
         logger.info('new task for resources: %r', reqs)
 
-        logger.info('acquiring queue lock')
-        with (yield self.parent.db.acquire_lock('queue')):
-            logger.info('queue lock granted')
+        logger.info('acquiring task_lookup lock')
+        with (yield self.parent.db.acquire_lock('task_lookup')):
+            logger.info('task_lookup lock granted')
 
             # get all the tasks
             sql = 'select * from task_lookup '
@@ -116,7 +116,7 @@ class rpc(_Methods_Base):
 
             # sort by priority
             now = time.time()
-            for task_list in tasks:
+            for task_list in tasks.values():
                 task_list.sort(key=lambda t:task_queue.sched_prio(t[-1],now-t[1]))
 
             # get only what can match
