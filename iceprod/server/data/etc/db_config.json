@@ -109,6 +109,8 @@
         ],
         "task_lookup": [
             ["task_id", "str"],
+            ["queue", "str"],
+            ["insert_time", "float", "time.time() value"],
             ["req_cpu", "int"],
             ["req_gpu", "int"],
             ["req_memory", "float"],
@@ -263,6 +265,14 @@
             ["graph_last", "str"],
             ["master_update_history_last", "str"]
         ]
+    },
+    "indices": {
+        "job":["dataset_id", "status,dataset_id"],
+        "task": ["task_rel_id"],
+        "task_rel": ["dataset_id"],
+        "task_lookup": ["queue"],
+        "task_log": ["task_id"],
+        "search": ["dataset_id", "task_status", "job_id"]
     },
     "archive_tables": [
         "site", "node", "dataset", "dataset_notes",

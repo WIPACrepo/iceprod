@@ -117,6 +117,7 @@ class DBAPI(object):
     # define tables
     tables = read_db_conf('tables')
     archive_tables = read_db_conf('archive_tables')
+    indices = read_db_conf('indices')
     status_options = read_db_conf('status_options')
 
     ### basic functions ###
@@ -298,7 +299,6 @@ else:
             for table_name in self.tables.keys():
                 sql_create = ' ('
                 sql_select = ' '
-                sql_index_create = []
                 sep = ''
                 cols = self.tables[table_name].keys()
                 for col in cols:
@@ -307,9 +307,12 @@ else:
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '
-                    elif False:#col.endswith('_id'):
-                        sql_index_create.append('CREATE INDEX IF NOT EXISTS '+col+'_index ON '+table_name+' ('+col+')')
                 sql_create += ') WITHOUT ROWID'
+                sql_index_create = []
+                if table_name in self.indices:
+                    for col in self.indices[table_name]:
+                        name = col.replace(',','_')
+                        sql_index_create.append('CREATE INDEX IF NOT EXISTS '+name+'_index ON '+table_name+' ('+col+')')
                 scols = set(cols)
                 with (conn if table_name != 'setting' else self._inc_id_connection) as c:
                     cur = c.cursor()
@@ -321,8 +324,6 @@ else:
                             # table does not exist
                             logger.info('create table '+table_name+sql_create)
                             cur.execute('create table '+table_name+sql_create)
-                            for query in sql_index_create:
-                                cur.execute(query)
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
@@ -342,11 +343,12 @@ else:
                             sql = 'alter table '+table_name+'_backup rename to '+table_name
                             logger.info(sql)
                             cur.execute(sql)
-                            for query in sql_index_create:
-                                cur.execute(query)
                         else:
                             # table is good
                             logger.info('table '+table_name+' already exists')
+                        # try for indices
+                        for query in sql_index_create:
+                            cur.execute(query)
                     except apsw.Error:
                         # something went wrong
                         logger.warn('setup tables error', exc_info=True)
@@ -499,9 +501,12 @@ if MySQLdb:
                     if sep == '':
                         sql_create += ' PRIMARY KEY' # make first column the primary key
                         sep = ', '
-                    elif False:#col.endswith('_id'):
-                        sql_create += ' INDEX' 
                 sql_create += ') CHARACTER SET utf8 COLLATE utf8_general_ci'
+                sql_index_create = []
+                if table_name in self.indices:
+                    for col in self.indices[table_name]:
+                        name = col.replace(',','_')
+                        sql_index_create.append('CREATE INDEX '+name+'_index ON '+table_name+' ('+col+')')
                 scols = set(cols)
                 try:
                     cur = conn.cursor()
@@ -516,6 +521,8 @@ if MySQLdb:
                             # table does not exist
                             logger.info('create table '+table_name)
                             cur.execute('create table '+table_name+sql_create)
+                            for sql in sql_index_create:
+                                cur.execute(sql)
                         elif curcols != scols:
                             # table not the same
                             logger.info('modify table '+table_name)
@@ -535,6 +542,8 @@ if MySQLdb:
                             sql = 'alter table '+table_name+'_backup rename to '+table_name
                             logger.info(sql)
                             cur.execute(sql)
+                            for sql in sql_index_create:
+                                cur.execute(sql)
                         else:
                             # table is good
                             logger.info('table '+table_name+' already exists')

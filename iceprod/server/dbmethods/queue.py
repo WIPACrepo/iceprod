@@ -19,6 +19,7 @@ from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
 from iceprod.server import GlobalID
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime,nowstr
+from iceprod.server import task_queue
 
 logger = logging.getLogger('dbmethods.queue')
 
@@ -1037,21 +1038,26 @@ class queue(_Methods_Base):
         Args:
             tasks (dict): dict of {task_id: resources}
         """
+        now = time.time()
         keys = tasks.values()[0]
-        sql = 'replace into task_lookup (task_id,'
+        sql = 'replace into task_lookup (task_id,queue,insert_time,'
         sql += ','.join('req_'+k for k in keys)
-        sql += ') values (?,'
+        sql += ') values (?,?,?,'
         sql += ','.join('?' for k in keys)+')'
-        bindings = [(task_id,)+tuple(tasks[task_id][k] for k in keys) for task_id in tasks]
+        bindings = []
+        for t in tasks:
+            reqs = tasks[t]
+            task_queue.get_queue(reqs)
+            bindings.append((task_id,queue,now)+tuple(reqs[k] for k in keys))
         yield self.parent.db.query([sql for _ in bindings], bindings)
 
     @tornado.gen.coroutine
     def queue_get_task_lookup(self):
         """
-        Get all the tasks in the lookup.
+        Get the resources for all tasks in the lookup.
 
         Returns:
-            dict: tasks
+            dict: {task_id: resources}
         """
         with (yield self.parent.db.acquire_lock('queue')):
             # get tasks from lookup
@@ -1062,7 +1068,7 @@ class queue(_Methods_Base):
             for row in ret:
                 row = self._list_to_dict('task_lookup',row)
                 tid = row.pop('task_id')
-                task_ids[tid] = {k.replace('req_',''):row[k] for k in row}
+                task_ids[tid] = {k.replace('req_',''):row[k] for k in row if k.startswith('req_')}
 
             # verify that they are valid
             tasks = {}

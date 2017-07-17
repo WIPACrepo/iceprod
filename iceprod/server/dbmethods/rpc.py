@@ -18,6 +18,7 @@ from iceprod.core import functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server import GlobalID
 from iceprod.server import dataset_prio
+from iceprod.server import task_queue
 
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime,nowstr
 
@@ -56,20 +57,21 @@ class rpc(_Methods_Base):
             self.parent.statsd.incr('new_task.domain.'+args['domain'].replace('.','_'))
         yield self.parent.service['node_update'](**args)
 
+        # check resource requirements
+        reqs = {}
+        for k in Resources.defaults:
+            default = Resources.defaults[k]
+            if isinstance(default, list):
+                default = len(default)
+            if k in args and args[k] != default:
+                reqs[k] = args[k]
+            else:
+                reqs[k] = default
+        logger.info('new task for resources: %r', reqs)
+
         logger.info('acquiring queue lock')
         with (yield self.parent.db.acquire_lock('queue')):
             logger.info('queue lock granted')
-            # check resource requirements
-            reqs = {}
-            for k in Resources.defaults:
-                default = Resources.defaults[k]
-                if isinstance(default, list):
-                    default = len(default)
-                if k in args and args[k] != default:
-                    reqs[k] = args[k]
-                else:
-                    reqs[k] = default
-            logger.info('new task for resources: %r', reqs)
 
             # get all the tasks
             sql = 'select * from task_lookup '
@@ -79,14 +81,17 @@ class rpc(_Methods_Base):
             else:
                 bindings = tuple()
             ret = yield self.parent.db.query(sql, bindings)
-            tasks = []
+            tasks = defaultdict(list)
+            tasks['default'] = [] #make sure we have a default queue
+            task_ids = set()
             for row in ret:
                 row = self._list_to_dict('task_lookup',row)
                 task_id = row.pop('task_id')
                 resources = {}
-                for k in row:
+                for k in Resources.defaults:
                     resources[k.replace('req_','')] = row[k]
-                tasks.append((task_id,resources))
+                tasks[row['queue']].append((task_id,row['time_in_queue'],resources))
+                task_ids.add(task_id)
             if not tasks:
                 logger.info('no tasks found matching resources available')
                 raise tornado.gen.Return(None)
@@ -94,7 +99,6 @@ class rpc(_Methods_Base):
             # check that these are still valid
             sql = 'select * from search where task_id in (%s) and task_status = ?'
             bindings = ('queued',)
-            task_ids = set(t[0] for t in tasks)
             search = {}
             for f in self._bulk_select(sql, task_ids, extra_bindings=bindings):
                 for row in (yield f):
@@ -108,21 +112,35 @@ class rpc(_Methods_Base):
                 for f in self._bulk_select(sql, invalid_tasks):
                     yield f
 
-            # sort by largest resources
-            tasks.sort(key=lambda t:t[1]["memory"],
-                       reverse=False) #DS: sort low to high to increase throughput
-            tasks.sort(key=lambda t:t[1]["gpu"], reverse=True)
+            # sort by priority
+            now = time.time()
+            for task_list in tasks:
+                task_list.sort(key=lambda t:task_queue.sched_prio(t[-1],now-t[1]))
 
             # get only what can match
             new_tasks = {}
-            for t in tasks:
-                for k in reqs:
-                    if reqs[k] < t[1][k]:
+            while True:
+                match = False
+                queue = task_queue.get_queue(reqs)
+                logger.info('new task for queue: %s', queue)
+                if not tasks[queue]:
+                    queue = 'default'
+                for i,t in enumerate(tasks[queue]):
+                    task_id = t[0]
+                    task_reqs = t[-1]
+                    if any(reqs[k] < task_reqs[k] for k in reqs):
+                        continue
+                    else: # task passed
+                        for k in reqs:
+                            reqs[k] -= task_reqs[k]
+                        new_tasks[task_id] = search[task_id]
+                        new_tasks[task_id]['resources'] = task_reqs
+                        match = True
+                        # remove non-matching and matched task
+                        tasks[queue] = tasks[queue][i+1:]
                         break
-                    reqs[k] -= t[1][k]
-                else: # task passed
-                    new_tasks[t[0]] = search[t[0]]
-                    new_tasks[t[0]]['resources'] = t[1]
+                if not match:
+                    break
 
             if not new_tasks:
                 logger.info('error: no task to allocate')
