@@ -91,7 +91,7 @@ class rpc(_Methods_Base):
                 resources = {}
                 for k in Resources.defaults:
                     resources[k] = row['req_'+k]
-                tasks[row['queue']].append((task_id,row['time_in_queue'],resources))
+                tasks[row['queue']].append((task_id,row['insert_time'],resources))
                 task_ids.add(task_id)
             if not tasks:
                 logger.info('no tasks found matching resources available')
