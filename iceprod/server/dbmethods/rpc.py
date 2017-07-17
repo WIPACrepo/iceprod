@@ -90,7 +90,7 @@ class rpc(_Methods_Base):
                 task_id = row.pop('task_id')
                 resources = {}
                 for k in Resources.defaults:
-                    resources[k] = row[k.replace('req_','')]
+                    resources[k] = row['req_'+k]
                 tasks[row['queue']].append((task_id,row['time_in_queue'],resources))
                 task_ids.add(task_id)
             if not tasks:
