@@ -237,6 +237,7 @@
     <span class="c"># define tables</span>
     <span class="n">tables</span> <span class="o">=</span> <span class="n">read_db_conf</span><span class="p">(</span><span class="s">&#39;tables&#39;</span><span class="p">)</span>
     <span class="n">archive_tables</span> <span class="o">=</span> <span class="n">read_db_conf</span><span class="p">(</span><span class="s">&#39;archive_tables&#39;</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">read_db_conf</span><span class="p">(</span><span class="s">&#39;indices&#39;</span><span class="p">)</span>
     <span class="n">status_options</span> <span class="o">=</span> <span class="n">read_db_conf</span><span class="p">(</span><span class="s">&#39;status_options&#39;</span><span class="p">)</span>
 
     <span class="c">### basic functions ###</span>
@@ -418,7 +419,6 @@
             <span class="k">for</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">sql_create</span> <span class="o">=</span> <span class="s">&#39; (&#39;</span>
                 <span class="n">sql_select</span> <span class="o">=</span> <span class="s">&#39; &#39;</span>
-                <span class="n">sql_index_create</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="n">sep</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
                 <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">table_name</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
                 <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
@@ -427,9 +427,12 @@
                     <span class="k">if</span> <span class="n">sep</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
                         <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; PRIMARY KEY&#39;</span> <span class="c"># make first column the primary key</span>
                         <span class="n">sep</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span>
-                    <span class="k">elif</span> <span class="k">False</span><span class="p">:</span><span class="c">#col.endswith(&#39;_id&#39;):</span>
-                        <span class="n">sql_index_create</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;CREATE INDEX IF NOT EXISTS &#39;</span><span class="o">+</span><span class="n">col</span><span class="o">+</span><span class="s">&#39;_index ON &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; (&#39;</span><span class="o">+</span><span class="n">col</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
                 <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39;) WITHOUT ROWID&#39;</span>
+                <span class="n">sql_index_create</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="n">table_name</span><span class="p">]:</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">col</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+                        <span class="n">sql_index_create</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;CREATE INDEX IF NOT EXISTS &#39;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s">&#39;_index ON &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; (&#39;</span><span class="o">+</span><span class="n">col</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
                 <span class="n">scols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
                 <span class="k">with</span> <span class="p">(</span><span class="n">conn</span> <span class="k">if</span> <span class="n">table_name</span> <span class="o">!=</span> <span class="s">&#39;setting&#39;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inc_id_connection</span><span class="p">)</span> <span class="k">as</span> <span class="n">c</span><span class="p">:</span>
                     <span class="n">cur</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -441,8 +444,6 @@
                             <span class="c"># table does not exist</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;create table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="n">sql_create</span><span class="p">)</span>
                             <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&#39;create table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="n">sql_create</span><span class="p">)</span>
-                            <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">sql_index_create</span><span class="p">:</span>
-                                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
                         <span class="k">elif</span> <span class="n">curcols</span> <span class="o">!=</span> <span class="n">scols</span><span class="p">:</span>
                             <span class="c"># table not the same</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;modify table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="p">)</span>
@@ -462,11 +463,12 @@
                             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;alter table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup rename to &#39;</span><span class="o">+</span><span class="n">table_name</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
                             <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-                            <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">sql_index_create</span><span class="p">:</span>
-                                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="c"># table is good</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; already exists&#39;</span><span class="p">)</span>
+                        <span class="c"># try for indices</span>
+                        <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">sql_index_create</span><span class="p">:</span>
+                            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
                     <span class="k">except</span> <span class="n">apsw</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
                         <span class="c"># something went wrong</span>
                         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;setup tables error&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="k">True</span><span class="p">)</span>
@@ -619,9 +621,12 @@
                     <span class="k">if</span> <span class="n">sep</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
                         <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; PRIMARY KEY&#39;</span> <span class="c"># make first column the primary key</span>
                         <span class="n">sep</span> <span class="o">=</span> <span class="s">&#39;, &#39;</span>
-                    <span class="k">elif</span> <span class="k">False</span><span class="p">:</span><span class="c">#col.endswith(&#39;_id&#39;):</span>
-                        <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39; INDEX&#39;</span> 
                 <span class="n">sql_create</span> <span class="o">+=</span> <span class="s">&#39;) CHARACTER SET utf8 COLLATE utf8_general_ci&#39;</span>
+                <span class="n">sql_index_create</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">if</span> <span class="n">table_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="n">table_name</span><span class="p">]:</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">col</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">,</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+                        <span class="n">sql_index_create</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;CREATE INDEX &#39;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s">&#39;_index ON &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; (&#39;</span><span class="o">+</span><span class="n">col</span><span class="o">+</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
                 <span class="n">scols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
@@ -636,6 +641,8 @@
                             <span class="c"># table does not exist</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;create table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="p">)</span>
                             <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s">&#39;create table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="n">sql_create</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">sql</span> <span class="ow">in</span> <span class="n">sql_index_create</span><span class="p">:</span>
+                                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
                         <span class="k">elif</span> <span class="n">curcols</span> <span class="o">!=</span> <span class="n">scols</span><span class="p">:</span>
                             <span class="c"># table not the same</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;modify table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="p">)</span>
@@ -655,6 +662,8 @@
                             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;alter table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39;_backup rename to &#39;</span><span class="o">+</span><span class="n">table_name</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
                             <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">sql</span> <span class="ow">in</span> <span class="n">sql_index_create</span><span class="p">:</span>
+                                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="c"># table is good</span>
                             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;table &#39;</span><span class="o">+</span><span class="n">table_name</span><span class="o">+</span><span class="s">&#39; already exists&#39;</span><span class="p">)</span>

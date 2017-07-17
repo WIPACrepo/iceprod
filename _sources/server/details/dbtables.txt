@@ -126,6 +126,8 @@ Tables
 **task_lookup**
 
 * task_id : str
+* queue : str
+* insert_time : float  :gray:`# time.time() value`
 * req_cpu : int
 * req_gpu : int
 * req_memory : float
