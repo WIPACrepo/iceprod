@@ -12,7 +12,11 @@
         <th>Name</th>
         <th>Failures</th>
         <th>Job Index</th>
-        <th></th>
+        {% if (current_user) %}
+        <th><a href='javascript:call("reset_task");'>Reset All</a></th>
+        <th><a href='javascript:call("resume_task");'>Resume All</a></th>
+        <th><a href='javascript:call("suspend_task");'>Suspend All</a></th>
+        {% end %}
     </tr>
     {% for t in tasks %}
     <tr>
@@ -21,11 +25,9 @@
         <td>{{ tasks[t]['failures'] }}</td>
         <td>{{ tasks[t]['job_index'] }}</td>
         {% if (current_user) %}
-        <td>
-        <a href='javascript:call("reset_task", "{{ tasks[t]['task_id'] }}");'>Reset</a>
-        <a href='javascript:call("resume_task", "{{ tasks[t]['task_id'] }}");'>Resume</a>
-        <a href='javascript:call("suspend_task", "{{ tasks[t]['task_id'] }}");'>Suspend</a>
-        </td>
+        <td><a href='javascript:call("reset_task", "{{ tasks[t]['task_id'] }}");'>Reset</a></td>
+        <td><a href='javascript:call("resume_task", "{{ tasks[t]['task_id'] }}");'>Resume</a></td>
+        <td><a href='javascript:call("suspend_task", "{{ tasks[t]['task_id'] }}");'>Suspend</a></td>
         {% end %}
     </tr>
     {% end %}
@@ -65,8 +67,15 @@
 {% if (current_user) %}
 <script type="text/javascript" src="/static/json-rpc.js"></script>
 <script type="text/javascript">
-function call(func_name, task){
-    RPCclient(func_name, {passkey: "{{ passkey }}", task:task }, callback=function(return_data){
+var all_tasks = [
+{% for t in tasks %}
+        "{{tasks[t]['task_id']}}",
+{% end %}
+];
+
+function call(func_name, tasks){
+    tasks = (typeof tasks === 'undefined') ? all_tasks: tasks;
+    RPCclient(func_name, {passkey: "{{ passkey }}", tasks:tasks }, callback=function(return_data){
 
     });
 };

@@ -11,6 +11,7 @@ from copy import deepcopy
 
 import tornado.gen
 
+from iceprod.core.dataclasses import String
 from iceprod.core.resources import Resources
 from iceprod.core import dataclasses
 from iceprod.core import serialization
@@ -977,54 +978,63 @@ class rpc(_Methods_Base):
         self.parent.modules['daemon']['reload']()
 
     @tornado.gen.coroutine
-    def rpc_reset_task(self, task):
-        sql = 'select job_id from search where task_id = ?'
-        bindings = (task,)
-        ret = yield self.parent.db.query(sql, bindings)
-        job_id = ret[0][0]
+    def rpc_reset_task(self, tasks):
+        if isinstance(tasks,String):
+            tasks = [tasks]
+        for task in tasks:
+            sql = 'select job_id from search where task_id = ?'
+            bindings = (task,)
+            ret = yield self.parent.db.query(sql, bindings)
+            job_id = ret[0][0]
 
-        yield self.parent.service['queue_set_task_status'](task=task, status='reset')
-        sql = 'update task set failures=0 where task_id = ?'
-        bindings = (task,)
-        yield self.parent.db.query(sql,bindings)
+            yield self.parent.service['queue_set_task_status'](task=task, status='reset')
+            sql = 'update task set failures=0 where task_id = ?'
+            bindings = (task,)
+            yield self.parent.db.query(sql,bindings)
 
-        sql = 'update job set status="processing" where job_id = ?'
-        bindings = (job_id,)
-        yield self.parent.db.query(sql, bindings)
+            sql = 'update job set status="processing" where job_id = ?'
+            bindings = (job_id,)
+            yield self.parent.db.query(sql, bindings)
 
     @tornado.gen.coroutine
-    def rpc_resume_task(self, task):
-        sql = 'select job_id from search where task_id = ?'
-        bindings = (task,)
-        ret = yield self.parent.db.query(sql, bindings)
-        job_id = ret[0][0]
+    def rpc_resume_task(self, tasks):
+        if isinstance(tasks,String):
+            tasks = [tasks]
+        for task in tasks:
+            sql = 'select job_id from search where task_id = ?'
+            bindings = (task,)
+            ret = yield self.parent.db.query(sql, bindings)
+            job_id = ret[0][0]
 
-        yield self.parent.service['queue_set_task_status'](task=task, status='resume')
+            yield self.parent.service['queue_set_task_status'](task=task, status='resume')
 
-        sql = 'update job set status="processing" where job_id = ?'
-        bindings = (job_id,)
-        yield self.parent.db.query(sql, bindings)
+            sql = 'update job set status="processing" where job_id = ?'
+            bindings = (job_id,)
+            yield self.parent.db.query(sql, bindings)
 
-    def rpc_suspend_task(self, task):
-        return self.parent.service['queue_set_task_status'](task=task, status='suspended')
+    def rpc_suspend_task(self, tasks):
+        return self.parent.service['queue_set_task_status'](task=tasks, status='suspended')
         
 
     @tornado.gen.coroutine
-    def rpc_reset_job(self, job_id):
-        sql = 'select task_id from search where job_id = ? '
-        sql += 'and task_status in ("failed","suspended")'
-        bindings = (job_id,)
-        ret = yield self.parent.db.query(sql, bindings)
-        task_ids = [row[0] for row in ret]
+    def rpc_reset_job(self, job_ids):
+        if isinstance(job_ids,String):
+            job_ids = [job_ids]
+        for job_id in job_ids:
+            sql = 'select task_id from search where job_id = ? '
+            sql += 'and task_status in ("failed","suspended")'
+            bindings = (job_id,)
+            ret = yield self.parent.db.query(sql, bindings)
+            task_ids = [row[0] for row in ret]
 
-        yield self.parent.service['queue_set_task_status'](task=task_ids, status='reset')
-        sql = 'update task set failures=0 where task_id in (%s)'
-        for f in self._bulk_select(sql, task_ids):
-            yield f
+            yield self.parent.service['queue_set_task_status'](task=task_ids, status='reset')
+            sql = 'update task set failures=0 where task_id in (%s)'
+            for f in self._bulk_select(sql, task_ids):
+                yield f
 
-        sql = 'update job set status="processing" where job_id = ?'
-        bindings = (job_id,)
-        yield self.parent.db.query(sql, bindings)
+            sql = 'update job set status="processing" where job_id = ?'
+            bindings = (job_id,)
+            yield self.parent.db.query(sql, bindings)
 
     @tornado.gen.coroutine
     def rpc_hard_reset_job(self, job_id):
@@ -1043,14 +1053,17 @@ class rpc(_Methods_Base):
         yield self.parent.db.query(sql, bindings)
 
     @tornado.gen.coroutine
-    def rpc_suspend_job(self, job_id):
-        sql = 'select task_id from search where job_id = ? '
-        sql += 'and task_status not in ("complete","failed","suspended")'
-        bindings = (job_id,)
-        ret = yield self.parent.db.query(sql, bindings)
-        task_ids = [row[0] for row in ret]
+    def rpc_suspend_job(self, job_ids):
+        if isinstance(job_ids,String):
+            job_ids = [job_ids]
+        for job_id in job_ids:
+            sql = 'select task_id from search where job_id = ? '
+            sql += 'and task_status not in ("complete","failed","suspended")'
+            bindings = (job_id,)
+            ret = yield self.parent.db.query(sql, bindings)
+            task_ids = [row[0] for row in ret]
 
-        yield self.parent.service['queue_set_task_status'](task=task_ids, status='suspended')
+            yield self.parent.service['queue_set_task_status'](task=task_ids, status='suspended')
 
     @tornado.gen.coroutine
     def rpc_reset_dataset(self, dataset_id):
