@@ -191,9 +191,9 @@
                 <span class="n">reqs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;new task for resources: %r&#39;</span><span class="p">,</span> <span class="n">reqs</span><span class="p">)</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;acquiring queue lock&#39;</span><span class="p">)</span>
-        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;queue&#39;</span><span class="p">)):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;queue lock granted&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;acquiring task_lookup lock&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="p">(</span><span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">acquire_lock</span><span class="p">(</span><span class="s">&#39;task_lookup&#39;</span><span class="p">)):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;task_lookup lock granted&#39;</span><span class="p">)</span>
 
             <span class="c"># get all the tasks</span>
             <span class="n">sql</span> <span class="o">=</span> <span class="s">&#39;select * from task_lookup &#39;</span>
@@ -236,7 +236,7 @@
 
             <span class="c"># sort by priority</span>
             <span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">task_list</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task_list</span> <span class="ow">in</span> <span class="n">tasks</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                 <span class="n">task_list</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span><span class="n">task_queue</span><span class="o">.</span><span class="n">sched_prio</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">now</span><span class="o">-</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
 
             <span class="c"># get only what can match</span>
