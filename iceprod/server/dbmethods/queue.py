@@ -1047,7 +1047,7 @@ class queue(_Methods_Base):
         bindings = []
         for t in tasks:
             reqs = tasks[t]
-            task_queue.get_queue(reqs)
+            queue = task_queue.get_queue(reqs)
             bindings.append((task_id,queue,now)+tuple(reqs[k] for k in keys))
         yield self.parent.db.query([sql for _ in bindings], bindings)
 
