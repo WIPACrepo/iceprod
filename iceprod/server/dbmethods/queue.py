@@ -2,6 +2,7 @@
 Queue database methods
 """
 
+import time
 import logging
 from datetime import datetime
 from functools import partial,reduce
