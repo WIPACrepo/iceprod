@@ -1070,29 +1070,20 @@ class queue(_Methods_Base):
                 tid = row.pop('task_id')
                 task_ids[tid] = {k.replace('req_',''):row[k] for k in row if k.startswith('req_')}
 
-            # verify that they are valid
-            tasks = {}
-            while task_ids:
-                tids = set(task_ids.keys()[:900])
-                sql = 'select task_id from search where task_id in ('
-                sql += ','.join('?' for _ in tids)
-                sql += ') and task_status = ?'
-                bindings = tuple(tids)+('queued',)
-                ret = yield self.parent.db.query(sql, bindings)
-                valid = set()
-                for row in ret:
-                    valid.add(row[0])
-                remove = tids ^ valid
-                if remove:
-                    logger.info('tasks %r not valid, remove from task_lookup',
-                                remove)
-                    sql = 'delete from task_lookup where task_id in ('
-                    sql +=  ','.join('?' for _ in remove)+')'
-                    bindings = tuple(remove)
-                    yield self.parent.db.query(sql, bindings)
-                    yield self.queue_set_task_status(remove,'reset')
-                for tid in valid:
-                    tasks[tid] = task_ids[tid]
-                task_ids = {t:task_ids[t] for t in task_ids if t not in tids}
+            # check that these are still valid
+            sql = 'select task_id from search where task_id in (%s) and task_status = ?'
+            bindings = ('queued',)
+            ret = {}
+            for f in self._bulk_select(sql, task_ids, extra_bindings=bindings):
+                for row in (yield f):
+                    tid = row[0]
+                    ret[tid] = task_ids[tid]
+            invalid_tasks = set(task_ids).difference(ret)
+            if invalid_tasks:
+                logger.info('tasks not valid, remove from task_lookup: %s',
+                            invalid_tasks)
+                sql = 'delete from task_lookup where task_id in (%s)'
+                for f in self._bulk_select(sql, invalid_tasks):
+                    yield f
 
-            raise tornado.gen.Return(tasks)
+            raise tornado.gen.Return(ret)
