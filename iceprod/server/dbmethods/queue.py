@@ -1087,4 +1087,10 @@ class queue(_Methods_Base):
                 for f in self._bulk_select(sql, invalid_tasks):
                     yield f
 
+            reset_tasks = set(ret).difference(task_ids)
+            if reset_tasks:
+                logger.info('tasks queued, but not in task_lookup: %s',
+                            reset_tasks)
+                yield self.parent.service['queue_set_task_status'](reset_tasks,'waiting')
+
             raise tornado.gen.Return(ret)
