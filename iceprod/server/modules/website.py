@@ -371,6 +371,8 @@ class MyHandler(tornado.web.RequestHandler):
         """POST is invalid and returns an error"""
         raise tornado.web.HTTPError(400,'POST is invalid.  Use GET')
 
+    def set_default_headers(self):
+        self._headers['Server'] = 'IceProd/' + iceprod.__version__
 
 class JSONRPCHandler(MyHandler):
     """JSONRPC 2.0 Handler.
