@@ -57,7 +57,7 @@ class rpc(_Methods_Base):
         args.update(kwargs)
         if args['domain']:
             self.parent.statsd.incr('new_task.domain.'+args['domain'].replace('.','_'))
-        yield self.parent.service['node_update'](**args)
+        #yield self.parent.service['node_update'](**args)
 
         # check resource requirements
         reqs = {}
