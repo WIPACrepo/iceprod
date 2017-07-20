@@ -303,6 +303,35 @@ class parser_test(unittest.TestCase):
         else:
             raise Exception('number: did not raise GrammarException')
 
+    @unittest_reporter
+    def test_08_system(self):
+        """Test parser environ"""
+        job = dataclasses.Job()
+        environ = {
+            'environment': {
+                'test': "blah",
+                'test2': 3.14,
+                'test3': True,
+            },
+        }
+
+        p = parser.ExpParser()
+        p.job = job
+        p.env = environ
+
+        # run tests
+        ret = p.environ_func('test')
+        self.assertEqual(ret, environ['environment']['test'])
+
+        ret = p.environ_func('test2')
+        self.assertEqual(ret, environ['environment']['test2'])
+
+        ret = p.environ_func('test3')
+        self.assertEqual(ret, environ['environment']['test3'])
+
+        with self.assertRaises(parser.GrammarException):
+            p.environ_func('test4')
+
     @unittest_reporter(name='parse() steering')
     def test_10_steering(self):
         """Test parser parse steering"""
@@ -562,6 +591,28 @@ class parser_test(unittest.TestCase):
         if ret != expected:
             logger.info('ret=%r, expected=%r',ret,expected)
             raise Exception('empty: ret != expected')
+
+    @unittest_reporter(name='parse() environ')
+    def test_17_environ(self):
+        """Test parser parse environ"""
+        p = parser.ExpParser()
+        env = {
+            'environment':{
+                'test': 'blah',
+                'test2': 3.14,
+                'test3': True,
+            }
+        }
+
+        # run tests
+        ret = p.parse('$environ(test)', env=env)
+        self.assertEqual(ret, env['environment']['test'])
+        
+        ret = p.parse('$environ(test2)', env=env)
+        self.assertEqual(ret, env['environment']['test2'])
+        
+        ret = p.parse('$environ(test3)', env=env)
+        self.assertEqual(ret, env['environment']['test3'])
 
     @unittest_reporter(name='parse() env')
     def test_20_env(self):

@@ -168,6 +168,7 @@ class ExpParser:
         # dict of keyword : function mappings
         self.keywords = {'steering' : self.steering_func,
                          'system' : self.system_func,
+                         'environ' : self.environ_func,
                          'args' : self.options_func,
                          'options' : self.options_func,
                          'metadata' : self.difplus_func,
@@ -375,7 +376,15 @@ class ExpParser:
             return ParseObj(self.job['steering']['system'][param],False)
         else:
             raise GrammarException('system:'+str(param))
-    
+
+    def environ_func(self,param):
+        """Find param in env["environment"]"""
+        param = str(param)
+        if 'environment' in self.env and param in self.env['environment']:
+            return ParseObj(self.env['environment'][param],False)
+        else:
+            raise GrammarException('environ:'+str(param))
+
     def options_func(self,param):
         """Find param in options"""
         param = str(param)
