@@ -412,7 +412,7 @@ def upload(local, url, options={}):
             GridFTP.put(url, filename=local)
         except Exception:
             # because d-cache doesn't allow overwriting, try deletion
-            GridFTP.delete(url, filename=local)
+            GridFTP.delete(url)
             GridFTP.put(url, filename=local)
         ret = GridFTP.sha512sum(url)
         if ret != chksum:
