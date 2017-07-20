@@ -125,7 +125,7 @@ class rpc(_Methods_Base):
                 match = False
                 queue = task_queue.get_queue(reqs)
                 logger.info('new task for queue: %s', queue)
-                if not tasks[queue]:
+                if 'gpu' not in queue and not tasks[queue]:
                     queue = 'default'
                 for i,t in enumerate(tasks[queue]):
                     task_id = t[0]
