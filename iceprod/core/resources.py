@@ -108,7 +108,7 @@ class Resources:
         #: total resources controlled by the pilot
         self.total = {
             'cpu':get_cpus(),
-            'gpu':get_gpus()*2,
+            'gpu':get_gpus(),
             'memory':get_memory()-0.1, # trim auto-totals to prevent going over
             'disk':get_disk()-0.1,
             'time':self.start_time+get_time()-0.1, # end time
