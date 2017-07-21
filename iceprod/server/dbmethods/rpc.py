@@ -71,32 +71,39 @@ class rpc(_Methods_Base):
                 reqs[k] = default
         logger.info('new task for resources: %r', reqs)
 
-        logger.info('acquiring task_lookup lock')
-        with (yield self.parent.db.acquire_lock('task_lookup')):
-            logger.info('task_lookup lock granted')
 
-            # get all the tasks
-            sql = 'select * from task_lookup '
-            if reqs:
-                sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
-                bindings = tuple(reqs.values())
-            else:
-                bindings = tuple()
-            ret = yield self.parent.db.query(sql, bindings)
-            tasks = defaultdict(list)
-            tasks['default'] = [] #make sure we have a default queue
-            task_ids = set()
-            for row in ret:
-                row = self._list_to_dict('task_lookup',row)
-                task_id = row.pop('task_id')
-                resources = {}
-                for k in Resources.defaults:
-                    resources[k] = row['req_'+k]
-                tasks[row['queue']].append((task_id,row['insert_time'],resources))
-                task_ids.add(task_id)
-            if not tasks:
-                logger.info('no tasks found matching resources available')
-                raise tornado.gen.Return(None)
+        logger.info('acquiring queue lock')
+        with (yield self.parent.db.acquire_lock('queue')):
+            logger.info('queue lock granted')
+            
+            logger.info('acquiring task_lookup lock')
+            with (yield self.parent.db.acquire_lock('task_lookup')):
+                logger.info('task_lookup lock granted')
+
+                # get all the tasks
+                sql = 'select * from task_lookup '
+                if reqs:
+                    sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
+                    bindings = tuple(reqs.values())
+                else:
+                    bindings = tuple()
+                ret = yield self.parent.db.query(sql, bindings)
+                tasks = defaultdict(list)
+                tasks['default'] = [] #make sure we have a default queue
+                task_ids = set()
+                for row in ret:
+                    row = self._list_to_dict('task_lookup',row)
+                    task_id = row.pop('task_id')
+                    resources = {}
+                    for k in Resources.defaults:
+                        resources[k] = row['req_'+k]
+                    tasks[row['queue']].append((task_id,row['insert_time'],resources))
+                    task_ids.add(task_id)
+                if not tasks:
+                    logger.info('no tasks found matching resources available')
+                    raise tornado.gen.Return(None)
+
+            # drop the task_lookup lock
 
             # check that these are still valid
             sql = 'select * from search where task_id in (%s) and task_status = ?'
@@ -154,29 +161,29 @@ class rpc(_Methods_Base):
             for f in self._bulk_select(sql, new_tasks):
                 yield f
 
+            # get job information
+            sql = 'select job_id,job_index from job where job_id in (%s)'
+            job_ids = defaultdict(list)
+            for t in new_tasks:
+                job_ids[new_tasks[t]['job_id']].append(t)
+            for f in self._bulk_select(sql, job_ids):
+                for job_id,job_index in (yield f):
+                    for t in job_ids[job_id]:
+                        new_tasks[t]['job'] = job_index
+
+            # get dataset information
+            sql = 'select dataset_id, jobs_submitted, debug '
+            sql += 'from dataset where dataset_id in (%s)'
+            dataset_ids = defaultdict(list)
+            for t in new_tasks:
+                dataset_ids[new_tasks[t]['dataset_id']].append(t)
+            for f in self._bulk_select(sql, dataset_ids):
+                for dataset_id,jobs_submitted,debug in (yield f):
+                    for t in dataset_ids[dataset_id]:
+                        new_tasks[t]['jobs_submitted'] = jobs_submitted
+                        new_tasks[t]['debug'] = debug
+
         # drop the queue lock
-
-        # get job information
-        sql = 'select job_id,job_index from job where job_id in (%s)'
-        job_ids = defaultdict(list)
-        for t in new_tasks:
-            job_ids[new_tasks[t]['job_id']].append(t)
-        for f in self._bulk_select(sql, job_ids):
-            for job_id,job_index in (yield f):
-                for t in job_ids[job_id]:
-                    new_tasks[t]['job'] = job_index
-
-        # get dataset information
-        sql = 'select dataset_id, jobs_submitted, debug '
-        sql += 'from dataset where dataset_id in (%s)'
-        dataset_ids = defaultdict(list)
-        for t in new_tasks:
-            dataset_ids[new_tasks[t]['dataset_id']].append(t)
-        for f in self._bulk_select(sql, dataset_ids):
-            for dataset_id,jobs_submitted,debug in (yield f):
-                for t in dataset_ids[dataset_id]:
-                    new_tasks[t]['jobs_submitted'] = jobs_submitted
-                    new_tasks[t]['debug'] = debug
 
         # get config files
         configs = {}
