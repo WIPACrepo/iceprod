@@ -113,7 +113,7 @@ class cron(_Methods_Base):
                     for sql,bindings in zip(master_sql,master_bindings):
                         bindings3 = (master_update_history_id, 'dataset',bindings[-1],now)
                         try:
-                            yield self.parent.db.query(sql, bindings3)
+                            yield self.parent.db.query(sql3, bindings3)
                         except Exception:
                             logger.info('error updating master_update_history',
                                         exc_info=True)

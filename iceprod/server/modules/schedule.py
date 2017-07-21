@@ -92,6 +92,7 @@ class schedule(module.module):
             self._client_schedule()
 
     def _client_schedule(self):
+        config = self.cfg['schedule']
         self.scheduler.schedule(config['dataset_update'],
                 self.modules['db']['cron_dataset_update'])
 
