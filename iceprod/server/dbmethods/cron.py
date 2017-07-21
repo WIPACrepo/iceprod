@@ -416,6 +416,6 @@ class cron(_Methods_Base):
     def cron_dataset_update(self):
         """Update the dataset table on clients"""
         ret = yield send_master(self.parent.cfg, 'master_get_tables',
-                                tables=['dataset'])
+                                tablenames=['dataset'])
         if ret:
             yield self.parent.service['misc_update_tables'](ret)

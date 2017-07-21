@@ -55,7 +55,7 @@
     "schedule":{
         "buffer_jobs_tasks": "every 10 minutes",
         "check_iceprod": "every 5 minutes",
-        "clean_completed_jobs": "every 1 days",
+        "clean_completed_jobs": "every 24 hours",
         "generate_web_graphs": "every 10 minutes",
         "remove_old_passkeys": "every 6 hours",
         "collate_resources": "every 1 hours",
