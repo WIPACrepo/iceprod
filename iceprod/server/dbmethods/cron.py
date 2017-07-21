@@ -15,6 +15,7 @@ from iceprod.core.gridftp import GridFTP
 from iceprod.core.jsonUtil import json_encode,json_decode
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, nowstr
 from iceprod.server import GlobalID
+from iceprod.server.master_communication import send_master
 
 logger = logging.getLogger('dbmethods.cron')
 
@@ -410,3 +411,11 @@ class cron(_Methods_Base):
             self.parent.statsd.gauge('pilot_resources.claimed.time', claim_time)
             self.parent.statsd.gauge('pilot_count', num)
             break
+
+    @tornado.gen.coroutine
+    def cron_dataset_update(self):
+        """Update the dataset table on clients"""
+        ret = yield send_master(self.parent.cfg, 'master_get_tables',
+                                tables=['dataset'])
+        if ret:
+            yield self.parent.service['misc_update_tables'](ret)

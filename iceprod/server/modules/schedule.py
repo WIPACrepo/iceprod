@@ -88,6 +88,12 @@ class schedule(module.module):
         if ('master' in self.cfg and 'status' in self.cfg['master'] and
             self.cfg['master']['status']):
             self._master_schedule()
+        else:
+            self._client_schedule()
+
+    def _client_schedule(self):
+        self.scheduler.schedule(config['dataset_update'],
+                self.modules['db']['cron_dataset_update'])
 
     def _master_schedule(self):
         # fake a grid, so we can do grid-like things

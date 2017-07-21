@@ -968,6 +968,27 @@ class rpc(_Methods_Base):
                 logger.warn('failed to apply update: %r', u, exc_info=True)
                 raise
 
+    @tornado.gen.coroutine
+    def rpc_master_get_tables(self, tablenames):
+        """
+        Get a dump of selected tables from the master.
+
+        Args:
+            tablenames (iterable): An iterable of table names.
+
+        Returns:
+            dict: Dictionary of tables
+        """
+        tables = {}
+        for table in self.parent.db.tables:
+            if table in tablenames:
+                sql = 'select * from ' + table
+                keys = self.parent.db.tables[table]
+                values = yield self.parent.db.query(sql, tuple())
+                if keys and values:
+                    tables[table] = {'keys':keys,'values':values}
+        raise tornado.gen.Return(tables)
+
     def rpc_stop_module(self, module_name):
         self.parent.modules[module_name]['stop']()
 
