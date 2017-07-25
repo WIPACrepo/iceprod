@@ -57,7 +57,7 @@ class Server(object):
                     self.modules[mod_name] = mod
                     self.services[mod_name] = mod.service
                     mod.start()
-                except:
+                except Exception:
                     logger.critical('cannot start module', exc_info=True)
                     self.kill()
                     raise
@@ -65,7 +65,7 @@ class Server(object):
     def run(self):
         try:
             self.io_loop.start()
-        except:
+        except Exception:
             logger.critical('exception not caught', exc_info=True)
             self.kill()
 

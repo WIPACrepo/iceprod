@@ -80,13 +80,13 @@ class website(module.module):
         try:
             if self.nginx:
                 self.nginx.stop()
-        except:
+        except Exception:
             logger.error('cannot stop Nginx', exc_info=True)
         # stop tornado
         try:
             if self.http_server:
                 self.http_server.stop()
-        except:
+        except Exception:
             logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
 
@@ -96,7 +96,7 @@ class website(module.module):
         try:
             if self.nginx:
                 self.nginx.kill()
-        except:
+        except Exception:
             logger.error('cannot kill Nginx', exc_info=True)
         super(website,self).kill()
 
@@ -108,7 +108,7 @@ class website(module.module):
                 # rotate nginx logs
                 self.nginx.logrotate()
             # tornado uses regular python logs, which rotate automatically
-        except:
+        except Exception:
             logger.warn('error in logrotate', exc_info=True)
 
     def start(self):
@@ -123,7 +123,7 @@ class website(module.module):
                     path = os.path.expanduser(os.path.expandvars(path))
                     try:
                         os.makedirs(path)
-                    except:
+                    except Exception:
                         pass
 
             # get package data
@@ -358,7 +358,7 @@ class MyHandler(tornado.web.RequestHandler):
             f = self.modules['db'][func_name](*args,**kwargs)
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
                 f = yield tornado.gen.with_timeout(timedelta(seconds=120),f)
-        except:
+        except Exception:
             logger.warn('db_call error for %s',func_name,exc_info=True)
             raise
         raise tornado.gen.Return(f)
@@ -440,7 +440,7 @@ class JSONRPCHandler(MyHandler):
                 else:
                     # authorize task
                     yield self.db_call('auth_authorize_task',key=passkey)
-            except:
+            except Exception:
                 logger.info('auth error', exc_info=True)
                 self.json_error({'code':403,'message':'Not Authorized',
                                  'data':'passkey invalid'},
@@ -508,7 +508,7 @@ class LibHandler(MyHandler):
         self.statsd.incr('lib')
         try:
             url = self.request.uri[len(self.prefix):]
-        except:
+        except Exception:
             url = ''
         if not url:
             # TODO: make this human-browsable in future
@@ -716,7 +716,7 @@ class Dataset(PublicHandler):
                         elif ret:
                             dataset_num = dataset_id
                             dataset_id = try_dataset_id
-                except:
+                except Exception:
                     pass
             if not ret:
                 ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
@@ -774,7 +774,7 @@ class Task(PublicHandler):
                         elif ret:
                             dataset_num = dataset_id
                             dataset_id = try_dataset_id
-                except:
+                except Exception:
                     pass
             task_id = url_parts[0]
             ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
@@ -835,7 +835,7 @@ class Job(PublicHandler):
                         elif ret:
                             dataset_num = dataset_id
                             dataset_id = try_dataset_id
-                except:
+                except Exception:
                     pass
             jobs = yield self.db_call('web_get_jobs_by_status', status=status,
                                        dataset_id=dataset_id)

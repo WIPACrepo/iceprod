@@ -69,7 +69,7 @@ class condor(grid.BaseGrid):
                             for tt in cfg['tasks']:
                                 if t == tt['name']:
                                     alltasks.append(tt)
-                        except:
+                        except Exception:
                             logger.warn('error finding specified task to run for %r',
                                         task,exc_info=True)
                 else:

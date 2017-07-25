@@ -14,7 +14,7 @@ import inspect
 
 try:
     import cPickle as pickle
-except:
+except Exception:
     import pickle
 
 import logging

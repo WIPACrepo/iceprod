@@ -21,7 +21,7 @@ try:
 except ImportError:
     try:
         import pymysql as MySQLdb
-    except:
+    except Exception:
         class MySQLdb:
             class Error(Exception):
                 pass
@@ -241,7 +241,7 @@ class misc(_Methods_Base):
                 for values in tables[name]['values']:
                     bindings = tuple(values)
                     yield self.parent.db.query(sql, bindings)
-        except:
+        except Exception:
             logger.warn('error updating tables', exc_info=True)
             raise
 
@@ -273,7 +273,7 @@ class misc(_Methods_Base):
                 yield self.parent.db.query(sql, bindings)
             except MySQLdb.Error:
                 logger.warn('dropping history for %r', sql, exc_info=True)
-            except:
+            except Exception:
                 logger.warn('error updating master', exc_info=True)
                 raise
             else:
@@ -285,6 +285,6 @@ class misc(_Methods_Base):
                 except MySQLdb.Error:
                     logger.warn('mysql error updating update_history',
                                 exc_info=True)
-                except:
+                except Exception:
                     logger.warn('error updating update_history', exc_info=True)
                     raise

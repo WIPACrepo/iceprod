@@ -39,7 +39,7 @@ class queue(_Methods_Base):
                 dict_row = self._list_to_dict('task',row)
                 dict_row['status_changed'] = str2datetime(dict_row['status_changed'])
                 tasks[row[0]] = dict_row
-        except:
+        except Exception:
             return {}
         else:
             return tasks
@@ -66,13 +66,13 @@ class queue(_Methods_Base):
                         try:
                             for kk in set(old_queues[k]['resources']) - set(queues[k]['resources']):
                                 queues[k]['resources'][kk] = old_queues[k]['resources'][kk]
-                        except:
+                        except Exception:
                             try:
                                 queues[k]['resources'] = old_queues[k]['resources']
-                            except:
+                            except Exception:
                                 queues[k]['resources'] = {}
                     queues = json_encode(queues)
-                except:
+                except Exception:
                     logger.warn('set_site_queues(): cannot encode queues to json')
                     raise
                 sql = 'update site set queues = ? where site_id = ?'
@@ -81,7 +81,7 @@ class queue(_Methods_Base):
                 # add a new site entry
                 try:
                     queues = json_encode(queues)
-                except:
+                except Exception:
                     logger.warn('set_site_queues(): cannot encode queues to json')
                     raise
                 sql = 'insert into site (site_id,queues) values (?,?)'
@@ -93,7 +93,7 @@ class queue(_Methods_Base):
                 bindings3 = (master_update_history_id,'site',site_id,nowstr())
                 try:
                     yield self.parent.db.query(sql3, bindings3)
-                except:
+                except Exception:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
@@ -133,7 +133,7 @@ class queue(_Methods_Base):
                     if status not in task_groups:
                         task_groups[status] = {}
                     task_groups[status][task_id] = tasks[task_id]
-        except:
+        except Exception:
             logger.info('error getting active tasks', exc_info=True)
             raise
         else:
@@ -164,7 +164,7 @@ class queue(_Methods_Base):
             task_groups = defaultdict(lambda:defaultdict(Counter))
             for dataset_id, name, status in ret:
                 task_groups[dataset_id][name][status] += 1
-        except:
+        except Exception:
             logger.info('error getting active tasks', exc_info=True)
             raise
         else:
@@ -203,7 +203,7 @@ class queue(_Methods_Base):
                         'submit_time': ret[task_id]['status_changed'],
                         'submit_dir': ret[task_id]['submit_dir'],
                     })
-        except:
+        except Exception:
             logger.info('error getting grid tasks', exc_info=True)
             raise
         else:
@@ -259,7 +259,7 @@ class queue(_Methods_Base):
                         bindings2 = (status,now,tt)
                         yield self._send_to_master(('search',tt,now,msql,bindings))
                         yield self._send_to_master(('task',tt,now,msql2,bindings2))
-        except:
+        except Exception:
             logger.info('error updating task status', exc_info=True)
             raise
 
@@ -344,7 +344,7 @@ class queue(_Methods_Base):
             bindings3 = (master_update_history_id,'task',task,nowstr())
             try:
                 yield self.parent.db.query(sql3, bindings3)
-            except:
+            except Exception:
                 logger.info('error updating master_update_history',
                             exc_info=True)
         else:
@@ -577,7 +577,7 @@ class queue(_Methods_Base):
                             bindings3 = (master_update_history_id,sql.split()[2],bindings[0],now)
                             try:
                                 yield self.parent.db.query(sql3, bindings3)
-                            except:
+                            except Exception:
                                 logger.info('error updating master_update_history',
                                             exc_info=True)
                         else:
@@ -665,7 +665,7 @@ class queue(_Methods_Base):
                                 else:
                                     reqs = task_rel_reqs
                                 datasets[dataset][task_id] = (depends,reqs,task_rel_id)
-            except:
+            except Exception:
                 logger.info('error getting processing tasks', exc_info=True)
                 raise
 
@@ -697,7 +697,7 @@ class queue(_Methods_Base):
                                 bindings = (dep,)
                                 try:
                                     ret = yield self.parent.db.query(sql, bindings)
-                                except:
+                                except Exception:
                                     logger.info('error getting depend task status for %s',
                                                 dep, exc_info=True)
                                     satisfied = False
@@ -722,7 +722,7 @@ class queue(_Methods_Base):
                                     logger.info('reqs not satisfied: %r', task_id)
                                     satisfied = False
                                     break
-                        except:
+                        except Exception:
                             logger.info('failed to check resources',
                                         exc_info=True)
                     if satisfied:
@@ -759,7 +759,7 @@ class queue(_Methods_Base):
                 for f in self._bulk_select(sql, dataset_ids):
                     for d_id,js,debug in (yield f):
                         dataset_debug[d_id] = (js,bool(debug))
-            except:
+            except Exception:
                 logger.debug('error getting dataset debug', exc_info=True)
                 raise
             sql = 'select * from search where task_id in (%s)'
@@ -768,7 +768,7 @@ class queue(_Methods_Base):
                 for f in self._bulk_select(sql, tasks):
                     ret2 = yield f
                     ret.extend(ret2)
-            except:
+            except Exception:
                 logger.debug('error queueing tasks', exc_info=True)
                 raise
             tasks = {}
@@ -834,7 +834,7 @@ class queue(_Methods_Base):
                         bindings4 = (master_update_history_id,'task',t,now)
                         try:
                             yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
-                        except:
+                        except Exception:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
                 else:
@@ -877,7 +877,7 @@ class queue(_Methods_Base):
         """
         try:
             ret = [(yield self.parent.db.increment_id('pilot')) for _ in range(num)]
-        except:
+        except Exception:
             logger.info('new pilot_ids error', exc_info=True)
             raise
         else:
@@ -972,7 +972,7 @@ class queue(_Methods_Base):
                 sql += ','.join('?' for _ in p)+')'
                 bindings = tuple(p)
                 yield self.parent.db.query(sql, bindings)
-        except:
+        except Exception:
             logger.debug('error deleting pilots', exc_info=True)
             raise
         if task_ids:

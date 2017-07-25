@@ -40,7 +40,7 @@ def downloadtask(gridspec, resources={}):
     domain = '.'.join(hostname.split('.')[-2:])
     try:
         ifaces = functions.getInterfaces()
-    except:
+    except Exception:
         ifaces = None
     resources = deepcopy(resources)
     if 'gpu' in resources and isinstance(resources['gpu'],list):

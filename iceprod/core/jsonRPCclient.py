@@ -89,7 +89,7 @@ class Client(object):
                 r.raise_for_status()
                 data = r.content
                 break
-            except:
+            except Exception:
                 logger.warn('error making jsonrpc request for %s', methodname)
                 if i < 2:
                     # try restarting connection, with backoff
@@ -105,7 +105,7 @@ class Client(object):
             return None
         try:
             data = json_decode(data)
-        except:
+        except Exception:
             logger.info('json data: %r',data)
             raise
 
@@ -113,7 +113,7 @@ class Client(object):
             logger.warn('error: %r', data['error'])
             try:
                 raise Exception('Error %r: %r    %r'%data['error'])
-            except:
+            except Exception:
                 raise Exception('Error %r'%data['error'])
         if 'result' in data:
             return data['result']

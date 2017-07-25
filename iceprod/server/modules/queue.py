@@ -137,7 +137,7 @@ class queue(module.module):
             try:
                 yield self.modules['db']['queue_set_site_queues'](
                         site_id=self.cfg['site_id'], queues=gridspec_types)
-            except:
+            except Exception:
                 logger.warn('error setting site queues',exc_info=True)
             # start queue loop
             yield self.queue_loop()
@@ -214,7 +214,7 @@ class queue(module.module):
             except Exception:
                 logger.error('error in global queueing', exc_info=True)
 
-        except:
+        except Exception:
             logger.error('queue_loop stopped because of exception',
                         exc_info=True)
         else:

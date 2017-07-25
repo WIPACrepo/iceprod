@@ -98,7 +98,7 @@ class IceProdShell:
             while rawinput[-1] in "!.": rawinput = rawinput[:-1]
             try:
                 print therapist.respond(rawinput,self.gKeys,self.gValues)
-            except: pass
+            except Exception: pass
 
 
 if __name__ == '__main__':
@@ -131,7 +131,7 @@ if __name__ == '__main__':
            cfgcompat.Read()
            url = cfgcompat.GetValue('URL')
            username = cfgcompat.GetValue('ConfigDatabaseUser')
-        except: pass
+        except Exception: pass
     try:
         opts,args = getopt.getopt(arguments[1:], 
                     'm:v:r:u:hi',

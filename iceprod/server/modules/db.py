@@ -173,7 +173,7 @@ class DBAPI(object):
                 else:
                     raise Exception('unexpected settings key: %s'%key)
             self._db_write(conn,sql,bindings)
-        except:
+        except Exception:
             logger.error('settings table init failed', exc_info=True)
             raise
 
@@ -405,7 +405,7 @@ else:
                     cur = c.cursor()
                     self._db_query(cur, sql, bindings)
                     ret = cur.fetchall()
-            except:
+            except Exception:
                 logger.info('sql: %r', sql)
                 logger.info('bindings: %r', bindings)
                 logger.warning('error in _db_read', exc_info=True)
@@ -425,7 +425,7 @@ else:
                     else:
                         logger.info('sql: %r', sql)
                         raise Exception('sql is an unknown type')
-            except:
+            except Exception:
                 logger.info('sql: %r', sql)
                 logger.info('bindings: %r', bindings)
                 logger.warning('error in _db_write', exc_info=True)
@@ -551,10 +551,10 @@ if MySQLdb:
                         # something went wrong
                         logger.warning('error', exc_info=True)
                         raise
-                except:
+                except Exception:
                     try:
                         conn.rollback()
-                    except:
+                    except Exception:
                         pass
                     raise
                 else:
@@ -617,14 +617,14 @@ if MySQLdb:
                 cur = conn.cursor()
                 self._db_query(cur,sql,bindings)
                 ret = cur.fetchall()
-            except:
+            except Exception:
                 logger.warning('error reading', exc_info=True)
                 try:
                     conn.rollback()
                 except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
                         MySQLdb.InternalError) as e:
                     raise DBResetError(str(e))
-                except:
+                except Exception:
                     pass
                 raise
             else:
@@ -641,14 +641,14 @@ if MySQLdb:
                         self._db_query(cur,s,b)
                 else:
                     raise Exception('sql is an unknown type')
-            except:
+            except Exception:
                 logger.warning('error writing', exc_info=True)
                 try:
                     conn.rollback()
                 except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
                         MySQLdb.InternalError) as e:
                     raise DBResetError(str(e))
-                except:
+                except Exception:
                     pass
                 raise
             else:
@@ -677,14 +677,14 @@ if MySQLdb:
                     self._db_query(cur,'update setting set '+table_name+'_last = ?',(new_id,))
                 else:
                     raise Exception('not in setting table')
-            except:
+            except Exception:
                 logger.warning('error incrementing id', exc_info=True)
                 try:
                     conn.rollback()
                 except (MySQLdb.InterfaceError, MySQLdb.OperationalError,
                         MySQLdb.InternalError) as e:
                     raise DBResetError(str(e))
-                except:
+                except Exception:
                     pass
                 raise
             else:

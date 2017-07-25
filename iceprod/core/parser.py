@@ -218,7 +218,7 @@ class ExpParser:
         except GrammarException:
             try:
                 (left,right) = self.word(input)
-            except:
+            except Exception:
                 (left,right) = (ParseObj(),input)
         if left and right:
             (left2,right) = self.sentence(right)
@@ -399,10 +399,10 @@ class ExpParser:
         try:
             # try dif, then plus
             return ParseObj(self.job['difplus']['dif'][param])
-        except:
+        except Exception:
             try:
                 return ParseObj(self.job['difplus']['plus'][param])
-            except:
+            except Exception:
                 raise GrammarException('difplus:'+str(param))
     
     def choice_func(self,param):
@@ -414,7 +414,7 @@ class ExpParser:
                 if isinstance(param, ParseObj):
                     param = str(param)
                 return ParseObj(random.choice(param.split(',')))
-        except:
+        except Exception:
             raise GrammarException('not a valid choice')
     
     def eval_func(self,param):

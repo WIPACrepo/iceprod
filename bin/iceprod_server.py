@@ -70,7 +70,7 @@ def runner(stdout=False):
     try:
         from setproctitle import setproctitle
         setproctitle('iceprod_server.main')
-    except:
+    except Exception:
         logging.warn("could not rename process")
 
     s = Server()

@@ -171,7 +171,7 @@ class auth(_Methods_Base):
             sql += 'values (?,?,?,?,?,?)'
             bindings = (user_id, username, salt, db_hash, name, email)
             yield self.parent.db.query(sql, bindings)
-        except:
+        except Exception:
             logger.info('internal auth failure', exc_info=True)
             raise Exception('authentication failure')
         else:
@@ -211,7 +211,7 @@ class auth(_Methods_Base):
                 bindings = (nowstr(),user_id)
             yield self.parent.db.query(sql, bindings)
             ret = {'id': user_id, 'name': name, 'email': email}
-        except:
+        except Exception:
             logger.info('ldap auth failure', exc_info=True)
             raise Exception('authentication failure')
         else:
@@ -244,7 +244,7 @@ class auth(_Methods_Base):
             bindings = (nowstr(),user_id)
             yield self.parent.db.query(sql, bindings)
             ret = {'id': user_id, 'name': name, 'email': email}
-        except:
+        except Exception:
             logger.info('internal auth failure', exc_info=True)
             raise Exception('authentication failure')
         else:

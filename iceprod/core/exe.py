@@ -43,7 +43,7 @@ from contextlib import contextmanager
 
 try:
     import cPickle as pickle
-except:
+except Exception:
     import pickle
 
 import logging
@@ -400,7 +400,7 @@ def uploadData(env, data):
     try:
         start_time = time.time()
         functions.upload(local, url, options=upload_options)
-    except:
+    except Exception:
         failed = True
         logger.critical('failed to upload %s to %s', local, url, exc_info=True)
         raise Exception('failed to upload {} to {}'.format(local, url))
@@ -699,7 +699,7 @@ def runmodule(cfg, globalenv, module, stats={}):
         process = fork_module(cfg, env, module)
         try:
             interval = float(cfg.config['options']['stillrunninginterval'])
-        except:
+        except Exception:
             interval = 0
         if interval < 60:
             interval = 60
@@ -709,7 +709,7 @@ def runmodule(cfg, globalenv, module, stats={}):
                 # check for DB kill
                 try:
                     stillrunning(cfg)
-                except:
+                except Exception:
                     if process.poll() is None:
                         process.kill()
                         time.sleep(1)
@@ -727,7 +727,7 @@ def runmodule(cfg, globalenv, module, stats={}):
                         raise e
                     else:
                         raise Exception(str(e))
-            except:
+            except Exception:
                 logger.warn('cannot load exception info from failed module')
                 raise Exception('module failed')
 

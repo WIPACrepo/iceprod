@@ -65,7 +65,7 @@ class IceProdConfig(dict):
             basename = 'iceprod_config.json'
             try:
                 self.filename = locateconfig(basename)
-            except:
+            except Exception:
                 logger.warn('config file does not exist, so making a new one')
                 if 'I3PROD' in os.environ:
                     prefix = os.path.join(os.environ['I3PROD'], 'etc')

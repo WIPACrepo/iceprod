@@ -56,7 +56,7 @@ def process_wrapper(func, title, pilot_id='', hostname='', resources={}):
     """
     try:
         setproctitle(title)
-    except:
+    except Exception:
         pass
 
     Resources.set_env(resources)
@@ -100,7 +100,7 @@ class Pilot(object):
 
         try:
             setproctitle('iceprod2_pilot({})'.format(pilot_id))
-        except:
+        except Exception:
             pass
 
         self.running = True
@@ -195,7 +195,7 @@ class Pilot(object):
                     p.kill()
                 except psutil.NoSuchProcess:
                     pass
-                except:
+                except Exception:
                     logger.warn('error killing process',
                                 exc_info=True)
         processes = active_children()
@@ -221,7 +221,7 @@ class Pilot(object):
                     logger.warn('cannot forward return value')
                 else:
                     self.tasks[task_id]['recv_queue'].put(ret)
-        except:
+        except Exception:
             logger.info('error forwarding message', exc_info=True)
         self.ioloop.call_later(sleep_time, self.message_queue_monitor)
 
@@ -421,7 +421,7 @@ class Pilot(object):
             self.tasks[task_id] = {'p':p, 'process':ps, 'tmpdir':tmpdir,
                                    'recv_queue':send_queue}
             self.resources.register_process(task_id, ps, tmpdir)
-        except:
+        except Exception:
             logger.error('error creating task', exc_info=True)
         finally:
             os.chdir(main_dir)
@@ -452,7 +452,7 @@ class Pilot(object):
                             p.terminate()
                         except psutil.NoSuchProcess:
                             pass
-                        except:
+                        except Exception:
                             logger.warn('error terminating process',
                                         exc_info=True)
 
@@ -467,25 +467,25 @@ class Pilot(object):
                                 p.kill()
                             except psutil.NoSuchProcess:
                                 pass
-                            except:
+                            except Exception:
                                 logger.warn('error killing process',
                                             exc_info=True)
-                    except:
+                    except Exception:
                         logger.warn('failed to kill processes',
                                     exc_info=True)
                 task['p'].terminate()
-            except:
+            except Exception:
                 logger.warn('error deleting process', exc_info=True)
 
             # clean tmpdir
             try:
                 if not self.debug:
                     shutil.rmtree(task['tmpdir'])
-            except:
+            except Exception:
                 logger.warn('error deleting tmpdir', exc_info=True)
 
         # return resources to pilot
         try:
             self.resources.release(task_id)
-        except:
+        except Exception:
             logger.warn('error releasing resources', exc_info=True)

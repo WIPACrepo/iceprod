@@ -189,7 +189,7 @@ class Nginx(object):
         for d in create_dirs:
             try:
                 os.makedirs(d)
-            except:
+            except Exception:
                 pass
 
         # write config file

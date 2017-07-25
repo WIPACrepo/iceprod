@@ -248,7 +248,7 @@ class web(_Methods_Base):
         for site_id,queues in ret:
             try:
                 gridspecs.update(json_decode(queues))
-            except:
+            except Exception:
                 pass
         raise tornado.gen.Return(gridspecs)
 

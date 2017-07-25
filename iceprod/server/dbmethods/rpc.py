@@ -233,7 +233,7 @@ class rpc(_Methods_Base):
         try:
             if 'time_used' in stats and stats['time_used']:
                 time_used = float(stats['time_used'])
-        except:
+        except Exception:
             logger.warn('bad time_used', exc_info=True)
         #if 'hostname' in stats and stats['hostname']:
         #    self.parent.statsd.incr('finish_task.hostname.'+stats['hostname'].replace('.','_'),
@@ -273,7 +273,7 @@ class rpc(_Methods_Base):
                 bindings4 = (master_update_history_id,'task',newtask['task_id'],now)
                 try:
                     yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
-                except:
+                except Exception:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
@@ -295,7 +295,7 @@ class rpc(_Methods_Base):
             bindings3 = (master_update_history_id,'task_stat',task_stat_id,now)
             try:
                 yield self.parent.db.query(sql3, bindings3)
-            except:
+            except Exception:
                 logger.info('error updating master_update_history',
                             exc_info=True)
         else:
@@ -317,7 +317,7 @@ class rpc(_Methods_Base):
         try:
             if 'time_used' in error_info and error_info['time_used']:
                 time_used = float(error_info['time_used'])
-        except:
+        except Exception:
             logger.warn('bad time_used', exc_info=True)
         #if 'hostname' in error_info and error_info['hostname']:
         #    self.parent.statsd.incr('task_error.hostname.'+error_info['hostname'].replace('.','_'),
@@ -463,14 +463,14 @@ class rpc(_Methods_Base):
                     mbindings3 = (master_update_history_id,'task_stat',task_stat_id,now)
                     try:
                         yield self.parent.db.query([msql,msql,msql], [mbindings1,mbindings2,mbindings3])
-                    except:
+                    except Exception:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
                 else:
                     yield self._send_to_master(('search',task_id,now,sql,bindings))
                     yield self._send_to_master(('task',task_id,now,sql2,bindings2))
                     yield self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
-            except:
+            except Exception:
                 logger.warn('error in task_error', exc_info=True)
                 raise
 
@@ -503,7 +503,7 @@ class rpc(_Methods_Base):
                 bindings3 = (master_update_history_id,'task_log',task_log_id,nowstr())
                 try:
                     yield self.parent.db.query(sql3, bindings3)
-                except:
+                except Exception:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
@@ -589,14 +589,14 @@ class rpc(_Methods_Base):
         if isinstance(config, dict):
             try:
                 config = serialization.dict_to_dataclasses(config)
-            except:
+            except Exception:
                 logger.info('error converting config: %r', config,
                             exc_info=True)
                 raise
         elif not isinstance(config, dataclasses.Job):
             try:
                 config = serialization.serialize_json.loads(config)
-            except:
+            except Exception:
                 logger.info('error deserializing config: %r', config,
                             exc_info=True)
                 raise
@@ -605,7 +605,7 @@ class rpc(_Methods_Base):
         try:
             njobs = int(njobs)
             ntasks = len(config['tasks'])*njobs
-        except:
+        except Exception:
             logger.info('error reading ntasks from submitting config',
                         exc_info=True)
             raise
@@ -614,7 +614,7 @@ class rpc(_Methods_Base):
         category_csv = ''
         try:
             category_csv = ','.join(config['categories'])
-        except:
+        except Exception:
             pass
 
         with (yield self.parent.db.acquire_lock('dataset')):
@@ -695,7 +695,7 @@ class rpc(_Methods_Base):
                 # add config
                 try:
                     config_data = serialization.serialize_json.dumps(config)
-                except:
+                except Exception:
                     logger.info('error serializing config: %r', config,
                                 exc_info=True)
                     raise
@@ -709,7 +709,7 @@ class rpc(_Methods_Base):
                 for i,task in enumerate(config['tasks']):
                     try:
                         reqs = serialization.serialize_json.dumps(task['requirements'])
-                    except:
+                    except Exception:
                         logger.info('cannot serialize requirements %r',
                                     task['requirements'], exc_info=True)
                         raise
@@ -733,12 +733,12 @@ class rpc(_Methods_Base):
                         bindings3 = (master_update_history_id,sql.split()[2],bindings[0],now)
                         try:
                             yield self.parent.db.query(sql3, bindings3)
-                        except:
+                        except Exception:
                             logger.info('error updating master_update_history',
                                         exc_info=True)
                     else:
                         yield self._send_to_master((sql.split()[2],bindings[0],now,sql,bindings))
-            except:
+            except Exception:
                 logger.warn('submit error', exc_info=True)
                 raise
             raise tornado.gen.Return(dataset_id)
@@ -756,13 +756,13 @@ class rpc(_Methods_Base):
         if isinstance(config,dict):
             try:
                 config = serialization.dict_to_dataclasses(config)
-            except:
+            except Exception:
                 logger.info('error converting config: %r', config,
                             exc_info=True)
                 raise
             try:
                 config = serialization.serialize_json.dumps(config)
-            except:
+            except Exception:
                 logger.info('error serializing config: %r', config,
                             exc_info=True)
                 raise
@@ -780,7 +780,7 @@ class rpc(_Methods_Base):
             bindings3 = (master_update_history_id,'dataset',dataset_id,nowstr())
             try:
                 yield self.parent.db.query(sql3, bindings3)
-            except:
+            except Exception:
                 logger.info('error updating master_update_history',
                             exc_info=True)
         else:
@@ -848,7 +848,7 @@ class rpc(_Methods_Base):
                     updates_sql.append('insert into groups (groups_id,name,description,priority) values (?,?,?,?)')
                     updates_bindings.append((i,groups[ids]['name'],groups[ids]['description'],groups[ids]['priority']))
                 yield self.parent.db.query(updates_sql, updates_bindings)
-            except:
+            except Exception:
                 logger.warn('failed to set groups', exc_info=True)
                 raise
 
@@ -901,7 +901,7 @@ class rpc(_Methods_Base):
             sql = 'update user set roles = ? where username = ?'
             bindings = (','.join(roles), username)
             yield self.parent.db.query(sql, bindings)
-        except:
+        except Exception:
             logger.warn('failed to set roles for username %s', username,
                         exc_info=True)
             raise
@@ -971,7 +971,7 @@ class rpc(_Methods_Base):
             u = updates.pop(0)
             try:
                 yield self.parent.service['misc_update_master_db'](*u)
-            except:
+            except Exception:
                 logger.warn('failed to apply update: %r', u, exc_info=True)
                 raise
 

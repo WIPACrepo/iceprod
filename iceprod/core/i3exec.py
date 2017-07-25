@@ -131,7 +131,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                     raise Exception('config["options"]["task_id"] not specified, '
                                     'so cannot update status')
                 iceprod.core.exe_json.processing(config['options']['task_id'])
-            except:
+            except Exception:
                 logger.error('json error', exc_info=True)
 
         # set up stdout and stderr
@@ -192,7 +192,7 @@ def runner(config, url, debug=False, offline=False):
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
             iceprod.core.logger.set_log_level(config['options']['loglevel'])
-        except:
+        except Exception:
             logger.warn('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set

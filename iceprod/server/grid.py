@@ -196,7 +196,7 @@ class BaseGrid(object):
                         reset_tasks.append(t)
                     else:
                         tasks_waiting += 1
-                except:
+                except Exception:
                     logging.warn('error waiting->reset for %r', t,
                                  exc_info=True)
 
@@ -210,7 +210,7 @@ class BaseGrid(object):
                         reset_tasks.append(t)
                     else:
                         tasks_queued += 1
-                except:
+                except Exception:
                     logging.warn('error queued->reset for %r', t,
                                  exc_info=True)
         self.tasks_queued = tasks_queued
@@ -225,7 +225,7 @@ class BaseGrid(object):
                         reset_tasks.append(t)
                     else:
                         tasks_processing += 1
-                except:
+                except Exception:
                     logging.warn('error processing->reset for %r', t,
                                  exc_info=True)
         self.tasks_processing = tasks_processing
@@ -297,15 +297,15 @@ class BaseGrid(object):
         # get time limits
         try:
             queued_time = timedelta(seconds=self.queue_cfg['max_task_queued_time'])
-        except:
+        except Exception:
             queued_time = timedelta(seconds=86400*2)
         try:
             processing_time = timedelta(seconds=self.queue_cfg['max_task_processing_time'])
-        except:
+        except Exception:
             processing_time = timedelta(seconds=86400*2)
         try:
             suspend_time = timedelta(seconds=self.queue_cfg['suspend_submit_dir_time'])
-        except:
+        except Exception:
             suspend_time = timedelta(seconds=86400)
         all_time = queued_time + processing_time + suspend_time
         time_dict = {'queued': queued_time,
@@ -448,7 +448,7 @@ class BaseGrid(object):
             try:
                 logger.info('deleting submit_dir %s', t)
                 functions.removedirs(t)
-            except:
+            except Exception:
                 logger.warn('could not delete submit dir %s', t, exc_info=True)
                 continue
 
@@ -470,7 +470,7 @@ class BaseGrid(object):
                                 values[k] = float(t['reqs'][k])
                             else:
                                 values[k] = t['reqs'][k]
-                        except:
+                        except Exception:
                             logger.warn('bad reqs value for task %r', t)
             except TypeError:
                 logger.warn('t[reqs]: %r',t['reqs'])
@@ -571,7 +571,7 @@ class BaseGrid(object):
                 if isinstance(ret,Exception):
                     logger.error('error updating DB with pilots')
                     raise ret
-            except:
+            except Exception:
                 logger.error('error submitting pilots', exc_info=True)
 
     @tornado.gen.coroutine
@@ -625,7 +625,7 @@ class BaseGrid(object):
         try:
             yield self.generate_submit_file(task, cfg=cfg, passkey=passkey,
                                             filelist=filelist)
-        except:
+        except Exception:
             logger.error('Error generating submit file',exc_info=True)
             raise
 

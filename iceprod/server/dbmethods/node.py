@@ -84,7 +84,7 @@ class node(_Methods_Base):
                 bindings3 = (master_update_history_id,'node',node_id,now)
                 try:
                     ret = yield self.parent.db.query(sql3, bindings3)
-                except:
+                except Exception:
                     logger.info('error updating master_update_history',
                                 exc_info=True)
             else:
@@ -165,12 +165,12 @@ class node(_Methods_Base):
                     bindings3 = (master_update_history_id,'site',site_id,nowstr())
                     try:
                         yield self.parent.db.query(sql3, bindings3)
-                    except:
+                    except Exception:
                         logger.info('error updating master_update_history',
                                     exc_info=True)
                 else:
                     yield self._send_to_master(('site',site_id,nowstr(),sql,bindings))
-        except:
+        except Exception:
             logger.info('error in node_collate_resources', exc_info=True)
 
     @tornado.gen.coroutine
@@ -207,7 +207,7 @@ class node(_Methods_Base):
                             resources[k] = grids['resources'][k][index]
                     else:
                         resources[k] = grids['resources'][k][0]
-        except:
+        except Exception:
             logger.warn('error in get_site_resources', exc_info=True)
             raise
         else:

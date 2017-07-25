@@ -237,7 +237,7 @@ class _Methods_Base():
 
         try:
             return OrderedDict(zip(keys,input_row))
-        except:
+        except Exception:
             logger.warn('error making table %s dict from return values %r',
                          table,input_row)
             raise

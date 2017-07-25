@@ -75,14 +75,14 @@ class module(object):
             try:
                 self.statsd = StatsClient(self.cfg['statsd'],
                                           prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
-            except:
+            except Exception:
                 logger.warn('failed to connect to statsd: %r',
                             self.cfg['statsd'], exc_info=True)
 
         if 'elasticsearch' in self.cfg and self.cfg['elasticsearch']:
             try:
                 self.elastic = ElasticClient(self.cfg['elasticsearch'])
-            except:
+            except Exception:
                 logger.warn('failed to connet to elasicsearch: %r',
                             self.cfg['elasticsearch'], exc_info=True)
 

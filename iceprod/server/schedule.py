@@ -49,7 +49,7 @@ class Scheduler(object):
             f = task()
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
                 yield f
-        except:
+        except Exception:
             logging.warning('Error in scheduled task',exc_info=True)
         finally:
             self.running.discard(id)
@@ -168,7 +168,7 @@ class Scheduler(object):
                                 ordinal.append(o2)
                 try: # try getting N
                     n = int(words[0])
-                except:
+                except Exception:
                     pass
                 else: # we already got n, so just pop it and throw it away
                     words.pop(0)
@@ -399,7 +399,7 @@ class Scheduler(object):
             if flag is False:
                 # no match, return None
                 return None
-        except:
+        except Exception:
             # invalid cron
             logger.warn('Invalid cron',exc_info=True)
             return None

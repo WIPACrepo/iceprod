@@ -127,7 +127,7 @@ def cksm(filename,type,buffersize=16384,file=True):
 
     try:
         digest = getattr(hashlib,type)()
-    except:
+    except Exception:
         raise Exception('cannot get checksum for type %r',type)
 
     if file and os.path.exists(filename):
@@ -217,7 +217,7 @@ def copy(src,dest):
         logger.info('attempting to make parent dest dir %s',parent_dir)
         try:
             os.makedirs(parent_dir)
-        except:
+        except Exception:
             logger.error('failed to make dest directory for copy',exc_info=True)
             raise
     if os.path.isdir(src):
@@ -260,7 +260,7 @@ def get_local_ip_address():
     """Get the local (loopback) ip address"""
     try:
         return socket.gethostbyname('localhost')
-    except:
+    except Exception:
         return socket.gethostbyname( socket.getfqdn() )
 
 def gethostname():
@@ -273,7 +273,7 @@ def gethostname():
         ret2 = resp.text.split(' ')[-1]
         if len(ret2.split('.')) > 1:
             ret = '.'.join(ret.split('.')[:1]+ret2.split('.')[1:])
-    except:
+    except Exception:
         logger.info('error getting global ip', exc_info=True)
     return ret
 
@@ -346,7 +346,7 @@ def download(url, local, options={}):
 
         if not os.path.exists(local):
             raise Exception('download failed - file does not exist')
-    except:
+    except Exception:
         removedirs(local)
         raise
 
@@ -447,8 +447,8 @@ def isurl(url):
     prefixes = ('file:','http:','https:','ftp:','ftps:','gsiftp:')
     try:
         return url.startswith(prefixes)
-    except:
+    except Exception:
         try:
             return reduce(lambda a,b: a or url.startswith(b), prefixes, False)
-        except:
+        except Exception:
             return False
