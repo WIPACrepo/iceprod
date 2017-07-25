@@ -84,7 +84,7 @@ class Pilot(object):
         config (dict): the configuration dictionary
         runner (callable): the task/config runner
     """
-    def __init__(self, config, runner, pilot_id, debug=False, run_timeout=60):
+    def __init__(self, config, runner, pilot_id, debug=False, run_timeout=180):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
@@ -362,6 +362,10 @@ class Pilot(object):
                                           resources_claimed=self.resources.get_claimed())
                     if self.running:
                         break
+                elif (self.running and self.resources.available['cpu'] > 1
+                      and self.resources.available['memory'] > 1):
+                    logger.info('resources available, so request a task')
+                    break
 
         # last update for pilot state
         exe_json.update_pilot(self.pilot_id, tasks='',
