@@ -265,6 +265,9 @@ class Pilot(object):
         tasks_running = 0
         while self.running:
             while self.running:
+                if self.resources.total['gpu'] and not self.resources.available['gpu']:
+                    logger.info('gpu pilot with no gpus left - not queueing')
+                    break
                 try:
                     task_configs = exe_json.downloadtask(self.config['options']['gridspec'],
                                                          resources=self.resources.get_available())
@@ -334,7 +337,8 @@ class Pilot(object):
                                               resources_claimed=self.resources.get_claimed())
 
                 if (self.resources.available['cpu'] < 1
-                    or self.resources.available['memory'] < 1):
+                    or self.resources.available['memory'] < 1
+                    or (self.resources.total['gpu'] and not self.resources.available['gpu'])):
                     logger.info('no resources left, so wait for tasks to finish')
                     break
 
@@ -363,7 +367,8 @@ class Pilot(object):
                     if self.running:
                         break
                 elif (self.running and self.resources.available['cpu'] > 1
-                      and self.resources.available['memory'] > 1):
+                      and self.resources.available['memory'] > 1
+                      and (self.resources.available['gpu'] or not self.resources.total['gpu'])):
                     logger.info('resources available, so request a task')
                     break
 
