@@ -12,7 +12,7 @@ import tornado.gen
 
 from iceprod.core import functions
 from iceprod.core.gridftp import GridFTP
-from iceprod.core.jsonUtil import json_encode,json_decode
+from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 from iceprod.server.dbmethods import _Methods_Base,datetime2str,str2datetime, nowstr
 from iceprod.server import GlobalID
 from iceprod.server.master_communication import send_master
@@ -419,3 +419,28 @@ class cron(_Methods_Base):
                                 tablenames=['dataset'])
         if ret:
             yield self.parent.service['misc_update_tables'](ret)
+
+    @tornado.gen.coroutine
+    def cron_suspend_himem_tasks(self):
+        """Suspend very high memory tasks"""
+        with (yield self.parent.db.acquire_lock('task_lookup')):
+            sql = 'select task_id from task_lookup where req_memory > 50'
+            ret = yield self.parent.db.query(sql, tuple())
+            task_ids = [row[0] for row in ret]
+            if task_ids:
+                sql = 'delete from task_lookup where task_id in (%s)'
+                for f in self._bulk_select(sql, task_ids):
+                    yield f
+        # release lock
+
+        if task_ids:
+            yield self.parent.service['queue_set_task_status'](task_ids,'suspended')
+            sql = 'insert into task_log (task_log_id,task_id,name,data) '
+            sql += ' values (?,?,?,?)'
+            data = json_compressor.compress('task held: requested >50GB memory')
+            now = nowstr()
+            for task_id in task_ids:
+                task_log_id = yield self.parent.db.increment_id('task_log')
+                bindings = (task_log_id,task_id,'stderr',data)
+                ret = yield self.parent.db.query(sql, bindings)
+                yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))
