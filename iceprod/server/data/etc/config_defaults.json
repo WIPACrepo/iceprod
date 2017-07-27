@@ -62,6 +62,7 @@
         "job_completion": "every 31 minutes",
         "dataset_completion": "every 1 hours",
         "pilot_monitoring": "every 5 minutes",
-        "dataset_update": "every 20 minutes"
+        "dataset_update": "every 20 minutes",
+        "suspend_himem_tasks": "every 2 minutes"
     }
 }
