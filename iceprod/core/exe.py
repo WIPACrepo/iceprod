@@ -230,7 +230,7 @@ def setupenv(cfg, obj, oldenv={}):
         yield env
         
         # upload data
-        if 'uploads' in env and ('offline' not in cfg['options'] or not cfg['options']['offline']):
+        if 'uploads' in env and ('offline' not in cfg.config['options'] or not cfg.config['options']['offline']):
             for d in env['uploads']:
                 try:
                     uploadData(env, d)
