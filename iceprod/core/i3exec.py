@@ -379,6 +379,8 @@ if __name__ == '__main__':
                         help='Specify the logfile to use')
     parser.add_argument('--job', type=int, default=None,
                         help='Index of the job to run')
+    parser.add_argument('--jobs_submitted', type=int, default=None,
+                        help='Total number of jobs in this dataset')
     parser.add_argument('--task', type=str, default=None,
                         help='Name of the task to run')
 
@@ -391,8 +393,11 @@ if __name__ == '__main__':
             args['cfgfile'] = os.path.join(os.getcwd(),args['cfgfile'])
         else:
             args['cfgfile'] = None
-    
-    options = {k: args.pop(k) for k in ('task','job',)}
+
+    options = {k: args.pop(k) for k in ('job','jobs_submitted','task')}
+    if not options['jobs_submitted']:
+        options['jobs_submitted'] = options['job']
+    options['debug'] = args['debug']
     if args['cfgfile']:
         cfgfile = load_config(args['cfgfile'])
         for k in options:
