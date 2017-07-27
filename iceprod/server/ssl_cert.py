@@ -30,7 +30,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
             and os.path.exists(key_filename)):
         if hostname is None:
             # get hostname
-            hostname = functions.gethostname()
+            hostname = functions.gethostname().encode('utf-8')
             if hostname is None:
                 raise Exception('Cannot get hostname')
 
@@ -104,7 +104,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             and os.path.exists(key_filename)):
         if hostname is None:
             # get hostname
-            hostname = functions.gethostname()
+            hostname = functions.gethostname().encode('utf-8')
             if hostname is None:
                 raise Exception('Cannot get hostname')
 
