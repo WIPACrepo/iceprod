@@ -421,26 +421,41 @@ class cron(_Methods_Base):
             yield self.parent.service['misc_update_tables'](ret)
 
     @tornado.gen.coroutine
-    def cron_suspend_himem_tasks(self):
-        """Suspend very high memory tasks"""
+    def cron_suspend_overusage_tasks(self):
+        """Suspend very high resource usage tasks"""
         with (yield self.parent.db.acquire_lock('task_lookup')):
-            sql = 'select task_id from task_lookup where req_memory > 50'
+            sql = 'select task_id, req_memory, req_time '
+            sql += ' from task_lookup where req_memory > 50 or req_time > 24'
             ret = yield self.parent.db.query(sql, tuple())
-            task_ids = [row[0] for row in ret]
-            if task_ids:
+            task_ids_all = []
+            task_ids_mem = []
+            task_ids_time = []
+            for task_id, mem, time in ret:
+                task_ids_all.append(task_id)
+                if mem > 50:
+                    task_ids_mem.append(task_id)
+                elif time > 24:
+                    task_ids_time.append(task_id)
+            if task_ids_all:
                 sql = 'delete from task_lookup where task_id in (%s)'
-                for f in self._bulk_select(sql, task_ids):
+                for f in self._bulk_select(sql, task_ids_all):
                     yield f
         # release lock
 
-        if task_ids:
-            yield self.parent.service['queue_set_task_status'](task_ids,'suspended')
-            sql = 'insert into task_log (task_log_id,task_id,name,data) '
-            sql += ' values (?,?,?,?)'
-            data = json_compressor.compress('task held: requested >50GB memory')
+        if task_ids_all:
+            yield self.parent.service['queue_set_task_status'](task_ids_all,'suspended')
             now = nowstr()
-            for task_id in task_ids:
-                task_log_id = yield self.parent.db.increment_id('task_log')
-                bindings = (task_log_id,task_id,'stderr',data)
-                ret = yield self.parent.db.query(sql, bindings)
-                yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))
+            def add_log(task_ids, data):
+                sql = 'insert into task_log (task_log_id,task_id,name,data) '
+                sql += ' values (?,?,?,?)'
+                for task_id in task_ids:
+                    task_log_id = yield self.parent.db.increment_id('task_log')
+                    bindings = (task_log_id,task_id,'stderr',data)
+                    ret = yield self.parent.db.query(sql, bindings)
+                    yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))
+            if task_ids_mem:
+                data = json_compressor.compress('task held: requested >50GB memory')
+                add_log(task_ids_mem, data)
+            if task_ids_time:
+                data = json_compressor.compress('task held: requested >24hr time')
+                add_log(task_ids_time, data)

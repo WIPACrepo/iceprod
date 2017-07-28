@@ -96,8 +96,8 @@ class schedule(module.module):
         self.scheduler.schedule(config['dataset_update'],
                 self.modules['db']['cron_dataset_update'])
 
-        self.scheduler.schedule(config['suspend_himem_tasks'],
-                self.modules['db']['cron_suspend_himem_tasks'])
+        self.scheduler.schedule(config['suspend_overusage_tasks'],
+                self.modules['db']['cron_suspend_overusage_tasks'])
 
     def _master_schedule(self):
         # fake a grid, so we can do grid-like things
