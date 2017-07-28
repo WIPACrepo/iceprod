@@ -396,12 +396,12 @@ if __name__ == '__main__':
 
     options = {k: args.pop(k) for k in ('job','jobs_submitted','task')}
     if not options['jobs_submitted']:
-        options['jobs_submitted'] = options['job']
+        options['jobs_submitted'] = options['job']+1
     options['debug'] = args['debug']
     if args['cfgfile']:
         cfgfile = load_config(args['cfgfile'])
         for k in options:
-            if options[k] is not None:
+            if options[k] is not None and k not in cfgfile['options']:
                 cfgfile['options'][k] = options[k]
         args['cfgfile'] = cfgfile
 
