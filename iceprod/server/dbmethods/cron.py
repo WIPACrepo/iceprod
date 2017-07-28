@@ -141,10 +141,14 @@ class cron(_Methods_Base):
         ret = yield self.parent.db.query(sql, bindings)
         datasets = {}
         for dataset_id,status,njobs,ntasks in ret:
-            datasets[dataset_id] = {
-                'status': status,
-                'tasks': int(ntasks)//int(njobs),
-            }
+            try:
+                datasets[dataset_id] = {
+                    'status': status,
+                    'tasks': int(ntasks)//int(njobs),
+                }
+            except ValueError:
+                logger.info('something strange with dataset %s', dataset_id,
+                            exc_info=True)
         if not datasets:
             return
 
