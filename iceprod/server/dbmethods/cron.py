@@ -143,7 +143,7 @@ class cron(_Methods_Base):
         for dataset_id,status,njobs,ntasks in ret:
             datasets[dataset_id] = {
                 'status': status,
-                'tasks': ntasks//njobs,
+                'tasks': int(ntasks)//int(njobs),
             }
         if not datasets:
             return
