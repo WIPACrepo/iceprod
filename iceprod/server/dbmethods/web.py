@@ -167,38 +167,47 @@ class web(_Methods_Base):
         Returns:
             dict: {status:num}
         """
-        sql = 'select search.*,task.*,job.* from search '
-        sql += ' join task on search.task_id = task.task_id '
-        sql += ' join job on search.job_id = job.job_id'
+        sql = 'select * from search '
         bindings = tuple()
         if task_id:
-            sql += ' where search.task_id = ? '
+            sql += ' where task_id = ? '
             bindings += (task_id,)
         if status:
             if 'where' not in sql:
                 sql += ' where '
-            sql += ' search.task_status = ? '
+            sql += ' task_status = ? '
             bindings += (status,)
         if dataset_id:
             if 'where' not in sql:
                 sql += ' where '
             else:
                 sql += ' and '
-            sql += ' search.dataset_id = ? '
+            sql += ' dataset_id = ? '
             bindings += (dataset_id,)
         if gridspec:
             if 'where' not in sql:
                 sql += ' where '
             else:
                 sql += ' and '
-            sql += ' search.gridspec like ? '
+            sql += ' gridspec like ? '
             bindings += ('%'+gridspec+'%',)
         ret = yield self.parent.db.query(sql, bindings)
         tasks = {}
+        job_ids = defaultdict(list)
         for row in ret:
-            tmp = self._list_to_dict(['search','task','job'],row)
+            tmp = self._list_to_dict('search',row)
             tasks[tmp['task_id']] = tmp
-        print(tasks)
+            job_ids[tmp['job_id']].append(tmp['task_id'])
+        sql = 'select * from task where task_id in (%s)'
+        for f in self._bulk_select(sql, tasks):
+            for row in (yield f):
+                tmp = self._list_to_dict('task',row)
+                tasks[tmp['task_id']].update(tmp)
+        sql = 'select job_id, job_index from job where job_id in (%s)'
+        for f in self._bulk_select(sql, job_ids):
+            for job_id,job_index in (yield f):
+                for task_id in job_ids[job_id]:
+                    tasks[task_id]['job_index'] = job_index
         raise tornado.gen.Return(tasks)
 
     @tornado.gen.coroutine
