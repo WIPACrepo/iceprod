@@ -128,9 +128,14 @@ class rpc(_Methods_Base):
 
             # get only what can match
             new_tasks = {}
+            old_queue = ''
             while True:
                 match = False
                 queue = task_queue.get_queue(reqs)
+                if 'gpu' in old_queue and 'gpu' not in queue:
+                    logger.info('after gpus expended, not queueing cpu tasks')
+                    break
+                old_queue = queue
                 logger.info('new task for queue: %s', queue)
                 if 'gpu' not in queue and not tasks[queue]:
                     queue = 'default'
