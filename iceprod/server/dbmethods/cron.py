@@ -463,3 +463,26 @@ class cron(_Methods_Base):
             if task_ids_time:
                 data = json_compressor.compress('task held: requested >24hr time')
                 add_log(task_ids_time, data)
+
+    @tornado.gen.coroutine
+    def cron_check_active_pilots_tasks(self):
+        """
+        Reset processing tasks that are not listed as running by
+        an active pilot.
+        """
+        tasks = yield self.parent.service['queue_get_pilots'](active=True)
+        task_ids = set()
+        for task in tasks:
+            if task['tasks']:
+                task_ids.update(task['tasks'])
+        if task_ids:
+            yield self.parent.service['queue_set_task_status'](task_ids,'reset')
+            now = nowstr()
+            sql = 'insert into task_log (task_log_id,task_id,name,data) '
+            sql += ' values (?,?,?,?)'
+            data = json_compressor.compress('task reset: not running in an active pilot')
+            for task_id in task_ids:
+                task_log_id = yield self.parent.db.increment_id('task_log')
+                bindings = (task_log_id,task_id,'stderr',data)
+                ret = yield self.parent.db.query(sql, bindings)
+                yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))

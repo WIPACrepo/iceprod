@@ -63,6 +63,7 @@
         "dataset_completion": "every 1 hours",
         "pilot_monitoring": "every 5 minutes",
         "dataset_update": "every 20 minutes",
-        "suspend_overusage_tasks": "every 2 minutes"
+        "suspend_overusage_tasks": "every 2 minutes",
+        "check_active_pilots_tasks": "every 29 minutes"
     }
 }
