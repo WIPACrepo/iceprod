@@ -470,11 +470,16 @@ class cron(_Methods_Base):
         Reset processing tasks that are not listed as running by
         an active pilot.
         """
+        sql = 'select task_id from task where status="processing"'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        task_ids = {row[0] for row in ret}
+
         tasks = yield self.parent.service['queue_get_pilots'](active=True)
-        task_ids = set()
         for task in tasks:
             if task['tasks']:
-                task_ids.update(task['tasks'])
+                task_ids -= set(task['tasks'])
+
         if task_ids:
             yield self.parent.service['queue_set_task_status'](task_ids,'reset')
             now = nowstr()
