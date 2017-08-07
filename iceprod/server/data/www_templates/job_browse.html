@@ -13,8 +13,9 @@
         <th>Job Index</th>
         <th>Status Changed</th>
         {% if (current_user) %}
-        <th><a href="javascript:call('reset_job');">Reset All</a></th>
-        <th><a href="javascript:call('suspend_job');">Suspend All</a></th>
+        <th><a href="javascript:call('reset_jobs');">Reset All</a></th>
+        <th><a href="javascript:call('hard_reset_jobs');">Hard Reset All</a></th>
+        <th><a href="javascript:call('suspend_jobs');">Suspend All</a></th>
         {% end %}
     </tr>
     {% for j in jobs %}
@@ -24,8 +25,9 @@
         <td>{{ j['job_index'] }}</td>
         <td>{{ j['status_changed'] }}</td>
         {% if (current_user) %}
-        <td><a href="javascript:call('reset_job', '{{ j['job_id'] }}');">Reset</a></td>
-        <td><a href="javascript:call('suspend_job', '{{ j['job_id'] }}');">Suspend</a></td>
+        <td><a href="javascript:call('reset_jobs', '{{ j['job_id'] }}');">Reset</a></td>
+        <td><a href="javascript:call('hard_reset_jobs', '{{ j['job_id'] }}');">Hard Reset</a></td>
+        <td><a href="javascript:call('suspend_jobs', '{{ j['job_id'] }}');">Suspend</a></td>
         {% end %}
     </tr>
     {% end %}
