@@ -395,7 +395,7 @@ if __name__ == '__main__':
             args['cfgfile'] = None
 
     options = {k: args.pop(k) for k in ('job','jobs_submitted','task')}
-    if not options['jobs_submitted']:
+    if not options['jobs_submitted'] and options['job']:
         options['jobs_submitted'] = options['job']+1
     options['debug'] = args['debug']
     if args['cfgfile']:
