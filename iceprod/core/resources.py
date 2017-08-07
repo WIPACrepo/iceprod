@@ -666,7 +666,7 @@ def get_gpu_utilization_by_id(gpu_id):
             elif k == 'Power Draw':
                 ret['power'] = float(v.replace('W','').strip())
     except Exception:
-        logger.info('nvidia-smi failed for gpu %s', gpu_id)
+        logger.info('nvidia-smi failed for gpu %s', gpu_id, exc_info=True)
     return ret
 
 def du(path):
