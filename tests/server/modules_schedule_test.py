@@ -83,6 +83,10 @@ class modules_schedule_test(module_test):
 
     @unittest_reporter
     def test_20_make_schedule(self):
+        class TimeMock:
+            def __getitem__(self, name):
+                return 'ever 1 minutes'
+        self.cfg['schedule'] = TimeMock()
         self.sched.start()
 
         self.sched._master_schedule = MagicMock()
@@ -95,6 +99,10 @@ class modules_schedule_test(module_test):
 
     @unittest_reporter
     def test_30_master_schedule(self):
+        class TimeMock:
+            def __getitem__(self, name):
+                return 'ever 1 minutes'
+        self.cfg['schedule'] = TimeMock()
         self.sched.start()
         self.cfg['master']['status'] = True
         self.sched._master_schedule()

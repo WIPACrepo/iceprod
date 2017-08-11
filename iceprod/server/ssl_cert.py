@@ -57,8 +57,10 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
         # pyOpenSSL doesn't provide a good access method,
         # so do it the hard way by extracting from key output
         pubkey = crypto.dump_privatekey(crypto.FILETYPE_TEXT, cert.get_pubkey())
-        pubkey = [x.strip() for x in pubkey.split('\n') if len(x)>0 and x[0]==' ']
-        pubkey = int(''.join(pubkey).replace(':',''),16)
+        logger.info('%r',pubkey)
+        pubkey = [x.strip() for x in pubkey.split(b'\n') if len(x)>0 and x.startswith(b' ')]
+        logger.info('%r',pubkey)
+        pubkey = int(b''.join(pubkey).replace(b':',b''),16)
 
         # make asn1 DER encoding
         seq = univ.Sequence()
@@ -67,23 +69,23 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
         enc = encoder.encode(seq)
 
         # get hash of DER
-        hash = hashlib.sha1(enc).hexdigest()
+        hash = hashlib.sha1(enc).hexdigest().encode('utf-8')
 
         # add extensions
         cert.add_extensions([
-            crypto.X509Extension("basicConstraints", True,
-                                 "CA:TRUE, pathlen:1"),
-            crypto.X509Extension("keyUsage", True,
-                                 "keyCertSign, cRLSign"),
-            crypto.X509Extension("subjectKeyIdentifier", False, hash,
+            crypto.X509Extension(b"basicConstraints", True,
+                                 b"CA:TRUE, pathlen:1"),
+            crypto.X509Extension(b"keyUsage", True,
+                                 b"keyCertSign, cRLSign"),
+            crypto.X509Extension(b"subjectKeyIdentifier", False, hash,
                                  subject=cert),
-            crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)
+            crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)
             ])
         cert.sign(k, 'sha1')
 
-        open(cert_filename, "w").write(
+        open(cert_filename, "wb").write(
             crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-        open(key_filename, "w").write(
+        open(key_filename, "wb").write(
             crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 
@@ -130,7 +132,7 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert.set_pubkey(k)
 
             # add extensions
-            exts = [crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)]
+            exts = [crypto.X509Extension(b'subjectAltName', False, b'DNS:'+hostname)]
             if allow_resign:
                 exts.extend([
                     crypto.X509Extension("basicConstraints", True,
@@ -171,11 +173,11 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             cert2.set_pubkey(cert.get_pubkey())
 
             # add extensions
-            exts = [crypto.X509Extension("subjectAltName", False, 'DNS:'+hostname)]
+            exts = [crypto.X509Extension(b"subjectAltName", False, b'DNS:'+hostname)]
             if allow_resign:
                 exts.extend([
-                    crypto.X509Extension("basicConstraints", True,
-                                         "CA:TRUE, pathlen:0"),
+                    crypto.X509Extension(b"basicConstraints", True,
+                                         b"CA:TRUE, pathlen:0"),
                     #crypto.X509Extension("keyUsage", True,
                     #                     "keyCertSign, cRLSign"),
                     #crypto.X509Extension("subjectKeyIdentifier", False, hash,
@@ -187,9 +189,9 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
             # overwrite cert req with real cert
             cert = cert2
 
-        open(cert_filename, "w").write(
+        open(cert_filename, "wb").write(
             crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
-        open(key_filename, "w").write(
+        open(key_filename, "wb").write(
             crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 def verify_cert(cert_filename,key_filename):
@@ -203,12 +205,12 @@ def verify_cert(cert_filename,key_filename):
     key = crypto.load_privatekey(crypto.FILETYPE_PEM,open(key_filename).read())
 
     # check date
-    begin = cert.get_notBefore()
+    begin = cert.get_notBefore().decode('utf-8')
     logger.debug('begin: %r',begin)
     if datetime.strptime(begin, "%Y%m%d%H%M%SZ") > datetime.utcnow():
         logger.error('cert only valid in future')
         return False
-    end = cert.get_notAfter()
+    end = cert.get_notAfter().decode('utf-8')
     logger.debug('end: %r',end)
     if datetime.strptime(end, "%Y%m%d%H%M%SZ") < datetime.utcnow():
         logger.warn('cert has expired')

@@ -540,7 +540,7 @@ class rpc(_Methods_Base):
         raise tornado.gen.Return(ret)
 
     @tornado.gen.coroutine
-    def rpc_update_pilot(self, pilot_id, tasks=None, resources_available=None,
+    def rpc_update_pilot(self, pilot_id, tasks='', resources_available=None,
                          resources_claimed=None):
         """
         Update the pilot table.

@@ -51,7 +51,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = 'ok'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         site_id = 'thesite'
@@ -76,7 +76,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['error'] = 'fail'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         site_id = 'thesite'
@@ -100,7 +100,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['error'] = 'fail'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response, status_code=400)
 
         site_id = 'thesite'
@@ -121,7 +121,7 @@ class master_communication_test(AsyncTestCase):
         def response(req, ctx):
             body = json_decode(req.body)
             ret = {}
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         site_id = 'thesite'
@@ -145,7 +145,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = 'ok'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         cfg = {}
@@ -168,7 +168,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = 'ok'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         cfg = {'master':{'url':'http://localhost'}}
@@ -190,7 +190,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = 'ok'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         cfg = {'master':{'url':'http://localhost','passkey':'tmpkey'}}
@@ -214,7 +214,7 @@ class master_communication_test(AsyncTestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = 'ok'
-            return json_encode(ret)
+            return json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         # try with / on end of url

@@ -64,7 +64,7 @@ class master_updater(module.module):
 
     def _load(self):
         """Load from cache file"""
-        with open(self.filename) as f:
+        with open(self.filename,'rb') as f:
             self.buffer = pickle.load(f)
 
     def _save_to_file(self):

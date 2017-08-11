@@ -390,24 +390,14 @@ class queue(_Methods_Base):
 
         with (yield self.parent.db.acquire_lock('queue')):
             # remove already buffered jobs
-            sql = 'select dataset_id,job_id from search '
+            sql = 'select dataset_id,count(*) from job '
             sql += ' where dataset_id in ('
             sql += ','.join(['?' for _ in need_to_buffer])
-            sql += ')'
+            sql += ') group by dataset_id'
             bindings = tuple(need_to_buffer)
             ret = yield self.parent.db.query(sql, bindings)
-            already_buffered = {}
-            for d, job_id in ret:
-                if d not in already_buffered:
-                    already_buffered[d] = set()
-                already_buffered[d].add(job_id)
-            for d in need_to_buffer:
-                if d in already_buffered:
-                    need_to_buffer[d]['job_index'] = len(already_buffered[d])
-            num_jobs -= len(already_buffered)
-            if num_jobs < 1:
-                logger.info('already buffered enough jobs')
-                return
+            for d, num in ret:
+                need_to_buffer[d]['job_index'] = num
 
             # get task_rels for buffering datasets
             task_rel_ids = {}
@@ -444,7 +434,7 @@ class queue(_Methods_Base):
             
             # buffer for each dataset
             # TODO: use priorities to do this better
-            for dataset in random.sample(need_to_buffer,len(need_to_buffer)):
+            for dataset in random.sample(list(need_to_buffer),len(need_to_buffer)):
                 try:
                     job_index = need_to_buffer[dataset]['job_index']
                     total_jobs = need_to_buffer[dataset]['jobs']
@@ -487,6 +477,9 @@ class queue(_Methods_Base):
                                         ret = yield self.parent.db.query(sql, bindings)
                                         for dataset_id, index, deps in ret:
                                             task_rel_ids[d] = (dataset_id,index,deps)
+                                    if d not in task_rel_ids:
+                                        logger.error('cannot find task_rel_id %r',d)
+                                        raise Exception('dependency not found')
                                     
                                     sql = 'select job_id, task_id from search where dataset_id = ?'
                                     bindings = (task_rel_ids[d][0],)
@@ -520,8 +513,10 @@ class queue(_Methods_Base):
                         db_updates_bindings.append(bindings)
 
                         # make tasks
-                        task_ids = [(yield self.parent.db.increment_id('task'))
-                                    for _ in task_rels]
+                        task_ids = []
+                        for _ in task_rels:
+                            x = yield self.parent.db.increment_id('task')
+                            task_ids.append(x)
                         sql = 'insert into task (task_id,status,prev_status,'
                         sql += 'status_changed,submit_dir,grid_queue_id,'
                         sql += 'failures,evictions,walltime,walltime_err,walltime_err_n,'
@@ -877,7 +872,10 @@ class queue(_Methods_Base):
             list: A list of pilot ids.
         """
         try:
-            ret = [(yield self.parent.db.increment_id('pilot')) for _ in range(num)]
+            ret = []
+            for _ in range(num):
+                x = yield self.parent.db.increment_id('pilot')
+                ret.append(x)
         except Exception:
             logger.info('new pilot_ids error', exc_info=True)
             raise
@@ -1041,7 +1039,7 @@ class queue(_Methods_Base):
             tasks (dict): dict of {task_id: resources}
         """
         now = time.time()
-        keys = tasks.values()[0]
+        keys = next(iter(tasks.values()))
         sql = 'replace into task_lookup (task_id,queue,insert_time,'
         sql += ','.join('req_'+k for k in keys)
         sql += ') values (?,?,?,'

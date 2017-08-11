@@ -54,7 +54,7 @@ class file_catalog_test(unittest.TestCase):
         url = 'http://foo.bar'
         data = url+'/api/file/12345'
         http_mock.get(requests_mock.ANY, exc=KeyError)
-        http_mock.post(requests_mock.ANY, content=data)
+        http_mock.post(requests_mock.ANY, content=data.encode('utf-8'))
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
         meta = {'checksum':'thecheck', 'locations':['/path/to/file']}
         fc['blah'] = meta
@@ -72,9 +72,9 @@ class file_catalog_test(unittest.TestCase):
     def test_011_FileCatalogLowLevel_setitem(self, http_mock):
         url = 'http://foo.bar'
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         data = url+'/api/file/12345'
-        http_mock.put(requests_mock.ANY, content=data)
+        http_mock.put(requests_mock.ANY, content=data.encode('utf-8'))
 
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
         meta = {'checksum':'thecheck', 'locations':['/path/to/file']}
@@ -115,10 +115,10 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter
     def test_020_FileCatalogLowLevel_getitem(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         meta = {'uid':'foo','checksum':'thecheck', 'locations':['/path/to/file']}
         data = json_encode(meta)
-        http_mock.get('/api/file/12345', content=data)
+        http_mock.get('/api/file/12345', content=data.encode('utf-8'))
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
         meta_ret = fc['foo']
@@ -128,7 +128,7 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter(name='FileCatalogLowLevel_getitem() - error')
     def test_021_FileCatalogLowLevel_getitem_error(self, http_mock):
         data = json_encode({'files':[]})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
         try:
@@ -139,7 +139,7 @@ class file_catalog_test(unittest.TestCase):
             raise Exception('should have raised Exception')
 
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         http_mock.get('/api/file/12345', exc=requests.exceptions.Timeout)
         try:
             meta = fc['blah']
@@ -168,8 +168,8 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter
     def test_030_FileCatalogLowLevel_delitem(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
-        http_mock.delete(requests_mock.ANY, content='')
+        http_mock.get('/api/files', content=data.encode('utf-8'))
+        http_mock.delete(requests_mock.ANY, content=b'')
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
         del fc['foo']
@@ -183,7 +183,7 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter(name='FileCatalogLowLevel_delitem() - error')
     def test_031_FileCatalogLowLevel_delitem_error(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get(requests_mock.ANY, content=data)
+        http_mock.get(requests_mock.ANY, content=data.encode('utf-8'))
         http_mock.delete(requests_mock.ANY, exc=requests.exceptions.HTTPError)
         url = 'http://foo.bar'
         fc = iceprod.core.file_catalog.FileCatalogLowLevel(url)
@@ -194,7 +194,7 @@ class file_catalog_test(unittest.TestCase):
         else:
             raise Exception('should have raised Exception')
 
-        http_mock.get(requests_mock.ANY, content=data)
+        http_mock.get(requests_mock.ANY, content=data.encode('utf-8'))
         http_mock.delete(requests_mock.ANY, exc=requests.exceptions.Timeout)
         try:
             del fc['blah']
@@ -221,7 +221,7 @@ class file_catalog_test(unittest.TestCase):
     def test_110_FileCatalog_add(self, http_mock):
         url = 'http://foo.bar'
         http_mock.get(requests_mock.ANY, exc=KeyError)
-        http_mock.post(requests_mock.ANY, content='')
+        http_mock.post(requests_mock.ANY, content=b'')
         fc = iceprod.core.file_catalog.FileCatalog(url)
 
         name = 'foo'
@@ -255,11 +255,11 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter
     def test_120_FileCatalog_get(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         url = 'http://foo.bar'
         meta = {'mongo_id':'bar','uid':'foo','checksum':'thecheck', 'locations':['/path/to/file']}
         data = json_encode(meta)
-        http_mock.get('/api/file/12345', content=data)
+        http_mock.get('/api/file/12345', content=data.encode('utf-8'))
         fc = iceprod.core.file_catalog.FileCatalog(url)
 
         name = 'foo'
@@ -277,11 +277,11 @@ class file_catalog_test(unittest.TestCase):
     @unittest_reporter
     def test_121_FileCatalog_get_metadata(self, http_mock):
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
+        http_mock.get('/api/files', content=data.encode('utf-8'))
         url = 'http://foo.bar'
         meta = {'mongo_id':'bar','uid':'foo','checksum':'thecheck', 'locations':['/path/to/file']}
         data = json_encode(meta)
-        http_mock.get('/api/file/12345', content=data)
+        http_mock.get('/api/file/12345', content=data.encode('utf-8'))
         fc = iceprod.core.file_catalog.FileCatalog(url)
 
         name = 'foo'
@@ -299,8 +299,8 @@ class file_catalog_test(unittest.TestCase):
     def test_130_FileCatalog_delete(self, http_mock):
         url = 'http://foo.bar'
         data = json_encode({'files':['/api/file/12345']})
-        http_mock.get('/api/files', content=data)
-        http_mock.delete('/api/file/12345', content='')
+        http_mock.get('/api/files', content=data.encode('utf-8'))
+        http_mock.delete('/api/file/12345', content=b'')
         fc = iceprod.core.file_catalog.FileCatalog(url)
 
         fc.delete('foo')

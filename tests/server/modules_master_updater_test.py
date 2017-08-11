@@ -75,6 +75,7 @@ class modules_master_updater_test(module_test):
         self.up._send = lambda: None
         self.up.start()
         yield self.up.add('foobar')
+        self.up._save_to_file()
         self.up.stop()
         self.assertEquals(self.up.buffer[0], 'foobar')
 

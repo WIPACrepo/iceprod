@@ -21,7 +21,10 @@ and can be called like::
 """
 
 import os
-import StringIO
+try:
+    from io import StringIO
+except ImportError:
+    import StringIO
 import logging
 
 from iceprod.core import dataclasses

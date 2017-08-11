@@ -107,7 +107,7 @@ def main():
                         choices=['start','stop','kill','hardkill','restart'])
     parser.add_argument('--pidfile',type=str,default='$I3PROD/var/run/iceprod.pid',
                         help='PID lockfile')
-    parser.add_argument('--umask',type=int,default=077,
+    parser.add_argument('--umask',type=int,default=0o077, #octal
                         help='File creation umask')
     args = parser.parse_args()
 

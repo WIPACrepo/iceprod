@@ -60,7 +60,7 @@ class modules_website_test(module_test):
         os.environ['I3PROD'] = self.test_dir
         try:
             # set hostname
-            self.hostname = 'localhost'
+            self.hostname = b'localhost'
             
             self.ca_cert = os.path.join(self.test_dir,'ca.crt')
             self.ca_key = os.path.join(self.test_dir,'ca.key')
@@ -196,32 +196,30 @@ class modules_website_test(module_test):
                         'password': self.cfg['download']['http_password'],
                        }
 
-            iceprod.core.jsonRPCclient.JSONRPC.start(address=address,
+            rpc = iceprod.core.jsonRPCclient.JSONRPC(address=address,
                                                      passkey=passkey,
+                                                     timeout=0.1,
+                                                     backoff=False,
                                                      ssl_options=ssl_opts)
             try:
-                ret = iceprod.core.jsonRPCclient.JSONRPC.test()
+                ret = rpc.test()
                 self.assertEqual(ret, 'testing')
                 
-                ret = iceprod.core.jsonRPCclient.JSONRPC.test(1,2,3)
+                ret = rpc.test(1,2,3)
                 self.assertEqual(self.modules.called[-1][2], (1,2,3))
                 
-                ret = iceprod.core.jsonRPCclient.JSONRPC.test(a=1,b=2)
+                ret = rpc.test(a=1,b=2)
                 self.assertEqual(self.modules.called[-1][3], {'a':1,'b':2})
                 
-                ret = iceprod.core.jsonRPCclient.JSONRPC.test(1,2,c=3)
+                ret = rpc.test(1,2,c=3)
                 self.assertEqual(self.modules.called[-1][2], (1,2))
                 self.assertEqual(self.modules.called[-1][3], {'c':3})
 
                 self.modules.ret['db']['rpc_test'] = Exception()
-                try:
-                    iceprod.core.jsonRPCclient.JSONRPC.test()
-                except:
-                    pass
-                else:
-                    raise Exception('did not raise Exception')
+                with self.assertRaises(Exception):
+                    rpc.test()
             finally:
-                iceprod.core.jsonRPCclient.JSONRPC.stop()
+                rpc.stop()
 
     @unittest_reporter
     def test_30_MainHandler(self):
@@ -254,7 +252,7 @@ class modules_website_test(module_test):
             logger.info('url: /')
             r = requests.get(address)
             r.raise_for_status()
-            if any(k not in r.content for k in datasets_status):
+            if any(k not in r.text for k in datasets_status):
                 raise Exception('main: fetched file data incorrect')
 
             # test for bad page

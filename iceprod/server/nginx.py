@@ -49,7 +49,7 @@ def deleteoldlogs(filename,days=30):
 def find_nginx():
     """Locate nginx, if possible."""
     try:
-        return subprocess.check_output(['which','nginx']).strip()
+        return subprocess.check_output(['which','nginx']).decode('utf-8').strip()
     except Exception:
         # not on PATH, so search some likely places
         for p in ('/usr/sbin','/usr/local/sbin','/sbin'):

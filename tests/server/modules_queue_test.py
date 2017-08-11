@@ -22,6 +22,7 @@ except ImportError:
     from mock import patch, MagicMock
 
 from tornado.concurrent import Future
+import tornado.gen
 
 import iceprod.server
 import iceprod.core.logger
@@ -49,7 +50,8 @@ class modules_queue_test(module_test):
 
             self.cfg = {'queue':{
                             'init_queue_interval':0.1,
-                            'plugin1':{'type':'Test1','description':'d'},
+                            'plugin1':{'type':'Test1','description':'d',
+                                        'tasks_on_queue': [10,10],},
                         },
                         'master':{
                             'url':False,
@@ -81,19 +83,20 @@ class modules_queue_test(module_test):
     @unittest_reporter
     def test_20_queue(self, call_later):
         plugin = MagicMock()
-        f = Future()
-        f.set_result(None)
-        plugin.check_and_clean.return_value = f
-        plugin.queue.return_value = f
-        plugin.cfg = {
+        @tornado.gen.coroutine
+        def run(*args, **kwargs):
+            raise tornado.gen.Return(None)
+        plugin.check_and_clean = MagicMock(side_effect=run)
+        plugin.queue = MagicMock(side_effect=run)
+        plugin.queue_cfg = {
             'tasks_on_queue': [10,10],
         }
         plugin.tasks_queued = 0
         plugin.tasks_processing = 0
         self.queue.plugins = [plugin]
-        self.queue.check_proxy = MagicMock(return_value=f)
-        self.queue.buffer_jobs_tasks = MagicMock(return_value=f)
-        self.queue.global_queueing = MagicMock(return_value=f)
+        self.queue.check_proxy = MagicMock(side_effect=run)
+        self.queue.buffer_jobs_tasks = MagicMock(side_effect=run)
+        self.queue.global_queueing = MagicMock(side_effect=run)
         
         yield self.queue.queue_loop()
         call_later.assert_called_once()
@@ -141,13 +144,14 @@ class modules_queue_test(module_test):
         self.assertFalse(self.queue.global_queueing.called)
 
         # check that raising an exception doesn't propagate
-        f = Future()
-        f.set_exception(Exception('error'))
-        plugin.check_and_clean.return_value = f
-        plugin.queue.return_value = f
-        self.queue.check_proxy = MagicMock(return_value=f)
-        self.queue.buffer_jobs_tasks = MagicMock(return_value=f)
-        self.queue.global_queueing = MagicMock(return_value=f)
+        @tornado.gen.coroutine
+        def run(*args, **kwargs):
+            raise Exception()
+        plugin.check_and_clean = MagicMock(side_effect=run)
+        plugin.queue = MagicMock(side_effect=run)
+        self.queue.check_proxy = MagicMock(side_effect=run)
+        self.queue.buffer_jobs_tasks = MagicMock(side_effect=run)
+        self.queue.global_queueing = MagicMock(side_effect=run)
         self.queue.queue_loop()
 
         # stop queue loop
@@ -166,8 +170,8 @@ class modules_queue_test(module_test):
                          self.queue.proxy.get_proxy.return_value)
 
         # try duration as well
-        yield self.queue.check_proxy(1400)
-        self.queue.proxy.set_duration.assert_called_once_with(1400)
+        yield self.queue.check_proxy(2*3600)
+        self.queue.proxy.set_duration.assert_called_once_with(2)
 
         # try error
         self.queue.proxy.update_proxy.side_effect = Exception()
@@ -191,7 +195,7 @@ class modules_queue_test(module_test):
 
         self.cfg['master'] = {'url':'a://url','passkey':'pass'}
         yield self.queue.global_queueing()
-        self.assertEqual(self.modules.called[0][:2], ('db','node_get_site_resources'))
+        self.assertEqual(self.modules.called[0][:2], ('db','misc_update_tables'))
 
     @unittest_reporter
     def test_50_buffer_jobs_tasks(self):
@@ -201,11 +205,11 @@ class modules_queue_test(module_test):
         yield self.queue.buffer_jobs_tasks(gridspecs)
         self.assertEqual(self.modules.called[0][:2], ('db','queue_buffer_jobs_tasks'))
         self.assertEqual(self.modules.called[0][-1]['gridspec'], gridspecs)
-        self.assertEqual(self.modules.called[0][-1]['num_tasks'], 50)
+        self.assertEqual(self.modules.called[0][-1]['num_jobs'], 50)
         
         self.cfg['queue']['task_buffer'] = 0
         yield self.queue.buffer_jobs_tasks(gridspecs)
-        self.assertNotEqual(self.modules.called[-1][-1]['num_tasks'], 0)
+        self.assertNotEqual(self.modules.called[-1][-1]['num_jobs'], 0)
 
 
 def load_tests(loader, tests, pattern):

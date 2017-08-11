@@ -10,7 +10,10 @@ import tempfile
 import shutil
 from functools import partial
 from multiprocessing import Process, active_children
-from multiprocessing.queues import SimpleQueue
+try:
+    from multiprocessing import SimpleQueue
+except ImportError:
+    from multiprocessing.queues import SimpleQueue
 from collections import namedtuple
 from datetime import timedelta
 from glob import glob
@@ -83,12 +86,18 @@ class Pilot(object):
     Args:
         config (dict): the configuration dictionary
         runner (callable): the task/config runner
+        pilot_id (str): the pilot id
+        rpc (:py:class:`iceprod.core.exe_json.ServerComms`): RPC to server
+        debug (bool): debug mode (default False)
+        run_timeout (int): how often to check if a task is running
     """
-    def __init__(self, config, runner, pilot_id, debug=False, run_timeout=180):
+    def __init__(self, config, runner, pilot_id, rpc=None, debug=False,
+                 run_timeout=180):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
         self.hostname = gethostname()
+        self.rpc = rpc
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
         self.message_queue = SimpleQueue()
@@ -175,11 +184,11 @@ class Pilot(object):
             message = reason
             message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
             message += '\nhostname: {}'.format(self.hostname)
-            exe_json.task_kill(task_id, resources=used_resources,
+            self.rpc.task_kill(task_id, resources=used_resources,
                                reason=reason, message=message)
 
         # stop the pilot
-        exe_json.update_pilot(self.pilot_id, tasks='',
+        self.rpc.update_pilot(self.pilot_id, tasks='',
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
         self.ioloop.stop()
@@ -209,11 +218,11 @@ class Pilot(object):
             if not self.message_queue.empty():
                 task_id,func_name,cfg,args,kwargs = self.message_queue.get()
                 logger.info('forwarding message for %s to %s', task_id, func_name)
-                cfg = Config(cfg)
+                self.rpc.cfg = Config(cfg)
                 if func_name in ('finishtask','taskerror'):
                     kwargs['resources'] = self.resources.get_final(task_id)
                 try:
-                    ret = getattr(exe_json, func_name)(cfg,*args,**kwargs)
+                    ret = getattr(self.rpc, func_name)(cfg,*args,**kwargs)
                 except Exception as e:
                     logger.info('exception returned from forward', exc_info=True)
                     ret = e
@@ -243,7 +252,7 @@ class Pilot(object):
                     message = overages[task_id]
                     message += '\n\npilot_id: {}'.format(self.pilot_id)
                     message += '\nhostname: {}'.format(self.hostname)
-                    exe_json.task_kill(task_id, resources=used_resources,
+                    self.rpc.task_kill(task_id, resources=used_resources,
                                        reason=overages[task_id], message=message)
                     # try to queue another task
                     logger.info('killed, so notify')
@@ -269,7 +278,7 @@ class Pilot(object):
                     logger.info('gpu pilot with no gpus left - not queueing')
                     break
                 try:
-                    task_configs = exe_json.downloadtask(self.config['options']['gridspec'],
+                    task_configs = self.rpc.download_task(self.config['options']['gridspec'],
                                                          resources=self.resources.get_available())
                 except Exception:
                     errors -= 1
@@ -312,7 +321,7 @@ class Pilot(object):
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            exe_json.task_kill(task_id, reason='failed to claim resources',
+                            self.rpc.task_kill(task_id, reason='failed to claim resources',
                                                message=message)
                             break
                         try:
@@ -326,13 +335,13 @@ class Pilot(object):
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            exe_json.task_kill(task_id, reason='failed to create task',
+                            self.rpc.task_kill(task_id, reason='failed to create task',
                                                message=message)
                             self.clean_task(task_id)
                             break
                     else:
                         tasks_running += len(task_configs)
-                        exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                        self.rpc.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
                                               resources_available=self.resources.get_available(),
                                               resources_claimed=self.resources.get_claimed())
 
@@ -361,7 +370,7 @@ class Pilot(object):
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
-                    exe_json.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                    self.rpc.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
                                           resources_available=self.resources.get_available(),
                                           resources_claimed=self.resources.get_claimed())
                     if self.running:
@@ -373,7 +382,7 @@ class Pilot(object):
                     break
 
         # last update for pilot state
-        exe_json.update_pilot(self.pilot_id, tasks='',
+        self.rpc.update_pilot(self.pilot_id, tasks='',
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
 

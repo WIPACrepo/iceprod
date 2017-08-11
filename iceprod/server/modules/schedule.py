@@ -10,7 +10,6 @@ from threading import Thread,Event,Condition
 import logging
 from functools import partial
 from contextlib import contextmanager
-from itertools import izip
 
 import tornado.gen
 

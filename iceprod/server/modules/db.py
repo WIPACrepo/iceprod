@@ -9,7 +9,6 @@ import logging
 import time
 import random
 import json
-from itertools import izip
 from functools import partial
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable
@@ -138,7 +137,7 @@ class DBAPI(object):
         # indexes
         self.indexes = {}
         for k in self.tables:
-            v = self.tables[k].keys()[0]
+            v = list(self.tables[k].keys())[0]
             if v.replace('_id','_offset') in self.tables['setting']:
                 self.indexes[k] = v
 
@@ -231,7 +230,7 @@ class DBAPI(object):
         Returns:
             iterator or None
         """
-        if isinstance(sql, basestring):
+        if isinstance(sql, str):
             reading = sql.lower().strip().startswith('select')
         elif isinstance(sql, Iterable):
             reading = any(s.lower().strip().startswith('select') for s in sql)
@@ -417,10 +416,10 @@ else:
             try:
                 with conn as c:
                     cur = c.cursor()
-                    if isinstance(sql, basestring):
+                    if isinstance(sql, str):
                         self._db_query(cur, sql, bindings)
                     elif isinstance(sql, Iterable):
-                        for s,b in izip(sql, bindings):
+                        for s,b in zip(sql, bindings):
                             self._db_query(cur, s, b)
                     else:
                         logger.info('sql: %r', sql)
@@ -634,10 +633,10 @@ if MySQLdb:
         def _db_write(self, conn, sql, bindings):
             try:
                 cur = conn.cursor()
-                if isinstance(sql,basestring):
+                if isinstance(sql,str):
                     self._db_query(cur,sql,bindings)
                 elif isinstance(sql,Iterable):
-                    for s,b in izip(sql,bindings):
+                    for s,b in zip(sql,bindings):
                         self._db_query(cur,s,b)
                 else:
                     raise Exception('sql is an unknown type')

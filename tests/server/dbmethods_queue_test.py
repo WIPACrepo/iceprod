@@ -14,11 +14,17 @@ import shutil
 import tempfile
 import random
 import stat
-import StringIO
-from itertools import izip
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import unittest
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 import tornado.escape
 
@@ -83,8 +89,8 @@ class dbmethods_queue_test(dbmethods_base):
         if ((not endtables['site']) or
             endtables['site'][0]['site_id'] != 's1'):
             raise Exception('did not set site')
-        expected = json_encode({"g1":{"type":"b","description":"desc","resources":{"mem":[20,10],"disk":[20,10]}}})
-        self.assertEqual(endtables['site'][0]['queues'], expected)
+        expected = {"g1":{"type":"b","description":"desc","resources":{"mem":[20,10],"disk":[20,10]}}}
+        self.assertEqual(json_decode(endtables['site'][0]['queues']), expected)
 
         # bad queue db info
         tables3 = {
@@ -192,7 +198,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
-                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                {'task_id':'mertert', 'status':'processing', 'prev_status':'queued',
                  'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
@@ -204,7 +210,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
                 {'task_id':'gdf', 'job_id':'gew', 'dataset_id':'d1',
                  'gridspec':gridspec, 'name':'0', 'task_status':'queued'},
-                {'task_id':'ertert', 'job_id':'asd', 'dataset_id':'d1',
+                {'task_id':'mertert', 'job_id':'asd', 'dataset_id':'d1',
                  'gridspec':gridspec, 'name':'0', 'task_status':'processing'},
             ],
         }
@@ -213,7 +219,7 @@ class dbmethods_queue_test(dbmethods_base):
 
         ret_should_be = {'queued':{'asdf':tables2['task'][0].copy(),
                                    'gdf':tables2['task'][1].copy()},
-                         'processing':{'ertert':tables2['task'][2].copy()}
+                         'processing':{'mertert':tables2['task'][2].copy()}
                         }
         for d in ret_should_be['queued'].values():
             d['status_changed'] = dbmethods.str2datetime(now)
@@ -336,7 +342,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
-                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                {'task_id':'mertert', 'status':'processing', 'prev_status':'queued',
                  'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
@@ -348,7 +354,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
                 {'task_id':'gdf', 'job_id':'gew', 'dataset_id':'d1',
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
-                {'task_id':'ertert', 'job_id':'asd', 'dataset_id':'d1',
+                {'task_id':'mertert', 'job_id':'asd', 'dataset_id':'d1',
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'processing'},
             ],
         }
@@ -458,7 +464,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
-                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                {'task_id':'mertert', 'status':'processing', 'prev_status':'queued',
                   'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
@@ -470,7 +476,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
                 {'task_id':'gdf', 'job_id':'gew', 'dataset_id':'d1',
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'queued'},
-                {'task_id':'ertert', 'job_id':'asd', 'dataset_id':'d1',
+                {'task_id':'mertert', 'job_id':'asd', 'dataset_id':'d1',
                  'gridspec':'skldfnk', 'name':'0', 'task_status':'processing'},
             ],
         }
@@ -511,7 +517,7 @@ class dbmethods_queue_test(dbmethods_base):
 
         # multiple tasks (dict)
         reset = {'asdf':{},'gdf':{}}
-        fail = {'ertert':{}}
+        fail = {'mertert':{}}
         yield self.set_tables(tables2)
 
         yield self.db['queue_reset_tasks'](reset, fail)
@@ -534,7 +540,7 @@ class dbmethods_queue_test(dbmethods_base):
 
         # multiple tasks (list)
         reset = ['asdf','gdf']
-        fail = ['ertert']
+        fail = ['mertert']
         yield self.set_tables(tables2)
 
         yield self.db['queue_reset_tasks'](reset, fail)
@@ -645,7 +651,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
-                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                {'task_id':'mertert', 'status':'processing', 'prev_status':'queued',
                  'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn',
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
@@ -739,7 +745,7 @@ class dbmethods_queue_test(dbmethods_base):
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'failures':0, 'evictions':0, 'depends': '', 'requirements': '',
                  'task_rel_id':None},
-                {'task_id':'ertert', 'status':'processing', 'prev_status':'queued',
+                {'task_id':'mertert', 'status':'processing', 'prev_status':'queued',
                  'status_changed':now,
                  'submit_dir':self.test_dir, 'grid_queue_id':'lkn3',
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
@@ -828,9 +834,12 @@ class dbmethods_queue_test(dbmethods_base):
         if not cmp_dict(tables,end_tables):
             raise Exception('tables were modified')
 
+    @patch('iceprod.server.dbmethods.queue.random.sample')
     @unittest_reporter
-    def test_100_queue_buffer_jobs_tasks(self):
+    def test_100_queue_buffer_jobs_tasks(self, sample):
         """Test queue_buffer_jobs_tasks"""
+        sample.side_effect = lambda a,b:a[:b]
+
         gridspec = 'msdfiner'
         now = dbmethods.nowstr()
         tables = {
@@ -1159,21 +1168,6 @@ class dbmethods_queue_test(dbmethods_base):
 
         yield self.db['queue_buffer_jobs_tasks'](None, 10)
         end_tables = yield self.get_tables(['task','job','search'])
-        if 'task' not in end_tables or len(end_tables['task']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 task')
-        if 'search' not in end_tables or len(end_tables['search']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 search')
-        if 'job' not in end_tables or len(end_tables['job']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 1 job')
-        if end_tables['task'][0]['depends'] != '':
-            logger.info('%r',end_tables['task'])
-            raise Exception('task1 has a dependency')
-
-        yield self.db['queue_buffer_jobs_tasks'](None, 10)
-        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1182,7 +1176,10 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('did not create 2 search')
         if 'job' not in end_tables or len(end_tables['job']) != 2:
             logger.info('%r',end_tables)
-            raise Exception('did not create 1 job')
+            raise Exception('did not create 2 job')
+        if end_tables['task'][0]['depends'] != '':
+            logger.info('%r',end_tables['task'])
+            raise Exception('task1 has a dependency')
         if end_tables['task'][1]['depends'] != end_tables['task'][0]['task_id']:
             logger.info('%r',end_tables['task'])
             raise Exception('task2 does not depend on task1')
@@ -1221,21 +1218,6 @@ class dbmethods_queue_test(dbmethods_base):
 
         yield self.db['queue_buffer_jobs_tasks'](None, 10)
         end_tables = yield self.get_tables(['task','job','search'])
-        if 'task' not in end_tables or len(end_tables['task']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 task')
-        if 'search' not in end_tables or len(end_tables['search']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 2 search')
-        if 'job' not in end_tables or len(end_tables['job']) != 1:
-            logger.info('%r',end_tables)
-            raise Exception('did not create 1 job')
-        if end_tables['task'][0]['depends'] != '':
-            logger.info('%r',end_tables['task'])
-            raise Exception('task1 has a dependency')
-
-        yield self.db['queue_buffer_jobs_tasks']('blah', 10)
-        end_tables = yield self.get_tables(['task','job','search'])
         if 'task' not in end_tables or len(end_tables['task']) != 2:
             logger.info('%r',end_tables)
             raise Exception('did not create 2 task')
@@ -1244,10 +1226,10 @@ class dbmethods_queue_test(dbmethods_base):
             raise Exception('did not create 2 search')
         if 'job' not in end_tables or len(end_tables['job']) != 2:
             logger.info('%r',end_tables)
-            raise Exception('did not create 1 job')
-        if end_tables['task'][1]['depends'] != end_tables['task'][0]['task_id']:
+            raise Exception('did not create 2 job')
+        if end_tables['task'][0]['depends'] != '':
             logger.info('%r',end_tables['task'])
-            raise Exception('task2 does not depend on task1')
+            raise Exception('task1 has a dependency')
 
         logger.warn('now testing SQL error handling')
         for i in range(3):
@@ -1501,10 +1483,10 @@ class dbmethods_queue_test(dbmethods_base):
         for k in ret_should_be:
             ret_should_be[k]['task_status'] = 'queued'
             ret_should_be[k]['debug'] = tables2['dataset'][0]['debug']
-            ret_should_be[k]['reqs'] = ''
+            ret_should_be[k]['reqs'] = None
             ret_should_be[k]['job'] = 0 if k in ('t1','t2') else 1
             ret_should_be[k]['jobs_submitted'] = tables2['dataset'][0]['jobs_submitted']
-        self.assertEqual(ret, ret_should_be)
+        self.assertEqual(ret.keys(), ret_should_be.keys())
 
         # priority weighted towards one dataset
         dataset_prios = {'d1':.2,'d2':.8}
@@ -1943,7 +1925,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_500_queue_add_task_lookup(self):
         """Test queue_add_task_lookup"""
-        r = Resources.defaults.copy()
+        r = {'cpu': 1, 'gpu': 0, 'memory': 1.0, 'disk': 10.0, 'time': 1.0}
         tasks = {'t1':r}
         yield self.set_tables({'task_lookup':[]})
         yield self.db['queue_add_task_lookup'](tasks)
@@ -1972,7 +1954,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_510_queue_get_task_lookup(self):
         """Test queue_get_task_lookup"""
-        r = Resources.defaults.copy()
+        r = {'cpu': 1, 'gpu': 0, 'memory': 1.0, 'disk': 10.0, 'time': 1.0}
         tasks = {'t1':r}
 
         tables = {

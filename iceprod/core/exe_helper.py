@@ -80,7 +80,7 @@ def run(classname, filename=None, args=False, debug=False):
         stats = {}
         ret = instance.Execute(stats)
         if stats:
-            pickle.dump(stats,open(constants['stats'],'w'))
+            pickle.dump(stats,open(constants['stats'],'wb'))
         if ret:
             raise Exception('Execute() returned %r'%ret)
     else:
@@ -102,7 +102,7 @@ def main():
     try:
         run(**args)
     except Exception as e:
-        with open(constants['task_exception'],'w') as f:
+        with open(constants['task_exception'],'wb') as f:
             pickle.dump(e,f)
         raise
 

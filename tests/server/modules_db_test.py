@@ -113,7 +113,7 @@ class modules_db_test(module_test):
 
         logger.info('values: %r',values)
         logger.info('ids: %r',ids)
-        self.assertEqual(values,range(0,31))
+        self.assertEqual(values,list(range(0,31)))
         self.assertEqual(len(set(ids)),len(ids))
 
 def load_tests(loader, tests, pattern):

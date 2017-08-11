@@ -55,7 +55,7 @@ parser.add_argument('file_glob', type=str, nargs='?', default='*')
 parser.add_argument('test_glob', type=str, nargs='?', default='*')
 try:
     args = parser.parse_args()
-except Exception, SystemExit:
+except (Exception, SystemExit):
     print('exception')
     raise
 if not args.core and not args.server:
@@ -69,8 +69,7 @@ tests.util.test_glob = args.test_glob
 # set up logger
 rootLogger = logging.getLogger()
 for handler in rootLogger.handlers:
-    if isinstance(handler,logging.StreamHandler):
-        rootLogger.removeHandler(handler)
+    rootLogger.removeHandler(handler)
 if os.path.exists('tests.log'):
     os.remove('tests.log')
 fileHandler = logging.handlers.RotatingFileHandler('tests.log','a',
@@ -103,7 +102,8 @@ test_result = unittest.TestResult()
 start_time = time.time()
 test_suites.run(test_result)
 for err in test_result.errors:
-    if 'ModuleImportFailure' in str(err[0]):
+    err_str = str(err[0])+err[1]
+    if any(e in err_str for e in ('ModuleImportFailure','SyntaxError','ImportError','AttributeError')):
         print(err[1])
 print('-'*70)
 print('Ran %d tests in %0.3fs'%(test_suites.countTestCases(),time.time()-start_time))

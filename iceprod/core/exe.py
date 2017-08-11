@@ -60,16 +60,16 @@ from iceprod.core import util
 from iceprod.core import dataclasses
 from iceprod.core import util
 from iceprod.core import functions
-from iceprod.core.exe_json import stillrunning
 import iceprod.core.parser
 from iceprod.core.jsonUtil import json_encode,json_decode
 
 
 class Config:
     """Contain the configuration and related methods"""
-    def __init__(self, config=None, parser=None):
+    def __init__(self, config=None, parser=None, rpc=None):
         self.config = config if config else dataclasses.Job()
         self.parser = parser if parser else iceprod.core.parser.ExpParser()
+        self.rpc = rpc
 
     def parseValue(self, value, env={}):
         """
@@ -234,7 +234,7 @@ def setupenv(cfg, obj, oldenv={}):
             for d in env['uploads']:
                 try:
                     uploadData(env, d)
-                except util.NoncriticalError, e:
+                except util.NoncriticalError as e:
                     logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
                     if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
                         raise
@@ -245,14 +245,14 @@ def setupenv(cfg, obj, oldenv={}):
                 try:
                     os.remove(f)
                     base = os.path.basename(f)
-                except OSError, e:
+                except OSError as e:
                     logger.error('failed to delete file %s - %s',(str(f),str(e)))
                     if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
                         raise
 
         # reset environment
         if 'environment' in env:
-            for e in os.environ.keys():
+            for e in list(os.environ.keys()):
                 if e not in env['environment']:
                     del os.environ[e]
             for e in env['environment'].keys():
@@ -600,7 +600,7 @@ def setupClass(env, class_obj):
             for e in class_obj['env_vars'].split(';'):
                 try:
                     k,v = e.split('=')
-                except ValueError,e:
+                except ValueError as e:
                     logger.warning('bad env variable: %s',e)
                     continue
                 v = v.replace('$CLASS',local)
@@ -635,7 +635,7 @@ def runtask(cfg, globalenv, task):
                 if len(tmpstat) > 1:
                     stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
-                    stats[tray['name']] = tmpstat[tmpstat.keys()[0]]
+                    stats[tray['name']] = tmpstat[list(tmpstat.keys())[0]]
     finally:
         # destroy task temp
         try:
@@ -721,7 +721,7 @@ def runmodule(cfg, globalenv, module, stats={}):
                 pass
         if process.returncode:
             try:
-                with open(constants['task_exception']) as f:
+                with open(constants['task_exception'],'rb') as f:
                     e = pickle.load(f)
                     if isinstance(e, Exception):
                         raise e
@@ -733,7 +733,7 @@ def runmodule(cfg, globalenv, module, stats={}):
 
         # get stats, if available
         if os.path.exists(constants['stats']):
-            new_stats = pickle.load(open(constants['stats']))
+            new_stats = pickle.load(open(constants['stats'],'rb'))
             if module['name']:
                 stats[module['name']] = new_stats
             else:

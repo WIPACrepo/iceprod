@@ -404,7 +404,7 @@ class gridftp_test(unittest.TestCase):
     def test_180_checksum(self):
         """Test checksums - synchronous"""
         address = os.path.join(self.server_test_dir,'test')
-        filecontents = 'this is a test'
+        filecontents = b'this is a test'
 
         import hashlib
 

@@ -59,7 +59,7 @@ cov.save()
         logger.info('cmd=%r',cmd)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
-        comm = p.communicate()
+        comm = [x.decode('utf-8') if x else x for x in p.communicate()]
         logger.info('out,err:\n%s\n%s',*comm)
         if p.returncode:
             raise Exception('call failed')
@@ -146,7 +146,7 @@ class A(IPBaseClass):
             raise Exception('argument not passed')
         if not os.path.exists(constants['stats']):
             raise Exception('stats file does not exist')
-        stats = pickle.load(open(constants['stats']))
+        stats = pickle.load(open(constants['stats'],'rb'))
         if stats != {'foo':'bar'}:
             raise Exception('bad stats')
 
@@ -200,7 +200,15 @@ def a():
         with open(test_script,'w') as f:
             f.write("""
 from __future__ import print_function
-from iceprod.modules.ipmodule import IPBaseClass
+class IPBaseClass:
+    def __init__(self):
+        self.params = {}
+    def AddParameter(self,p,h,d):
+        self.params[p] = d
+    def GetParameter(self,p):
+        return self.params[p]
+    def SetParameter(self,p,v):
+        self.params[p] = v
 class A(IPBaseClass):
     def __init__(self):
         IPBaseClass.__init__(self)
@@ -209,7 +217,7 @@ class A(IPBaseClass):
         return 0
 """)
         try:
-            out,err = self.call('a', src=test_script)
+            out,err = self.call('test.A', src=test_script)
         except Exception:
             pass
         else:

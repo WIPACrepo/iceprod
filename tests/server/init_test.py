@@ -20,11 +20,14 @@ import iceprod.server
 class init_test(unittest.TestCase):
     def setUp(self):
         super(init_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        orig_dir = os.getcwd()
+        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
+        os.chdir(self.test_dir)
+        def clean_dir():
+            os.chdir(orig_dir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(clean_dir)
 
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(init_test,self).tearDown()
 
     @unittest_reporter
     def test_10_GlobalID_int2char(self):
@@ -78,7 +81,7 @@ class init_test(unittest.TestCase):
     @unittest_reporter
     def test_15_GlobalID_siteID_ret(self):
         """Test GlobalID_siteID_ret"""
-        for i in xrange(1000):
+        for i in range(1000):
             ran = random.randint(0,iceprod.server.GlobalID.MAXLOCALID-1)
             ran2 = iceprod.server.GlobalID.siteID_gen()
             ret = iceprod.server.GlobalID.globalID_gen(ran,ran2)
@@ -89,14 +92,14 @@ class init_test(unittest.TestCase):
     @unittest_reporter
     def test_30_salt(self):
         s = iceprod.server.salt()
-        if not isinstance(s,basestring):
+        if not isinstance(s,str):
             raise Exception('not a string')
 
-        for _ in range(100):
-            for l in range(1,100):
-                s = iceprod.server.salt(l)
-                if len(s) != l:
-                    logger.info('len: %d. salt: %s',l,s)
+        for _ in range(5):
+            for length in range(1,100):
+                s = iceprod.server.salt(length)
+                if len(s) != length:
+                    logger.info('len: %d. salt: %s',length,s)
                     raise Exception('salt is not correct length')
 
 def load_tests(loader, tests, pattern):

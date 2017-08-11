@@ -14,8 +14,10 @@ import shutil
 import tempfile
 import random
 import stat
-import StringIO
-from itertools import izip
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import unittest
@@ -75,10 +77,14 @@ class dbmethods_web_test(dbmethods_base):
     def test_010_web_get_datasets(self):
         tables = {
             'dataset':[
-                {'dataset_id':'d1','status':'processing','gridspec':'g1'},
-                {'dataset_id':'d2','status':'errors','gridspec':'g1'},
-                {'dataset_id':'d3','status':'processing','gridspec':'g1'},
-                {'dataset_id':'d4','status':'processing','gridspec':'g2'},
+                {'dataset_id':'d1','status':'processing','gridspec':'g1',
+                 'start_date':'d'},
+                {'dataset_id':'d2','status':'errors','gridspec':'g1',
+                 'start_date':'c'},
+                {'dataset_id':'d3','status':'processing','gridspec':'g1',
+                 'start_date':'b'},
+                {'dataset_id':'d4','status':'processing','gridspec':'g2',
+                 'start_date':'a'},
             ],
         }
         yield self.set_tables(tables)

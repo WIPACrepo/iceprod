@@ -47,7 +47,7 @@ def to_log(stream=None, prefix='', level='info'):
         elif stream == sys.stderr:
             prefix = 'stderr'
     logger = logging.getLogger(prefix)
-    
+
     oldstream = os.dup(stream.fileno())
     with tempfile.TemporaryFile() as f:
         stream.flush()

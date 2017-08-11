@@ -6,7 +6,7 @@ import logging
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable, namedtuple
 import inspect
-from functools import update_wrapper, partial
+from functools import update_wrapper, partial, reduce
 
 import cachetools
 import cachetools.keys
@@ -16,7 +16,10 @@ import tornado.concurrent
 from tornado.concurrent import run_on_executor
 import concurrent.futures
 
-from iceprod.functools_future import partialmethod
+try:
+    from functools import partialmethod
+except ImportError:
+    from iceprod.functools_future import partialmethod
 
 from iceprod.core.dataclasses import String, Number
 import iceprod.server
@@ -29,11 +32,12 @@ def _is_member_func(obj):
 
     Can also detect decorator-wrapped member funcs.
     """
-    while ('future' in obj.func_code.co_varnames
-           and 'yielded' in obj.func_code.co_varnames):
-        obj = obj.func_closure[0].cell_contents
-    return (obj.func_code.co_argcount > 0 and
-            obj.func_code.co_varnames[0] == 'self')
+    while (('future' in obj.__code__.co_varnames
+            and 'yielded' in obj.__code__.co_varnames)
+           or 'coro' in obj.__code__.co_varnames):
+        obj = obj.__closure__[0].cell_contents
+    return (obj.__code__.co_argcount > 0 and
+            obj.__code__.co_varnames[0] == 'self')
 
 CacheInfo = namedtuple('CacheInfo',['hits','misses','maxsize','currsize'])
 def memcache(size=1024, ttl=None):
@@ -224,14 +228,14 @@ class _Methods_Base():
         """Convert an input that is a list of values from a table
            into a dict of values from that table."""
         tables = self.parent.db.tables
-        if isinstance(table,basestring):
+        if isinstance(table,str):
             if table not in tables:
                 raise Exception('bad table')
             keys = tables[table]
         elif isinstance(table,Iterable):
             if not set(table) <= set(tables):
                 raise Exception('bad table')
-            keys = reduce(lambda a,b: a+tables[b].keys(), table, [])
+            keys = reduce(lambda a,b: a+list(tables[b].keys()), table, [])
         else:
             raise Exception('bad table type')
 

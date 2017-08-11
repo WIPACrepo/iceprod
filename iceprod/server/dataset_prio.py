@@ -32,7 +32,7 @@ def apply_group_prios(datasets, groups=None, filters=None):
         parts = g.split('/')
         prio = 1.0
         for i in range(2,len(parts)+1):
-            print i, '/'.join(parts[:i])
+            print(i, '/'.join(parts[:i]))
             prio *= base_groups['/'.join(parts[:i])]
         subtract = 0.0
         for k in base_groups:
