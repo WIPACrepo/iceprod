@@ -72,7 +72,7 @@ def load_config(cfgfile):
     return config
 
 def main(cfgfile=None, logfile=None, url=None, debug=False,
-         passkey='', pilot_id=None, offline=False):
+         passkey='', pilot_id=None, offline=False, offline_transfer=False):
     """Main task runner for iceprod"""
     # set up logger
     if debug:
@@ -102,9 +102,10 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         config = cfgfile
     logger.info('config: %r',config)
 
-    if offline is True:
+    if offline:
         # run in offline mode
-        runner(config, url, debug=debug, offline=offline)
+        runner(config, url, debug=debug, offline=offline,
+               offline_transfer=offline_transfer)
         return
 
     # if we are not in offline mode, we need a url
@@ -156,7 +157,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logger.warn('finished running normally; exiting...')
 
-def runner(config, url, debug=False, offline=False):
+def runner(config, url, debug=False, offline=False, offline_transfer=False):
     """Run a config.
 
     #. Set some default options if not set in configuration.
@@ -179,6 +180,7 @@ def runner(config, url, debug=False, offline=False):
         url (str): URL to server
         debug (bool): (optional) turn on debug logging
         offline (bool): (optional) enable offline mode
+        offline_transfer (bool): (optional) enable/disable offline data transfers
     """
     logger = logging.getLogger('i3exec_runner')
     
@@ -204,6 +206,8 @@ def runner(config, url, debug=False, offline=False):
         config['options']['resource_url'] = str(url)+'/download'
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
+    if 'offline_transfer' not in config['options']:
+        config['options']['offline_transfer'] = offline_transfer
     if 'data_url' not in config['options']:
         config['options']['data_url'] = 'gsiftp://gridftp.icecube.wisc.edu/'
     if 'svn_repository' not in config['options']:
@@ -375,6 +379,8 @@ if __name__ == '__main__':
                         help='Enable debug actions and logging')
     parser.add_argument('--offline', action='store_true', default=False,
                         help='Enable offline mode (don\'t talk with server)')
+    parser.add_argument('--offline_transfer', type=bool, default=False,
+                        help='Enable/disable file transfer during offline mode')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Specify the logfile to use')
     parser.add_argument('--job', type=int, default=None,
