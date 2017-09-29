@@ -163,6 +163,7 @@ class Pilot(object):
         """Handle a SIGTERM gracefully"""
         logger.info('checking resources after SIGTERM')
         start_time = time.time()
+        overages = self.resources.check_claims()
         for task_id in list(self.tasks):
             if task_id in overages:
                 reason = overages[task_id]
