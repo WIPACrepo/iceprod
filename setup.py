@@ -55,15 +55,11 @@ if setuptools is not None:
                         'pyOpenSSL', 'pyasn1', 'jsonschema',
                         'psutil>=5.0.0', 'cryptography', 'requests',
                         'requests_toolbelt', 'requests-futures', 'statsd',
-                        'cachetools>=2.0.0']
-    extras_require = {
-        'docs': ['sphinx>=1.4'],
-        'tests': ['coverage', 'flexmock']
-    }
+                        'cachetools>=2.0.0', 'sphinx>=1.4', 'coverage', 'flexmock'
+                       ]
     if sys.version_info < (3, 2):
         install_requires.extend(['futures','subprocess32'])
     kwargs['install_requires'] = install_requires
-    kwargs['extras_require'] = extras_require
     kwargs['zip_safe'] = False
 
 setup(
@@ -79,27 +75,23 @@ setup(
         'iceprod.server':['data/etc/*','data/www/*','data/www_templates/*'],
         },
     author="IceCube Collaboration",
-    author_email="simprod@icecube.wisc.edu", # TODO: better email address
+    author_email="simprod@icecube.wisc.edu",
     url="https://github.com/WIPACrepo/iceprod",
-    #license="http://www.apache.org/licenses/LICENSE-2.0", # TODO: licensing
+    license="https://github.com/WIPACrepo/iceprod/blob/master/LICENSE",
     description="IceProd is a set of grid middleware and job tracking tools, developed for the IceCube Collaboration.",
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         'Operating System :: POSIX :: Linux',
         'Topic :: System :: Distributed Computing',
 
-#        'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         ],
     **kwargs
