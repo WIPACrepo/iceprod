@@ -35,11 +35,12 @@ class Client(object):
     id = 0
     idlock = RLock()
 
-    def __init__(self,timeout=60.0,address=None,**kwargs):
+    def __init__(self,timeout=60.0,address=None,backoff=True,**kwargs):
         if address is None:
             raise Exception('need a valid address')
         self.__timeout = timeout
         self.__address = address
+        self.__backoff = backoff
         self.__kwargs = kwargs
         self.open() # start session
 
@@ -78,7 +79,11 @@ class Client(object):
             raise Exception('Cannot use RPC for private methods')
 
         # translate request to json
-        body = json_encode({'jsonrpc':'2.0','method':methodname,'params':kwargs,'id':Client.newid()})
+        body = json_encode({'jsonrpc': '2.0',
+                            'method': methodname,
+                            'params': kwargs,
+                            'id': Client.newid(),
+                           }).encode('utf-8')
 
         # make request to server
         data = None
@@ -91,10 +96,13 @@ class Client(object):
                 break
             except Exception:
                 logger.warn('error making jsonrpc request for %s', methodname)
-                if i < 2:
+                if self.__backoff and i < 2:
                     # try restarting connection, with backoff
                     self.close()
-                    time.sleep(random.randint(i*2,(i+1)*30))
+                    sleep_time = random.randint(i*2,(i+1)*30)
+                    if isinstance(self.__backoff, (int,float)):
+                        sleep_time *= self.__backoff
+                    time.sleep(sleep_time)
                     self.open()
                 else:
                     raise
@@ -116,74 +124,76 @@ class Client(object):
             except Exception:
                 raise Exception('Error %r'%data['error'])
         if 'result' in data:
+            if isinstance(data['result'], Exception):
+                raise data['result']
             return data['result']
         else:
             logger.info('result not in data: %r', data)
             return None
 
-class MetaJSONRPC(type):
-    """Metaclass for JSONRPC.  Allows for static class usage."""
-    __rpc = None
-    __timeout = None
-    __address = None
-    __passkey = None
-
-    @classmethod
-    def start(cls,timeout=None,address=None,passkey=None,**kwargs):
-        """Start the JSONRPC Client."""
-        if timeout is not None:
-            cls.__timeout = timeout
-        if address is not None:
-            cls.__address = address
-        if passkey is not None:
-            cls.__passkey = passkey
-        cls.__rpc = Client(timeout=cls.__timeout,address=cls.__address,
-                           **kwargs)
-
-    @classmethod
-    def stop(cls):
-        """Stop the JSONRPC Client."""
-        cls.__rpc.close()
-        cls.__rpc = None
-
-    @classmethod
-    def restart(cls):
-        """Restart the JSONRPC Client."""
-        cls.stop()
-        cls.start()
-
-    def __getattr__(cls,name):
-        if cls.__rpc is None:
-            raise Exception('JSONRPC connection not started yet')
-        class _Method(object):
-            def __init__(self,rpc,passkey,name):
-                self.__rpc = rpc
-                self.__name = name
-                self.__passkey = passkey
-            def __getattr__(self,name):
-                return _Method(self.__rpc,"%s.%s"%(self.__name,name))
-            def __call__(self,*args,**kwargs):
-                # add passkey to arguments
-                if 'passkey' not in kwargs:
-                    kwargs['passkey'] = self.__passkey
-                # jsonrpc can only handle args or kwargs, not both
-                # so turn args into kwargs
-                if len(args) > 0 and 'args' not in kwargs:
-                    kwargs['args'] = args
-                #return getattr(self.__rpc,self.__name)(**kwargs)
-                return self.__rpc.request(self.__name,kwargs)
-        return _Method(cls.__rpc,cls.__passkey,name)
-
-class JSONRPC(object):
-    """
-    `JSON-RPC`_ client connection.
+class JSONRPC:
+    """`JSON-RPC`_ client connection.
 
     Call RPC functions as regular function calls.
 
     Example::
 
-        JSONRPC.set_task_status(task_id,'waiting')
+        rpc = JSONRPC('http://my.server/jsonrpc')
+        rpc.set_task_status(task_id,'waiting')
     """
-    __metaclass__ = MetaJSONRPC
-    def __getattr__(self,name):
-        return getattr(JSONRPC,name)
+    def __init__(self, address=None, timeout=None, passkey=None, **kwargs):
+        """Start the JSONRPC Client."""
+        self._address = address
+        self._timeout = timeout
+        self._passkey = passkey
+        self._rpc = None
+
+        self.start(**kwargs)
+
+    def start(self, **kwargs):
+        self._rpc = Client(timeout=self._timeout,
+                           address=self._address,
+                           **kwargs)
+        try:
+            ret = self._rpc.request('echo', {'value':'e', 'passkey':self._passkey})
+        except Exception as e:
+            logger.error('error',exc_info=True)
+            self.stop()
+            raise Exception('JSONRPC communcation did not start.  '
+                            'url=%s and passkey=%s'%(self._address,self._passkey))
+        if ret != 'e':
+            self.stop()
+            raise Exception('JSONRPC communication error when starting - '
+                            'echo failed (%r).  url=%s and passkey=%s'
+                            %(ret,self._address,self._passkey))
+
+    def stop(self):
+        """Stop the JSONRPC Client."""
+        self._rpc.close()
+        self._rpc = None
+
+    def restart(self):
+        """Restart the JSONRPC Client."""
+        self._rpc.close()
+        self._rpc.open()
+
+    def __getattr__(self, name):
+        if self._rpc is None:
+            raise Exception('JSONRPC connection not started yet')
+        class _Method(object):
+            def __init__(self, rpc, passkey, name):
+                self.rpc = rpc
+                self.name = name
+                self.passkey = passkey
+            def __getattr__(self, name):
+                return _Method(self.rpc, self.passkey, "%s.%s"%(self.name,name))
+            def __call__(self, *args, **kwargs):
+                # add passkey to arguments
+                if 'passkey' not in kwargs:
+                    kwargs['passkey'] = self.passkey
+                # jsonrpc can only handle args or kwargs, not both
+                # so turn args into kwargs
+                if len(args) > 0 and 'args' not in kwargs:
+                    kwargs['args'] = args
+                return self.rpc.request(self.name,kwargs)
+        return _Method(self._rpc,self._passkey,name)

@@ -32,7 +32,7 @@ class Daemon(object):
                  stderr='/dev/null',
                  chdir='/',
                  umask=0):
-        if not isinstance(pidfile, basestring):
+        if not isinstance(pidfile, str):
             raise Exception('pidfile is not a string')
         if not callable(runner):
             raise Exception('runner is not callable')
@@ -77,9 +77,9 @@ class Daemon(object):
         # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = file(self.stdin, 'r')
-        so = file(self.stdout, 'a+')
-        se = file(self.stderr, 'a+', 0)
+        si = open(self.stdin, 'rb')
+        so = open(self.stdout, 'ab+')
+        se = open(self.stderr, 'ab+', 0)
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
@@ -88,7 +88,7 @@ class Daemon(object):
         atexit.register(self.delpid)
         pid = str(os.getpid())
         pgrp = str(os.getpgrp())
-        file(self.pidfile,'w+').write("%s %s\n" % (pid,pgrp))
+        open(self.pidfile,'w+').write("%s %s\n" % (pid,pgrp))
 
     def _sendsignal(self,pid,sig,waitfordeath=True):
         """Send the specified signal to the process"""
@@ -134,7 +134,7 @@ class Daemon(object):
     def getpid(self):
         """Get the pid from the pidfile"""
         try:
-            pf = file(self.pidfile,'r')
+            pf = open(self.pidfile,'r')
             pid,pgrp = [int(x.strip()) for x in pf.read().split()]
             pf.close()
         except IOError:

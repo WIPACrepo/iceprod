@@ -77,7 +77,7 @@ class jsonRPCclient_test(unittest.TestCase):
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         result = 'the result'
-        rpc = iceprod.core.jsonRPCclient.Client(address=address)
+        rpc = iceprod.core.jsonRPCclient.Client(backoff=0.0001,address=address)
 
         def response(req, ctx):
             body = iceprod.core.jsonUtil.json_decode(req.body)
@@ -85,7 +85,7 @@ class jsonRPCclient_test(unittest.TestCase):
             ret['id'] = body['id']
             ret['jsonrpc'] = body['jsonrpc']
             ret['result'] = result
-            return iceprod.core.jsonUtil.json_encode(ret)
+            return iceprod.core.jsonUtil.json_encode(ret).encode('utf-8')
         mock.post('/jsonrpc', content=response)
 
         kwargs = {
@@ -96,111 +96,85 @@ class jsonRPCclient_test(unittest.TestCase):
         self.assertTrue(mock.called)
         self.assertEqual(ret, result)
 
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='JSONRPC.start()')
-    def test_10_start(self):
+    def test_10_start(self, client):
         """Test start"""
+        client.return_value.request.return_value = 'e'
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         for _ in range(10):
-            iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
+            iceprod.core.jsonRPCclient.JSONRPC(address=address,passkey=passkey)
 
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='JSONRPC.stop()')
-    def test_11_stop(self):
+    def test_11_stop(self, client):
         """Test stop"""
+        client.return_value.request.return_value = 'e'
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         for _ in range(10):
-            iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
-            iceprod.core.jsonRPCclient.JSONRPC.stop()
+            rpc = iceprod.core.jsonRPCclient.JSONRPC(address=address,passkey=passkey)
+            rpc.stop()
 
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='JSONRPC.restart()')
-    def test_12_restart(self):
+    def test_12_restart(self, client):
         """Test restart"""
+        client.return_value.request.return_value = 'e'
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         for _ in range(10):
-            iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
-            iceprod.core.jsonRPCclient.JSONRPC.restart()
+            rpc = iceprod.core.jsonRPCclient.JSONRPC(address=address,passkey=passkey)
+            rpc.restart()
 
-    @requests_mock.mock()
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='JSONRPC.rpc()')
-    def test_20_rpc(self, mock):
+    def test_20_rpc(self, client):
         """Test actual rpc functions"""
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         result = 'the result'
-        iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
+        
+        client.return_value.request.return_value = 'e'
+        rpc = iceprod.core.jsonRPCclient.JSONRPC(address=address,passkey=passkey)
 
-        def response(req, ctx):
-            body = iceprod.core.jsonUtil.json_decode(req.body)
-            ret = {}
-            ret['id'] = body['id']
-            ret['jsonrpc'] = body['jsonrpc']
-            ret['result'] = result
-            return iceprod.core.jsonUtil.json_encode(ret)
-        mock.post('/jsonrpc', content=response)
 
-        ret = iceprod.core.jsonRPCclient.JSONRPC.test()
-
-        self.assertTrue(mock.called)
+        client.return_value.request.return_value = result
+        ret = rpc.test()
         self.assertEqual(ret, result)
 
-    @requests_mock.mock()
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='JSONRPC timeout')
-    def test_21_timeout(self, mock):
+    def test_21_timeout(self, client):
         """Test rpc timeout"""
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         result = 'the result'
-        iceprod.core.jsonRPCclient.JSONRPC.start(timeout=2,address=address,passkey=passkey)
 
-        def response(req, ctx):
-            raise Timeout()
-        mock.post('/jsonrpc', content=response)
+        client.return_value.request.return_value = 'e'
+        rpc = iceprod.core.jsonRPCclient.JSONRPC(timeout=2,backoff=False,address=address,passkey=passkey)
 
-        try:
-            iceprod.core.jsonRPCclient.JSONRPC.test()
-        except:
-            pass
-        else:
-            raise Exception('timeout not raised')
+        client.return_value.request.side_effect = Timeout
 
-    @requests_mock.mock()
+        with self.assertRaises(Timeout):
+            rpc.test()
+
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter(name='SSL error')
-    def test_22_ssl_error(self, mock):
+    def test_22_ssl_error(self, client):
         """Test rpc timeout"""
         address = 'http://test/jsonrpc'
         passkey = 'passkey'
         result = 'the result'
-        iceprod.core.jsonRPCclient.JSONRPC.start(address=address,passkey=passkey)
 
-        def response(req, ctx):
-            raise SSLError()
-        response.called = False
-        mock.post('/jsonrpc', content=response)
+        client.return_value.request.return_value = 'e'
+        rpc = iceprod.core.jsonRPCclient.JSONRPC(backoff=0.0001,address=address,passkey=passkey)
 
-        try:
-            iceprod.core.jsonRPCclient.JSONRPC.test()
-        except:
-            pass
-        else:
-            raise Exception('SSLError not raised')
+        client.return_value.request.side_effect = SSLError
 
-        def response(req, ctx):
-            if response.called:
-                body = iceprod.core.jsonUtil.json_decode(req.body)
-                ret = {}
-                ret['id'] = body['id']
-                ret['jsonrpc'] = body['jsonrpc']
-                ret['result'] = result
-                return iceprod.core.jsonUtil.json_encode(ret)
-            else:
-                response.called = True
-                raise SSLError()
-        response.called = False
-        mock.post('/jsonrpc', content=response)
-
-        iceprod.core.jsonRPCclient.JSONRPC.test()
+        with self.assertRaises(SSLError):
+            rpc.test()
 
 
 def load_tests(loader, tests, pattern):

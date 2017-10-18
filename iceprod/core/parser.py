@@ -11,7 +11,10 @@ import re
 import string
 import random
 import functools
-import __builtin__
+try:
+    import builtins
+except ImportError:   
+    import __builtin__ as builtins
 
 class safe_eval:
     import ast
@@ -77,6 +80,10 @@ class ParseObj(object):
         return str(self.obj)
     def __nonzero__(self):
         return self.obj is not None and self.obj != ''
+    def __bool__(self):
+        return self.obj is not None and self.obj != ''
+    def __hash__(self):
+        return hash(self.obj)
     def __len__(self):
         return len(self.obj)
     def __getitem__(self,key):
@@ -177,7 +184,7 @@ class ExpParser:
                          'sprintf' : self.sprintf_func
                         }
         for reduction in 'sum', 'min', 'max', 'len':
-            self.keywords[reduction] = functools.partial(self.reduce_func, getattr(__builtin__, reduction))
+            self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
     
     def parse(self,input,job=None,env=None):
         """
@@ -421,7 +428,7 @@ class ExpParser:
         """Evaluate param as arithmetic expression"""
         #bad = re.search(r'(import)|(open)|(for)|(while)|(def)|(class)|(lambda)', param )
         param = str(param)
-        bad = reduce(lambda a, b: a or (b in param),('import','open','for','while','def','class','lambda'),False)
+        bad = functools.reduce(lambda a, b: a or (b in param),('import','open','for','while','def','class','lambda'),False)
         if bad:
             raise GrammarException('Unsafe operator call')
         else:
@@ -471,15 +478,16 @@ class ExpParser:
                     if arg[0] in '\'"':            return str(arg[1:-1])
                     else:                          return str(arg)
                 elif fstring[-1] == 'r':           return repr(arg)
-                elif fstring[-1].lower() in 'idufegxo': return float(arg)
+                elif fstring[-1].lower() in 'xo':   return int(arg)
+                elif fstring[-1].lower() in 'idufeg': return float(arg)
                 else:
                     raise GrammarException('Unable to cast %s using format %s'%(arg,fstring))
             
             fstrings = re.findall(r'\%[#0\- +]{0,1}[0-9]*\.{0,1}[0-9]*[csridufegExXo]',fmt_str)
-            args = map(cast_string,fstrings,args)[0:len(args)]
+            args = list(map(cast_string,fstrings,args))[0:len(args)]
             
             # do sprintf on fmt_str and args
-            if len(args) > 0:
+            if fstrings:
                 return ParseObj(fmt_str % tuple(args))
             else:
                 return ParseObj(fmt_str)

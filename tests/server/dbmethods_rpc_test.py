@@ -11,8 +11,10 @@ import shutil
 import tempfile
 import random
 import stat
-import StringIO
-from itertools import izip
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import unittest
@@ -35,6 +37,7 @@ def get_tables(test_dir):
                  'status_changed':now,
                  'walltime': 0., 'walltime_err': 0., 'walltime_err_n': 0,
                  'submit_dir':test_dir, 'grid_queue_id':'lkn',
+                 'depends':'', 'requirements':'',
                  'failures':0, 'evictions':0, 'task_rel_id':'a'},
                 ],
         'task_rel':[
@@ -42,7 +45,8 @@ def get_tables(test_dir):
                      'name': '0', 'depends': '', 'requirements': ''}
                    ],
         'task_lookup':[
-                       {'task_id':task_id, 'req_cpu':1, 'req_gpu':0,
+                       {'task_id':task_id, 'queue': 'default', 'insert_time': time.time(),
+                        'req_cpu':1, 'req_gpu':0,
                         'req_memory':1.0, 'req_disk':1.0, 'req_time':1}
                       ],
         'search':[
@@ -171,7 +175,7 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertIn('resources', stat)
         self.assertIsNotNone(endtables['task'][0]['requirements'])
         end_taskreq = json_decode(endtables['task'][0]['requirements'])
-        self.assertEqual(end_taskreq.keys(), ['cpu','memory'])
+        self.assertEqual(list(end_taskreq.keys()), ['cpu','memory'])
 
         # failure
         tables['task'][0]['failures'] = 9
@@ -268,9 +272,13 @@ class dbmethods_rpc_test(dbmethods_base):
         pilot_id = 'p1'
         tables = {'pilot':[{'pilot_id':pilot_id,'grid_queue_id':'g1',
                            'submit_time':dbmethods.nowstr(),'submit_dir':'',
-                           'tasks':''}]
+                           'tasks':'','avail_cpu':0,'avail_gpu':0,
+                           'avail_memory':0.0,'avail_disk':0.0,'avail_time':0.0,
+                           'claim_cpu':0, 'claim_gpu':0, 'claim_memory': 0.0,
+                           'claim_disk':0.0, 'claim_time':0.0}]
         }
         yield self.set_tables(tables)
+        begintables = yield self.get_tables(tables)
 
         tasks = 't1,t2'
         yield self.db['rpc_update_pilot'](pilot_id, tasks=tasks)
@@ -279,14 +287,9 @@ class dbmethods_rpc_test(dbmethods_base):
 
         # no update
         yield self.set_tables(tables)
-        try:
-            yield self.db['rpc_update_pilot'](pilot_id)
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        yield self.db['rpc_update_pilot'](pilot_id)
         endtables = yield self.get_tables(tables)
-        self.assertEqual(tables, endtables)
+        self.assertEqual(begintables, endtables)
 
         # sql error
         self.set_failures([True])
@@ -297,7 +300,7 @@ class dbmethods_rpc_test(dbmethods_base):
         else:
             raise Exception('did not raise Exception')
         endtables = yield self.get_tables(tables)
-        self.assertEqual(tables, endtables)
+        self.assertEqual(begintables, endtables)
 
     @unittest_reporter
     def test_100_rpc_submit_dataset(self):
@@ -436,7 +439,7 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
         task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
         tr1 = task_rels.pop('tr1')
-        tr2 = task_rels.values()[0]
+        tr2 = list(task_rels.values())[0]
         self.assertEqual(tr2['depends'],
                          tr1['task_rel_id'],
                          "missing dependency1")
@@ -475,7 +478,7 @@ class dbmethods_rpc_test(dbmethods_base):
         self.assertEqual(len(endtables['task_rel']), 2, "task_rel table")
         task_rels = {t['task_rel_id'] : t for t in endtables['task_rel']}
         tr1 = task_rels.pop('tr1')
-        tr2 = task_rels.values()[0]
+        tr2 = list(task_rels.values())[0]
         self.assertEqual(tr2['depends'],
                          tr1['task_rel_id'],
                          "missing dependency1")
@@ -542,7 +545,7 @@ class dbmethods_rpc_test(dbmethods_base):
         print(endtables['task'])
         
         # queue jobs, creating tasks as a side-effect
-        yield self.db['rpc_queue_master']()
+        yield self.db['queue_buffer_jobs_tasks']()
         endtables = yield self.get_tables(tables)
         self.assertEqual(len(endtables['task']), 2, "task table has 2 rows")
         for i, task in enumerate(endtables['task']):
@@ -558,22 +561,23 @@ class dbmethods_rpc_test(dbmethods_base):
         config_dict = {'tasks':[{'trays':[{'modules':[]}]}],'steering':{}}
         config_job = serialization.dict_to_dataclasses(config_dict)
         config_json = serialization.serialize_json.dumps(config_job)
+        description = 'description'
 
         # give dict
         yield self.set_tables(tables)
-        yield self.db['rpc_update_dataset_config']('d1', config_dict)
+        yield self.db['rpc_update_dataset_config']('d1', config_dict, description)
         endtables = yield self.get_tables(tables)
         self.assertEqual(endtables['config'][0]['config_data'], config_json)
 
         # give job
         yield self.set_tables(tables)
-        yield self.db['rpc_update_dataset_config']('d1', config_job)
+        yield self.db['rpc_update_dataset_config']('d1', config_job, description)
         endtables = yield self.get_tables(tables)
         self.assertEqual(endtables['config'][0]['config_data'], config_json)
 
         # give json
         yield self.set_tables(tables)
-        yield self.db['rpc_update_dataset_config']('d1', config_json)
+        yield self.db['rpc_update_dataset_config']('d1', config_json, description)
         endtables = yield self.get_tables(tables)
         self.assertEqual(endtables['config'][0]['config_data'], config_json)
 
@@ -581,7 +585,7 @@ class dbmethods_rpc_test(dbmethods_base):
         yield self.set_tables(tables)
         self.set_failures([True])
         try:
-            yield self.db['rpc_update_dataset_config']('d1', config_json)
+            yield self.db['rpc_update_dataset_config']('d1', config_json, description)
         except:
             pass
         else:

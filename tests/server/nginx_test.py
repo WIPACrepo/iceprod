@@ -36,9 +36,12 @@ with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
 
 # a simple server for testing the proxy
 def server(port,cb):
-    import BaseHTTPServer
-    import SocketServer
-    import Queue
+    try:
+        import BaseHTTPServer
+        import SocketServer
+    except ImportError:
+        import http.server as BaseHTTPServer
+        import socketserver as SocketServer
     class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_HEAD(self):
             self.send_response(405)
@@ -49,13 +52,14 @@ def server(port,cb):
             ret = cb(self.path)
             if isinstance(ret,(tuple,list)):
                 self.send_response(ret[1])
-                self.end_headers()
                 ret = ret[0]
             else:
                 self.send_response(200)
-                self.end_headers()
-            self.wfile.write(ret)
-            self.wfile.close()
+            self.send_header("Content-type", "text")
+            self.end_headers()
+            logger.info('writing %r',ret)
+            self.wfile.write(ret.encode('utf-8'))
+            self.wfile.close
         def do_POST(self):
             logging.warn('got POST request %s'%self.path)
             input = None
@@ -112,25 +116,26 @@ def server(port,cb):
 class nginx_test(unittest.TestCase):
     def setUp(self):
         super(nginx_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        orig_dir = os.getcwd()
+        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
+        os.chdir(self.test_dir)
+        def clean_dir():
+            os.chdir(orig_dir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(clean_dir)
 
         self.ssl_key = os.path.join(self.test_dir,'test.key')
         self.ssl_cert = os.path.join(self.test_dir,'test.crt')
 
-        # get hostname
-        hostname = functions.gethostname()
-        if hostname is None:
-            hostname = 'localhost'
-        elif isinstance(hostname,set):
-            hostname = hostname.pop()
-        self.hostname = hostname
+        self.hostname = 'localhost'
 
-        # make cert
-        ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,hostname=hostname)
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(nginx_test,self).tearDown()
+        try:
+            # make cert
+            ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
+                                 hostname=b'localhost')
+        except Exception:
+            logger.error('error creating cert', exc_info=True)
+            raise
 
     @unittest_reporter(skip=skip_tests)
     def test_01_init(self):
@@ -177,7 +182,7 @@ class nginx_test(unittest.TestCase):
             raise Exception('auth_basic config has ssl enabled')
         if n.auth_basic is False:
             raise Exception('auth_basic config has auth_basic disabled')
-        if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
+        if not os.path.exists(os.path.join(os.getcwd(),'authbasic.htpasswd')):
             raise Exception('auth_basic config missing authbasic.htpasswd file')
 
         # ssl setup
@@ -226,7 +231,7 @@ class nginx_test(unittest.TestCase):
             raise Exception('auth_basic+ssl config has ssl disabled')
         if n.auth_basic is False:
             raise Exception('auth_basic+ssl config has auth_basic disabled')
-        if not os.path.exists(os.path.expandvars('$PWD/authbasic.htpasswd')):
+        if not os.path.exists(os.path.join(os.getcwd(),'authbasic.htpasswd')):
             raise Exception('auth_basic+ssl config missing authbasic.htpasswd file')
 
     @unittest_reporter(skip=skip_tests)
@@ -394,8 +399,9 @@ class nginx_test(unittest.TestCase):
         dest_path = os.path.join(self.test_dir,'download')
         url = 'http://'+self.hostname+':58080/static'
         logger.info('url:%r',url)
-        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout),requests.Session() as s:
+        with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout):
             for desc in instances:
+                logger.info('testing %s', desc)
                 kwargs = common.copy()
                 kwargs.update(instances[desc])
                 n = nginx.Nginx(**kwargs)
@@ -404,7 +410,6 @@ class nginx_test(unittest.TestCase):
                 except Exception:
                     logger.warn('start %s failed',desc,exc_info=True)
                     raise
-
                 try:
                     for _ in range(10):
                         # try to download from static dir
@@ -415,14 +420,11 @@ class nginx_test(unittest.TestCase):
                             f.write(filecontents)
 
                         # static dir should not require username or password, so leave them blank
-                        r = s.get(os.path.join(url,filename),
-                                  verify=self.ssl_cert)
+                        r = requests.get(os.path.join(url,filename),
+                                         verify=self.ssl_cert)
                         r.raise_for_status()
 
-                        if r.content != filecontents:
-                            logger.info('correct contents: %r',filecontents)
-                            logger.info('downloaded contents: %r',r.content)
-                            raise Exception('contents not equal')
+                        self.assertEqual(r.text, filecontents)
                 finally:
                     try:
                         n.stop()
@@ -476,8 +478,10 @@ class nginx_test(unittest.TestCase):
             proxy.url = url
             proxy.input = input
             if proxy.success:
+                logger.info('success %s',filecontents)
                 return filecontents
             else:
+                logger.info('fail')
                 return ('',404)
 
         with to_log(stream=sys.stderr,level='warn'),to_log(stream=sys.stdout),requests.Session() as s:
@@ -507,17 +511,13 @@ class nginx_test(unittest.TestCase):
                             r = s.get(url, verify=self.ssl_cert)
                             r.raise_for_status()
 
-                            self.assertEqual(r.content, filecontents)
+                            self.assertEqual(r.text, filecontents)
 
                             # see what happens when it errors
                             proxy.success = False
-                            try:
+                            with self.assertRaises(Exception):
                                 r = s.get(url, verify=self.ssl_cert)
                                 r.raise_for_status()
-                            except Exception:
-                                pass
-                            else:
-                                raise Exception('did not raise Exception')
 
                     finally:
                         try:

@@ -35,7 +35,7 @@ from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
 import iceprod.core.serialization
 import iceprod.core.exe
-import iceprod.core.exe_json
+from iceprod.core.exe_json import ServerComms
 import iceprod.core.pilot
 import iceprod.core.resources
 
@@ -121,7 +121,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         kwargs['password'] = config['options']['password']
     if 'ssl' in config['options'] and config['options']['ssl']:
         kwargs.update(config['options']['ssl'])
-    iceprod.core.exe_json.setupjsonRPC(url+'/jsonrpc',passkey,**kwargs)
+    rpc = ServerComms(url+'/jsonrpc', passkey, None, **kwargs)
 
     if 'tasks' in config and config['tasks']:
         logger.info('default configuration - a single task')
@@ -131,7 +131,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                 if 'task_id' not in config['options']:
                     raise Exception('config["options"]["task_id"] not specified, '
                                     'so cannot update status')
-                iceprod.core.exe_json.processing(config['options']['task_id'])
+                rpc.processing(config['options']['task_id'])
             except Exception:
                 logger.error('json error', exc_info=True)
 
@@ -139,7 +139,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         stdout = partial(to_file,sys.stdout,constants['stdout'])
         stderr = partial(to_file,sys.stderr,constants['stderr'])
         with stdout(), stderr():
-            runner(config, url, debug=debug)
+            runner(config, url, rpc=rpc, debug=debug)
     else:
         logger.info('pilot mode - get many tasks from server')
         if 'gridspec' not in config['options']:
@@ -151,8 +151,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
         pilot_kwargs = {}
         if 'run_timeout' in config['options']:
             pilot_kwargs['run_timeout'] = config['options']['run_timeout']
-        iceprod.core.pilot.Pilot(config, debug=debug,
-                                 runner=partial(runner, url=url, debug=debug),
+        iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
+                                 runner=partial(runner, rpc=rpc, url=url, debug=debug),
                                  pilot_id=pilot_id, **pilot_kwargs)
 
     logger.warn('finished running normally; exiting...')
@@ -296,8 +296,7 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
                         raise Exception('cannot find specified task')
                     # finish task
                     if not offline:
-                        iceprod.core.exe_json.finishtask(cfg, env['stats'],
-                                                         start_time=start_time)
+                        rpc.finishtask(cfg, env['stats'], start_time=start_time)
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
@@ -310,9 +309,8 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
                 # set task status on server
                 if not offline:
                     try:
-                        iceprod.core.exe_json.taskerror(cfg, stats=env['stats'],
-                                                        start_time=start_time,
-                                                        reason=str(e))
+                        rpc.taskerror(cfg, stats=env['stats'],
+                                      start_time=start_time, reason=str(e))
                     except Exception as e:
                         logger.error(e)
                     # forcibly turn on logging, so we can see the error
@@ -344,19 +342,19 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        iceprod.core.exe_json.uploadLog(cfg)
-                        iceprod.core.exe_json.uploadErr(cfg)
-                        iceprod.core.exe_json.uploadOut(cfg)
+                        rpc.uploadLog(cfg)
+                        rpc.uploadErr(cfg)
+                        rpc.uploadOut(cfg)
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        iceprod.core.exe_json.uploadLog(cfg)
+                        rpc.uploadLog(cfg)
                     elif up.startswith('err'):
                         # upload err files
-                        iceprod.core.exe_json.uploadErr(cfg)
+                        rpc.uploadErr(cfg)
                     elif up.startswith('out'):
                         # upload out files
-                        iceprod.core.exe_json.uploadOut(cfg)
+                        rpc.uploadOut(cfg)
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 

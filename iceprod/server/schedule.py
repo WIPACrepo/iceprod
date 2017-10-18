@@ -378,7 +378,7 @@ class Scheduler(object):
                                 incmin = 1     
                             raise FlagException()
                     
-                except FlagException,e:
+                except FlagException as e:
                     # break directly to incrementing phase
                     pass
                 else:

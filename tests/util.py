@@ -25,7 +25,7 @@ def printer(input,passed=True,skipped=False):
         print(tmp_str)
     # print string aligned left, and passed or failed
     final_str = input
-    for i in xrange(len(input),numcols+padding):
+    for i in range(len(input),numcols+padding):
         final_str += ' '
 
     if skipped:
@@ -41,10 +41,10 @@ def printer(input,passed=True,skipped=False):
 
 def unittest_reporter(*args,**kwargs):
     def make_wrapper(obj):
-        module = os.path.basename(obj.func_globals['__file__']).split('_test')[0]
+        module = os.path.basename(obj.__globals__['__file__']).split('_test')[0]
         if 'module' in kwargs:
             module = kwargs['module']
-        name = '_'.join(obj.func_name.split('_')[2:])+'()'
+        name = '_'.join(obj.__name__.split('_')[2:])+'()'
         if 'name' in kwargs:
             name = kwargs['name']
         if name.startswith(' '):

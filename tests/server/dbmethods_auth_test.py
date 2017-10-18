@@ -14,8 +14,11 @@ import shutil
 import tempfile
 import random
 import stat
-import StringIO
-from itertools import izip
+try:
+    import StringIO
+except ImportError:
+    from io import StringIO
+
 from datetime import datetime,timedelta
 from collections import OrderedDict, Iterable
 import unittest

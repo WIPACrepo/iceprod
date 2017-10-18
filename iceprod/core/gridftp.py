@@ -40,7 +40,7 @@ def _cmd_output(cmd, timeout=1200):
         i += 0.01
         ret = p.poll()
         if ret is not None:
-            return (p.returncode, p.communicate()[0])
+            return (p.returncode, p.communicate()[0].decode('utf-8'))
         if i >= timeout:
             p.kill()
             raise Exception('Request timed out')
@@ -183,7 +183,7 @@ class GridFTP(object):
         if data is not None:
             tmpdir = tempfile.mkdtemp(dir=os.getcwd())
             src = 'file:'+os.path.join(tmpdir,'put_tmp_file')
-            with open(src[5:],'w') as f:
+            with open(src[5:],'w' if isinstance(data,str) else 'wb') as f:
                 f.write(data)
         elif filename is not None:
             src = 'file:'+filename

@@ -698,7 +698,7 @@ def group_hasher(resources):
     Hash a set of resources into a binned group.
     """
     ret = int(resources['cpu'])
-    if isinstance(resources['gpu'],(int,long,float)):
+    if isinstance(resources['gpu'],(int,float)):
         ret ^= int(resources['gpu'])*100
     else:
         ret ^= len(resources['gpu'])*100

@@ -204,48 +204,48 @@ class functions_test(unittest.TestCase):
         """Test the iscompressed function with various extensions"""
         for i in range(0,10):
             if not iceprod.core.functions.iscompressed('test.gz'):
-                raise Exception, 'failed on .gz'
+                raise Exception('failed on .gz')
             if not iceprod.core.functions.iscompressed('test.tar.gz'):
-                raise Exception, 'failed on .tar.gz'
+                raise Exception('failed on .tar.gz')
             if not iceprod.core.functions.iscompressed('test.tgz'):
-                raise Exception, 'failed on .tgz'
+                raise Exception('failed on .tgz')
             if not iceprod.core.functions.iscompressed('test.tar.bz2'):
-                raise Exception, 'failed on .tar.bz2'
+                raise Exception('failed on .tar.bz2')
             if not iceprod.core.functions.iscompressed('test.lzma'):
-                raise Exception, 'failed on .lzma'
+                raise Exception('failed on .lzma')
             if not iceprod.core.functions.iscompressed('test.xz'):
-                raise Exception, 'failed on .xz'
+                raise Exception('failed on .xz')
             if not iceprod.core.functions.iscompressed('test.tar.lzma'):
-                raise Exception, 'failed on .tar.lzma'
+                raise Exception('failed on .tar.lzma')
             if iceprod.core.functions.iscompressed('test'):
-                raise Exception, 'failed on (no ext)'
+                raise Exception('failed on (no ext)')
             if iceprod.core.functions.iscompressed('test.doc'):
-                raise Exception, 'failed on .doc'
+                raise Exception('failed on .doc')
             if iceprod.core.functions.iscompressed('test.xml'):
-                raise Exception, 'failed on .xml'
+                raise Exception('failed on .xml')
             if iceprod.core.functions.iscompressed('test.gzhelp'):
-                raise Exception, 'failed on .gzhelp'
+                raise Exception('failed on .gzhelp')
 
     @unittest_reporter
     def test_021_istarred(self):
         """Test the istarred function with various extensions"""
         for i in range(0,10):
             if not iceprod.core.functions.istarred('test.tar.gz'):
-                raise Exception, 'failed on .tar.gz'
+                raise Exception('failed on .tar.gz')
             if not iceprod.core.functions.istarred('test.tgz'):
-                raise Exception, 'failed on .tgz'
+                raise Exception('failed on .tgz')
             if not iceprod.core.functions.istarred('test.tar.bz2'):
-                raise Exception, 'failed on .tar.bz2'
+                raise Exception('failed on .tar.bz2')
             if not iceprod.core.functions.istarred('test.tar.lzma'):
-                raise Exception, 'failed on .tar.lzma'
+                raise Exception('failed on .tar.lzma')
             if iceprod.core.functions.istarred('test'):
-                raise Exception, 'failed on (no ext)'
+                raise Exception('failed on (no ext)')
             if iceprod.core.functions.istarred('test.doc'):
-                raise Exception, 'failed on .doc'
+                raise Exception('failed on .doc')
             if iceprod.core.functions.istarred('test.xml'):
-                raise Exception, 'failed on .xml'
+                raise Exception('failed on .xml')
             if iceprod.core.functions.istarred('test.gzhelp'):
-                raise Exception, 'failed on .gzhelp'
+                raise Exception('failed on .gzhelp')
 
     @unittest_reporter
     def test_100_md5sum(self):
@@ -263,12 +263,12 @@ class functions_test(unittest.TestCase):
             internal = iceprod.core.functions.md5sum(filename)
             out = subprocess.Popen('md5sum %s'%filename,shell=True,stdout=subprocess.PIPE).communicate()[0]
             try:
-                external, file = out.split()
+                external, file = out.decode('utf-8').split()
             except Exception:
-                raise Exception, 'failed to get external md5sum'
+                raise Exception('failed to get external md5sum')
 
             if internal != external:
-                raise Exception, 'failed md5sum check'
+                raise Exception('failed md5sum check')
 
             os.remove(filename)
 
@@ -289,7 +289,7 @@ class functions_test(unittest.TestCase):
 
             # check md5sum
             if not iceprod.core.functions.check_md5sum(filename,internal):
-                raise Exception, 'md5sum as str failed'
+                raise Exception('md5sum as str failed')
 
             os.remove(filename)
 
@@ -304,11 +304,11 @@ class functions_test(unittest.TestCase):
 
             # get md5sum from functions
             if subprocess.call('md5sum %s > %s.md5sum'%(filename,filename),shell=True):
-                raise Exception, 'failed to generate md5sum'
+                raise Exception('failed to generate md5sum')
 
             # check md5sum
             if not iceprod.core.functions.check_md5sum(filename,filename+'.md5sum'):
-                raise Exception, 'md5sum as list failed'
+                raise Exception('md5sum as list failed')
 
             os.remove(filename)
             os.remove(filename+'.md5sum')
@@ -329,12 +329,12 @@ class functions_test(unittest.TestCase):
             internal = iceprod.core.functions.sha1sum(filename)
             out = subprocess.Popen('sha1sum %s'%filename,shell=True,stdout=subprocess.PIPE).communicate()[0]
             try:
-                external, file = out.split()
+                external, file = out.decode('utf-8').split()
             except Exception:
-                raise Exception, 'failed to get external sha1sum'
+                raise Exception('failed to get external sha1sum')
 
             if internal != external:
-                raise Exception, 'failed sha1sum check'
+                raise Exception('failed sha1sum check')
 
             os.remove(filename)
 
@@ -355,7 +355,7 @@ class functions_test(unittest.TestCase):
 
             # check sha1sum
             if not iceprod.core.functions.check_sha1sum(filename,internal):
-                raise Exception, 'sha1sum as str failed'
+                raise Exception('sha1sum as str failed')
 
             os.remove(filename)
 
@@ -370,11 +370,11 @@ class functions_test(unittest.TestCase):
 
             # get sha1sum from functions
             if subprocess.call('sha1sum %s > %s.sha1sum'%(filename,filename),shell=True):
-                raise Exception, 'failed to generate sha1sum'
+                raise Exception('failed to generate sha1sum')
 
             # check sha1sum
             if not iceprod.core.functions.check_sha1sum(filename,filename+'.sha1sum'):
-                raise Exception, 'sha1sum as list failed'
+                raise Exception('sha1sum as list failed')
 
             os.remove(filename)
             os.remove(filename+'.sha1sum')
@@ -395,12 +395,12 @@ class functions_test(unittest.TestCase):
             internal = iceprod.core.functions.sha256sum(filename)
             out = subprocess.Popen('sha256sum %s'%filename,shell=True,stdout=subprocess.PIPE).communicate()[0]
             try:
-                external, file = out.split()
+                external, file = out.decode('utf-8').split()
             except Exception:
-                raise Exception, 'failed to get external sha256sum'
+                raise Exception('failed to get external sha256sum')
 
             if internal != external:
-                raise Exception, 'failed sha256sum check'
+                raise Exception('failed sha256sum check')
 
             os.remove(filename)
 
@@ -421,7 +421,7 @@ class functions_test(unittest.TestCase):
 
             # check sha256sum
             if not iceprod.core.functions.check_sha256sum(filename,internal):
-                raise Exception, 'sha256sum as str failed'
+                raise Exception('sha256sum as str failed')
 
             os.remove(filename)
 
@@ -436,11 +436,11 @@ class functions_test(unittest.TestCase):
 
             # get sha256sum from functions
             if subprocess.call('sha256sum %s > %s.sha256sum'%(filename,filename),shell=True):
-                raise Exception, 'failed to generate sha256sum'
+                raise Exception('failed to generate sha256sum')
 
             # check sha256sum
             if not iceprod.core.functions.check_sha256sum(filename,filename+'.sha256sum'):
-                raise Exception, 'sha256sum as list failed'
+                raise Exception('sha256sum as list failed')
 
             os.remove(filename)
             os.remove(filename+'.sha256sum')
@@ -454,19 +454,18 @@ class functions_test(unittest.TestCase):
             with open(filename,'w') as f:
                 file_contents = ''
                 for x in range(0,1000):
-                    file_contents += str(random.choice(string.ascii_letters))
+                    file_contents += random.choice(string.ascii_letters)
                 f.write(file_contents)
 
             # get sha512sum from functions
             internal = iceprod.core.functions.sha512sum(filename)
             out = subprocess.Popen('sha512sum %s'%filename,shell=True,stdout=subprocess.PIPE).communicate()[0]
             try:
-                external, file = out.split()
+                external, file = out.decode('utf-8').split()
             except Exception:
-                raise Exception, 'failed to get external sha512sum'
+                raise Exception('failed to get external sha512sum')
 
-            if internal != external:
-                raise Exception, 'failed sha512sum check'
+            self.assertEqual(internal, external)
 
             os.remove(filename)
 
@@ -487,7 +486,7 @@ class functions_test(unittest.TestCase):
 
             # check sha512sum
             if not iceprod.core.functions.check_sha512sum(filename,internal):
-                raise Exception, 'sha512sum as str failed'
+                raise Exception('sha512sum as str failed')
 
             os.remove(filename)
 
@@ -502,11 +501,11 @@ class functions_test(unittest.TestCase):
 
             # get sha512sum from functions
             if subprocess.call('sha512sum %s > %s.sha512sum'%(filename,filename),shell=True):
-                raise Exception, 'failed to generate sha512sum'
+                raise Exception('failed to generate sha512sum')
 
             # check sha512sum
             if not iceprod.core.functions.check_sha512sum(filename,filename+'.sha512sum'):
-                raise Exception, 'sha512sum as list failed'
+                raise Exception('sha512sum as list failed')
 
             os.remove(filename)
             os.remove(filename+'.sha512sum')
@@ -528,7 +527,7 @@ class functions_test(unittest.TestCase):
 
             # check file
             if os.path.exists(filename):
-                raise Exception, 'removedirs failed to remove %s'%filename
+                raise Exception('removedirs failed to remove %s')%filename
 
         for i in range(0,10):
             # create test directory
@@ -548,7 +547,7 @@ class functions_test(unittest.TestCase):
 
             # check file
             if os.path.exists(dir):
-                raise Exception, 'removedirs failed to remove %s'%dir
+                raise Exception('removedirs failed to remove %s')%dir
 
     @unittest_reporter
     def test_201_copy(self):
@@ -568,11 +567,11 @@ class functions_test(unittest.TestCase):
 
             # check file
             if not os.path.isfile(filename2):
-                raise Exception, 'copy failed to copy %s to %s'%(filename,filename2)
+                raise Exception('copy failed to copy %s to %s')%(filename,filename2)
             with open(filename2,'r') as f:
                 results = f.read(len(file_contents)*10)
                 if file_contents != results:
-                    raise Exception, 'contents not the same'
+                    raise Exception('contents not the same')
 
         for i in range(0,10):
             # create test directory
@@ -595,14 +594,14 @@ class functions_test(unittest.TestCase):
 
             # check directory
             if not os.path.isdir(dir2):
-                raise Exception, 'copy failed to copy %s to %s'%(dir,dir2)
+                raise Exception('copy failed to copy %s to %s')%(dir,dir2)
             # check file
             if not os.path.isfile(filename2):
-                raise Exception, 'copy failed to copy %s to %s'%(filename,filename2)
+                raise Exception('copy failed to copy %s to %s')%(filename,filename2)
             with open(filename2,'r') as f:
                 results = f.read(len(file_contents)*10)
                 if file_contents != results:
-                    raise Exception, 'contents not the same'
+                    raise Exception('contents not the same')
 
     @unittest_reporter(skip=not psutil)
     def test_300_getInterfaces(self):
@@ -681,18 +680,18 @@ class functions_test(unittest.TestCase):
         download_options = {'username': 'user',
                             'password': 'pass',}
 
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        data = b'the data'
+        md5sum = b'3d5f3303ed6ce28c2d5ac1192118f0e2'
 
         # download file from resources
         http_mock.get('/globus.tar.gz', content=data)
-        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
+        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+b' globus.tar.gz')
         iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                 self.test_dir,options=download_options)
         if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
             raise Exception('downloaded file does not exist')
         self.assertTrue(http_mock.called)
-        data2 = open(os.path.join(self.test_dir,'globus.tar.gz')).read()
+        data2 = open(os.path.join(self.test_dir,'globus.tar.gz'),'rb').read()
         self.assertEqual(data2, data, msg='data not equal')
 
     @unittest_reporter(name='download() file')
@@ -708,7 +707,7 @@ class functions_test(unittest.TestCase):
         iceprod.core.functions.download(filename,
                 os.path.join(self.test_dir,'generators2.py'))
         if not os.path.isfile(os.path.join(self.test_dir,'generators2.py')):
-            raise Exception, 'local cp: copied file does not exist'
+            raise Exception('local cp: copied file does not exist')
         data2 = open(os.path.join(self.test_dir,'generators2.py')).read()
         self.assertEqual(data2, data, msg='data not equal')
 
@@ -741,36 +740,36 @@ class functions_test(unittest.TestCase):
     @unittest_reporter(name='download() http - query params')
     def test_306_download(self, http_mock):
         """Test the download function"""
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        data = b'the data'
+        md5sum = b'3d5f3303ed6ce28c2d5ac1192118f0e2'
 
         # download file from resources
         url = 'http://prod-exe.icecube.wisc.edu/globus.tar.gz?a=1'
         http_mock.get('/globus.tar.gz?a=1', content=data)
-        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+' '+'globus.tar.gz')
+        http_mock.get('/globus.tar.gz.md5sum', content=md5sum+b' globus.tar.gz')
         out_file = iceprod.core.functions.download(url, self.test_dir)
         self.assertEqual(out_file, os.path.join(self.test_dir,'globus.tar.gz'))
         if not os.path.isfile(out_file):
             raise Exception('downloaded file does not exist')
         self.assertTrue(http_mock.called)
-        data2 = open(out_file).read()
+        data2 = open(out_file,'rb').read()
         self.assertEqual(data2, data, msg='data not equal')
 
     @unittest_reporter(name='download() errors')
     def test_320_download(self):
         """Test the download function"""
-        data = 'the data'
-        md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
+        data = b'the data'
+        md5sum = b'3d5f3303ed6ce28c2d5ac1192118f0e2'
         download_options = {}
 
         filename = os.path.join(self.test_dir, 'generators.py')
         out_dir = os.path.join(self.test_dir, 'output')
         os.makedirs(out_dir)
         output_file = os.path.join(out_dir, 'generators.py')
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             f.write(data)
-        with open(filename+'.md5sum', 'w') as f:
-            f.write(md5sum+' '+'generators.py')
+        with open(filename+'.md5sum', 'wb') as f:
+            f.write(md5sum+b' generators.py')
 
         # bad url
         try:
@@ -786,13 +785,13 @@ class functions_test(unittest.TestCase):
         """Test the upload function"""
         download_options = {'username': 'user',
                             'password': 'pass',}
-        data = 'the data'
+        data = b'the data'
 
         # upload file to http
-        http_mock.post('/globus.tar.gz', content='')
+        http_mock.post('/globus.tar.gz', content=b'')
         http_mock.get('/globus.tar.gz', content=data)
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
-        with open(filename, 'w') as f:
+        with open(filename, 'wb') as f:
             f.write(data)
         iceprod.core.functions.upload(filename,
                 'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
@@ -803,7 +802,7 @@ class functions_test(unittest.TestCase):
         self.assertEqual(os.path.basename(req.url), 'globus.tar.gz', msg='bad upload url')
 
         # test bad upload
-        http_mock.get('/globus.tar.gz', content='blah')
+        http_mock.get('/globus.tar.gz', content=b'blah')
         with self.assertRaises(Exception):
             iceprod.core.functions.upload(filename,
                     'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
@@ -940,7 +939,7 @@ class functions_test(unittest.TestCase):
         data = 'the data'
 
         # delete file from http
-        http_mock.delete('/globus.tar.gz', content='')
+        http_mock.delete('/globus.tar.gz', content=b'')
         iceprod.core.functions.delete('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                 options=download_options)
         self.assertTrue(http_mock.called)

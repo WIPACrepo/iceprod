@@ -57,7 +57,7 @@ def uncompress(infile, out_dir=None):
         logger.info('uncompressing %s',infile)
         if istarred(infile):
             # handle tarfile
-            output = subprocess.check_output(['tar','-atf',infile])
+            output = subprocess.check_output(['tar','-atf',infile]).decode('utf-8')
             files = [x for x in output.split('\n') if x.strip() and x[-1] != '/']
             if not files:
                 raise Exception('no files inside tarfile')
@@ -132,12 +132,11 @@ def cksm(filename,type,buffersize=16384,file=True):
 
     if file and os.path.exists(filename):
         # checksum file contents
-        filed = open(filename)
-        buffer = filed.read(buffersize)
-        while buffer:
-            digest.update(buffer)
+        with open(filename,'rb') as filed:
             buffer = filed.read(buffersize)
-        filed.close()
+            while buffer:
+                digest.update(buffer)
+                buffer = filed.read(buffersize)
     else:
         # just checksum the contents of the first argument
         digest.update(filename)

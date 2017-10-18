@@ -4,7 +4,7 @@ Test script for core exe_json
 
 from __future__ import absolute_import, division, print_function
 
-from tests.util import unittest_reporter, glob_tests
+from tests.util import unittest_reporter, glob_tests, cmp_dict
 
 import logging
 logger = logging.getLogger('exe')
@@ -25,14 +25,17 @@ except:
     import pickle
 
 import unittest
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
+
 from iceprod.core import to_log,constants
 import iceprod.core.functions
 import iceprod.core.exe
 import iceprod.core.exe_json
 import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
-
-from flexmock import flexmock
 
 
 class exe_json_test(unittest.TestCase):
@@ -53,454 +56,219 @@ class exe_json_test(unittest.TestCase):
         self.config = iceprod.core.exe.Config()
         self.config.config['options']['offline'] = True
 
+    @patch('iceprod.core.jsonRPCclient.Client')
     @unittest_reporter
-    def test_01_setupjsonRPC(self):
+    def test_01_setupjsonRPC(self, RPC):
         """Test setupjsonRPC"""
-        # mock the JSONRPC class
-        def start(*args,**kwargs):
-            start.args = args
-            start.kwargs = kwargs
-        start.args = None
-        start.kwargs = None
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('start').replace_with(start)
-        def f(*args,**kwargs):
-            if kwargs['func_name'] in f.returns:
-                ret = f.returns[kwargs['func_name']]
-            else:
-                ret = Exception('jsonrpc error')
-            logger.debug('f(func_name=%s) returns %r',kwargs['func_name'],ret)
-            if 'callback' in kwargs:
-                kwargs['callback'](ret)
-            else:
-                return ret
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-
         address = 'http://test:9080'
         passkey = 'ksdf8n4'
-        f.returns = {'echo':'e'}
-        try:
-            iceprod.core.exe_json.setupjsonRPC(address, passkey)
-        except:
-            logger.error('running setupjsonRPC failed')
-            raise
-        if (('address' in start.kwargs and start.kwargs['address'] != address) or
-            ('address' not in start.kwargs and
-             (len(start.args) < 1 or start.args[0] != address))):
-            raise Exception('JSONRPC.start() does not have address')
-        if 'address' not in start.kwargs:
-            start.args = start.args[1:]
-        if (('passkey' in start.kwargs and start.kwargs['passkey'] != passkey) or
-            ('passkey' not in start.kwargs and
-             (len(start.args) < 1 or start.args[0] != passkey))):
-            raise Exception('JSONRPC.start() does not have passkey')
+        rpc_instance = RPC.return_value
+        rpc_instance.request.return_value = 'e'
 
+        iceprod.core.exe_json.ServerComms(address, passkey, config=self.config)
+        self.assertTrue(RPC.called)
+        logger.info('%r',RPC.call_args[1])
+        self.assertTrue(cmp_dict({'address':address}, RPC.call_args[1]))
+
+        RPC.reset_mock()
         kwargs = {'ssl_cert':'cert','ssl_key':'key','cacert':'ca'}
-        try:
-            iceprod.core.exe_json.setupjsonRPC(address, passkey, **kwargs)
-        except:
-            logger.error('running setupjsonRPC SSL failed')
-            raise
-        if 'ssl_cert' in start.kwargs and start.kwargs['ssl_cert'] != 'cert':
-            raise Exception('JSONRPC.start() does not have ssl_cert')
-        if 'ssl_key' in start.kwargs and start.kwargs['ssl_key'] != 'key':
-            raise Exception('JSONRPC.start() does not have ssl_key')
-        if 'cacert' in start.kwargs and start.kwargs['cacert'] != 'ca':
-            raise Exception('JSONRPC.start() does not have cacert')
+        iceprod.core.exe_json.ServerComms(address, passkey,
+                                          config=self.config, **kwargs)
+        self.assertTrue(RPC.called)
+        expected = {'address':address}
+        expected.update(kwargs)
+        self.assertTrue(cmp_dict(expected, RPC.call_args[1]))
 
-
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_10_downloadtask(self):
-        """Test downloadtask"""
-        # mock the JSONRPC class
+    def test_10_download_task(self, RPC):
+        """Test download_task"""
         task = {'dataset':10}
-        def new_task(hostname=None, ifaces=None,
-                     gridspec=None, **kwargs):
-            new_task.called = True
-            new_task.hostname = hostname
-            new_task.ifaces = ifaces
-            new_task.gridspec = gridspec
-            new_task.kwargs = kwargs
-            return task
-        new_task.called = False
-        def f(*args,**kwargs):
-            name = kwargs.pop('func_name')
-            if 'callback' in kwargs:
-                cb = kwargs.pop('callback')
-            else:
-                cb = None
-            if name == 'new_task':
-                ret = new_task(*args,**kwargs)
-            else:
-                ret = Exception()
-            if cb:
-                cb(ret)
-            else:
-                return ret
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
+        RPCinstance = RPC.return_value
+        RPCinstance.new_task.return_value = [task]
 
-        hostname = iceprod.core.functions.gethostname()
-        ifaces = iceprod.core.functions.getInterfaces()
-        gridspec = 'thegrid'
-        try:
-            iceprod.core.exe_json.downloadtask(gridspec)
-        except:
-            logger.error('running downloadtask failed')
-            raise
-        if not new_task.called:
-            raise Exception('JSONRPC.new_task() not called')
-        if new_task.hostname != hostname:
-            raise Exception('JSONRPC.new_task() hostname !=')
-        if new_task.ifaces != ifaces:
-            raise Exception('JSONRPC.new_task() ifaces !=')
-        if new_task.gridspec != gridspec:
-            raise Exception('JSONRPC.new_task() gridspec !=')
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        rpc.download_task('gridspec')
 
+        self.assertTrue(RPCinstance.new_task.called)
+        logger.info(RPCinstance.new_task.call_args[1])
+        self.assertTrue({'gridspec','hostname','ifaces'}.issubset(
+                            RPCinstance.new_task.call_args[1]))
+
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_20_finishtask(self):
-        """Test finishtask"""
-        # mock the JSONRPC class
-        task_id = 'a task'
+    def test_20_finish_task(self, RPC):
+        """Test finish_task"""
+        RPCinstance = RPC.return_value
+
+        self.config.config['options']['task_id'] = 'task'
         stats = {'test':True}
-        def finish_task(task_id,stats={}):
-            finish_task.called = True
-            finish_task.task_id = task_id
-            finish_task.stats = stats
-            return None
-        finish_task.called = False
-        def f(*args,**kwargs):
-            name = kwargs.pop('func_name')
-            if 'callback' in kwargs:
-                cb = kwargs.pop('callback')
-            else:
-                cb = None
-            if name == 'finish_task':
-                ret = finish_task(*args,**kwargs)
-            else:
-                ret = Exception()
-            if cb:
-                cb(ret)
-            else:
-                return ret
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-        self.config.config['options']['task_id'] = task_id
 
-        try:
-            iceprod.core.exe_json.finishtask(self.config, stats)
-        except:
-            logger.error('running finishtask failed')
-            raise
-        if not finish_task.called:
-            raise Exception('JSONRPC.finish_task() not called')
-        if finish_task.task_id != task_id:
-            raise Exception('JSONRPC.finish_task() task_id !=')
-        if finish_task.stats['task_stats'] != stats:
-            raise Exception('JSONRPC.finish_task() stats !=')
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        rpc.finish_task(stats)
 
+        self.assertTrue(RPCinstance.finish_task.called)
+        logger.info(RPCinstance.finish_task.call_args[1])
+        self.assertTrue({'task_id','stats'}.issubset(
+                            RPCinstance.finish_task.call_args[1]))
+
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_30_stillrunning(self):
-        """Test stillrunning"""
-        try:
-            # mock the JSONRPC class
-            task_id = 'a task'
-            def stillrunning(task_id):
-                stillrunning.called = True
-                stillrunning.task_id = task_id
-                return stillrunning.ret
-            stillrunning.called = False
-            def f(*args,**kwargs):
-                name = kwargs.pop('func_name')
-                if 'callback' in kwargs:
-                    cb = kwargs.pop('callback')
-                else:
-                    cb = None
-                if name == 'stillrunning':
-                    ret = stillrunning(*args,**kwargs)
-                else:
-                    ret = Exception()
-                if cb:
-                    cb(ret)
-                else:
-                    return ret
-            jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-            jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-            self.config.config['options']['task_id'] = task_id
+    def test_30_still_running(self, RPC):
+        """Test still_running"""
+        RPCinstance = RPC.return_value
+        
+        self.config.config['options']['task_id'] = 'task'
 
-            stillrunning.ret = True
-            try:
-                iceprod.core.exe_json.stillrunning(self.config)
-            except:
-                logger.error('exception when not supposed to')
-                raise
-            if not stillrunning.called:
-                raise Exception('JSONRPC.stillrunning() not called')
-            if stillrunning.task_id != task_id:
-                raise Exception('JSONRPC.stillrunning() task_id !=')
+        RPCinstance.stillrunning.return_value = True
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        rpc.still_running()
+        self.assertTrue(RPCinstance.stillrunning.called)
 
-            stillrunning.ret = False
-            try:
-                iceprod.core.exe_json.stillrunning(self.config)
-            except:
-                pass
-            else:
-                raise Exception('exception not thrown')
-                raise
-            if 'DBkill' not in self.config.config['options']:
-                raise Exception('DBkill not in config["options"]')
+        RPCinstance.stillrunning.return_value = False
+        with self.assertRaises(Exception):
+            rpc.still_running()
+        self.assertIn('DBkill', self.config.config['options'])
 
-            stillrunning.ret = Exception('sql error')
-            try:
-                iceprod.core.exe_json.stillrunning(self.config)
-            except:
-                pass
-            else:
-                raise Exception('exception not thrown2')
-                raise
+        RPCinstance.stillrunning.side_effect = Exception('sql error')
+        with self.assertRaises(Exception):
+            rpc.still_running()
 
-        finally:
-            if 'DBkill' in self.config.config['options']:
-                del self.config.config['options']['DBkill']
-
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_40_taskerror(self):
-        """Test taskerror"""
-        # mock the JSONRPC class
-        task_id = 'a task'
-        def task_error(task_id, error_info=None):
-            task_error.called = True
-            task_error.task_id = task_id
-            task_error.error_info = error_info
-            return None
-        task_error.called = False
-        def f(*args,**kwargs):
-            name = kwargs.pop('func_name')
-            if 'callback' in kwargs:
-                cb = kwargs.pop('callback')
-            else:
-                cb = None
-            if name == 'task_error':
-                ret = task_error(*args,**kwargs)
-            else:
-                ret = Exception()
-            if cb:
-                cb(ret)
-            else:
-                return ret
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
-        self.config.config['options']['task_id'] = task_id
+    def test_40_task_error(self, RPC):
+        """Test task_error"""
+        RPCinstance = RPC.return_value
+        self.config.config['options']['task_id'] = 'task'
 
-        try:
-            iceprod.core.exe_json.taskerror(self.config)
-        except:
-            logger.error('running taskerror failed')
-            raise
-        if not task_error.called:
-            raise Exception('JSONRPC.task_error() not called')
-        if task_error.task_id != task_id:
-            raise Exception('JSONRPC.task_error() task_id !=')
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        rpc.task_error()
 
-        data = ''.join(random.choice(string.letters) for _ in range(10000))
+        self.assertTrue(RPCinstance.task_error.called)
+        logger.info(RPCinstance.task_error.call_args[1])
+        self.assertTrue({'task_id','error_info'}.issubset(
+                            RPCinstance.task_error.call_args[1]))
+
+        RPCinstance.task_error.reset_mock()
+        data = ''.join(random.choice(string.ascii_letters) for _ in range(10000))
         with open('stderr','w') as fh:
             fh.write(data)
-        try:
-            iceprod.core.exe_json.taskerror(self.config, start_time=time.time()-200)
-        except:
-            logger.error('running taskerror failed')
-            raise
-        if not task_error.called:
-            raise Exception('JSONRPC.task_error() not called')
-        if task_error.task_id != task_id:
-            raise Exception('JSONRPC.task_error() task_id !=')
-        if ((not task_error.error_info) or
-            task_error.error_info['time_used'] < 200):
-            logger.info('error_info: %r', task_error.error_info)
-            raise Exception('error_info incorrect')
+        rpc.task_error(start_time=time.time()-200)
+        
+        self.assertTrue(RPCinstance.task_error.called)
+        self.assertTrue({'task_id','error_info'}.issubset(
+                            RPCinstance.task_error.call_args[1]))
+        error_info = RPCinstance.task_error.call_args[1]['error_info']
+        self.assertGreaterEqual(error_info['time_used'], 200)
 
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_41_task_kill(self):
+    def test_41_task_kill(self, RPC):
         """Test task_kill"""
-        # mock the JSONRPC class
-        task_id = 'a task'
-        def task_error(task_id, error_info=None):
-            task_error.called = True
-            task_error.task_id = task_id
-            task_error.error_info = error_info
-            return None
-        task_error.called = False
-        def f(*args,**kwargs):
-            name = kwargs.pop('func_name')
-            if 'callback' in kwargs:
-                cb = kwargs.pop('callback')
-            else:
-                cb = None
-            if name == 'task_error':
-                ret = task_error(*args,**kwargs)
-            else:
-                ret = Exception()
-            if cb:
-                cb(ret)
-            else:
-                return ret
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(f,func_name=a))
+        RPCinstance = RPC.return_value
+        task_id = 'task'
 
-        try:
-            iceprod.core.exe_json.task_kill(task_id)
-        except:
-            logger.error('running task_kill failed')
-            raise
-        if not task_error.called:
-            raise Exception('JSONRPC.task_error() not called')
-        if task_error.task_id != task_id:
-            raise Exception('JSONRPC.task_error() task_id !=')
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
+        rpc.task_kill(task_id)
 
+        self.assertTrue(RPCinstance.task_error.called)
+        logger.info(RPCinstance.task_error.call_args[1])
+        self.assertTrue({'task_id','error_info'}.issubset(
+                            RPCinstance.task_error.call_args[1]))
+
+        RPCinstance.task_error.reset_mock()
         resources = {'cpu': 1, 'memory': 3.4, 'disk': 0.2}
-        try:
-            iceprod.core.exe_json.task_kill(task_id, resources)
-        except:
-            logger.error('running task_kill failed')
-            raise
-        if not task_error.called:
-            raise Exception('JSONRPC.task_error() not called')
-        if task_error.task_id != task_id:
-            raise Exception('JSONRPC.task_error() task_id !=')
-        if ((not task_error.error_info) or
-            task_error.error_info['resources'] != resources):
-            logger.info('error_info: %r', task_error.error_info)
-            raise Exception('error_info incorrect')
+        rpc.task_kill(task_id, resources)
+        
+        self.assertTrue(RPCinstance.task_error.called)
+        logger.info(RPCinstance.task_error.call_args[1])
+        self.assertTrue({'task_id','error_info'}.issubset(
+                            RPCinstance.task_error.call_args[1]))
+        error_info = RPCinstance.task_error.call_args[1]['error_info']
+        self.assertEqual(error_info['resources'], resources)
 
+        RPCinstance.task_error.reset_mock()
         resources = {'time': 34.2}
         reason = 'testing'
-        try:
-            iceprod.core.exe_json.task_kill(task_id, resources, reason=reason)
-        except:
-            logger.error('running task_kill failed')
-            raise
-        if not task_error.called:
-            raise Exception('JSONRPC.task_error() not called')
-        if task_error.task_id != task_id:
-            raise Exception('JSONRPC.task_error() task_id !=')
-        if ((not task_error.error_info) or
-            'resources' not in task_error.error_info or
-            task_error.error_info['error_summary'] != reason):
-            logger.info('error_info: %r', task_error.error_info)
-            raise Exception('error_info incorrect')
+        rpc.task_kill(task_id, resources, reason=reason)
+        
+        self.assertTrue(RPCinstance.task_error.called)
+        logger.info(RPCinstance.task_error.call_args[1])
+        self.assertTrue({'task_id','error_info'}.issubset(
+                            RPCinstance.task_error.call_args[1]))
+        error_info = RPCinstance.task_error.call_args[1]['error_info']
+        self.assertEqual(error_info['resources'], resources)
+        self.assertEqual(error_info['error_summary'], reason)
 
+    @patch('iceprod.core.exe_json.JSONRPC')
     @unittest_reporter
-    def test_50_uploadLogging(self):
+    def test_50_uploadLogging(self, RPC):
         """Test uploading logfiles"""
-        # mock the JSONRPC class
-        task_id = 'a task'
-        def uploader(task,name,data):
-            uploader.called = True
-            uploader.task_id = task
-            uploader.data[name] = json_compressor.uncompress(data)
-            return None
-        def fun(*args,**kwargs):
-            name = kwargs.pop('func_name')
-            if 'callback' in kwargs:
-                cb = kwargs.pop('callback')
-            else:
-                cb = None
-            if name == 'upload_logfile':
-                ret = uploader(*args,**kwargs)
-            else:
-                ret = Exception()
-            if cb:
-                cb(ret)
-            else:
-                return ret
-        jsonrpc = flexmock(iceprod.core.jsonRPCclient.MetaJSONRPC)
-        jsonrpc.should_receive('__getattr__').replace_with(lambda a:partial(fun,func_name=a))
-        self.config.config['options']['task_id'] = task_id
+        RPCinstance = RPC.return_value
+        self.config.config['options']['task_id'] = 'task'
 
-        data = ''.join([str(random.randint(0,10000)) for _ in xrange(100)])
+        data = ''.join([str(random.randint(0,10000)) for _ in range(100)])
 
         filename = os.path.join(self.test_dir,str(random.randint(0,10000)))
         with open(filename,'w') as f:
             f.write(data)
-
-        uploader.called = False
-        uploader.task_id = None
-        uploader.data = {}
         name = 'testing'
-        try:
-            iceprod.core.exe_json._upload_logfile(self.config, name, filename)
-        except:
-            logger.error('running _upload_logfile failed')
-            raise
-        if not uploader.called:
-            raise Exception('JSONRPC._upload_logfile() not called')
-        if uploader.task_id != task_id:
-            raise Exception('JSONRPC._upload_logfile() task_id !=')
-        if name not in uploader.data:
-            raise Exception('JSONRPC._upload_logfile() invalid name: %r'%
-                            uploader.data.keys())
-        if uploader.data[name] != data:
-            raise Exception('JSONRPC._upload_logfile() data !=')
+        
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        rpc._upload_logfile(name, filename)
+        
+        self.assertTrue(RPCinstance.upload_logfile.called)
+        logger.info(RPCinstance.upload_logfile.call_args[1])
+        self.assertTrue({'task','name','data'}.issubset(
+                            RPCinstance.upload_logfile.call_args[1]))
+        self.assertEqual(RPCinstance.upload_logfile.call_args[1]['data'],
+                         json_compressor.compress(data.encode('utf-8')))
 
-        uploader.called = False
-        uploader.task_id = None
-        uploader.data = {}
         for f in constants.keys():
             if f in ('stderr','stdout','stdlog'):
                 with open(constants[f],'w') as f:
                     f.write(''.join([str(random.randint(0,10000))
-                                     for _ in xrange(100)]))
-        try:
-            iceprod.core.exe_json.uploadLog(self.config)
-        except:
-            logger.error('running uploadLog failed')
-            raise
-        if not uploader.called:
-            raise Exception('JSONRPC.uploadLog() not called')
-        if uploader.task_id != task_id:
-            raise Exception('JSONRPC.uploadLog() task_id !=')
-        if 'stdlog' not in uploader.data:
-            raise Exception('JSONRPC.uploadLog() invalid name: %r'%
-                            (uploader.data.keys()))
-        if uploader.data['stdlog'] != open(constants['stdlog']).read():
-            raise Exception('JSONRPC.uploadLog() data !='%name)
+                                     for _ in range(100)]))
 
-        uploader.called = False
-        uploader.task_id = None
-        uploader.data = {}
-        try:
-            iceprod.core.exe_json.uploadErr(self.config)
-        except:
-            logger.error('running uploadErr failed')
-            raise
-        if not uploader.called:
-            raise Exception('JSONRPC.uploadErr() not called')
-        if uploader.task_id != task_id:
-            raise Exception('JSONRPC.uploadErr() task_id !=')
-        if 'stderr' not in uploader.data:
-            raise Exception('JSONRPC.uploadErr() invalid name: %r'%
-                            (uploader.data.keys()))
-        if uploader.data['stderr'] != open(constants['stderr']).read():
-            raise Exception('JSONRPC.uploadErr() data !='%name)
+        RPCinstance.task_error.reset_mock()
+        rpc.uploadLog()
+        
+        self.assertTrue(RPCinstance.upload_logfile.called)
+        self.assertEqual('stdlog', RPCinstance.upload_logfile.call_args[1]['name'])
+        self.assertEqual(RPCinstance.upload_logfile.call_args[1]['data'],
+                         json_compressor.compress(open(constants['stdlog'],'rb').read()))
 
-        uploader.called = False
-        uploader.task_id = None
-        uploader.data = {}
-        try:
-            iceprod.core.exe_json.uploadOut(self.config)
-        except:
-            logger.error('running uploadOut failed')
-            raise
-        if not uploader.called:
-            raise Exception('JSONRPC.uploadOut() not called')
-        if uploader.task_id != task_id:
-            raise Exception('JSONRPC.uploadOut() task_id !=')
-        if 'stdout' not in uploader.data:
-            raise Exception('JSONRPC.uploadOut() invalid name: %r'%
-                            (uploader.data.keys()))
-        if uploader.data['stdout'] != open(constants['stdout']).read():
-            raise Exception('JSONRPC.uploadOut() data !='%name)
+        RPCinstance.task_error.reset_mock()
+        rpc.uploadErr()
+        
+        self.assertTrue(RPCinstance.upload_logfile.called)
+        self.assertEqual('stderr', RPCinstance.upload_logfile.call_args[1]['name'])
+        self.assertEqual(RPCinstance.upload_logfile.call_args[1]['data'],
+                         json_compressor.compress(open(constants['stderr'],'rb').read()))
 
+        RPCinstance.task_error.reset_mock()
+        rpc.uploadOut()
+        
+        self.assertTrue(RPCinstance.upload_logfile.called)
+        self.assertEqual('stdout', RPCinstance.upload_logfile.call_args[1]['name'])
+        self.assertEqual(RPCinstance.upload_logfile.call_args[1]['data'],
+                        json_compressor.compress( open(constants['stdout'],'rb').read()))
+
+    @patch('iceprod.core.exe_json.JSONRPC')
+    @unittest_reporter
+    def test_60_update_pilot(self, RPC):
+        """Test update_pilot"""
+        RPCinstance = RPC.return_value
+        pilot_id = 'pilot'
+        args = {'a': 1, 'b': 2}
+        
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
+        rpc.update_pilot(pilot_id, **args)
+
+        self.assertTrue(RPCinstance.update_pilot.called)
+        logger.info(RPCinstance.update_pilot.call_args[1])
+        self.assertTrue({'pilot_id','a','b'}.issubset(
+                            RPCinstance.update_pilot.call_args[1]))
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

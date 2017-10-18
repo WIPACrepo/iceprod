@@ -16,7 +16,10 @@ import string
 import subprocess
 import threading
 import unittest
-import __builtin__
+try:
+    import builtins
+except ImportError:
+    import __builtin__ as builtins
 
 from flexmock import flexmock
 
@@ -372,7 +375,7 @@ class parser_test(unittest.TestCase):
 
         for reduction in 'sum', 'len', 'min', 'max':
             ret = p.parse('${}($steering(list))'.format(reduction),job=job)
-            expected = getattr(__builtin__, reduction)(job['steering']['parameters']['list'])
+            expected = getattr(builtins, reduction)(job['steering']['parameters']['list'])
             if ret != expected:
                 logger.info('ret=%r, expected=%r',ret,expected)
                 raise Exception('{}: ret != expected'.format('${}($steering(list))'.format(reduction)))
@@ -523,50 +526,28 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.parse('$sprintf("%d",5)')
-        expected = 5
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('"d": ret != expected')
+        self.assertEqual(ret, 5)
 
         ret = p.parse('$sprintf(\'%d\',5)')
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('\'d\': ret != expected')
+        self.assertEqual(ret, 5)
 
         ret = p.parse('$sprintf(%d,5)')
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('d: ret != expected')
+        self.assertEqual(ret, 5)
 
         ret = p.parse('$sprintf("%s %06d","testing",12)')
-        expected = 'testing 000012'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('s 06d: ret != expected')
+        self.assertEqual(ret, 'testing 000012')
 
         ret = p.parse('$sprintf("%s,12)')
-        expected = '$sprintf("%s,12)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('missing quote: ret != expected')
+        self.assertEqual(ret, '$sprintf("%s,12)')
 
         ret = p.parse('$sprintf(%s)')
-        expected = '$sprintf(%s)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('no args: ret != expected')
+        self.assertEqual(ret, '$sprintf(%s)')
 
         ret = p.parse('$sprintf("%s")')
-        expected = '$sprintf("%s")'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('no args2: ret != expected')
+        self.assertEqual(ret, '$sprintf("%s")')
 
         ret = p.parse('$sprintf("%f","test")')
-        expected = '$sprintf("%f","test")'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('bad type: ret != expected')
+        self.assertEqual(ret, '$sprintf("%f","test")')
 
     @unittest_reporter(name='parse() choice')
     def test_16_choice(self):

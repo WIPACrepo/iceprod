@@ -20,11 +20,13 @@ import iceprod.server.ssl_cert
 class ssl_cert_test(unittest.TestCase):
     def setUp(self):
         super(ssl_cert_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-
-    def tearDown(self):
-        shutil.rmtree(self.test_dir)
-        super(ssl_cert_test,self).tearDown()
+        orig_dir = os.getcwd()
+        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
+        os.chdir(self.test_dir)
+        def clean_dir():
+            os.chdir(orig_dir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(clean_dir)
 
     @unittest_reporter
     def test_01_create_ca(self):

@@ -29,7 +29,10 @@ from threading import Thread,Event,Condition
 import logging
 from contextlib import contextmanager
 from functools import partial, wraps
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 from datetime import timedelta
 
 # override tornado json encoder and decoder so we can use dataclasses objects

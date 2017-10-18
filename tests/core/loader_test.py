@@ -62,7 +62,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if 'Iceprod core framework starter script.' not in out:
             logger.info(out)
             raise Exception('help: did not display usage info')
@@ -72,7 +72,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('main: error raised')
@@ -90,7 +90,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('main: error raised')
@@ -108,7 +108,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('env filename: error raised')
@@ -124,7 +124,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('username,password: error raised')
@@ -139,7 +139,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('x509: error raised')
@@ -152,7 +152,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if not proc.returncode:
             logger.info(out)
             raise Exception('bad arg: did not raise error')
@@ -164,7 +164,7 @@ class loader_test(unittest.TestCase):
         proc = subprocess.Popen(cmd,shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT)
-        out = proc.communicate()[0]
+        out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
             raise Exception('argument passthrough: error raised')

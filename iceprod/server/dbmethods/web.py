@@ -73,7 +73,7 @@ class web(_Methods_Base):
         """
         sql = 'select '
         if groups:
-            groups = filtered_input(groups)
+            groups = list(map(filtered_input,groups))
             sql += ','.join(groups) + ', count(*) as num '
         else:
             sql += ' * '

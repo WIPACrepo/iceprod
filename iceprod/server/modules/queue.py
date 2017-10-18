@@ -7,7 +7,6 @@ import os
 import time
 import logging
 from contextlib import contextmanager
-from itertools import izip
 
 import tornado.httpclient
 import tornado.gen
@@ -66,7 +65,7 @@ class queue(module.module):
         plugin_names = [x for x in self.cfg['queue'] if isinstance(self.cfg['queue'][x],dict)]
         plugin_cfg = [self.cfg['queue'][x] for x in plugin_names]
         plugin_types = [x['type'] for x in plugin_cfg]
-        logger.info('queueing plugins in cfg: %r',{x:y for x,y in izip(plugin_names,plugin_types)})
+        logger.info('queueing plugins in cfg: %r',{x:y for x,y in zip(plugin_names,plugin_types)})
         if not plugin_names:
             logger.debug('%r',self.cfg['queue'])
             logger.warn('no queueing plugins found. deactivating queue')

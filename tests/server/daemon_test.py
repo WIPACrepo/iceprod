@@ -73,7 +73,7 @@ class daemon_test(unittest.TestCase):
         pidfile = os.path.expanduser(os.path.expandvars(
                         os.path.join(self.test_dir,'pidfile')))
         chdir = os.path.expanduser(os.path.expandvars(self.test_dir))
-        umask = 077
+        umask = 0o077
         stdout = os.path.join(self.test_dir,'stdout')
         stderr = os.path.join(self.test_dir,'stderr')
         d = daemon.Daemon(pidfile,partial(main,'cfgfile','cfgdata'),
@@ -88,7 +88,7 @@ class daemon_test(unittest.TestCase):
         if not os.path.exists(os.path.join(chdir,'test')):
             raise Exception('chdir failed')
         st = os.stat(os.path.join(chdir,'test'))
-        if oct(stat.S_IMODE(st[stat.ST_MODE])) != '0600':
+        if oct(stat.S_IMODE(st[stat.ST_MODE])) != '0o600':
             logger.info('mode: %r',oct(stat.S_IMODE(st[stat.ST_MODE])))
             raise Exception('umask failed')
 

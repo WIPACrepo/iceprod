@@ -54,7 +54,7 @@ class GlobalID(object):
 
     @classmethod
     def int2char(cls,i):
-        if not isinstance(i,(int,long)) or i < 0: # only deal with positive ints
+        if not isinstance(i,int) or i < 0: # only deal with positive ints
             logging.warn('bad input to int2char: %r',i)
             raise Exception('bad input to int2char')
         out = ''
@@ -65,7 +65,7 @@ class GlobalID(object):
 
     @classmethod
     def char2int(cls,c):
-        if not isinstance(c,basestring) or len(c) < 1: # only deal with string
+        if not isinstance(c,str) or len(c) < 1: # only deal with string
             logging.warn('bad input to char2int: %r',c)
             raise Exception('bad input to char2int')
         out = -1
@@ -84,13 +84,13 @@ class GlobalID(object):
     @classmethod
     def globalID_gen(cls,id,site_id):
         """Generate a new global id given a local id and site id"""
-        if isinstance(id,basestring):
+        if isinstance(id,str):
             id = cls.char2int(id)
-        elif not isinstance(id,(int,long)):
+        elif not isinstance(id,int):
             raise Exception('id is not a string, int, or long')
-        if isinstance(site_id,basestring):
+        if isinstance(site_id,str):
             return cls.int2char(cls.char2int(site_id)*cls.MAXLOCALID+id)
-        elif isinstance(site_id,(int,long)):
+        elif isinstance(site_id,int):
             return cls.int2char(site_id*cls.MAXLOCALID+id)
         else:
             raise Exception('Site id is not a string, int, or long')
@@ -115,7 +115,7 @@ def salt(length=2):
     """Returns a string of random letters"""
     import string
     import random
-    letters = string.letters+string.digits
+    letters = string.ascii_letters+string.digits
     return ''.join([random.SystemRandom().choice(letters) for _ in range(length)])
 
 class KwargConfig(object):

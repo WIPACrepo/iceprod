@@ -106,3 +106,4 @@ $RECYCLE.BIN/
 # iceprod details
 docs/server/details/dbtables.rst
 iceprod/server/data/www/dataclasses.js
+.coverage*

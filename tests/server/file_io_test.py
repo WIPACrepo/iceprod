@@ -14,6 +14,7 @@ import shutil
 import tempfile
 import random
 import unittest
+from io import IOBase
 
 import iceprod.server.file_io
 
@@ -39,7 +40,7 @@ class file_io_test(unittest.TestCase):
         ret = None
         try:
             ret = fut.result(timeout=1)
-            if not isinstance(ret,file):
+            if not isinstance(ret,IOBase):
                 raise Exception('did not return a file object')
             if ret.mode != 'r':
                 raise Exception('file did not open in read mode')
@@ -50,15 +51,18 @@ class file_io_test(unittest.TestCase):
                 except Exception:
                     pass
 
-        for mode in ('r','w','a','rb','wb','ab','r+b','w+b','a+b'):
+        for mode in ('r','w','a','rb','wb','ab','rb+','wb+','ab+'):
             fut = fileio.open(filename,mode)
             ret = None
             try:
                 ret = fut.result(timeout=1)
-                if not isinstance(ret,file):
-                    raise Exception('did not return a file object for mode %s'%(mode,))
-                if ret.mode != mode:
-                    raise Exception('file did not open in mode %s'%(mode,))
+                self.assertIsInstance(ret,IOBase)
+                if 'r' in mode or '+' in mode:
+                    self.assertTrue(ret.readable())
+                if 'w' in mode or 'a' in mode:
+                    self.assertTrue(ret.writable())
+                if 'b' in mode:
+                    self.assertIn('b', ret.mode)
             finally:
                 if ret is not None:
                     try:
@@ -101,7 +105,7 @@ class file_io_test(unittest.TestCase):
             if not f.closed:
                 f.close()
 
-        data = ''.join(chr(i) for i in range(256))
+        data = ''.join(chr(i) for i in range(256)).encode('utf-8')
         with open(filename,'wb') as f:
             f.write(data)
         f = open(filename,'rb')

@@ -171,7 +171,7 @@ class IceProdConfig(dict):
             try:
                 text = json_encode(self, indent = 4)
                 # save securely
-                with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0600),'w') as f:
+                with os.fdopen(os.open(self.filename+'.tmp', os.O_WRONLY | os.O_CREAT, 0o600),'w') as f:
                     f.write(text)
                 os.rename(self.filename+'.tmp',self.filename)
             except Exception:

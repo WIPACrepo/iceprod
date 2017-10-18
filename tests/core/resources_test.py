@@ -298,26 +298,35 @@ class resources_test(unittest.TestCase):
         self.assertEqual(ret, {})
 
         # test managable overusage
-        blah = list(range(20000000))
+        import array
+        blah = array.array('L',[0])
+        blah *= 2**26 # 256 MB
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
         self.assertEqual(ret, {})
 
         # test overusage above total
-        blah2 = list(range(10000000))
+        blah *= 2 # 512 MB
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
         self.assertIn(task_id, ret)
 
     @unittest_reporter(name='Resources.get_peak()')
     def test_080_Resources_get_peak(self):
-        raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20,
-               'time':12}
+        raw = {'cpu':8, 'gpu':['0','1'], 'memory':3.5, 'disk':20, 'time':12}
         r = iceprod.core.resources.Resources(raw=raw)
-        r.used['foo'] = raw
-        self.assertEqual(r.get_peak('foo'), raw)
+        used = {
+            'cpu':{'max':8.,'cnt':1,'avg':8.},
+            'gpu':{'max':2.,'cnt':1,'avg':2.},
+            'memory':{'max':3.5,'cnt':1,'avg':3.5},
+            'disk':{'max':20.,'cnt':1,'avg':20.},
+            'time':{'max':12.,'cnt':1,'avg':12.},
+        }
+        r.used['foo'] = used
+        self.assertEqual(r.get_peak('foo'),
+            {'cpu':8, 'gpu':2, 'memory':3.5, 'disk':20, 'time':12})
 
-        self.assertEqual(r.get_peak('baz'), None)
+        self.assertFalse(r.get_peak('baz'))
 
     @unittest_reporter(name='Resources.set_env()')
     def test_090_Resources_set_env(self):
