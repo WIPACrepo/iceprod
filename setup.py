@@ -55,7 +55,8 @@ if setuptools is not None:
                         'pyOpenSSL', 'pyasn1', 'jsonschema',
                         'psutil>=5.0.0', 'cryptography', 'requests',
                         'requests_toolbelt', 'requests-futures', 'statsd',
-                        'cachetools>=2.0.0', 'sphinx>=1.4', 'coverage', 'flexmock'
+                        'cachetools>=2.0.0', 'sphinx>=1.4',
+                        'coverage', 'flexmock', 'requests-mock',
                        ]
     if sys.version_info < (3, 2):
         install_requires.extend(['futures','subprocess32'])
