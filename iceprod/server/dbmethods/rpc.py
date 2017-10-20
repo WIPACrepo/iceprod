@@ -1203,9 +1203,14 @@ class rpc(_Methods_Base):
         raise tornado.gen.Return(ret)
     
     @tornado.gen.coroutine
-    def rpc_public_get_number_of_tasks_in_each_state(self, callback=None):
-        sql = 'SELECT status,count(*) FROM task GROUP BY status;'
-        bindings = ()
+    def rpc_public_get_number_of_tasks_in_each_state(self, dataset_id=None, callback=None):
+        sql = 'SELECT task_status,count(*) FROM search '
+        if dataset_id:
+            sql += 'WHERE dataset_id = ? GROUP BY task_status'
+            bindings = (dataset_id,)
+        else:
+            sql += 'GROUP BY task_status'
+            bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
 
         raise tornado.gen.Return(ret)
