@@ -41,7 +41,7 @@ tmpdir = tempfile.mkdtemp(dir=curdir)
 os.chdir(tmpdir)
 os.environ['I3PROD'] = tmpdir
 def cleanup():
-    procs = psutil.Process().children()
+    procs = psutil.Process().children(recursive=True)
     for p in procs:
         p.terminate()
     gone, alive = psutil.wait_procs(procs, timeout=1)
