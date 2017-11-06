@@ -223,7 +223,7 @@ class Pilot(object):
                 if func_name in ('finishtask','taskerror'):
                     kwargs['resources'] = self.resources.get_final(task_id)
                 try:
-                    ret = getattr(self.rpc, func_name)(cfg,*args,**kwargs)
+                    ret = getattr(self.rpc, func_name)(*args,**kwargs)
                 except Exception as e:
                     logger.info('exception returned from forward', exc_info=True)
                     ret = e

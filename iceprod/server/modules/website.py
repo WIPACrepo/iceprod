@@ -25,6 +25,7 @@ import os
 import time
 import random
 import binascii
+import socket
 from threading import Thread,Event,Condition
 import logging
 from contextlib import contextmanager
@@ -283,7 +284,8 @@ class website(module.module):
                 tornado_port = self.cfg['webserver']['tornado_port']
                 tornado_address = 'localhost' # bind locally
             logger.warn('tornado bound to port %d', tornado_port)
-            self.http_server.listen(tornado_port, address=tornado_address)
+            self.http_server.bind(tornado_port, address=tornado_address, family=socket.AF_INET)
+            self.http_server.start()
             logger.warn('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)
@@ -425,7 +427,10 @@ class JSONRPCHandler(MyHandler):
         else:
             request_id = None
 
-        if not method.startswith("rpc_public"):
+        if method.startswith("rpc_public"):
+            if isinstance(params,dict):
+                params.pop('passkey',None)
+        else:
             # check for auth
             if (isinstance(params,dict) and 'passkey' not in params) or (not params):
                 self.json_error({'code':403,'message':'Not Authorized',
@@ -727,7 +732,7 @@ class Dataset(PublicHandler):
                     raise ret
                 dataset_num = GlobalID.localID_ret(dataset_id,type='int')
             if ret:
-                dataset = ret.values()[0]
+                dataset = list(ret.values())[0]
             else:
                 raise Exception('dataset not found')
 
@@ -783,7 +788,7 @@ class Task(PublicHandler):
             ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
                                      dataset_id=dataset_id)
             if ret:
-                task_details = ret.values()[0]
+                task_details = list(ret.values())[0]
             else:
                 task_details = None
             logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable

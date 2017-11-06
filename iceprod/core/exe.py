@@ -710,7 +710,7 @@ def runmodule(cfg, globalenv, module, stats={}):
                 not cfg.config['options']['offline']):
                 # check for DB kill
                 try:
-                    stillrunning(cfg)
+                    cfg.rpc.still_running()
                 except Exception:
                     if process.poll() is None:
                         process.kill()

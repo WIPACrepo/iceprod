@@ -13,7 +13,7 @@ from copy import deepcopy
 from io import BytesIO
 from datetime import datetime,timedelta
 from collections import namedtuple, Counter, defaultdict
-import itertools
+import socket
 
 import tornado.gen
 from tornado.concurrent import run_on_executor
@@ -86,7 +86,8 @@ class BaseGrid(object):
         tasks = None
 
         # update hostname once a submit cycle
-        self.hostname = functions.gethostname()
+        #self.hostname = functions.gethostname()
+        self.hostname = socket.getfqdn()
 
         if ('submit_pilots' in self.cfg['queue'] and
             self.cfg['queue']['submit_pilots']):
@@ -159,6 +160,9 @@ class BaseGrid(object):
                     yield self.setup_submit_directory(tasks[t])
                     # submit to queueing system
                     yield self.submit(tasks[t])
+                    # update grid_queue_id in db
+                    if tasks[t]['grid_queue_id']:
+                        yield self.modules['db']['queue_set_grid_queue_id'](t,tasks[t]['grid_queue_id'])
             self.tasks_queued += len(tasks)
 
         if pilots:
@@ -333,6 +337,9 @@ class BaseGrid(object):
         if not isinstance(grid_tasks,dict):
             raise Exception('get_task_status() on %s did not return a dict'%self.gridspec)
 
+        logger.info("iceprod tasks: %r", list(tasks))
+        logger.info("grid tasks: %r", list(grid_tasks))
+
         reset_tasks = set()
         remove_grid_tasks = set()
         delete_dirs = set()
@@ -373,6 +380,7 @@ class BaseGrid(object):
                     grid_idle += 1
             else: # must be in grid_tasks
                 # what iceprod doesn't know must be killed
+                logger.warn("unknown batch job: %s", grid_queue_id)
                 if status in ('queued','processing','unknown'):
                     remove_grid_tasks.add(grid_queue_id)
             if submit_dir:
@@ -482,16 +490,12 @@ class BaseGrid(object):
     @tornado.gen.coroutine
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {}
-        task_iter = itertools.izip(tasks.keys(),
-                                   self._get_resources(tasks.values()))
+        task_iter = zip(tasks.keys(), self._get_resources(tasks.values()))
         for task_id, resources in task_iter:
             task_reqs[task_id] = resources
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         self.statsd.incr('add_to_task_lookup', len(task_reqs))
-        ret = yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
-        if isinstance(ret,Exception):
-            logger.error('error add_task_lookup')
-            raise ret
+        yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
 
     @tornado.gen.coroutine
     def setup_pilots(self, tasks):

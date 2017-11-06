@@ -17,10 +17,10 @@ class json_compressor:
     """
     @staticmethod
     def compress(obj):
-        return base64.b64encode(zlib.compress(obj)) if obj else ''
+        return base64.b64encode(zlib.compress(obj)) if obj else b''
     @staticmethod
     def uncompress(obj):
-        return zlib.decompress(base64.b64decode(obj)) if obj else ''
+        return zlib.decompress(base64.b64decode(obj)).decode('utf-8') if obj else ''
 
 
 class datetime_converter:
@@ -68,7 +68,7 @@ class binary_converter:
         return base64.b64encode(obj)
     @staticmethod
     def loads(obj,name=None):
-        return base64.b64decode(obj)
+        return base64.b64decode(obj).decode('utf-8')
 
 class bytearray_converter:
     @staticmethod

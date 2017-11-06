@@ -356,7 +356,7 @@ def upload(local, url, options={}):
     local = os.path.expandvars(local)
     url  = os.path.expandvars(url)
     if not isurl(url):
-        if os.path.exists(url):
+        if url.startswith('/'):
             url = 'file:'+url
         else:
             raise Exception("unsupported protocol %s" % url)

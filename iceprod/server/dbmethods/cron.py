@@ -419,10 +419,11 @@ class cron(_Methods_Base):
     @tornado.gen.coroutine
     def cron_dataset_update(self):
         """Update the dataset table on clients"""
-        ret = yield send_master(self.parent.cfg, 'master_get_tables',
-                                tablenames=['dataset'])
-        if ret:
-            yield self.parent.service['misc_update_tables'](ret)
+        if 'master_updater' in self.parent.modules:
+            ret = yield send_master(self.parent.cfg, 'master_get_tables',
+                                    tablenames=['dataset'])
+            if ret:
+                yield self.parent.service['misc_update_tables'](ret)
 
     @tornado.gen.coroutine
     def cron_suspend_overusage_tasks(self):
@@ -458,10 +459,10 @@ class cron(_Methods_Base):
                     ret = yield self.parent.db.query(sql, bindings)
                     yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))
             if task_ids_mem:
-                data = json_compressor.compress('task held: requested >50GB memory')
+                data = json_compressor.compress(b'task held: requested >50GB memory')
                 add_log(task_ids_mem, data)
             if task_ids_time:
-                data = json_compressor.compress('task held: requested >24hr time')
+                data = json_compressor.compress(b'task held: requested >24hr time')
                 add_log(task_ids_time, data)
 
     @tornado.gen.coroutine
@@ -485,7 +486,7 @@ class cron(_Methods_Base):
             now = nowstr()
             sql = 'insert into task_log (task_log_id,task_id,name,data) '
             sql += ' values (?,?,?,?)'
-            data = json_compressor.compress('task reset: not running in an active pilot')
+            data = json_compressor.compress(b'task reset: not running in an active pilot')
             for task_id in task_ids:
                 task_log_id = yield self.parent.db.increment_id('task_log')
                 bindings = (task_log_id,task_id,'stderr',data)

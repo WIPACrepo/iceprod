@@ -1211,7 +1211,10 @@ class rpc(_Methods_Base):
         else:
             sql += 'GROUP BY task_status'
             bindings = tuple()
-        ret = yield self.parent.db.query(sql, bindings)
+
+        ret = {}
+        for status,num in (yield self.parent.db.query(sql, bindings)):
+            ret[status] = num
 
         raise tornado.gen.Return(ret)
 

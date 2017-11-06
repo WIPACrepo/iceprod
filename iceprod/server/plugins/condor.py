@@ -75,15 +75,16 @@ class condor(grid.BaseGrid):
                 else:
                     alltasks = cfg['tasks']
                 for t in alltasks:
-                    for b in t['batchsys']:
-                        if b.lower().startswith(self.__class__.__name__):
-                            # these settings apply to this batchsys
-                            for bb in t['batchsys'][b]:
-                                value = t['batchsys'][b][bb]
-                                if bb.lower() == 'requirements':
-                                    requirements.append(value)
-                                else:
-                                    batch_opts[bb] = value
+                    if 'batchsys' in t and t['batchsys']:
+                        for b in t['batchsys']:
+                            if b.lower().startswith(self.__class__.__name__):
+                                # these settings apply to this batchsys
+                                for bb in t['batchsys'][b]:
+                                    value = t['batchsys'][b][bb]
+                                    if bb.lower() == 'requirements':
+                                        requirements.append(value)
+                                    else:
+                                        batch_opts[bb] = value
 
         # write the submit file
         submit_file = os.path.join(task['submit_dir'],'condor.submit')
@@ -135,9 +136,11 @@ class condor(grid.BaseGrid):
                     p('+JobIsRunningMemory = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Memory)))')
                     p('+JobMemory = (JobIsRunningMemory ? int(MATCH_EXP_JOB_GLIDEIN_Memory) : OriginalMemory)')
                     p('request_memory = !isUndefined(Memory) ? RequestResizedMemory : JobMemory')
+                else:
+                    p('request_memory = 1000')
                 if 'disk' in task['reqs'] and task['reqs']['disk']:
                     p('+OriginalDisk = {}'.format(int(task['reqs']['disk']*1000000)))
-                    p('+RequestResizedDisk = (Disk < OriginalDisk) ? OriginalDisk : Disk')
+                    p('+RequestResizedDisk = (Disk-10000 < OriginalDisk) ? OriginalDisk : Disk-10000')
                     p('+JOB_GLIDEIN_Disk = "$$(Disk:0)"')
                     p('+JobIsRunningDisk = (JobIsRunning && (!isUndefined(MATCH_EXP_JOB_GLIDEIN_Disk)))')
                     p('+JobDisk = (JobIsRunningDisk ? int(MATCH_EXP_JOB_GLIDEIN_Disk) : OriginalDisk)')
@@ -168,11 +171,18 @@ class condor(grid.BaseGrid):
     def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','condor.submit']
-        out = subprocess.check_output(cmd,cwd=task['submit_dir'])
+        out = subprocess.check_output(cmd, cwd=task['submit_dir'], universal_newlines=True)
+        grid_queue_id = []
         for line in out.split('\n'):
             line = line.strip()
             if 'cluster' in line:
-                task['grid_queue_id'] = line.split()[-1].strip('.')
+                qid = line.split()[-1]
+                if task['task_id'] == 'pilot' and 'pilot_ids' in task:
+                    qid = qid.split('.')[0]
+                elif qid.endswith('.'):
+                    qid += '0'
+                grid_queue_id.append(qid)
+        task['grid_queue_id'] = ','.join(grid_queue_id)
 
     @run_on_executor
     def get_grid_status(self):
@@ -181,7 +191,8 @@ class condor(grid.BaseGrid):
         """
         ret = {}
         cmd = ['condor_q',getpass.getuser(),'-af:j','jobstatus','cmd']
-        out = subprocess.check_output(cmd)
+        out = subprocess.check_output(cmd, universal_newlines=True)
+        print('get_grid_status():',out)
         for line in out.split('\n'):
             if not line.strip():
                 continue

@@ -36,14 +36,19 @@ def send_through_pilot(func):
             # mq can't be pickled, so remove temporarily
             mq = self.cfg.config['options']['message_queue']
             del self.cfg.config['options']['message_queue']
+            print("")
+            print('config',dict(self.cfg.config))
+            print('args',args)
+            print('kwargs',kwargs)
             try:
                 send.put((task_id,func.__name__,self.cfg.config,args,kwargs))
                 ret = recv.get()
-                if isinstance(ret, Exception):
-                    raise ret
-                elif len(ret) == 2:
-                    new_options, ret = ret
-                    self.cfg.config['options'] = new_options
+                if ret:
+                    if isinstance(ret, Exception):
+                        raise ret
+                    elif len(ret) == 2:
+                        new_options, ret = ret
+                        self.cfg.config['options'] = new_options
             finally:
                 self.cfg.config['options']['message_queue'] = mq
             return ret
@@ -227,14 +232,17 @@ class ServerComms:
 
     def uploadLog(self):
         """Upload log file"""
+        logging.getLogger().handlers[0].flush()
         self._upload_logfile('stdlog', os.path.abspath(constants['stdlog']))
 
     def uploadErr(self):
         """Upload stderr file"""
+        sys.stderr.flush()
         self._upload_logfile('stderr', os.path.abspath(constants['stderr']))
 
     def uploadOut(self):
         """Upload stdout file"""
+        sys.stderr.flush()
         self._upload_logfile('stdout', os.path.abspath(constants['stdout']))
 
     def update_pilot(self, pilot_id, **kwargs):

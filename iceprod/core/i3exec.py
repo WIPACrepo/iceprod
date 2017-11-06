@@ -157,7 +157,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logger.warn('finished running normally; exiting...')
 
-def runner(config, url, debug=False, offline=False, offline_transfer=False):
+def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=False):
     """Run a config.
 
     #. Set some default options if not set in configuration.
@@ -178,6 +178,7 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
     Args:
         config (`iceprod.core.dataclasses.Job`): Dataset configuration
         url (str): URL to server
+        rpc (:py:class:`iceprod.core.exe_json.ServerComms`): RPC object
         debug (bool): (optional) turn on debug logging
         offline (bool): (optional) enable offline mode
         offline_transfer (bool): (optional) enable/disable offline data transfers
@@ -252,20 +253,21 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
             resource_thread.start()
 
     # make exe Config
-    cfg = iceprod.core.exe.Config(config=config)
+    cfg = iceprod.core.exe.Config(config=config,rpc=rpc)
+    rpc.cfg = cfg
 
     # set up global env, based on config['options'] and config.steering
     env_opts = cfg.parseObject(config['options'], {})
     stats = {}
     try:
-        with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
-            logger.warn("config options: %r",config['options'])
-
+        try:
             # keep track of the start time
             start_time = time.time()
 
-            # find tasks to run
-            try:
+            with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
+                logger.warn("config options: %r",config['options'])
+
+                # find tasks to run
                 if 'task' in config['options']:
                     logger.warn('task specified: %r',config['options']['task'])
                     # run only this task name or number
@@ -296,27 +298,28 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
                         raise Exception('cannot find specified task')
                     # finish task
                     if not offline:
-                        rpc.finishtask(cfg, env['stats'], start_time=start_time)
+                        rpc.finish_task(env['stats'], start_time=start_time)
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
                         iceprod.core.exe.runtask(cfg, env, task)
                 else:
                     raise Exception('task to run not specified')
-            except Exception as e:
-                logger.error('task failed, exiting without running completion steps.',
-                             exc_info=True)
-                # set task status on server
-                if not offline:
-                    try:
-                        rpc.taskerror(cfg, stats=env['stats'],
-                                      start_time=start_time, reason=str(e))
-                    except Exception as e:
-                        logger.error(e)
-                    # forcibly turn on logging, so we can see the error
-                    config['options']['upload'] = 'logging'
-                raise
-    
+
+        except Exception as e:
+            logger.error('task failed, exiting without running completion steps.',
+                         exc_info=True)
+            # set task status on server
+            if not offline:
+                try:
+                    rpc.task_error(stats=env['stats'],
+                                   start_time=start_time, reason=str(e))
+                except Exception as e:
+                    logger.error(e)
+                # forcibly turn on logging, so we can see the error
+                config['options']['upload'] = 'logging'
+            raise
+
     finally:
         # check resources
         if offline and resources:
@@ -342,19 +345,19 @@ def runner(config, url, debug=False, offline=False, offline_transfer=False):
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        rpc.uploadLog(cfg)
-                        rpc.uploadErr(cfg)
-                        rpc.uploadOut(cfg)
+                        rpc.uploadLog()
+                        rpc.uploadErr()
+                        rpc.uploadOut()
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        rpc.uploadLog(cfg)
+                        rpc.uploadLog()
                     elif up.startswith('err'):
                         # upload err files
-                        rpc.uploadErr(cfg)
+                        rpc.uploadErr()
                     elif up.startswith('out'):
                         # upload out files
-                        rpc.uploadOut(cfg)
+                        rpc.uploadOut()
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 

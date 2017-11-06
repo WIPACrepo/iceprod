@@ -203,6 +203,7 @@ class queue(_Methods_Base):
                         'submit_time': ret[task_id]['status_changed'],
                         'submit_dir': ret[task_id]['submit_dir'],
                     })
+            logger.info("***********queued tasks: %r", task_ret)
         except Exception:
             logger.info('error getting grid tasks', exc_info=True)
             raise
@@ -337,6 +338,33 @@ class queue(_Methods_Base):
         sql = 'update task set submit_dir = ? '
         sql += ' where task_id = ?'
         bindings = (submit_dir,task)
+        yield self.parent.db.query(sql, bindings)
+        if self._is_master():
+            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+            sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+            bindings3 = (master_update_history_id,'task',task,nowstr())
+            try:
+                yield self.parent.db.query(sql3, bindings3)
+            except Exception:
+                logger.info('error updating master_update_history',
+                            exc_info=True)
+        else:
+            yield self._send_to_master(('task',task,nowstr(),sql,bindings))
+
+    @tornado.gen.coroutine
+    def queue_set_grid_queue_id(self, task, grid_queue_id):
+        """
+        Set the grid_queue_id of a task.
+
+        Args:
+            task (str): task_id
+            grid_queue_id (str): Grid queue id
+        """
+        if not task:
+            raise Exception('No task')
+        sql = 'update task set grid_queue_id = ? '
+        sql += ' where task_id = ?'
+        bindings = (grid_queue_id,task)
         yield self.parent.db.query(sql, bindings)
         if self._is_master():
             master_update_history_id = yield self.parent.db.increment_id('master_update_history')

@@ -19,24 +19,31 @@ import requests
 import psutil
 
 # add iceprod to PYTHONPATH
-sys.path.insert(0,os.getcwd())
-sys.path.insert(0,os.path.abspath(os.path.basename(__file__)))
+curdir = os.getcwd()
+integration_dir = os.path.dirname(os.path.abspath(__file__))
+iceprod_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0,curdir)
+sys.path.insert(0,iceprod_dir)
+sys.path.insert(0,integration_dir)
 if 'PYTHONPATH' in os.environ:
-    os.environ['PYTHONPATH'] = os.getcwd()+':'+os.environ['PYTHONPATH']
+    os.environ['PYTHONPATH'] = '{}:{}:{}:{}'.format(integration_dir,iceprod_dir,curdir,os.environ['PYTHONPATH'])
 else:
-    os.environ['PYTHONPATH'] = os.getcwd()
+    os.environ['PYTHONPATH'] = '{}:{}:{}'.format(integration_dir,iceprod_dir,curdir)
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('integration_tests')
 
 from iceprod.core.jsonRPCclient import JSONRPC
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('datasets', type=str, nargs='?', default='*')
+parser.add_argument('-p','--port',type=int, default=37284, help='iceprod port')
+parser.add_argument('--pilots', action='store_true', help='submit pilot jobs')
+parser.add_argument('datasets', action='append', nargs='?')
 args = parser.parse_args()
+if args.datasets and args.datasets[0] is None:
+    args.datasets = []
 
-curdir = os.getcwd()
 tmpdir = tempfile.mkdtemp(dir=curdir)
 os.chdir(tmpdir)
 os.environ['I3PROD'] = tmpdir
@@ -53,7 +60,8 @@ def cleanup():
     except Exception:
         pass
     os.chdir(curdir)
-    shutil.rmtree(tmpdir)
+    if os.path.exists(tmpdir):
+        shutil.rmtree(tmpdir)
 
 # handle any signals
 def handler1(signum, frame):
@@ -65,18 +73,33 @@ signal.signal(signal.SIGQUIT, handler1)
 signal.signal(signal.SIGINT, handler1)
 
 # start testing
-logger.warn('starting...')
+logger.info('starting...')
+
+site_temp = os.path.join(tmpdir,'site_temp')
+os.mkdir(site_temp)
 
 # server config
-port = 37284
+port = args.port
 cfg = {
+    "modules":{
+        "master_updater":False,
+    },
+    "schedule":{
+        "buffer_jobs_tasks":"every 1 minutes",
+    },
     "queue":{
         "a":{
             "type":"condor",
-            "tasks_on_queue":[10,10],
-            "pilots_on_queue":[10,10],
+            "description":"test",
+            "tasks_on_queue":[10,20,10],
+            "pilots_on_queue":[10,20,10],
+            "software_dir":os.environ['ICEPRODROOT'],
+            "iceprod_dir":iceprod_dir
         },
-        "software_dir":curdir,
+        "queue_interval":30,
+        "submit_pilots":args.pilots,
+        "submit_dir":os.path.join(tmpdir,'submit'),
+        "site_temp":site_temp,
     },
     "system":{
         "ssl":False,
@@ -92,7 +115,7 @@ with open('etc/iceprod_config.json','w') as f:
     json.dump(cfg,f)
 
 # start iceprod server instance
-iceprod_server = subprocess.Popen([os.path.join(curdir,'bin/iceprod_server.py'),'-n'])
+iceprod_server = subprocess.Popen([os.path.join(iceprod_dir,'bin/iceprod_server.py'),'-n'],cwd=tmpdir)
 time.sleep(5)
 if iceprod_server.poll() is not None:
     cleanup()
@@ -107,31 +130,27 @@ try:
 
     client = JSONRPC('http://localhost:%d/jsonrpc'%port,passkey='passkey')
     def submit_dataset(cfg):
-        try:
-            return client.submit_dataset(cfg, njobs=10)
-        except Exception:
-            raise Exception('JSONRPC failure')
+        return client.submit_dataset(cfg, njobs=10)
     def wait_for_dataset(dataset_id):
         logger.info('waiting on dataset %s',dataset_id)
         while True:
-            try:
-                tasks = client.public_get_number_of_tasks_in_each_state(dataset_id)
-            except Exception:
-                raise Exception('JSONRPC failure')
+            tasks = {'complete':0,'failed':0,'suspended':0}
+            tasks.update(client.public_get_number_of_tasks_in_each_state(dataset_id))
             if tasks['complete'] == 10:
                 return
             if tasks['failed'] | tasks['suspended'] > 1:
                 raise Exception('dataset failed')
             time.sleep(60)
-            print('.',end='')
 
     # submit datasets
     dataset_ids = []
-    for dataset in glob.glob(args.datasets):
-        if dataset.startswith('_') or not dataset.endswith('.py'):
+    files = glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),'*.json'))
+    for dataset in files:
+        if args.datasets and not any(x in dataset for x in args.datasets):
             continue
-        m = importlib.import_module(dataset)
-        dataset_ids.append(submit_dataset(m.config))
+        logger.info('starting dataset %s', os.path.basename(dataset))
+        cfg = json.load(open(dataset))
+        dataset_ids.append(submit_dataset(cfg))
 
     # wait for successful completion of datasets
     for d in dataset_ids:
@@ -139,4 +158,4 @@ try:
 finally:
     cleanup()
 
-logger.warn('success!')
+logger.info('success!')

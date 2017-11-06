@@ -38,7 +38,7 @@
 <table>
 <tr>
 {% if tasks %}
-  {%for k in tasks.values()[0] %}
+  {%for k in list(tasks.values())[0] %}
     <th>{{ k }}</th>
   {% end %}
 {% end %}

@@ -1,0 +1,321 @@
+{
+  "categories": [],
+  "dataset": 30007,
+  "description": "MCPEs for systematics IC86.2016 neutrino-generator LE NuMu with weighted spectrum of E^-2, using SPICE-Lea CLSim. Angular range of 0. deg < theta < 180. deg and energy range of 10^2 GeV < Enu < 5 x 10^3 GeV.",
+  "difplus": null,
+  "options": {
+  },
+  "parent_id": 41,
+  "steering": {
+    "batchsys": null,
+    "data": [],
+    "parameters": {
+      "abs::0": 1,
+      "abs::1": 1,
+      "abs::2": 1.1,
+      "abs::3": -0.7,
+      "category": "neutrino-generator",
+      "CORSIKA::seed": "$eval($eval($(dataset)*100000 + $(job))%100000000)",
+      "DOMefficiency::0": 1.089,
+      "DOMefficiency::1": 0.99,
+      "DOMefficiency::2": 0.891,
+      "DOMefficiency::high": "$(DOMefficiency::0)",
+      "gcdfile": "/cvmfs/icecube.opensciencegrid.org/data/GCD/GeoCalibDetectorStatus_2016.$steering(mjd_16)_V0.i3.gz",
+      "geometry": "IC86.2016",
+      "IceModel": "SpiceLea",
+      "IceModelLocation": "/cvmfs/icecube.opensciencegrid.org/data/icevariations/clsim-4.0.5/$steering(IceModelTarball::$(iter))",
+      "IceModelTarball::0": "base",
+      "IceModelTarball::1": "ellipse-scat.1",
+      "IceModelTarball::2": "ellipse-abs.1",
+      "IceModelTarball::3": "ellipse-abs-scat.m071",
+      "MCPrescale": 500,
+      "mctype": "nugen_numu",
+      "mjd_16": "57531",
+      "nevents": 100,
+      "NUGEN::emax": "5e3",
+      "NUGEN::emin": "1e2",
+      "NUGEN::flavor": "NuMu",
+      "NUGEN::gamma": 2,
+      "NUGEN::zenithmax": 180,
+      "NUGEN::zenithmin": 90,
+      "outfile_base": "$sprintf('%s_%s_mcpes.%06d.%06d',$steering(geometry),$steering(mctype),$(dataset),$(job))",
+      "outfile::0": "$sprintf('%s.%s',$steering(outfile_base),$steering(IceModelTarball::0))",
+      "outfile::1": "$sprintf('%s.%s',$steering(outfile_base),$steering(IceModelTarball::1))",
+      "outfile::2": "$sprintf('%s.%s',$steering(outfile_base),$steering(IceModelTarball::2))",
+      "outfile::3": "$sprintf('%s.%s',$steering(outfile_base),$steering(IceModelTarball::3))",
+      "RunID": "$eval($eval($(dataset)*100000 + $(job)) % 100000000 + 1)",
+      "scat::0": 1,
+      "scat::1": 1.1,
+      "scat::2": 1,
+      "scat::3": -0.7,
+      "ScriptsURL": "http://prod-exe.icecube.wisc.edu/svn/projects/filterscripts/releases/V17-04-01/resources/scripts/",
+      "seed": "$(dataset)",
+      "subdirectory": "$sprintf('%07d-%07d',$eval($(job)//1000*1000),$eval($(job)//1000*1000+999))",
+      "TARGET::2016": "gsiftp://gridftp.ifh.de/pnfs/ifh.de/acs/grid/icecube/data/sim/IceCube/2016/generated/$(category)/mcpes/$(dataset)/$(subdirectory)",
+      "weighted": "weighted",
+      "year": 2016
+    },
+    "resources": [],
+    "system": {
+    }
+  },
+  "tasks": [
+    {
+      "batchsys": null,
+      "classes": [],
+      "data": [],
+      "depends": [],
+      "name": "background",
+      "parameters": {
+      },
+      "projects": [],
+      "requirements": {
+        "disk": 20
+      },
+      "resources": [],
+      "trays": [
+        {
+          "classes": [],
+          "data": [],
+          "iterations": 1,
+          "modules": [
+            {
+              "args": {
+                "corsikaName": "dcorsika",
+                "CORSIKAseed": "$steering(CORSIKA::seed)",
+                "corsikaVersion": "v6960-5comp",
+                "EnableHistogram": true,
+                "eprimarymax": "1e11",
+                "eprimarymin": 600,
+                "gcdfile": "$(gcdfile)",
+                "HistogramFilename": "histo.pkl",
+                "MakeFIFO": false,
+                "nproc": "$(jobs_submitted)",
+                "nshowers": "$eval($steering(nevents)*30)",
+                "outputfile": "corsika_bg.i3.gz",
+                "oversampling": 4,
+                "procnum": "$(job)",
+                "PropagateMuons": false,
+                "ranpri": 2,
+                "seed": "$steering(seed)",
+                "skipoptions": [
+                  "compress"
+                ],
+                "summaryfile": "bgsummary.xml",
+                "UsePipe": false
+              },
+              "classes": [],
+              "data": [
+                {
+                  "compression": false,
+                  "local": "corsika_bg.i3.gz",
+                  "movement": "output",
+                  "remote": "",
+                  "type": "job_temp"
+                }
+              ],
+              "env_clear": true,
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "name": "",
+              "parameters": {
+              },
+              "projects": [],
+              "resources": [],
+              "running_class": "icecube.simprod.modules.CorsikaGenerator",
+              "src": ""
+            }
+          ],
+          "name": "bgcorsika",
+          "parameters": {
+          },
+          "projects": [],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "batchsys": null,
+      "classes": [],
+      "data": [],
+      "depends": [],
+      "name": "generate",
+      "parameters": {
+      },
+      "projects": [],
+      "requirements": {
+        "disk": 20
+      },
+      "resources": [],
+      "trays": [
+        {
+          "classes": [],
+          "data": [],
+          "iterations": 1,
+          "modules": [
+            {
+              "args": {
+                "EnableHistogram": true,
+                "FromEnergy": "$steering(NUGEN::emin)",
+                "gamma": "$steering(NUGEN::gamma)",
+                "gcdfile": "$(gcdfile)",
+                "HistogramFilename": "histo.pkl",
+                "mjd": "$(mjd_16)",
+                "nevents": "$steering(nevents)",
+                "nproc": "$(jobs_submitted)",
+                "NuFlavor": "$steering(NUGEN::flavor)",
+                "outputfile": "nugen.i3.gz",
+                "procnum": "$(job)",
+                "seed": "$steering(seed)",
+                "summaryfile": "summary.xml",
+                "ToEnergy": "$steering(NUGEN::emax)"
+              },
+              "classes": [],
+              "data": [
+                {
+                  "compression": false,
+                  "local": "nugen.i3.gz",
+                  "movement": "output",
+                  "remote": "",
+                  "type": "job_temp"
+                }
+              ],
+              "env_clear": true,
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "name": "",
+              "parameters": {
+              },
+              "projects": [],
+              "resources": [],
+              "running_class": "icecube.simprod.modules.nugen.NuGen",
+              "src": ""
+            }
+          ],
+          "name": "nugen",
+          "parameters": {
+          },
+          "projects": [],
+          "resources": []
+        }
+      ]
+    },
+    {
+      "batchsys": null,
+      "classes": [],
+      "data": [
+        {
+          "compression": false,
+          "local": "nugen.i3.gz",
+          "movement": "input",
+          "remote": "",
+          "type": "job_temp"
+        },
+        {
+          "compression": false,
+          "local": "corsika_bg.i3.gz",
+          "movement": "input",
+          "remote": "",
+          "type": "job_temp"
+        }
+      ],
+      "depends": [
+        "background",
+        "generate"
+      ],
+      "name": "hits",
+      "parameters": {
+      },
+      "projects": [],
+      "requirements": {
+        "gpu": 1,
+        "memory": 2
+      },
+      "resources": [],
+      "trays": [
+        {
+          "classes": [],
+          "data": [
+            {
+              "compression": false,
+              "local": "hits_$(iter).i3.gz",
+              "movement": "output",
+              "remote": "",
+              "type": "job_temp"
+            }
+          ],
+          "iterations": 4,
+          "modules": [
+            {
+              "args": {
+                "efficiency": "$steering(DOMefficiency::high)",
+                "EnableHistogram": true,
+                "gcdfile": "$(gcdfile)",
+                "HistogramFilename": "histo.pkl",
+                "IceModel": "$steering(IceModel)",
+                "IceModelLocation": "$steering(IceModelLocation)",
+                "inputfilelist": [
+                  "nugen.i3.gz"
+                ],
+                "nproc": "$(jobs_submitted)",
+                "outputfile": "signalhits.i3",
+                "oversize": 1,
+                "procnum": "$(job)",
+                "RunMPHitFilter": "yes",
+                "seed": "$steering(seed)",
+                "summaryfile": "summary.xml",
+                "TotalEnergyToProcess": 1000000,
+                "UseGPUs": true
+              },
+              "classes": [],
+              "data": [
+              ],
+              "env_clear": true,
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "name": "clsim",
+              "parameters": {
+              },
+              "projects": [],
+              "resources": [],
+              "running_class": "icecube.simprod.modules.ClSim",
+              "src": ""
+            },
+            {
+              "args": {
+                "backgroundfile": "corsika_bg.i3.gz",
+                "efficiency": "$steering(DOMefficiency::high)",
+                "gcdfile": "$(gcdfile)",
+                "HistogramFilename": "histo.pkl",
+                "IceModel": "$steering(IceModel)",
+                "IceModelLocation": "$steering(IceModelLocation)",
+                "inputfile": "signalhits.i3",
+                "nproc": "$(jobs_submitted)",
+                "outputfile": "hits_$(iter).i3.gz",
+                "procnum": "$(job)",
+                "seed": "$steering(seed)",
+                "TotalEnergyToProcess": 1000000,
+                "UseGPUs": true
+              },
+              "classes": [],
+              "data": [
+              ],
+              "env_clear": true,
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "name": "polyplopia",
+              "parameters": {
+              },
+              "projects": [],
+              "resources": [],
+              "running_class": "icecube.simprod.modules.PolyplopiaModule",
+              "src": ""
+            }
+          ],
+          "name": "clsim",
+          "parameters": {
+          },
+          "projects": [],
+          "resources": []
+        }
+      ]
+    }
+  ],
+  "version": 3
+}
