@@ -85,13 +85,11 @@ def listify(lines,details=False,dotfiles=False):
     return out
 
 class GridFTP(object):
-    """Asyncronous GridFTP interface to command line client.
-       Designed to hide the complex stuff and mimic tornado http downloads.
+    """GridFTP interface to command line client.
 
        Example:
            GridFTP.get('gsiftp://data.icecube.wisc.edu/file',
-                       callback=endfunc,
-                       streaming_callback=streamfunc)
+                       filename='/path/to/file')
     """
 
     _timeout = 1200 # 20 min default timeout
