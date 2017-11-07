@@ -37,8 +37,9 @@ from iceprod.core.jsonRPCclient import JSONRPC
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-p','--port',type=int, default=37284, help='iceprod port')
+parser.add_argument('-p','--port', type=int, default=37284, help='iceprod port')
 parser.add_argument('--pilots', action='store_true', help='submit pilot jobs')
+parser.add_argument('--timeout', type=int, default=3600, help='test timeout')
 parser.add_argument('datasets', action='append', nargs='?')
 args = parser.parse_args()
 if args.datasets and args.datasets[0] is None:
@@ -115,6 +116,7 @@ with open('etc/iceprod_config.json','w') as f:
     json.dump(cfg,f)
 
 # start iceprod server instance
+start_time = time.time()
 iceprod_server = subprocess.Popen([os.path.join(iceprod_dir,'bin/iceprod_server.py'),'-n'],cwd=tmpdir)
 time.sleep(5)
 if iceprod_server.poll() is not None:
@@ -141,6 +143,8 @@ try:
             if tasks['failed'] | tasks['suspended'] > 1:
                 raise Exception('dataset failed')
             time.sleep(60)
+            if time.time()-start_time > args.timeout:
+                raise Exception('over timeout limit')
 
     # submit datasets
     dataset_ids = []
