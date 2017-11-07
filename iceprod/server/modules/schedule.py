@@ -110,6 +110,7 @@ class schedule(module.module):
 
         config = self.cfg['schedule']
         self.scheduler.schedule(config['buffer_jobs_tasks'], self.modules['db']['queue_buffer_jobs_tasks'])
+        self.scheduler.schedule(config['dataset_status_monitoring'], self.modules['db']['cron_dataset_status_monitoring'])
         self.scheduler.schedule(config['check_iceprod'], master_grid.check_iceprod)
         self.scheduler.schedule(config['grid_metrics'], master_grid.metrics)
 

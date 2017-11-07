@@ -492,3 +492,24 @@ class cron(_Methods_Base):
                 bindings = (task_log_id,task_id,'stderr',data)
                 ret = yield self.parent.db.query(sql, bindings)
                 yield self._send_to_master(('task_log',task_log_id,now,sql,bindings))
+
+    @tornado.gen.coroutine
+    def cron_dataset_status_monitoring(self):
+        """
+        Monitor all datasets for job/task status summary.
+        """
+        sql = 'select dataset_id, status, count(*) from job group by dataset_id,status'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        for dataset_id, status, num in ret:
+            dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+            self.parent.statsd.gauge('datasets.{}.jobs.{}'.format(dataset_num,status),
+                                     count=num)
+
+        sql = 'select dataset_id, name, task_status, count(*) from search group by dataset_id,name,task_status'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        for dataset_id, name, status, num in ret:
+            dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+            self.parent.statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status),
+                                     count=num)

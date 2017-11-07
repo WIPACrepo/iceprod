@@ -444,7 +444,7 @@ class BaseGrid(object):
                 for status in datasets[d][name]:
                     dataset_num = GlobalID.localID_ret(d,type='int')
                     stat_name = 'datasets.'+str(dataset_num)+'.'+name+'.'+status
-                    self.statsd.gauge(stat_name, datasets[d][name][status])
+                    self.statsd.incr(stat_name, datasets[d][name][status])
 
     @run_on_executor
     def _delete_dirs(self, dirs):
