@@ -95,7 +95,7 @@ class Resources:
             self.lookup_intervals = {
                 'children':60,
                 'cpu':1,
-                'gpu':1,
+                'gpu':30,
                 'memory':1,
                 'disk':180,
                 'time':1,
