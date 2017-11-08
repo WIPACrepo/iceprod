@@ -10,6 +10,7 @@ import base64
 import zlib
 import logging
 
+logger = logging.getLogger('jsonUtil')
 
 class json_compressor:
     """Used for files and other large things sent over json.
@@ -159,6 +160,7 @@ def objToJSON(obj):
         if name in JSONConverters:
             return {'__jsonclass__':[name,JSONConverters[name].dumps(obj)]}
         else:
+            logger.warn('name: %s, obj: %r', name, obj)
             raise Exception('Cannot encode %s class to JSON'%name)
 
 def JSONToObj(obj):
