@@ -254,7 +254,8 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
 
     # make exe Config
     cfg = iceprod.core.exe.Config(config=config,rpc=rpc)
-    rpc.cfg = cfg
+    if rpc:
+        rpc.cfg = cfg
 
     # set up global env, based on config['options'] and config.steering
     env_opts = cfg.parseObject(config['options'], {})
