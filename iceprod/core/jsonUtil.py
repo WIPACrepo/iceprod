@@ -159,7 +159,7 @@ def objToJSON(obj):
         if name in JSONConverters:
             return {'__jsonclass__':[name,JSONConverters[name].dumps(obj)]}
         else:
-            return obj
+            raise Exception('Cannot encode %s class to JSON'%name)
 
 def JSONToObj(obj):
     ret = obj
