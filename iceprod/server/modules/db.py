@@ -615,7 +615,7 @@ if MySQLdb:
             for row in rows:
                 r = []
                 for obj in row:
-                    if isinstance(bytes):
+                    if isinstance(obj, bytes):
                         try:
                             r.append(obj.decode('utf-8'))
                         except Exception:
