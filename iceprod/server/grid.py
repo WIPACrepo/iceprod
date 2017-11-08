@@ -693,6 +693,7 @@ class BaseGrid(object):
         if 'x509proxy' in self.cfg['queue'] and self.cfg['queue']['x509proxy']:
             config['options']['x509'] = os.path.basename(self.cfg['queue']['x509proxy'])
             src = self.cfg['queue']['x509proxy']
+            logger.info('submit_dir %r  x509 %r', task['submit_dir'], config['options']['x509'])
             dest = os.path.join(task['submit_dir'],config['options']['x509'])
             try:
                 os.symlink(src,dest)
