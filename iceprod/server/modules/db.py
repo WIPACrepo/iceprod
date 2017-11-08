@@ -609,13 +609,29 @@ if MySQLdb:
             except MySQLdb.MySQLError:
                 raise # just kill for other db errors
 
+        @staticmethod
+        def _convert_to_unicode(rows):
+            ret = []
+            for row in rows:
+                r = []
+                for obj in row:
+                    if isinstance(bytes):
+                        try:
+                            r.append(obj.decode('utf-8'))
+                        except Exception:
+                            r.append(obj)
+                    else:
+                        r.append(obj)
+                ret.append(r)
+            return ret
+
         def _db_read(self, conn, sql, bindings):
             """Do a read query from the database"""
             ret = None
             try:
                 cur = conn.cursor()
                 self._db_query(cur,sql,bindings)
-                ret = cur.fetchall()
+                ret = self._convert_to_unicode(cur.fetchall())
             except Exception:
                 logger.warning('error reading', exc_info=True)
                 try:
