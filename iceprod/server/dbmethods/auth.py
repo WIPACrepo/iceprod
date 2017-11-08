@@ -65,6 +65,8 @@ class auth(_Methods_Base):
         """
         ret = yield self.auth_get_site_auth(site_id)
         if key != ret:
+            logger.info('trying to authorize with %r, but site %s has key %r',
+                        key, site_id, ret)
             raise Exception("key does not match")
 
     @memcache(size=4096, ttl=300)
