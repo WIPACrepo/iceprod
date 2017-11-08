@@ -676,7 +676,7 @@ if MySQLdb:
                 if table_name+'_offset' in self.tables['setting']:
                     # global id
                     self._db_query(cur,'select '+table_name+'_offset from setting',tuple())
-                    ret = cur.fetchall()
+                    ret = self._convert_to_unicode(cur.fetchall())
                     site_id = self.cfg['site_id']
                     old_id = ret[0][0]
                     old_id = GlobalID.localID_ret(old_id,type='int')
@@ -686,7 +686,7 @@ if MySQLdb:
                     # local id
                     cur = conn.cursor()
                     self._db_query(cur,'select '+table_name+'_last from setting',tuple())
-                    ret = cur.fetchall()
+                    ret = self._convert_to_unicode(cur.fetchall())
                     old_id = ret[0][0]
                     new_id = GlobalID.int2char(GlobalID.char2int(old_id)+1)
                     self._db_query(cur,'update setting set '+table_name+'_last = ?',(new_id,))
