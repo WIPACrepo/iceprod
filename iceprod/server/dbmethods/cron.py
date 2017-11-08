@@ -403,17 +403,17 @@ class cron(_Methods_Base):
         for (avail_cpu, avail_gpu, avail_memory, avail_disk, avail_time,
              claim_cpu, claim_gpu, claim_memory, claim_disk, claim_time,
              num) in ret:
-            self.parent.statsd.gauge('pilot_resources.available.cpu', avail_cpu if avail_cpu > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.available.gpu', avail_gpu if avail_gpu > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.available.memory', avail_memory if avail_memory > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.available.disk', avail_disk if avail_disk > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.available.time', avail_time if avail_time > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.claimed.cpu', claim_cpu if claim_cpu > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.claimed.gpu', claim_gpu if claim_gpu > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.claimed.memory', claim_memory if claim_memory > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.claimed.disk', claim_disk if claim_disk > 0 else 0)
-            self.parent.statsd.gauge('pilot_resources.claimed.time', claim_time if claim_time > 0 else 0)
-            self.parent.statsd.gauge('pilot_count', num if num > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.available.cpu', avail_cpu if avail_cpu and avail_cpu > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.available.gpu', avail_gpu if avail_gpu and avail_gpu > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.available.memory', avail_memory if avail_memory and avail_memory > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.available.disk', avail_disk if avail_disk and avail_disk > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.available.time', avail_time if avail_time and avail_time > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.claimed.cpu', claim_cpu if claim_cpu and claim_cpu > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.claimed.gpu', claim_gpu if claim_gpu and claim_gpu > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.claimed.memory', claim_memory if claim_memory and claim_memory > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.claimed.disk', claim_disk if claim_disk and claim_disk > 0 else 0)
+            self.parent.statsd.gauge('pilot_resources.claimed.time', claim_time if claim_time and claim_time > 0 else 0)
+            self.parent.statsd.gauge('pilot_count', num if num and num > 0 else 0)
             break
 
     @tornado.gen.coroutine
