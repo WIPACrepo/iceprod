@@ -136,7 +136,8 @@ class rpc(_Methods_Base):
                     logger.info('after gpus expended, not queueing cpu tasks')
                     break
                 old_queue = queue
-                logger.info('new task for queue: %s', queue)
+                logger.info('new task for queue: %r', queue)
+                logger.info('possible task queues: %r', list(tasks.keys()))
                 if 'gpu' not in queue and not tasks[queue]:
                     queue = 'default'
                 for i,t in enumerate(tasks[queue]):
