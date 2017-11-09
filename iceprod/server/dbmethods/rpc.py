@@ -101,7 +101,7 @@ class rpc(_Methods_Base):
                         resources[k] = row['req_'+k]
                     tasks[row['queue']].append((task_id,row['insert_time'],resources))
                     task_ids.add(task_id)
-                if not tasks:
+                if (not tasks) or all(not t for t in tasks):
                     logger.info('no tasks found matching resources available')
                     raise tornado.gen.Return(None)
 

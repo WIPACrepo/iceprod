@@ -165,7 +165,7 @@ class misc(_Methods_Base):
             ret = yield f
             for row in ret:
                 if not keys:
-                    keys = self._list_to_dict('task_rel',row).keys()
+                    keys = list(self._list_to_dict('task_rel',row).keys())
                     break
             values.extend(ret)
         if keys and values:
