@@ -85,6 +85,8 @@ class rpc(_Methods_Base):
                 if reqs:
                     sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
                     bindings = tuple(reqs.values())
+                    if 'gpu' in reqs:
+                        sql += ' and req_gpu > 0 '
                 else:
                     bindings = tuple()
                 ret = yield self.parent.db.query(sql, bindings)
