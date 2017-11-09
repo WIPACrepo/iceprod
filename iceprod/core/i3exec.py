@@ -43,8 +43,8 @@ import iceprod.core.logger
 
 def handler(signum, frame):
     """Signal handler. Exit on SIGQUIT or SIGINT."""
-    logging.warn('Signal handler called with signal %s' % signum)
-    logging.warn('Exiting...')
+    logging.warning('Signal handler called with signal %s' % signum)
+    logging.warning('Exiting...')
     os._exit(0)
 
 def load_config(cfgfile):

@@ -55,7 +55,7 @@ class GlobalID(object):
     @classmethod
     def int2char(cls,i):
         if not isinstance(i,int) or i < 0: # only deal with positive ints
-            logging.warn('bad input to int2char: %r',i)
+            logging.warning('bad input to int2char: %r',i)
             raise Exception('bad input to int2char')
         out = ''
         while i >= 0:
@@ -66,7 +66,7 @@ class GlobalID(object):
     @classmethod
     def char2int(cls,c):
         if not isinstance(c,str) or len(c) < 1: # only deal with string
-            logging.warn('bad input to char2int: %r',c)
+            logging.warning('bad input to char2int: %r',c)
             raise Exception('bad input to char2int')
         out = -1
         for i,cc in enumerate(reversed(c)):

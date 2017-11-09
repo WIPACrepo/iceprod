@@ -48,7 +48,7 @@ def unicode_to_ascii(obj):
 
 def run(classname, filename=None, args=False, debug=False):
     logging.basicConfig(level=logging.DEBUG if debug else logging.WARN)
-    logging.warn('exe_helper(%s)', classname)
+    logging.warning('exe_helper(%s)', classname)
 
     if not classname:
         raise Exception('classname is missing')

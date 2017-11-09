@@ -201,7 +201,7 @@ class BaseGrid(object):
                     else:
                         tasks_waiting += 1
                 except Exception:
-                    logging.warn('error waiting->reset for %r', t,
+                    logging.warning('error waiting->reset for %r', t,
                                  exc_info=True)
 
         # check the queued status
@@ -215,7 +215,7 @@ class BaseGrid(object):
                     else:
                         tasks_queued += 1
                 except Exception:
-                    logging.warn('error queued->reset for %r', t,
+                    logging.warning('error queued->reset for %r', t,
                                  exc_info=True)
         self.tasks_queued = tasks_queued
 
@@ -230,7 +230,7 @@ class BaseGrid(object):
                     else:
                         tasks_processing += 1
                 except Exception:
-                    logging.warn('error processing->reset for %r', t,
+                    logging.warning('error processing->reset for %r', t,
                                  exc_info=True)
         self.tasks_processing = tasks_processing
 
