@@ -76,7 +76,7 @@ class SiteGlobusProxy(object):
             logger.info('stderr: %s', stderr)
             p.wait()
             if 'voms_vo' in self.cfg and self.cfg['voms_vo']:
-                for line in stdout.split('\n'):
+                for line in stdout.decode('utf-8').split('\n'):
                     if line.startswith('Creating proxy') and line.endswith('Done'):
                         break # this is a good proxy
                 else:
