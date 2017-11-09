@@ -69,7 +69,8 @@ class SiteGlobusProxy(object):
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
-            stdout,stderr = p.communicate(input=self.cfg['passphrase']+'\n')
+            inputbytes = self.cfg['passphrase']+'\n'
+            stdout,stderr = p.communicate(input=inputbytes.encode('utf-8'))
             logger.info('proxy cmd: %r', cmd)
             logger.info('stdout: %s', stdout)
             logger.info('stderr: %s', stderr)
