@@ -85,7 +85,7 @@ class rpc(_Methods_Base):
                 if reqs:
                     sql += 'where '+' and '.join('req_'+k+' <= ?' for k in reqs)
                     bindings = tuple(reqs.values())
-                    if 'gpu' in reqs:
+                    if 'gpu' in reqs and reqs['gpu'] > 0:
                         sql += ' and req_gpu > 0 '
                 else:
                     bindings = tuple()
@@ -127,6 +127,7 @@ class rpc(_Methods_Base):
             now = time.time()
             for task_list in tasks.values():
                 task_list.sort(key=lambda t:task_queue.sched_prio(t[-1],now-t[1]))
+            logger.info('task_list: %r', task_list)
 
             # get only what can match
             new_tasks = {}
