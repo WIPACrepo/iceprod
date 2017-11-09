@@ -146,15 +146,15 @@ class Squid(KwargConfig):
         if self.process:
             raise Exception('Squid already running')
 
-        logger.warn('starting Squid...')
+        logger.warning('starting Squid...')
         self.process = subprocess.Popen([self._cfg['squid_bin'],'-Nzf',self.cfgfile])
         time.sleep(1)
-        logger.warn('Squid running on %d',self._cfg['port'])
+        logger.warning('Squid running on %d',self._cfg['port'])
 
     def stop(self):
         """Stop server"""
         if self.process:
-            logger.warn('stopping Squid...')
+            logger.warning('stopping Squid...')
             self.process.send_signal(signal.SIGTERM)
             self.process = None
             time.sleep(0.5)
@@ -164,7 +164,7 @@ class Squid(KwargConfig):
     def kill(self):
         """Stop server"""
         if self.process:
-            logger.warn('killing Squid...')
+            logger.warning('killing Squid...')
             self.process.send_signal(signal.SIGINT)
             self.process = None
         else:
@@ -173,7 +173,7 @@ class Squid(KwargConfig):
     def restart(self):
         """Restart (reconfigure) the server"""
         if self.process:
-            logger.warn('reconfiguring Squid...')
+            logger.warning('reconfiguring Squid...')
             self.process.send_signal(signal.SIGHUP)
             time.sleep(0.5)
         else:
@@ -182,7 +182,7 @@ class Squid(KwargConfig):
     def logrotate(self):
         """Rotate log files"""
         if self.process:
-            logger.warn('rotating Squid log files...')
+            logger.warning('rotating Squid log files...')
             try:
                 self.process.send_signal(signal.SIGUSR1)
             except Exception as e:

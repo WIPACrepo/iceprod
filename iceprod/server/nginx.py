@@ -36,7 +36,7 @@ def rotate(filename):
     if os.path.exists(filename):
         os.rename(filename,filename+'_'+date)
     else:
-        logger.warn('cannot rotate, file does not exist: %r', filename)
+        logger.warning('cannot rotate, file does not exist: %r', filename)
 
 def deleteoldlogs(filename,days=30):
     """Delete old log files"""
@@ -137,7 +137,7 @@ class Nginx(object):
             if not isinstance(s,String):
                 raise Exception('parameter name %s is not a string'%(str(s)))
             if not s in self._cfg:
-                logger.warn('%s is not a valid arg',s)
+                logger.warning('%s is not a valid arg',s)
                 continue
             t = self._cfg_types[s]
             if t in ('str','file','dir'):
@@ -267,35 +267,35 @@ class Nginx(object):
         if self.process:
             raise Exception('Nginx already running')
 
-        logger.warn('starting Nginx...')
+        logger.warning('starting Nginx...')
         self.process = subprocess.Popen([self._cfg['nginx_bin'],'-c',self.cfgfile])
         time.sleep(1)
-        logger.warn('Nginx running on %d, proxying to %d',self._cfg['port'],
+        logger.warning('Nginx running on %d, proxying to %d',self._cfg['port'],
                      self._cfg['proxy_port'])
 
     def stop(self):
         """Stop server"""
         if self.process:
-            logger.warn('stopping Nginx...')
+            logger.warning('stopping Nginx...')
             self.process.send_signal(signal.SIGQUIT)
             self.process = None
             time.sleep(0.5)
         else:
-            logger.warn('Nginx not running')
+            logger.warning('Nginx not running')
 
     def kill(self):
         """Stop server"""
         if self.process:
-            logger.warn('killing Nginx...')
+            logger.warning('killing Nginx...')
             self.process.send_signal(signal.SIGTERM)
             self.process = None
         else:
-            logger.warn('Nginx not running')
+            logger.warning('Nginx not running')
 
     def logrotate(self):
         """Rotate log files"""
         if self.process:
-            logger.warn('rotating Nginx log files...')
+            logger.warning('rotating Nginx log files...')
             try:
                 rotate(self._cfg['access_log'])
                 rotate(self._cfg['error_log'])

@@ -59,11 +59,11 @@ def send_master(cfg, method, session=None, **kwargs):
     response.raise_for_status()
     ret = json_decode(response.content)
     if 'error' in ret:
-        logger.warn('error receiving: %r',ret['error'])
+        logger.warning('error receiving: %r',ret['error'])
         raise Exception('error: %r'%ret['error'])
     elif 'result' in ret:
         raise tornado.gen.Return(ret['result'])
     else:
-        logger.warn('error receiving: no result')
+        logger.warning('error receiving: no result')
         raise Exception('bad response')
     

@@ -73,5 +73,5 @@ def to_log(stream=None, prefix='', level='info'):
                 elif level in ('crit','critical'):
                     logger.critical(s)
                 else:
-                    logger.warn('error printing logging')
+                    logger.warning('error printing logging')
     

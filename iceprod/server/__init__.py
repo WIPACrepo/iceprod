@@ -131,7 +131,7 @@ class KwargConfig(object):
             if not isinstance(s,str):
                 raise Exception('parameter name %s is not a string'%(str(s)))
             if not s in self._cfg:
-                logger.warn('%s is not a valid arg',s)
+                logger.warning('%s is not a valid arg',s)
                 continue
             t = self._cfg_types[s]
             if t in ('str','file','dir'):

@@ -106,7 +106,7 @@ class ServerComms:
                 try:
                     ret.append(dict_to_dataclasses(t))
                 except Exception:
-                    logger.warn('not a Job: %r',t)
+                    logger.warning('not a Job: %r',t)
                     raise
             else:
                 ret.append(t)
@@ -184,7 +184,7 @@ class ServerComms:
             if resources:
                 error_info['resources'] = resources
         except Exception:
-            logger.warn('failed to collect error info', exc_info=True)
+            logger.warning('failed to collect error info', exc_info=True)
             error_info = None
         task_id = self.cfg.config['options']['task_id']
         self.rpc.task_error(task_id=task_id, error_info=error_info)
@@ -214,7 +214,7 @@ class ServerComms:
             if reason:
                 error_info['error_summary'] = reason
         except Exception:
-            logger.warn('failed to collect error info', exc_info=True)
+            logger.warning('failed to collect error info', exc_info=True)
             error_info = None
         if message:
             data = json_compressor.compress(message)

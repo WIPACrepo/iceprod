@@ -243,7 +243,7 @@ class rpc(_Methods_Base):
             if 'time_used' in stats and stats['time_used']:
                 time_used = float(stats['time_used'])
         except Exception:
-            logger.warn('bad time_used', exc_info=True)
+            logger.warning('bad time_used', exc_info=True)
         #if 'hostname' in stats and stats['hostname']:
         #    self.parent.statsd.incr('finish_task.hostname.'+stats['hostname'].replace('.','_'),
         #                            count=int(time_used) if time_used else 1)
@@ -327,7 +327,7 @@ class rpc(_Methods_Base):
             if 'time_used' in error_info and error_info['time_used']:
                 time_used = float(error_info['time_used'])
         except Exception:
-            logger.warn('bad time_used', exc_info=True)
+            logger.warning('bad time_used', exc_info=True)
         #if 'hostname' in error_info and error_info['hostname']:
         #    self.parent.statsd.incr('task_error.hostname.'+error_info['hostname'].replace('.','_'),
         #                            count=int(time_used) if time_used else 1)
@@ -392,7 +392,7 @@ class rpc(_Methods_Base):
                             if r not in task_reqs:
                                 task_reqs[r] = reqs[r]
                     except Exception:
-                        logger.warn('could not decode task_rel requirements: %r',
+                        logger.warning('could not decode task_rel requirements: %r',
                                     row, exc_info=True)
                 sql = 'select dataset_id from search where task_id = ?'
                 bindings = (task_id,)
@@ -480,7 +480,7 @@ class rpc(_Methods_Base):
                     yield self._send_to_master(('task',task_id,now,sql2,bindings2))
                     yield self._send_to_master(('task_stat',task_stat_id,now,sql3,bindings3))
             except Exception:
-                logger.warn('error in task_error', exc_info=True)
+                logger.warning('error in task_error', exc_info=True)
                 raise
 
     @tornado.gen.coroutine
@@ -673,7 +673,7 @@ class rpc(_Methods_Base):
                     depends.append(','.join(task_dep))
                     task_rels.append(task_rel_id)
             except Exception as e:
-                logger.warn('task dependency error', exc_info=True)
+                logger.warning('task dependency error', exc_info=True)
                 raise Exception('Task dependency error')
 
             # start constructing sql
@@ -748,7 +748,7 @@ class rpc(_Methods_Base):
                     else:
                         yield self._send_to_master((sql.split()[2],bindings[0],now,sql,bindings))
             except Exception:
-                logger.warn('submit error', exc_info=True)
+                logger.warning('submit error', exc_info=True)
                 raise
             raise tornado.gen.Return(dataset_id)
 
@@ -858,7 +858,7 @@ class rpc(_Methods_Base):
                     updates_bindings.append((i,groups[ids]['name'],groups[ids]['description'],groups[ids]['priority']))
                 yield self.parent.db.query(updates_sql, updates_bindings)
             except Exception:
-                logger.warn('failed to set groups', exc_info=True)
+                logger.warning('failed to set groups', exc_info=True)
                 raise
 
     @tornado.gen.coroutine
@@ -911,7 +911,7 @@ class rpc(_Methods_Base):
             bindings = (','.join(roles), username)
             yield self.parent.db.query(sql, bindings)
         except Exception:
-            logger.warn('failed to set roles for username %s', username,
+            logger.warning('failed to set roles for username %s', username,
                         exc_info=True)
             raise
 
@@ -981,7 +981,7 @@ class rpc(_Methods_Base):
             try:
                 yield self.parent.service['misc_update_master_db'](*u)
             except Exception:
-                logger.warn('failed to apply update: %r', u, exc_info=True)
+                logger.warning('failed to apply update: %r', u, exc_info=True)
                 raise
 
     @tornado.gen.coroutine

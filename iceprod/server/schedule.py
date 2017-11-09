@@ -401,7 +401,7 @@ class Scheduler(object):
                 return None
         except Exception:
             # invalid cron
-            logger.warn('Invalid cron',exc_info=True)
+            logger.warning('Invalid cron',exc_info=True)
             return None
         else:
             # return time

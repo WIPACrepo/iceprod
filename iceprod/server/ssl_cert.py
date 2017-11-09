@@ -24,7 +24,7 @@ def create_ca(cert_filename,key_filename,days=365,hostname=None):
     """Make a certificate authority and key pair"""
     cert_filename = os.path.abspath(os.path.expandvars(cert_filename))
     key_filename = os.path.abspath(os.path.expandvars(key_filename))
-    logger.warn('making CA cert at %s',cert_filename)
+    logger.warning('making CA cert at %s',cert_filename)
 
     if not (os.path.exists(cert_filename)
             and os.path.exists(key_filename)):
@@ -94,11 +94,11 @@ def create_cert(cert_filename,key_filename,days=365,hostname=None,
     """Make a certificate and key pair"""
     cert_filename = os.path.abspath(os.path.expandvars(cert_filename))
     key_filename = os.path.abspath(os.path.expandvars(key_filename))
-    logger.warn('making cert at %s',cert_filename)
+    logger.warning('making cert at %s',cert_filename)
     if cacert:
         cacert = os.path.abspath(os.path.expandvars(cacert))
         cakey = os.path.abspath(os.path.expandvars(cakey))
-        logger.warn('with CA %s',cacert)
+        logger.warning('with CA %s',cacert)
         if not (os.path.exists(cacert) and os.path.exists(cakey)):
             raise Exception('CA cert does not exist')
 
@@ -213,7 +213,7 @@ def verify_cert(cert_filename,key_filename):
     end = cert.get_notAfter().decode('utf-8')
     logger.debug('end: %r',end)
     if datetime.strptime(end, "%Y%m%d%H%M%SZ") < datetime.utcnow():
-        logger.warn('cert has expired')
+        logger.warning('cert has expired')
         return False
 
     # check matching cert and key
@@ -223,7 +223,7 @@ def verify_cert(cert_filename,key_filename):
     try:
         ctx.check_privatekey()
     except SSL.Error:
-        logger.warn('cert and key do not match')
+        logger.warning('cert and key do not match')
         return False
     else:
         return True

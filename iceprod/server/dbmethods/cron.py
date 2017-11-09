@@ -317,7 +317,7 @@ class cron(_Methods_Base):
                         logger.info('cleaning site_temp %r', dagtemp)
                         yield self._executor_wrapper(partial(functions.delete, dagtemp))
                     except Exception as e:
-                        logger.warn('failed to clean site_temp', exc_info=True)
+                        logger.warning('failed to clean site_temp', exc_info=True)
 
     @tornado.gen.coroutine
     def cron_clean_completed_jobs(self):
@@ -354,7 +354,7 @@ class cron(_Methods_Base):
                         logger.info('cleaning site_temp %r', dagtemp)
                         yield self._executor_wrapper(partial(functions.delete, dagtemp))
                     except Exception as e:
-                        logger.warn('failed to clean site_temp', exc_info=True)
+                        logger.warning('failed to clean site_temp', exc_info=True)
 
     def cron_remove_old_passkeys(self):
         now = nowstr()

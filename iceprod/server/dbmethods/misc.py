@@ -242,7 +242,7 @@ class misc(_Methods_Base):
                     bindings = tuple(values)
                     yield self.parent.db.query(sql, bindings)
         except Exception:
-            logger.warn('error updating tables', exc_info=True)
+            logger.warning('error updating tables', exc_info=True)
             raise
 
     @tornado.gen.coroutine
@@ -272,9 +272,9 @@ class misc(_Methods_Base):
                     return
                 yield self.parent.db.query(sql, bindings)
             except MySQLdb.Error:
-                logger.warn('dropping history for %r', sql, exc_info=True)
+                logger.warning('dropping history for %r', sql, exc_info=True)
             except Exception:
-                logger.warn('error updating master', exc_info=True)
+                logger.warning('error updating master', exc_info=True)
                 raise
             else:
                 master_update_history_id = yield self.parent.db.increment_id('master_update_history')
@@ -283,8 +283,8 @@ class misc(_Methods_Base):
                 try:
                     yield self.parent.db.query(sql2, bindings2)
                 except MySQLdb.Error:
-                    logger.warn('mysql error updating update_history',
+                    logger.warning('mysql error updating update_history',
                                 exc_info=True)
                 except Exception:
-                    logger.warn('error updating update_history', exc_info=True)
+                    logger.warning('error updating update_history', exc_info=True)
                     raise

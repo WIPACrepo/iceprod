@@ -46,7 +46,7 @@ class Client(object):
 
     def open(self):
         """Open the http session"""
-        logger.warn('establish http session for jsonrpc')
+        logger.warning('establish http session for jsonrpc')
         self.__session = requests.Session()
         if 'username' in self.__kwargs and 'password' in self.__kwargs:
             self.__session.auth = (self.__kwargs['username'], self.__kwargs['password'])
@@ -60,7 +60,7 @@ class Client(object):
 
     def close(self):
         """Close the http session"""
-        logger.warn('close jsonrpc http session')
+        logger.warning('close jsonrpc http session')
         self.__session.close()
 
     @classmethod
@@ -95,7 +95,7 @@ class Client(object):
                 data = r.content
                 break
             except Exception:
-                logger.warn('error making jsonrpc request for %s', methodname)
+                logger.warning('error making jsonrpc request for %s', methodname)
                 if self.__backoff and i < 2:
                     # try restarting connection, with backoff
                     self.close()
@@ -109,7 +109,7 @@ class Client(object):
 
         # translate response from json
         if not data:
-            logger.warn('request returned empty string')
+            logger.warning('request returned empty string')
             return None
         try:
             data = json_decode(data)
@@ -118,7 +118,7 @@ class Client(object):
             raise
 
         if 'error' in data:
-            logger.warn('error: %r', data['error'])
+            logger.warning('error: %r', data['error'])
             try:
                 raise Exception('Error %r: %r    %r'%data['error'])
             except Exception:

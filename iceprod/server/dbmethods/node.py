@@ -76,7 +76,7 @@ class node(_Methods_Base):
                     sql = 'update node set last_update=?, stats=? where node_id = ?'
                     bindings = (now,json_encode(stats),node_id)
                 except Exception:
-                    logger.warn('error in node_update()', exc_info=True)
+                    logger.warning('error in node_update()', exc_info=True)
             yield self.parent.db.query(sql, bindings)
             if self._is_master():
                 master_update_history_id = yield self.parent.db.increment_id('master_update_history')
@@ -208,7 +208,7 @@ class node(_Methods_Base):
                     else:
                         resources[k] = grids['resources'][k][0]
         except Exception:
-            logger.warn('error in get_site_resources', exc_info=True)
+            logger.warning('error in get_site_resources', exc_info=True)
             raise
         else:
             raise tornado.gen.Return(resources)

@@ -73,7 +73,7 @@ class queue(_Methods_Base):
                                 queues[k]['resources'] = {}
                     queues = json_encode(queues)
                 except Exception:
-                    logger.warn('set_site_queues(): cannot encode queues to json')
+                    logger.warning('set_site_queues(): cannot encode queues to json')
                     raise
                 sql = 'update site set queues = ? where site_id = ?'
                 bindings = (queues,site_id)
@@ -82,7 +82,7 @@ class queue(_Methods_Base):
                 try:
                     queues = json_encode(queues)
                 except Exception:
-                    logger.warn('set_site_queues(): cannot encode queues to json')
+                    logger.warning('set_site_queues(): cannot encode queues to json')
                     raise
                 sql = 'insert into site (site_id,queues) values (?,?)'
                 bindings = (site_id,queues)
@@ -529,7 +529,7 @@ class queue(_Methods_Base):
                                     task_deps[1].append(tasks[task_rel_ids[d][1]])
                                 depends.append(task_deps)
                         except Exception:
-                            logger.warn('missing dependency when buffering dataset')
+                            logger.warning('missing dependency when buffering dataset')
                             raise
 
                         # make job
@@ -606,7 +606,7 @@ class queue(_Methods_Base):
                         else:
                             yield self._send_to_master((sql.split()[2],bindings[0],now,sql,bindings))
                 except Exception:
-                    logger.warn('error buffering dataset %s', dataset, exc_info=True)
+                    logger.warning('error buffering dataset %s', dataset, exc_info=True)
                     continue
 
     @tornado.gen.coroutine
@@ -673,7 +673,7 @@ class queue(_Methods_Base):
                 sql += 'from task where task_rel_id in (%s)'
                 tasks = {}
                 datasets = {k:{} for k in dataset_prios}
-                for f in self._bulk_select(sql, task_rel_ids):
+                for f in self._bulk_select(sql, task_rel_ids, num=50):
                     for task_id, status, depends, reqs, task_rel_id in (yield f):
                         dataset, task_rel_reqs = task_rel_ids[task_rel_id]
                         tasks[task_id] = {'dataset':dataset, 'status':status}
@@ -799,7 +799,7 @@ class queue(_Methods_Base):
             for row in ret:
                 tmp = self._list_to_dict('search',row)
                 if tmp['dataset_id'] not in dataset_debug:
-                    logger.warn('found a bad dataset: %r', tmp['dataset_id'])
+                    logger.warning('found a bad dataset: %r', tmp['dataset_id'])
                     continue
                 tmp['jobs_submitted'] = dataset_debug[tmp['dataset_id']][0]
                 tmp['debug'] = dataset_debug[tmp['dataset_id']][1]
@@ -819,7 +819,7 @@ class queue(_Methods_Base):
                     logger.info('sql %r',sql)
                     logger.info('bindings %r',bindings)
                     logger.info('ret %r',ret)
-                    logger.warn('failed to find job with known job_id %r for task_id %r',
+                    logger.warning('failed to find job with known job_id %r for task_id %r',
                                 job_ids, list(tasks.keys()))
                     raise Exception('no job_index')
                 for job_id,job_index in ret:

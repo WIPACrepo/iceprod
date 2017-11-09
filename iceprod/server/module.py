@@ -38,7 +38,7 @@ class ElasticClient(object):
             r = self.session.put(self.hostname+name+'/'+index_name, **kwargs)
             r.raise_for_status()
         except Exception:
-            logger.warn('cannot put %s/%s to elasticsearch at %r', name,
+            logger.warning('cannot put %s/%s to elasticsearch at %r', name,
                          index_name, self.hostname, exc_info=True)
             if r:
                 logger.info('%r',r.content)
@@ -70,24 +70,24 @@ class module(object):
         Note that this is not on the io_loop and should not interact
         with other modules.  Add a callback to the io_loop to do so.
         """
-        logger.warn('starting module %s', self.__class__.__name__)
+        logger.warning('starting module %s', self.__class__.__name__)
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
                 self.statsd = StatsClient(self.cfg['statsd'],
                                           prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
             except Exception:
-                logger.warn('failed to connect to statsd: %r',
+                logger.warning('failed to connect to statsd: %r',
                             self.cfg['statsd'], exc_info=True)
 
         if 'elasticsearch' in self.cfg and self.cfg['elasticsearch']:
             try:
                 self.elastic = ElasticClient(self.cfg['elasticsearch'])
             except Exception:
-                logger.warn('failed to connet to elasicsearch: %r',
+                logger.warning('failed to connet to elasicsearch: %r',
                             self.cfg['elasticsearch'], exc_info=True)
 
     def stop(self):
-        logger.warn('stopping module %s', self.__class__.__name__)
+        logger.warning('stopping module %s', self.__class__.__name__)
 
     def kill(self):
-        logger.warn('killing module %s', self.__class__.__name__)
+        logger.warning('killing module %s', self.__class__.__name__)

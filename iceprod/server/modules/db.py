@@ -159,7 +159,7 @@ class DBAPI(object):
             sql = 'insert into setting ('
             sql += ','.join(self.tables['setting'].keys())
             sql += ') values ('
-            sql += ','.join(['?' for _ in self.tables['setting'].keys()])
+            sql += ','.join('?' for _ in self.tables['setting'].keys())
             sql += ')'
             bindings = tuple()
             for key in self.tables['setting']:
@@ -208,7 +208,7 @@ class DBAPI(object):
             ret = self._increment_id_helper(self._inc_id_connection, table_name)
         except DBResetError:
             # connection needs a reset
-            logger.warn('resetting db connection')
+            logger.warning('resetting db connection')
             self._inc_id_connection.close()
             self._inc_id_connection = self._dbsetup()
             ret = self._increment_id_helper(self._inc_id_connection, table_name)
@@ -242,7 +242,7 @@ class DBAPI(object):
                 self._db_write(conn, sql, bindings)
         except DBResetError:
             # connection needs a reset
-            logger.warn('resetting db connection')
+            logger.warning('resetting db connection')
             conn.close()
             conn = self._dbsetup()
             # retry query
@@ -286,7 +286,7 @@ class DBAPI(object):
 try:
     import apsw
 except ImportError:
-    logger.warn('Cannot import apsw. SQLite db not available')
+    logger.warning('Cannot import apsw. SQLite db not available')
 else:
     class SQLite(DBAPI):
         """SQLite 3 implementation of DBAPI"""
@@ -350,7 +350,7 @@ else:
                             cur.execute(query)
                     except apsw.Error:
                         # something went wrong
-                        logger.warn('setup tables error', exc_info=True)
+                        logger.warning('setup tables error', exc_info=True)
                         raise
 
         def _dbsetup(self, dbname=None):
@@ -389,7 +389,7 @@ else:
                     # try again for transient errors, but with random
                     # exponential backoff up to a minute
                     backoff = 0.1*random.uniform(2**(i-1), 2**i)
-                    logger.warn('database busy/locked, backoff %f', backoff)
+                    logger.warning('database busy/locked, backoff %f', backoff)
                     time.sleep(backoff)
                     continue
                 except apsw.Error as e:
@@ -461,11 +461,11 @@ else:
 try:
     import MySQLdb
 except ImportError:
-    logger.warn('Cannot import MySQLdb. Trying pymysql')
+    logger.warning('Cannot import MySQLdb. Trying pymysql')
     try:
         import pymysql as MySQLdb
     except ImportError:
-        logger.warn('Cannot import pymysql. MySQL db not available')
+        logger.warning('Cannot import pymysql. MySQL db not available')
         MySQLdb = None
 if MySQLdb:
     class MySQL(DBAPI):

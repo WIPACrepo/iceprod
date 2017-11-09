@@ -65,10 +65,10 @@ def process_wrapper(func, title, pilot_id='', hostname='', resources={}):
     Resources.set_env(resources)
 
     iceprod.core.logger.new_file(constants['stdlog'])
-    logger.warn('pilot_id: %s', pilot_id)
-    logger.warn('hostname: %s', hostname)
+    logger.warning('pilot_id: %s', pilot_id)
+    logger.warning('hostname: %s', hostname)
     env_str = '\n'.join('    '+k+' = '+os.environ[k] for k in os.environ)
-    logger.warn('environment: \n%s', env_str)
+    logger.warning('environment: \n%s', env_str)
 
     stdout = partial(to_file,sys.stdout,constants['stdout'])
     stderr = partial(to_file,sys.stderr,constants['stderr'])
@@ -115,8 +115,8 @@ class Pilot(object):
         self.running = True
         self.lock = Condition()
 
-        logger.warn('pilot_id: %s', self.pilot_id)
-        logger.warn('hostname: %s', self.hostname)
+        logger.warning('pilot_id: %s', self.pilot_id)
+        logger.warning('hostname: %s', self.hostname)
 
         # hint at resources for pilot
         # don't pass them as raw, because that overrides condor
@@ -141,7 +141,7 @@ class Pilot(object):
         if psutil:
             self.ioloop.add_callback(self.resource_monitor)
         else:
-            logger.warn('no psutil. not checking resource usage')
+            logger.warning('no psutil. not checking resource usage')
 
         # set up signal handler
         def handler(signum, frame):
@@ -206,7 +206,7 @@ class Pilot(object):
                 except psutil.NoSuchProcess:
                     pass
                 except Exception:
-                    logger.warn('error killing process',
+                    logger.warning('error killing process',
                                 exc_info=True)
         processes = active_children()
         for p in processes:
@@ -228,7 +228,7 @@ class Pilot(object):
                     logger.info('exception returned from forward', exc_info=True)
                     ret = e
                 if task_id not in self.tasks:
-                    logger.warn('cannot forward return value')
+                    logger.warning('cannot forward return value')
                 else:
                     self.tasks[task_id]['recv_queue'].put(ret)
         except Exception:
@@ -247,7 +247,7 @@ class Pilot(object):
                 overages = self.resources.check_claims()
                 for task_id in overages:
                     used_resources = self.resources.get_peak(task_id)
-                    logger.warn('kill %r for going over resources: %r',
+                    logger.warning('kill %r for going over resources: %r',
                                 task_id, used_resources)
                     self.clean_task(task_id)
                     message = overages[task_id]
@@ -266,7 +266,7 @@ class Pilot(object):
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
-        logger.warn('pilot monitor exiting')
+        logger.warning('pilot monitor exiting')
 
     @gen.coroutine
     def run(self):
@@ -285,7 +285,7 @@ class Pilot(object):
                     errors -= 1
                     if errors < 1:
                         self.running = False
-                        logger.warn('errors over limit, draining')
+                        logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
                                  errors, exc_info=True)
                     continue
@@ -295,7 +295,7 @@ class Pilot(object):
                     logger.info('no task available')
                     if not self.tasks:
                         self.running = False
-                        logger.warn('no task available, draining')
+                        logger.warning('no task available, draining')
                     break
                 else:
                     for task_config in task_configs:
@@ -305,7 +305,7 @@ class Pilot(object):
                             errors -= 1
                             if errors < 1:
                                 self.running = False
-                                logger.warn('errors over limit, draining')
+                                logger.warning('errors over limit, draining')
                             logger.error('error getting task_id from config')
                             break
                         try:
@@ -317,8 +317,8 @@ class Pilot(object):
                             errors -= 1
                             if errors < 1:
                                 self.running = False
-                                logger.warn('errors over limit, draining')
-                            logger.warn('error claiming resources %s', task_id,
+                                logger.warning('errors over limit, draining')
+                            logger.warning('error claiming resources %s', task_id,
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
@@ -331,8 +331,8 @@ class Pilot(object):
                             errors -= 1
                             if errors < 1:
                                 self.running = False
-                                logger.warn('errors over limit, draining')
-                            logger.warn('error creating task %s', task_id,
+                                logger.warning('errors over limit, draining')
+                            logger.warning('error creating task %s', task_id,
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
@@ -366,7 +366,7 @@ class Pilot(object):
                             errors -= 1
                             if errors < 1:
                                 self.running = False
-                                logger.warn('errors over limit, draining')
+                                logger.warning('errors over limit, draining')
                         self.clean_task(task_id)
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
@@ -390,7 +390,7 @@ class Pilot(object):
         if errors < 1:
             logger.critical('too many errors when running tasks')
         else:
-            logger.warn('cleanly stopping pilot')
+            logger.warning('cleanly stopping pilot')
 
     def create_task(self, config):
         """
@@ -472,7 +472,7 @@ class Pilot(object):
                         except psutil.NoSuchProcess:
                             pass
                         except Exception:
-                            logger.warn('error terminating process',
+                            logger.warning('error terminating process',
                                         exc_info=True)
 
                     def on_terminate(proc):
@@ -487,24 +487,24 @@ class Pilot(object):
                             except psutil.NoSuchProcess:
                                 pass
                             except Exception:
-                                logger.warn('error killing process',
+                                logger.warning('error killing process',
                                             exc_info=True)
                     except Exception:
-                        logger.warn('failed to kill processes',
+                        logger.warning('failed to kill processes',
                                     exc_info=True)
                 task['p'].terminate()
             except Exception:
-                logger.warn('error deleting process', exc_info=True)
+                logger.warning('error deleting process', exc_info=True)
 
             # clean tmpdir
             try:
                 if not self.debug:
                     shutil.rmtree(task['tmpdir'])
             except Exception:
-                logger.warn('error deleting tmpdir', exc_info=True)
+                logger.warning('error deleting tmpdir', exc_info=True)
 
         # return resources to pilot
         try:
             self.resources.release(task_id)
         except Exception:
-            logger.warn('error releasing resources', exc_info=True)
+            logger.warning('error releasing resources', exc_info=True)

@@ -66,7 +66,7 @@ class IceProdConfig(dict):
             try:
                 self.filename = locateconfig(basename)
             except Exception:
-                logger.warn('config file does not exist, so making a new one')
+                logger.warning('config file does not exist, so making a new one')
                 if 'I3PROD' in os.environ:
                     prefix = os.path.join(os.environ['I3PROD'], 'etc')
                 else:
@@ -111,10 +111,10 @@ class IceProdConfig(dict):
             # special case for site_id
             if 'site_id' not in self:
                 self['site_id'] = GlobalID.siteID_gen()
-                logger.warn('Generating new site_id: %s',self['site_id'])
+                logger.warning('Generating new site_id: %s',self['site_id'])
             logger.info('with defaults: %s',self)
         except Exception:
-            logger.warn('failed to load from default config file %s',
+            logger.warning('failed to load from default config file %s',
                         filename, exc_info=True)
         finally:
             self.loading = False
@@ -127,10 +127,10 @@ class IceProdConfig(dict):
                 validate(self, schema)
             except ValidationError as e:
                 path = '.'.join(e.path)
-                logger.warn('Validation error at "%s": %s' % (path, e.message))
+                logger.warning('Validation error at "%s": %s' % (path, e.message))
                 raise e
         else:
-            logger.warn('skipping validation of config')
+            logger.warning('skipping validation of config')
 
     def load(self):
         """Load config from file, overwriting current contents."""
@@ -145,7 +145,7 @@ class IceProdConfig(dict):
         except ValidationError:
             raise
         except Exception:
-            logger.warn('failed to load from config file %s',self.filename,
+            logger.warning('failed to load from config file %s',self.filename,
                         exc_info=True)
         finally:
             self.loading = False
@@ -175,7 +175,7 @@ class IceProdConfig(dict):
                     f.write(text)
                 os.rename(self.filename+'.tmp',self.filename)
             except Exception:
-                logger.warn('failed to save to config file %s',self.filename,
+                logger.warning('failed to save to config file %s',self.filename,
                             exc_info=True)
 
     # insert save function into dict methods

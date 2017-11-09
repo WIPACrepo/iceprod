@@ -320,7 +320,7 @@ def download(url, local, options={}):
     if os.path.isdir(local):
         local = os.path.join(local, os.path.basename(clean_url))
 
-    logger.warn('wget(): src: %s, local: %s', url, local)
+    logger.warning('wget(): src: %s, local: %s', url, local)
 
     # actually download the file
     try:
@@ -366,10 +366,10 @@ def upload(local, url, options={}):
         compress(local, 'tar')
         local += '.tar'
 
-    logger.warn('wput(): local: %s, url: %s', local, url)
+    logger.warning('wput(): local: %s, url: %s', local, url)
 
     if not os.path.exists(local):
-        logger.warn('upload: local path, %s, does not exist', local)
+        logger.warning('upload: local path, %s, does not exist', local)
         raise Exception('local file does not exist')
 
     chksum = sha512sum(local)
@@ -401,7 +401,7 @@ def upload(local, url, options={}):
         # use copy command
         url = url[5:]
         if os.path.exists(url):
-            logger.warn('put: file already exists. overwriting!')
+            logger.warning('put: file already exists. overwriting!')
             removedirs(url)
         copy(local, url)
         if sha512sum(url) != chksum:

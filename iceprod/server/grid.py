@@ -61,7 +61,7 @@ class BaseGrid(object):
             try:
                 os.makedirs(self.submit_dir)
             except Exception as e:
-                logger.warn('error making submit dir %s',self.submit_dir,
+                logger.warning('error making submit dir %s',self.submit_dir,
                             exc_info=True)
 
         self.hostname = 'localhost'
@@ -369,7 +369,7 @@ class BaseGrid(object):
                         reset_tasks.add(tasks[grid_queue_id]['task_id'])
                 elif submit_dir != tasks[grid_queue_id]['submit_dir']:
                     # mixup - delete both
-                    logger.warn('submit dirs not equal: %r != %r', submit_dir,
+                    logger.warning('submit dirs not equal: %r != %r', submit_dir,
                                 tasks[grid_queue_id]['submit_dir'])
                     remove_grid_tasks.add(grid_queue_id)
                     if pilots:
@@ -380,7 +380,7 @@ class BaseGrid(object):
                     grid_idle += 1
             else: # must be in grid_tasks
                 # what iceprod doesn't know must be killed
-                logger.warn("unknown batch job: %s", grid_queue_id)
+                logger.warning("unknown batch job: %s", grid_queue_id)
                 if status in ('queued','processing','unknown'):
                     remove_grid_tasks.add(grid_queue_id)
             if submit_dir:
@@ -457,7 +457,7 @@ class BaseGrid(object):
                 logger.info('deleting submit_dir %s', t)
                 functions.removedirs(t)
             except Exception:
-                logger.warn('could not delete submit dir %s', t, exc_info=True)
+                logger.warning('could not delete submit dir %s', t, exc_info=True)
                 continue
 
     def _get_resources(self, tasks):
@@ -479,9 +479,9 @@ class BaseGrid(object):
                             else:
                                 values[k] = t['reqs'][k]
                         except Exception:
-                            logger.warn('bad reqs value for task %r', t)
+                            logger.warning('bad reqs value for task %r', t)
             except TypeError:
-                logger.warn('t[reqs]: %r',t['reqs'])
+                logger.warning('t[reqs]: %r',t['reqs'])
                 raise
             resource = deepcopy(default_resource)
             resource.update(values)

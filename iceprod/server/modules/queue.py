@@ -68,7 +68,7 @@ class queue(module.module):
         logger.info('queueing plugins in cfg: %r',{x:y for x,y in zip(plugin_names,plugin_types)})
         if not plugin_names:
             logger.debug('%r',self.cfg['queue'])
-            logger.warn('no queueing plugins found. deactivating queue')
+            logger.warning('no queueing plugins found. deactivating queue')
             self.stop()
             return
 
@@ -108,7 +108,7 @@ class queue(module.module):
         if 'max_task_processing_time' in self.cfg['queue']:
             self.max_duration += self.cfg['queue']['max_task_processing_time']
         for p,p_name,p_cfg in plugins_tmp:
-            logger.warn('queueing plugin found: %s = %s', p_name, p_cfg['type'])
+            logger.warning('queueing plugin found: %s = %s', p_name, p_cfg['type'])
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
                     self.modules, self.io_loop, self.executor, self.statsd)
@@ -137,7 +137,7 @@ class queue(module.module):
                 yield self.modules['db']['queue_set_site_queues'](
                         site_id=self.cfg['site_id'], queues=gridspec_types)
             except Exception:
-                logger.warn('error setting site queues',exc_info=True)
+                logger.warning('error setting site queues',exc_info=True)
             # start queue loop
             yield self.queue_loop()
         self.io_loop.add_callback(cb)
@@ -235,7 +235,7 @@ class queue(module.module):
             self.proxy.update_proxy()
             self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
         except Exception:
-            logger.warn('cannot setup x509 proxy', exc_info=True)
+            logger.warning('cannot setup x509 proxy', exc_info=True)
 
     @tornado.gen.coroutine
     def global_queueing(self, queueing_factor_priority=1.0,

@@ -67,7 +67,7 @@ def load_config(cfgfile):
     elif isinstance(cfgfile,dict):
         config = iceprod.core.serialization.dict_to_dataclasses(cfgfile)
     else:
-        logger.warn('cfgfile: %r',cfgfile)
+        logger.warning('cfgfile: %r',cfgfile)
         raise Exception('cfgfile is not a str or a Job')
     return config
 
@@ -88,7 +88,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                    logsize=67108864,
                                    lognum=1)
     logger = logging.getLogger('i3exec')
-    logger.warn('starting...%s ' % logger.name)
+    logger.warning('starting...%s ' % logger.name)
 
     signal.signal(signal.SIGQUIT, handler)
     signal.signal(signal.SIGINT, handler)
@@ -155,7 +155,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                  runner=partial(runner, rpc=rpc, url=url, debug=debug),
                                  pilot_id=pilot_id, **pilot_kwargs)
 
-    logger.warn('finished running normally; exiting...')
+    logger.warning('finished running normally; exiting...')
 
 def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=False):
     """Run a config.
@@ -196,7 +196,7 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
         try:
             iceprod.core.logger.set_log_level(config['options']['loglevel'])
         except Exception:
-            logger.warn('failed to set a new log level', exc_info=True)
+            logger.warning('failed to set a new log level', exc_info=True)
 
     # make sure some basic options are set
     if 'job' not in config['options']:
@@ -266,11 +266,11 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
             start_time = time.time()
 
             with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
-                logger.warn("config options: %r",config['options'])
+                logger.warning("config options: %r",config['options'])
 
                 # find tasks to run
                 if 'task' in config['options']:
-                    logger.warn('task specified: %r',config['options']['task'])
+                    logger.warning('task specified: %r',config['options']['task'])
                     # run only this task name or number
                     name = config['options']['task']
                     if isinstance(name, iceprod.core.dataclasses.String) and name.isdigit():
@@ -362,7 +362,7 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 
-    logger.warn('finished without error')
+    logger.warning('finished without error')
 
 
 if __name__ == '__main__':

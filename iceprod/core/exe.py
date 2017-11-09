@@ -339,7 +339,7 @@ def downloadResource(env, resource, remote_base=None,
     else:
         # add file to env
         env['files'][resource['local']] = local
-    logger.warn('resource %s added to env',resource['local'])
+    logger.warning('resource %s added to env',resource['local'])
 
 def downloadData(env, data):
     """Download data and put location in the env"""
@@ -439,7 +439,7 @@ def uploadData(env, data):
             metadata.update({env['options'][k] for k in options if k in env['options']})
             filecatalog.add(data['local'], url, cksm, metadata)
         except Exception:
-            logger.warn('failed to add %r to filecatalog', url, exc_info=True)
+            logger.warning('failed to add %r to filecatalog', url, exc_info=True)
 
 def setupClass(env, class_obj):
     """Set up a class for use in modules, and put it in the env"""
@@ -509,7 +509,7 @@ def setupClass(env, class_obj):
                 download_options.update(env['options']['ssl'])
 
             # download class
-            logger.warn('attempting to download class %s to %s',url,local_temp)
+            logger.warning('attempting to download class %s to %s',url,local_temp)
             try:
                 download_local = functions.download(url, local_temp,
                                                     options=download_options)
@@ -537,7 +537,7 @@ def setupClass(env, class_obj):
                         logger.info('rename %r to %r', local, dirname)
                         local = dirname
                 else:
-                    logger.warn('files is strange datatype: %r',
+                    logger.warning('files is strange datatype: %r',
                                 type(files))
             elif local != download_local:
                 logger.info('rename %r to %r', download_local, local)
@@ -548,7 +548,7 @@ def setupClass(env, class_obj):
     if loaded:
         # add to env
         env['classes'][class_obj['name']] = local
-        logger.warn('class %s loaded at %r',class_obj['name'],local)
+        logger.warning('class %s loaded at %r',class_obj['name'],local)
 
         # add binary libraries to the LD_LIBRARY_PATH
         def ldpath(root,f=None):
@@ -730,7 +730,7 @@ def runmodule(cfg, globalenv, module, stats={}):
                     else:
                         raise Exception(str(e))
             except Exception:
-                logger.warn('cannot load exception info from failed module')
+                logger.warning('cannot load exception info from failed module')
                 raise Exception('module failed')
 
         # get stats, if available
@@ -795,13 +795,13 @@ def fork_module(cfg, env, module):
                     raise Exception('Failed to install class %s'%c['name'])
                 env_shell[0] = env['classes'][c['name']]
 
-    logger.warn('running module \'%s\' with class %s',module['name'],
+    logger.warning('running module \'%s\' with class %s',module['name'],
                 module['running_class'])
 
     # set up the args
     args = module['args']
     if args:
-        logger.warn('args=%s',args)
+        logger.warning('args=%s',args)
         if (args and isinstance(args,dataclasses.String) and
             args[0] in ('{','[')):
             args = json_decode(args)
@@ -845,10 +845,23 @@ def fork_module(cfg, env, module):
         else:
             args = []
 
-        if module_src[-3:] == '.py':
+        shebang = False
+        with open(module_src) as f:
+            if f.read(10).startswith('#!'):
+                # shebang found
+                try:
+                    mode = os.stat(module_src).st_mode
+                    if not (mode & stat.S_IXUSR):
+                        os.chmod(module_src, mode | stat.S_IXUSR)
+                    shebang = True
+                except Exception:
+                    logger.warning('cannot get shebang for %s', module_src,
+                                   exc_info=True)
+
+        if (not shebang) and module_src[-3:] == '.py':
             # call as python script
             cmd.extend(['python', module_src]+args)
-        elif module_src[-3:] == '.sh':
+        elif (not shebang) and module_src[-3:] == '.sh':
             # call as shell script
             cmd.extend(['/bin/sh', module_src]+args)
         else:
@@ -858,15 +871,15 @@ def fork_module(cfg, env, module):
         logger.error('module is missing class and src')
         raise Exception('error running module')
 
-    logger.warn('subprocess cmd=%r',cmd)
+    logger.warning('subprocess cmd=%r',cmd)
     if module['env_clear']:
         iceprod_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         local_path = env['options']['local_temp'] if 'local_temp' in env['options'] else None
         env = {'PYTHONPATH':iceprod_path+(':'+local_path if local_path else '')+':'+os.getcwd()}
-        for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','http_proxy'):
+        for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
             if k in os.environ:
                 env[k] = os.environ[k]
-        logger.warn('env = %r', env)
+        logger.warning('env = %r', env)
         return subprocess.Popen(cmd, env=env)
     else:
         return subprocess.Popen(cmd)

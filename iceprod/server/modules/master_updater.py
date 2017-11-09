@@ -77,7 +77,7 @@ class master_updater(module.module):
                 pickle.dump(self.buffer, f, -1)
             os.rename(fname, self.filename)
         except Exception:
-            logger.warn('did not save cache file', exc_info=True)
+            logger.warning('did not save cache file', exc_info=True)
             os.remove(fname)
         self.save_timeout = None
 
@@ -114,7 +114,7 @@ class master_updater(module.module):
                 yield send_master(self.cfg, 'master_update',
                                   session=self.session, **params)
             except Exception:
-                logger.warn('error sending to master', exc_info=True)
+                logger.warning('error sending to master', exc_info=True)
                 # If the problem is server side, give it a minute.
                 # This should stop a DDOS from happening.
                 self.io_loop.call_later(60, self._send)

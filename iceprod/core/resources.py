@@ -134,7 +134,7 @@ class Resources:
                         v = time.time()/3600+v-0.1
                     logger.info('setting %s to %r', r, v)
                     self.total[r] = v
-        logger.warn('total resources: %r', self.total)
+        logger.warning('total resources: %r', self.total)
 
         #: available resources that are unclaimed
         self.available = deepcopy(self.total)
@@ -268,7 +268,7 @@ class Resources:
             task_id (str): the task_id
         """
         if task_id not in self.claimed:
-            logger.warn('release: task_id %s not in claimed', task_id)
+            logger.warning('release: task_id %s not in claimed', task_id)
             return
         claim = self.claimed[task_id]
         for r in claim['resources']:
@@ -294,7 +294,7 @@ class Resources:
             tmpdir (str): temporary directory in use by process
         """
         if task_id not in self.claimed:
-            logger.warn('register: task_id %s not in claimed', task_id)
+            logger.warning('register: task_id %s not in claimed', task_id)
             return
         self.claimed[task_id].update({
             'process': process,
@@ -318,7 +318,7 @@ class Resources:
                 usage = self.get_usage(task_id, force=force)
                 logger.debug('%s is using %r', task_id, usage)
             except Exception:
-                logger.warn('error getting usage for %r', task_id,
+                logger.warning('error getting usage for %r', task_id,
                             exc_info=True)
                 continue
             usage_time = usage['time'] - self.history[task_id]['create_time']

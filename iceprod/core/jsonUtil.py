@@ -160,13 +160,13 @@ def objToJSON(obj):
         if name in JSONConverters:
             return {'__jsonclass__':[name,JSONConverters[name].dumps(obj)]}
         else:
-            logging.error('name: %s, obj: %r', name, obj)
+            logger.error('name: %s, obj: %r', name, obj)
             raise Exception('Cannot encode %s class to JSON'%name)
 
 def JSONToObj(obj):
     ret = obj
     if isinstance(obj,dict) and '__jsonclass__' in obj:
-        logging.info('try unpacking class')
+        logger.info('try unpacking class')
         try:
             name = obj['__jsonclass__'][0]
             if name not in JSONConverters:
@@ -174,7 +174,7 @@ def JSONToObj(obj):
             obj_repr = obj['__jsonclass__'][1]
             ret = JSONConverters[name].loads(obj_repr,name=name)
         except Exception as e:
-            logging.warn('error making json class: %r',e,exc_info=True)
+            logger.warning('error making json class: %r',e,exc_info=True)
     return ret
 
 

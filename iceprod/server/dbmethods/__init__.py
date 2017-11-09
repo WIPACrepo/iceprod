@@ -176,7 +176,7 @@ def authorization(**kwargs):
                         ret = yield ret
                     successful_user = ret
                 else:
-                    logger.warn('auth_user undefined: %r', auth_user)
+                    logger.warning('auth_user undefined: %r', auth_user)
 
                 # check for role validity
                 if auth_role and isinstance(auth_role, str):
@@ -193,7 +193,7 @@ def authorization(**kwargs):
                         ret = yield ret
                     successful_role = ret
                 else:
-                    logger.warn('auth_role undefined: %r', auth_role)
+                    logger.warning('auth_role undefined: %r', auth_role)
 
                 # check auth expression
                 auth_expression = auth_expression.replace('site', 'True' if successful_site else 'False')
@@ -204,7 +204,7 @@ def authorization(**kwargs):
                 if not ret:
                     raise Exception('failed auth expression')
             except Exception:
-                logger.warn('error in authorization', exc_info=True)
+                logger.warning('error in authorization', exc_info=True)
                 raise Exception('authorization error')
             else:
                 # run function
@@ -242,11 +242,11 @@ class _Methods_Base():
         try:
             return OrderedDict(zip(keys,input_row))
         except Exception:
-            logger.warn('error making table %s dict from return values %r',
+            logger.warning('error making table %s dict from return values %r',
                          table,input_row)
             raise
 
-    def _bulk_select(self, sql, bindings, extra_bindings=None):
+    def _bulk_select(self, sql, bindings, extra_bindings=None, num=990):
         """
         Select many items by id.
 
@@ -264,9 +264,9 @@ class _Methods_Base():
             bindings = list(bindings)
         ret = []
         while bindings:
-            bindings2 = bindings[:990]
+            bindings2 = bindings[:num]
             logger.info('bulk select %s %d',sql,len(bindings2))
-            bindings = bindings[990:]
+            bindings = bindings[num:]
             sql2 = sql%(','.join('?' for _ in bindings2))
             if extra_bindings:
                 bindings2.extend(extra_bindings)
@@ -280,7 +280,7 @@ class _Methods_Base():
             try:
                 yield self.parent.modules['master_updater']['add'](updates)
             except Exception:
-                logger.warn('_send_to_master() error',exc_info=True)
+                logger.warning('_send_to_master() error',exc_info=True)
 
     def _is_master(self):
         """Test if this is the master"""

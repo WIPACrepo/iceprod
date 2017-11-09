@@ -106,14 +106,14 @@ class website(module.module):
 
     def logrotate(self):
         """Rotate the Nginx logs."""
-        logger.warn('got a logrotate() call')
+        logger.warning('got a logrotate() call')
         try:
             if self.nginx:
                 # rotate nginx logs
                 self.nginx.logrotate()
             # tornado uses regular python logs, which rotate automatically
         except Exception:
-            logger.warn('error in logrotate', exc_info=True)
+            logger.warning('error in logrotate', exc_info=True)
 
     def start(self):
         """Run the website"""
@@ -283,10 +283,10 @@ class website(module.module):
             else:
                 tornado_port = self.cfg['webserver']['tornado_port']
                 tornado_address = 'localhost' # bind locally
-            logger.warn('tornado bound to port %d', tornado_port)
+            logger.warning('tornado bound to port %d', tornado_port)
             self.http_server.bind(tornado_port, address=tornado_address, family=socket.AF_INET)
             self.http_server.start()
-            logger.warn('tornado starting')
+            logger.warning('tornado starting')
         except Exception:
             logger.error('website startup error',exc_info=True)
             raise
@@ -300,7 +300,7 @@ def catch_error(method):
             return method(self, *args, **kwargs)
         except Exception as e:
             self.statsd.incr(self.__class__.__name__+'.error')
-            logger.warn('Error in website handler', exc_info=True)
+            logger.warning('Error in website handler', exc_info=True)
             message = 'Error generating page for '+self.__class__.__name__
             if self.debug:
                 message = message + '\n' + str(e)
@@ -364,7 +364,7 @@ class MyHandler(tornado.web.RequestHandler):
             if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
                 f = yield tornado.gen.with_timeout(timedelta(seconds=120),f)
         except Exception:
-            logger.warn('db_call error for %s',func_name,exc_info=True)
+            logger.warning('db_call error for %s',func_name,exc_info=True)
             raise
         raise tornado.gen.Return(f)
 
