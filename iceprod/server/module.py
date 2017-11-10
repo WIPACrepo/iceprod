@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from statsd import StatsClient
+from statsd import StatsClient, TCPStatsClient
 import requests
 
 logger = logging.getLogger('module')
@@ -73,7 +73,7 @@ class module(object):
         logger.warning('starting module %s', self.__class__.__name__)
         if 'statsd' in self.cfg and self.cfg['statsd']:
             try:
-                self.statsd = StatsClient(self.cfg['statsd'],
+                self.statsd = TCPStatsClient(self.cfg['statsd'],port=8126,
                                           prefix=self.cfg['site_id']+'.'+self.__class__.__name__)
             except Exception:
                 logger.warning('failed to connect to statsd: %r',
