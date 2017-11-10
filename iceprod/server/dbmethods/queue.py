@@ -152,18 +152,19 @@ class queue(_Methods_Base):
             dict: {dataset: {name: {status: num} } }
         """
         try:
-            sql = 'select dataset_id, name, task_status from search where '
+            sql = 'select dataset_id, name, task_status, count(*) from search where '
             sql += 'task_status in ("waiting","queued","processing","reset","resume")'
             if gridspec:
                 sql += ' and gridspec like ?'
                 bindings = ('%'+gridspec+'%',)
             else:
                 bindings = tuple()
+            sql += ' group by dataset_id,name,task_status'
             ret = yield self.parent.db.query(sql, bindings)
 
-            task_groups = defaultdict(lambda:defaultdict(Counter))
+            task_groups = defaultdict(lambda:defaultdict(dict))
             for dataset_id, name, status in ret:
-                task_groups[dataset_id][name][status] += 1
+                task_groups[dataset_id][name][status] = num
         except Exception:
             logger.info('error getting active tasks', exc_info=True)
             raise
