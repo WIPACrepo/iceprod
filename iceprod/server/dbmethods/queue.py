@@ -163,7 +163,7 @@ class queue(_Methods_Base):
             ret = yield self.parent.db.query(sql, bindings)
 
             task_groups = defaultdict(lambda:defaultdict(dict))
-            for dataset_id, name, status in ret:
+            for dataset_id, name, status, num in ret:
                 task_groups[dataset_id][name][status] = num
         except Exception:
             logger.info('error getting active tasks', exc_info=True)
