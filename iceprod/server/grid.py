@@ -438,6 +438,7 @@ class BaseGrid(object):
     @tornado.gen.coroutine
     def metrics(self):
         """send metrics about queue status, if we haven't somewhere else"""
+        logger.info('grid metrics')
         datasets = yield self.modules['db']['queue_get_active_dataset_tasks'](gridspec=self.gridspec)
         for d in datasets:
             for name in datasets[d]:
