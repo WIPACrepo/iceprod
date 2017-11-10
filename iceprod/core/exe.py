@@ -232,7 +232,9 @@ def setupenv(cfg, obj, oldenv={}):
         # upload data
         if 'uploads' in env and ('offline' not in cfg.config['options']
                 or (not cfg.config['options']['offline'])
-                or (cfg.config['options']['offline'] and cfg.config['options']['offline_transfer'])):
+                or (cfg.config['options']['offline']
+                    and 'offline_transfer' in cfg.config['options']
+                    and cfg.config['options']['offline_transfer'])):
             for d in env['uploads']:
                 try:
                     uploadData(env, d)
@@ -822,7 +824,9 @@ def fork_module(cfg, env, module):
     # run the module
     if module['running_class']:
         logger.info('run as a class using the helper script')
-        cmd.extend(['python', '-m', 'iceprod.core.exe_helper', '--classname',
+        exe_helper = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  'exe_helper.py')
+        cmd.extend(['python', exe_helper, '--classname',
                     module['running_class']])
         if env['options']['debug']:
             cmd.append('--debug')
@@ -872,13 +876,22 @@ def fork_module(cfg, env, module):
         raise Exception('error running module')
 
     logger.warning('subprocess cmd=%r',cmd)
-    if module['env_clear']:
-        iceprod_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        local_path = env['options']['local_temp'] if 'local_temp' in env['options'] else None
-        env = {'PYTHONPATH':iceprod_path+(':'+local_path if local_path else '')+':'+os.getcwd()}
-        for k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
-            if k in os.environ:
+    if module['env_clear'] and 'SROOT' in os.environ:
+        # must be on cvmfs-like environ for this to apply
+        env = {}
+        prefix = os.environ['SROOT']
+        for k in os.environ:
+            if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
+                # pass through unchanged
                 env[k] = os.environ[k]
+            elif k in ('SROOT',) or 'ICEPROD' in k:
+                # don't pass these at all
+                pass
+            else:
+                # filter SROOT out of environ
+                ret = [x for x in os.environ[k].split(':') if not x.startswith(prefix)]
+                if ret:
+                    env[k] = ':'.join(ret)
         logger.warning('env = %r', env)
         return subprocess.Popen(cmd, env=env)
     else:

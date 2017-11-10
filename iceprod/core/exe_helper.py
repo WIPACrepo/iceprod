@@ -3,6 +3,9 @@ Help run class-based modules, including iceprod modules.
 
 This is run in a subprocess to help set up the environment,
 as well as contain any crashes.
+
+Note that this file should be backward-compatible with python 2.7+,
+as it will be run under the user's environment.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -11,18 +14,22 @@ import os
 import sys
 import imp
 import inspect
+import logging
+from collections import Iterable
 
 try:
     import cPickle as pickle
 except Exception:
     import pickle
 
-import logging
-from collections import Iterable
+from json import loads as json_decode
 
 from iceprod.core import constants
-from iceprod.core import dataclasses
-from iceprod.core.jsonUtil import json_decode
+
+try:
+    String = basestring
+except NameError:
+    String = str
 
 def get_args():
     """Read json of [args, kwargs] from the std args file"""
@@ -32,7 +39,7 @@ def get_args():
         return json_decode(data)
 
 def unicode_to_ascii(obj):
-    if isinstance(obj,dataclasses.String):
+    if isinstance(obj,String):
         return str(obj)
     elif isinstance(obj,dict):
         ret = {}
