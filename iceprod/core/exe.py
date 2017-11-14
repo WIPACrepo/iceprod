@@ -899,6 +899,11 @@ def fork_module(cfg, env, module):
                 ret = [x for x in os.environ[k].split(':') if not x.startswith(prefix)]
                 if ret:
                     env[k] = ':'.join(ret)
+        iceprod_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if 'PYTHONPATH' in env:
+            env['PYTHONPATH'] += ';'+iceprod_path
+        else:
+            env['PYTHONPATH'] = iceprod_path
         logger.warning('env = %r', env)
         return subprocess.Popen(cmd, env=env)
     else:
