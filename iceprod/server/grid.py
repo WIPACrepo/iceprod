@@ -484,7 +484,8 @@ class BaseGrid(object):
                                 values[k] = t['reqs'][k]
                         except Exception:
                             logger.warning('bad reqs value for task %r', t)
-                    if k == 'os':
+                    elif k == 'os' and t['reqs'][k]:
+                        logger.info('OS req: %s', t['reqs'][k])
                         values['os'] = t['reqs'][k]
             except TypeError:
                 logger.warning('t[reqs]: %r',t['reqs'])
