@@ -1954,7 +1954,7 @@ class dbmethods_queue_test(dbmethods_base):
     @unittest_reporter
     def test_510_queue_get_task_lookup(self):
         """Test queue_get_task_lookup"""
-        r = {'cpu': 1, 'gpu': 0, 'memory': 1.0, 'disk': 10.0, 'time': 1.0}
+        r = {'cpu': 1, 'gpu': 0, 'memory': 1.0, 'disk': 10.0, 'time': 1.0, 'os': None}
         tasks = {'t1':r}
 
         tables = {

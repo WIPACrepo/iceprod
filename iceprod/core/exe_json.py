@@ -92,8 +92,10 @@ class ServerComms:
         resources = deepcopy(resources)
         if 'gpu' in resources and isinstance(resources['gpu'],list):
             resources['gpu'] = len(resources['gpu'])
+        os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
         task = self.rpc.new_task(gridspec=gridspec, hostname=hostname, 
                                  domain=domain, ifaces=ifaces,
+                                 os=os_type,
                                  **resources)
         if not task:
             return None

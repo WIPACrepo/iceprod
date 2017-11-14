@@ -53,6 +53,7 @@ class rpc(_Methods_Base):
                 'hostname':None,
                 'domain':None,
                 'ifaces':None,
+                'os':None,
                }
         args.update(kwargs)
         if args['domain']:
@@ -87,6 +88,11 @@ class rpc(_Methods_Base):
                     bindings = tuple(reqs.values())
                     if 'gpu' in reqs and reqs['gpu'] > 0:
                         sql += ' and req_gpu > 0 '
+                    if args['os']:
+                        if bindings:
+                            sql += ' and'
+                        sql += ' req_os = ?'
+                        bindings = bindings + (args['os'],)
                 else:
                     bindings = tuple()
                 ret = yield self.parent.db.query(sql, bindings)

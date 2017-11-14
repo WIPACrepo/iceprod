@@ -705,4 +705,6 @@ def group_hasher(resources):
     ret ^= int(math.log(resources['memory'])*math.e)*1000
     ret ^= int(math.log(resources['disk'])*math.e)*1000000
     ret ^= int(resources['time'])*1000000000
+    if 'os' in resources:
+        ret ^= hash(resources['os'])&(0b11111111<<32)
     return ret

@@ -263,6 +263,7 @@ class Requirement(dict):
         self['gpu'] = None
         self['memory'] = None
         self['disk'] = None
+        self['os'] = None
         super(Requirement,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -278,7 +279,8 @@ class Requirement(dict):
         return ((self['cpu'] is None or isinstance(self['cpu'],(String,Number)))
                 and (self['gpu'] is None or isinstance(self['gpu'],(String,Number)))
                 and (self['memory'] is None or isinstance(self['memory'],(String,Number)))
-                and (self['disk'] is None or isinstance(self['disk'],(String,Number))))
+                and (self['disk'] is None or isinstance(self['disk'],(String,Number)))
+                and (self['os'] is None or isinstance(self['os'],String)))
 
 class Task(_TaskCommon):
     """

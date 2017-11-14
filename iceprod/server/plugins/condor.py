@@ -26,6 +26,14 @@ from iceprod.server import grid
 logger = logging.getLogger('condor')
 
 
+def condor_os_reqs(os_arch):
+    """Convert from OS_ARCH to Condor OS requirements"""
+    os_arch = os_arch.rsplit('_',1)[0].rsplit('.',1)[0]
+    reqs = 'OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','CentOS').replace('_',''))
+    reqs = reqs + '|| OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','SL').replace('_',''))
+    reqs = reqs + ' || OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
+    return '('+reqs+')'
+
 class condor(grid.BaseGrid):
 
     ### Plugin Overrides ###
@@ -150,6 +158,8 @@ class condor(grid.BaseGrid):
                     p('+OriginalTime = {}'.format(int(task['reqs']['time'])*3600+600))
                     p('Rank = Rank + (Target.TimeToLive - OriginalTime)/86400')
                     requirements.append('Target.TimeToLive > OriginalTime')
+                if 'os' in task['reqs'] and task['reqs']['os']:
+                    requirements.append(condor_os_reqs(task['reqs']['os']))
 
             for b in batch_opts:
                 p(b+'='+batch_opts[b])

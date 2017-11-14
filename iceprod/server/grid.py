@@ -484,6 +484,8 @@ class BaseGrid(object):
                                 values[k] = t['reqs'][k]
                         except Exception:
                             logger.warning('bad reqs value for task %r', t)
+                    if k == 'os':
+                        values['os'] = t['reqs'][k]
             except TypeError:
                 logger.warning('t[reqs]: %r',t['reqs'])
                 raise
@@ -508,7 +510,7 @@ class BaseGrid(object):
         if ('queue' in self.cfg and 'debug' in self.cfg['queue']
             and self.cfg['queue']['debug']):
             debug = True
-            
+
         groups = defaultdict(list)
         if isinstance(tasks,dict):
             tasks = tasks.values()
@@ -560,7 +562,8 @@ class BaseGrid(object):
                 for x in groups[r]:
                     for k in x:
                         resources[k].append(x[k])
-                resources = {k:max(resources[k]) for k in resources}
+                resources = {k:resources[k][0] if isinstance(resources[k][0],String) else max(resources[k])
+                             for k in resources}
                 logger.info('submitting %d pilots for resource %r',
                             groups_to_queue[r], resources)
                 for name in resources:
