@@ -92,7 +92,7 @@ class rpc(_Methods_Base):
                         logger.info('new task for OS request: %s', args['os'])
                         if bindings:
                             sql += ' and'
-                        sql += ' req_os = ?'
+                        sql += ' (req_os = ? or req_os is NULL)'
                         bindings = bindings + (args['os'],)
                 else:
                     bindings = tuple()
