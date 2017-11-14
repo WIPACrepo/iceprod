@@ -846,6 +846,13 @@ def fork_module(cfg, env, module):
                 else:
                     return ret+'='+str(b)
             args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
+            # force args to string
+            def toStr(a):
+                if isinstance(a,(bytes,str)):
+                    return a
+                else:
+                    return str(a)
+            args = map(toStr,args)
         else:
             args = []
 
