@@ -89,6 +89,7 @@ class rpc(_Methods_Base):
                     if 'gpu' in reqs and reqs['gpu'] > 0:
                         sql += ' and req_gpu > 0 '
                     if args['os']:
+                        logger.info('new task for OS request: %s', args['os'])
                         if bindings:
                             sql += ' and'
                         sql += ' req_os = ?'
