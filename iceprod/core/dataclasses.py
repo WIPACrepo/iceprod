@@ -407,7 +407,7 @@ class Module(_TaskCommon):
     :ivar src: None -- src of class or script
     :ivar args: None -- args to give to class or src if not an iceprod module
     :ivar env_shell: None -- src of script which sets env and calls arg
-    :ivar env_clear: False -- clear the env before calling the module
+    :ivar env_clear: True -- clear the env before calling the module
                               (calls env_shell after clearing, if defined)
 
     Note that `env_clear` should be used carefully, as it wipes out
@@ -419,7 +419,7 @@ class Module(_TaskCommon):
         self['src']           = ''
         self['args']          = ''
         self['env_shell']     = ''
-        self['env_clear']     = False
+        self['env_clear']     = True
         super(Module,self).__init__(*args,**kwargs)
 
     def output(self):
