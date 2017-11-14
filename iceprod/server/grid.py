@@ -562,7 +562,7 @@ class BaseGrid(object):
                 for x in groups[r]:
                     for k in x:
                         resources[k].append(x[k])
-                resources = {k:resources[k][0] if resources[k][0 is None or isinstance(resources[k][0],dataclasses.String) else max(resources[k])
+                resources = {k:resources[k][0] if resources[k][0] is None or isinstance(resources[k][0],dataclasses.String) else max(resources[k])
                              for k in resources}
                 logger.info('submitting %d pilots for resource %r',
                             groups_to_queue[r], resources)
