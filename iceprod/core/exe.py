@@ -852,7 +852,7 @@ def fork_module(cfg, env, module):
                     return a
                 else:
                     return str(a)
-            args = map(toStr,args)
+            args = [toStr(a) for a in args]
         else:
             args = []
 
