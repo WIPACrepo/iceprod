@@ -27,9 +27,13 @@ from json import loads as json_decode
 
 # from iceprod.core import constants
 constants_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'__init__.py')
-spec = importlib.util.spec_from_file_location('constants', constants_path)
-constants_mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(constants_mod)
+try:
+    spec = importlib.util.spec_from_file_location('constants', constants_path)
+    constants_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(constants_mod)
+except AttributeError:
+    import imp
+    constants_mod = imp.load_source('constants',constants_path)
 constants = constants_mod.constants
 
 try:
