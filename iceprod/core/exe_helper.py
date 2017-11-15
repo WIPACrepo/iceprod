@@ -15,6 +15,7 @@ import sys
 import imp
 import inspect
 import logging
+import importlib
 from collections import Iterable
 
 try:
@@ -24,7 +25,12 @@ except Exception:
 
 from json import loads as json_decode
 
-from iceprod.core import constants
+# from iceprod.core import constants
+constants_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'__init__.py')
+spec = importlib.util.spec_from_file_location('constants', constants_path)
+constants_mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(constants_mod)
+constants = constants_mod.constants
 
 try:
     String = basestring
