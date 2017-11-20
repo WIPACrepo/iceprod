@@ -500,7 +500,7 @@ class cron(_Methods_Base):
         """
         sql = 'select dataset_id from dataset where status = "processing"'
         bindings = tuple()
-        ret = yield self.parent.db.query(sql, bindings):
+        ret = yield self.parent.db.query(sql, bindings)
         processing_datasets = {row[0] for row in ret}
 
         sql = 'select dataset_id, status, count(*) from job group by dataset_id,status'
