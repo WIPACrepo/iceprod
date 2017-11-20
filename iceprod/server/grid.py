@@ -500,6 +500,7 @@ class BaseGrid(object):
         task_iter = zip(tasks.keys(), self._get_resources(tasks.values()))
         for task_id, resources in task_iter:
             task_reqs[task_id] = resources
+            logger.info('adding task %s to lookup: %r', task_id, resources)
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         self.statsd.incr('add_to_task_lookup', len(task_reqs))
         yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
