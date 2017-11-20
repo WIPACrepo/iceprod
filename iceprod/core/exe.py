@@ -896,7 +896,7 @@ def fork_module(cfg, env, module):
                 pass
             else:
                 # filter SROOT out of environ
-                ret = [x for x in os.environ[k].split(':') if not x.startswith(prefix)]
+                ret = [x for x in os.environ[k].split(':') if x.strip() and not x.startswith(prefix)]
                 if ret:
                     env[k] = ':'.join(ret)
         logger.warning('env = %r', env)
