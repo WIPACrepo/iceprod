@@ -498,11 +498,18 @@ class cron(_Methods_Base):
         """
         Monitor all datasets for job/task status summary.
         """
+        sql = 'select dataset_id from dataset where status = "processing"'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings):
+        processing_datasets = {row[0] for row in ret}
+
         sql = 'select dataset_id, status, count(*) from job group by dataset_id,status'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         for dataset_id, status, num in ret:
             dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+            if dataset_id not in processing_datasets:
+                num = 0
             self.parent.statsd.gauge('datasets.{}.jobs.{}'.format(dataset_num,status), num)
 
         sql = 'select dataset_id, name, task_status, count(*) from search group by dataset_id,name,task_status'
@@ -510,4 +517,6 @@ class cron(_Methods_Base):
         ret = yield self.parent.db.query(sql, bindings)
         for dataset_id, name, status, num in ret:
             dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+            if dataset_id not in processing_datasets:
+                num = 0
             self.parent.statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status), num)
