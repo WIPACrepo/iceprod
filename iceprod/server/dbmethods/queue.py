@@ -140,38 +140,6 @@ class queue(_Methods_Base):
             raise tornado.gen.Return(task_groups)
 
     @tornado.gen.coroutine
-    def queue_get_active_dataset_tasks(self, gridspec=None):
-        """
-        Get a dict of active tasks (waiting,queued,processing,reset,resume)
-        grouped by by dataset and type.
-
-        Args:
-            gridspec (str): The gridspec (None for master)
-
-        Returns:
-            dict: {dataset: {name: {status: num} } }
-        """
-        try:
-            sql = 'select dataset_id, name, task_status, count(*) from search where '
-            sql += 'task_status in ("waiting","queued","processing","reset","resume")'
-            if gridspec:
-                sql += ' and gridspec like ?'
-                bindings = ('%'+gridspec+'%',)
-            else:
-                bindings = tuple()
-            sql += ' group by dataset_id,name,task_status'
-            ret = yield self.parent.db.query(sql, bindings)
-
-            task_groups = defaultdict(lambda:defaultdict(dict))
-            for dataset_id, name, status, num in ret:
-                task_groups[dataset_id][name][status] = num
-        except Exception:
-            logger.info('error getting active tasks', exc_info=True)
-            raise
-        else:
-            raise tornado.gen.Return(task_groups)
-
-    @tornado.gen.coroutine
     def queue_get_grid_tasks(self, gridspec):
         """
         Get a list of tasks (queued, processing) on this

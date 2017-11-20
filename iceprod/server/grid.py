@@ -78,7 +78,6 @@ class BaseGrid(object):
         """Check and Clean the Grid"""
         yield self.check_iceprod()
         yield self.check_grid()
-        yield self.metrics()
 
     @tornado.gen.coroutine
     def queue(self):
@@ -434,21 +433,6 @@ class BaseGrid(object):
             yield self.remove(remove_grid_tasks)
 
         yield self._delete_dirs(delete_dirs)
-
-    @tornado.gen.coroutine
-    def metrics(self):
-        """send metrics about queue status, if we haven't somewhere else"""
-        datasets = yield self.modules['db']['queue_get_active_dataset_tasks'](gridspec=self.gridspec)
-        logger.info('grid metrics: %r', datasets)
-        try:
-            for d in datasets:
-                for name in datasets[d]:
-                    for status in datasets[d][name]:
-                        dataset_num = GlobalID.localID_ret(d,type='int')
-                        stat_name = 'datasets.'+str(dataset_num)+'.'+name+'.'+status
-                        self.statsd.incr(stat_name, datasets[d][name][status])
-        except Exception:
-            logger.warning('error updating grid metrics', exc_info=True)
 
     @run_on_executor
     def _delete_dirs(self, dirs):
