@@ -202,7 +202,7 @@ class queue(_Methods_Base):
         # process in batches of 900
         if not isinstance(task,list):
             task = list(task)
-        logger.info('set task status: %r %r',task,status)
+        logger.debug('set task status: %r %r',task,status)
         try:
             while task:
                 t = task[:900]

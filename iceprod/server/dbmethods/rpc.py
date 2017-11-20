@@ -134,7 +134,7 @@ class rpc(_Methods_Base):
             now = time.time()
             for task_list in tasks.values():
                 task_list.sort(key=lambda t:task_queue.sched_prio(t[-1],now-t[1]))
-            logger.info('tasks: %r', tasks)
+            logger.debug('tasks: %r', tasks)
 
             # get only what can match
             new_tasks = {}
