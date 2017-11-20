@@ -36,10 +36,9 @@ def send_through_pilot(func):
             # mq can't be pickled, so remove temporarily
             mq = self.cfg.config['options']['message_queue']
             del self.cfg.config['options']['message_queue']
-            print("")
-            print('config',dict(self.cfg.config))
-            print('args',args)
-            print('kwargs',kwargs)
+            logger.info('config: %r', dict(self.cfg.config))
+            logger.info('args: %r', args)
+            logger.info('kwargs: %r', kwargs)
             try:
                 send.put((task_id,func.__name__,self.cfg.config,args,kwargs))
                 ret = recv.get()
