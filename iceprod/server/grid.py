@@ -448,7 +448,8 @@ class BaseGrid(object):
                 logger.warning('could not delete submit dir %s', t, exc_info=True)
                 continue
 
-    def _get_resources(self, tasks):
+    @staticmethod
+    def _get_resources(tasks):
         """yield resource information for each task in a list"""
         default_resource = deepcopy(Resources.defaults)
         for k in default_resource:

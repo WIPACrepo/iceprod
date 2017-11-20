@@ -37,6 +37,7 @@ from tornado.testing import AsyncTestCase
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.grid import BaseGrid
+from iceprod.core.resources import Resources
 
 from .module_test import module_test
 from .dbmethods_test import TestExecutor
@@ -1016,6 +1017,33 @@ class grid_test(AsyncTestCase):
             pass
         else:
             raise Exception('did not raise an Exception')
+
+    @unittest_reporter
+    def test_100_get_resources(self):
+        tasks = [
+            {'reqs':{'cpu':1,'memory':4.6}},
+        ]
+        reqs = list(BaseGrid._get_resources(tasks))
+        self.assertIn('cpu', reqs[0])
+        self.assertEqual(reqs[0]['cpu'], tasks[0]['reqs']['cpu'])
+        self.assertIn('memory', reqs[0])
+        self.assertEqual(reqs[0]['memory'], tasks[0]['reqs']['memory'])
+
+        tasks = [
+            {'reqs':{'os':'RHEL_7_x86_64'}},
+        ]
+        reqs = list(BaseGrid._get_resources(tasks))
+        self.assertIn('os', reqs[0])
+        self.assertEqual(reqs[0]['os'], tasks[0]['reqs']['os'])
+
+        tasks = [
+            {'reqs':{'cpu':1,'memory':4.6,'foo':'bar'}},
+        ]
+        reqs = list(BaseGrid._get_resources(tasks))
+        self.assertIn('cpu', reqs[0])
+        self.assertEqual(reqs[0]['cpu'], tasks[0]['reqs']['cpu'])
+        self.assertIn('memory', reqs[0])
+        self.assertEqual(reqs[0]['memory'], tasks[0]['reqs']['memory'])
 
 
 def load_tests(loader, tests, pattern):
