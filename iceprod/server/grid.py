@@ -483,9 +483,16 @@ class BaseGrid(object):
     def add_tasks_to_pilot_lookup(self, tasks):
         task_reqs = {}
         task_iter = zip(tasks.keys(), self._get_resources(tasks.values()))
+        keys = set()
         for task_id, resources in task_iter:
             task_reqs[task_id] = resources
+            keys.update(resources)
             logger.info('adding task %s to lookup: %r', task_id, resources)
+        # now make reqs have uniform keys
+        for tid in task_reqs:
+            missing = keys-set(task_reqs[tid])
+            for k in missing:
+                task_reqs[tid][k] = None
         logger.info('adding %d tasks to pilot lookup', len(task_reqs))
         self.statsd.incr('add_to_task_lookup', len(task_reqs))
         yield self.modules['db']['queue_add_task_lookup'](tasks=task_reqs)
