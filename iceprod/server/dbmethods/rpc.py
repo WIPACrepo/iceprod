@@ -1132,7 +1132,7 @@ class rpc(_Methods_Base):
         for f in self._bulk_select(sql, tasks):
             yield f
 
-        sql = 'update task set status="idle" '
+        sql = 'update task set status="idle",failures=0 '
         sql += 'where task_id in (%s)'
         for f in self._bulk_select(sql, tasks):
             yield f
@@ -1163,7 +1163,7 @@ class rpc(_Methods_Base):
         for f in self._bulk_select(sql, tasks):
             yield f
 
-        sql = 'update task set status="idle" '
+        sql = 'update task set status="idle",failures=0 '
         sql += 'where task_id in (%s)'
         for f in self._bulk_select(sql, tasks):
             yield f
