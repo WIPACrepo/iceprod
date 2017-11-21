@@ -41,6 +41,7 @@ class parser_test(unittest.TestCase):
         job['steering']['parameters'] = {
             'test': 1,
             'test2': 't2',
+            'test3': False,
         }
 
         p = parser.ExpParser()
@@ -48,23 +49,19 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.steering_func('test')
-        expected = job['steering']['parameters']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        expected = str(job['steering']['parameters']['test'])
+        self.assertEqual(ret,expected)
 
         ret = p.steering_func('test2')
         expected = str(job['steering']['parameters']['test2'])
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
-        try:
-            p.steering_func('test3')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('test3: did not raise GrammarException')
+        ret = p.steering_func('test3')
+        expected = str(job['steering']['parameters']['test3'])
+        self.assertEqual(ret,expected)
+
+        with self.assertRaises(parser.GrammarException):
+            p.steering_func('test4')
 
     @unittest_reporter
     def test_02_system(self):
@@ -81,23 +78,15 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.system_func('test')
-        expected = job['steering']['system']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        expected = str(job['steering']['system']['test'])
+        self.assertEqual(ret,expected)
 
         ret = p.system_func('test2')
         expected = str(job['steering']['system']['test2'])
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.system_func('test3')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('test3: did not raise GrammarException')
 
     @unittest_reporter
     def test_03_options(self):
@@ -113,23 +102,15 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.options_func('test')
-        expected = job['options']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        expected = str(job['options']['test'])
+        self.assertEqual(ret,expected)
 
         ret = p.options_func('test2')
         expected = str(job['options']['test2'])
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.options_func('test3')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('test3: did not raise GrammarException')
 
     @unittest_reporter
     def test_04_difplus(self):
@@ -146,22 +127,14 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.difplus_func('sensor_name')
         expected = job['difplus']['dif']['sensor_name']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('dif: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.difplus_func('category')
         expected = job['difplus']['plus']['category']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('plus: ret != expected')
+        self.assertEqual(ret,expected)
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.difplus_func('test')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('not present: did not raise GrammarException')
 
     @unittest_reporter
     def test_05_eval(self):
@@ -170,30 +143,16 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.eval_func('4+4')
-        expected = '8'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('simple: ret != expected')
+        self.assertEqual(ret, '8')
 
         ret = p.eval_func('(4+3*2)%3')
-        expected = '1'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('nested: ret != expected')
+        self.assertEqual(ret, '1')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.eval_func('import os')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('import: did not raise GrammarException')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.eval_func('os.remove("/")')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('remove: did not raise GrammarException')
 
     @unittest_reporter
     def test_06_sprintf(self):
@@ -202,74 +161,39 @@ class parser_test(unittest.TestCase):
 
         # run tests
         ret = p.sprintf_func('"%d",5')
-        expected = '5'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('"d": ret != expected')
+        self.assertEqual(ret, '5')
 
         ret = p.sprintf_func('\'%d\',5')
-        expected = '5'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('\'d\': ret != expected')
+        self.assertEqual(ret, '5')
 
         ret = p.sprintf_func('%d,5')
-        expected = '5'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('d: ret != expected')
+        self.assertEqual(ret, '5')
 
         ret = p.sprintf_func('"%s %06d","testing",12')
         expected = 'testing 000012'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('s 06d: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.sprintf_func('"%07d", 12.0000')
         expected = '0000012'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('07d: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.sprintf_func('"%x", 12')
-        expected = 'c'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('x: ret != expected')
+        self.assertEqual(ret, 'c')
 
         ret = p.sprintf_func('"%o", 12')
-        expected = '14'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('o: ret != expected')
+        self.assertEqual(ret, '14')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.sprintf_func('"%s,12')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('missing quote: did not raise GrammarException')
-
-        try:
+            
+        with self.assertRaises(parser.GrammarException):
             p.sprintf_func('%s')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('no args: did not raise GrammarException')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.sprintf_func('"%s"')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('no args2: did not raise GrammarException')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
             p.sprintf_func('"%f","test"')
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('bad type: did not raise GrammarException')
 
     @unittest_reporter
     def test_07_choice(self):
@@ -279,32 +203,22 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.choice_func('1,2,3,4')
         expected = ('1','2','3','4')
-        if ret not in expected:
-            logger.info('multi: ret=%r, expected=%r',ret,expected)
-            raise Exception('ret != expected')
+        self.assertIn(ret,expected)
+        
         ret = p.choice_func([1,2,3,4])
-        if ret not in expected:
-            logger.info('multi: ret=%r, expected=%r',ret,expected)
-            raise Exception('ret != expected')
+        self.assertIn(ret,expected)
 
         ret = p.choice_func('1')
-        expected = '1'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('single: ret != expected')
+        self.assertEqual(ret, '1')
 
-        ret = p.choice_func('')
-        expected = ''
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('empty: ret != expected')
+        with self.assertRaises(parser.GrammarException):
+            p.choice_func('')
 
-        try:
+        with self.assertRaises(parser.GrammarException):
+            p.choice_func([])
+
+        with self.assertRaises(parser.GrammarException):
             p.choice_func(123)
-        except parser.GrammarException:
-            pass
-        else:
-            raise Exception('number: did not raise GrammarException')
 
     @unittest_reporter
     def test_08_system(self):
@@ -327,10 +241,10 @@ class parser_test(unittest.TestCase):
         self.assertEqual(ret, environ['environment']['test'])
 
         ret = p.environ_func('test2')
-        self.assertEqual(ret, environ['environment']['test2'])
+        self.assertEqual(ret, str(environ['environment']['test2']))
 
         ret = p.environ_func('test3')
-        self.assertEqual(ret, environ['environment']['test3'])
+        self.assertEqual(ret, str(environ['environment']['test3']))
 
         with self.assertRaises(parser.GrammarException):
             p.environ_func('test4')
@@ -343,6 +257,7 @@ class parser_test(unittest.TestCase):
         job['steering']['parameters'] = {
             'test': 1,
             'test2': 't2',
+            'test3': False,
             'list': [1,2,3,4.0],
         }
 
@@ -351,40 +266,36 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$steering(test)',job=job)
         expected = job['steering']['parameters']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$steering(test2)',job=job)
         expected = job['steering']['parameters']['test2']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$steering(test3)',job=job)
+        expected = job['steering']['parameters']['test3']
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$steering(list)',job=job)
         expected = job['steering']['parameters']['list']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('list: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$steering(list)[$steering(test)]',job=job)
         expected = job['steering']['parameters']['list'][job['steering']['parameters']['test']]
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('list[test]: ret != expected')
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$steering(list)[10]',job=job)
+        expected = str(job['steering']['parameters']['list'])+'[10]'
+        self.assertEqual(ret,expected)
 
         for reduction in 'sum', 'len', 'min', 'max':
             ret = p.parse('${}($steering(list))'.format(reduction),job=job)
             expected = getattr(builtins, reduction)(job['steering']['parameters']['list'])
-            if ret != expected:
-                logger.info('ret=%r, expected=%r',ret,expected)
-                raise Exception('{}: ret != expected'.format('${}($steering(list))'.format(reduction)))
+            self.assertEqual(ret,expected)
 
-        ret = p.parse('$steering(test3)',job=job)
-        expected = '$steering(test3)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test3: ret != expected')
+        ret = p.parse('$steering(test4)',job=job)
+        expected = '$steering(test4)'
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() system')
     def test_11_system(self):
@@ -401,21 +312,15 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$system(test)',job=job)
         expected = job['steering']['system']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$system(test2)',job=job)
         expected = job['steering']['system']['test2']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$system(test3)',job=job)
         expected = '$system(test3)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test3: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() options')
     def test_12_options(self):
@@ -431,33 +336,23 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$options(test)',job=job)
         expected = job['options']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$options(test2)',job=job)
         expected = job['options']['test2']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$(test2)',job=job)
         expected = job['options']['test2']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2 general search: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$(test3)',job=job)
         expected = '$(test3)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test3: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$args(test)',job=job)
         expected = job['options']['test']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('args: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() difplus')
     def test_13_difplus(self):
@@ -473,21 +368,15 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$metadata(sensor_name)',job=job)
         expected = job['difplus']['dif']['sensor_name']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('dif: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$metadata(category)',job=job)
         expected = job['difplus']['plus']['category']
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('plus: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$metadata(test)',job=job)
         expected = '$metadata(test)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('plus: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() eval')
     def test_14_eval(self):
@@ -497,27 +386,27 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$eval(4+4)')
         expected = 8
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('simple: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$eval(\(4+3*2\)%3)')
         expected = 1
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('nested: ret != expected')
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$eval((4+3*2)%3)')
+        expected = 1
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$eval(import os)')
         expected = '$eval(import os)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('import: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$eval(os.remove\("/"\))')
         expected = '$eval(os.remove("/"))'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('remove: ret != expected')
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$eval(os.remove("/"))')
+        expected = '$eval(os.remove("/"))'
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() sprintf')
     def test_15_sprintf(self):
@@ -557,21 +446,15 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$choice(1,2,3,4)')
         expected = (1,2,3,4)
-        if ret not in expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('multi: ret != expected')
+        self.assertIn(ret,expected)
 
         ret = p.parse('$choice(1)')
         expected = 1
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('single: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$choice()')
         expected = '$choice()'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('empty: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() environ')
     def test_17_environ(self):
@@ -604,27 +487,19 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$(test)',env=env)
         expected = 1
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('sentence: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$test()',env=env)
         expected = '$test()'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('keyword: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$test',env=env)
         expected = '$test'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('bare: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$eval(os.remove("/"))',env=env)
         expected = '$eval(os.remove("/"))'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('remove: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter(name='parse() job')
     def test_21_job(self):
@@ -638,21 +513,15 @@ class parser_test(unittest.TestCase):
         # run tests
         ret = p.parse('$(test)',job=job)
         expected = 1
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$(test2)',job=job)
         expected = 'test'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
         ret = p.parse('$(test3)',job=job)
         expected = '$(test3)'
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test3: ret != expected')
+        self.assertEqual(ret,expected)
 
     @unittest_reporter
     def test_22_parse(self):
@@ -679,29 +548,25 @@ class parser_test(unittest.TestCase):
         p = parser.ExpParser()
 
         # run tests
-        ret = p.parse('$sprintf("$%s(%s_%s)","steering",$system(test),$metadata(category))',job=job)
+        ret = p.parse('$steering($sprintf("%s_%s",$system(test),$metadata(category)))',job=job)
         expected = 1
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test1: ret != expected')
+        self.assertEqual(ret,expected)
 
-        ret = p.parse('$sprintf("$%s(%s_%s)","steering",$system(test2),$metadata(category))',job=job)
+        ret = p.parse('$steering($system(test2)_$metadata(category))',job=job)
         expected = 2
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test2: ret != expected')
+        self.assertEqual(ret,expected)
 
-        ret = p.parse('$sprintf("$%s(%s_%s)","options",$system(test),$metadata(category))',job=job)
+        ret = p.parse('$options($sprintf("%s_%s",$system(test),$metadata(category)))',job=job)
         expected = 3
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test3: ret != expected')
+        self.assertEqual(ret,expected)
 
-        ret = p.parse('$sprintf("$%s(%s_%s)","options",$system(test2),$metadata(category))',job=job)
+        ret = p.parse('$options($system(test2)_$metadata(category))',job=job)
         expected = 4
-        if ret != expected:
-            logger.info('ret=%r, expected=%r',ret,expected)
-            raise Exception('test4: ret != expected')
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$foo(ba]]r)')
+        expected = '$foo(ba]]r)'
+        self.assertEqual(ret,expected)
 
     @unittest_reporter
     def test_30_parse_job_bin(self):
@@ -717,9 +582,75 @@ class parser_test(unittest.TestCase):
             # run tests
             ret = p.parse("$sprintf('%06d-%06d',$eval($(job)//10000*10000),$eval($eval($(job)//10000+1)*10000))",job=job)
             expected = '%06d-%06d'%(j//10000*10000,(j//10000+1)*10000)
-            if ret != expected:
-                logger.info('ret=%r, expected=%r',ret,expected)
-                raise Exception('ret != expected')
+        self.assertEqual(ret,expected)
+
+    @unittest_reporter
+    def test_100_scanner(self):
+        ret = list(parser.scanner('$foo(bar)'))
+        expected = [('starter','$'),('word','foo'),('scopeL','('),('word','bar'),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.scanner('$foo(bar)[baz]'))
+        expected = [('starter','$'),('word','foo'),('scopeL','('),('word','bar'),
+                    ('scopeR',')'),('bracketL','['),('word','baz'),('bracketR',']')]
+        self.assertEqual(ret, expected)
+
+    @unittest_reporter
+    def test_110_parser(self):
+        ret = list(parser.parser('$foo(bar)'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','bar'),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo(bar)[baz]'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','bar'),
+                    ('scopeR',')'),('bracketL','['),('word','baz'),('bracketR',']')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo(b[a]r)'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','b[a]r'),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo(bar[$(baz)])'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','bar['),
+                    ('starter','$'),('name',None),('scopeL','('),
+                    ('word','baz'),('scopeR',')'),('word',']'),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo($($(bar)[baz]))'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('starter','$'),
+                    ('name',None),('scopeL','('),('starter','$'),
+                    ('name',None),('scopeL','('),('word','bar'),('scopeR',')'),
+                    ('bracketL','['),('word','baz'),('bracketR',']'),
+                    ('word',''),('scopeR',')'),('word',''),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo($(b[a]r))'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('starter','$'),
+                    ('name',None),('scopeL','('),('word','b[a]r'),('scopeR',')'),
+                    ('word',''),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo(bar)[]'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','bar'),('scopeR',')'),
+                    ('bracketL','['),('word',''),('bracketR',']'),]
+        self.assertEqual(ret, expected)
+
+        ret = list(parser.parser('$foo(ba]]r)'))
+        expected = [('starter','$'),('name','foo'),('scopeL','('),('word','ba'),
+                    ('bracketR',']'),('word',''),('bracketR',']'),('word','r'),('scopeR',')')]
+        self.assertEqual(ret, expected)
+
+        with self.assertRaises(SyntaxError):
+            list(parser.parser('$)'))
+
+        with self.assertRaises(SyntaxError):
+            list(parser.parser('()'))
+
+        with self.assertRaises(SyntaxError):
+            list(parser.parser('$(]'))
+
+        with self.assertRaises(SyntaxError):
+            list(parser.parser('$foo([]bar)'))
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
