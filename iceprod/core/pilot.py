@@ -101,6 +101,7 @@ class Pilot(object):
         self.debug = debug
         self.run_timeout = timedelta(seconds=run_timeout)
         self.message_queue = SimpleQueue()
+        self.errors = 10
 
         if self.debug:
             logger.setLevel(logging.DEBUG)
@@ -168,6 +169,9 @@ class Pilot(object):
                             with open(os.path.join(dirs,filename)) as f2:
                                 print(f2.read(), file=f)
 
+        if self.errors <= 0:
+            sys.exit(1)
+
     def term_handler(self):
         """Handle a SIGTERM gracefully"""
         logger.info('checking resources after SIGTERM')
@@ -193,6 +197,7 @@ class Pilot(object):
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
         self.ioloop.stop()
+        sys.exit(1)
 
     def hard_kill(self):
         """Forcefully kill any child processes"""
@@ -271,7 +276,7 @@ class Pilot(object):
     @gen.coroutine
     def run(self):
         """Run the pilot"""
-        errors = int(self.resources.total['cpu'])*10
+        self.errors = max_errors = int(self.resources.total['cpu'])*10
         tasks_running = 0
         while self.running:
             while self.running:
@@ -282,12 +287,12 @@ class Pilot(object):
                     task_configs = self.rpc.download_task(self.config['options']['gridspec'],
                                                          resources=self.resources.get_available())
                 except Exception:
-                    errors -= 1
-                    if errors < 1:
+                    self.errors -= 1
+                    if self.errors < 1:
                         self.running = False
                         logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
-                                 errors, exc_info=True)
+                                 max_errors-self.errors, exc_info=True)
                     continue
                 logger.info('task configs: %r', task_configs)
 
@@ -302,8 +307,8 @@ class Pilot(object):
                         try:
                             task_id = task_config['options']['task_id']
                         except Exception:
-                            errors -= 1
-                            if errors < 1:
+                            self.errors -= 1
+                            if self.errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.error('error getting task_id from config')
@@ -314,8 +319,8 @@ class Pilot(object):
                             task_resources = self.resources.claim(task_id, task_config['options']['resources'])
                             task_config['options']['resources'] = task_resources
                         except Exception:
-                            errors -= 1
-                            if errors < 1:
+                            self.errors -= 1
+                            if self.errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error claiming resources %s', task_id,
@@ -328,8 +333,8 @@ class Pilot(object):
                         try:
                             self.create_task(task_config)
                         except Exception:
-                            errors -= 1
-                            if errors < 1:
+                            self.errors -= 1
+                            if self.errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error creating task %s', task_id,
@@ -363,8 +368,8 @@ class Pilot(object):
                         if self.tasks[task_id]['p'].exitcode != 0:
                             logger.info('task %s exited with bad code: %r',
                                         task_id, self.tasks[task_id]['p'].exitcode)
-                            errors -= 1
-                            if errors < 1:
+                            self.errors -= 1
+                            if self.errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                         self.clean_task(task_id)
@@ -387,7 +392,7 @@ class Pilot(object):
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
 
-        if errors < 1:
+        if self.errors < 1:
             logger.critical('too many errors when running tasks')
         else:
             logger.warning('cleanly stopping pilot')
