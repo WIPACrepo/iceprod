@@ -22,15 +22,31 @@ class FakeStatsClient(object):
 class ElasticClient(object):
     def __init__(self, hostname, basename='iceprod'):
         self.session = requests.Session()
+        # handle auth
+        if '@' in hostname:
+            self.session.auth = tuple(hostname.split('@')[0].split('://')[1].split(':'))
+            hostname = hostname.split('://',1)[0]+'://'+hostname.split('@',1)[1]
         # try a connection
-        r = self.session.get(hostname)
+        r = self.session.get(hostname, timeout=5)
         r.raise_for_status()
         # concat hostname and basename
         self.hostname = hostname+'/'+basename+'/'
+    def head(self, name, index_name):
+        try:
+            r = self.session.head(self.hostname+name+'/'+index_name, timeout=5)
+            r.raise_for_status()
+        except Exception:
+            return False
+        else:
+            return True
+    def get(self, name, index_name):
+        r = self.session.get(self.hostname+name+'/'+index_name, timeout=5)
+        r.raise_for_status()
+        return r.json()
     def put(self, name, index_name, data):
         r = None
         try:
-            kwargs = {}
+            kwargs = {'timeout':5}
             if isinstance(data,dict):
                 kwargs['json'] = data
             else:

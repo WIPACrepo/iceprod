@@ -112,7 +112,12 @@ class schedule(module.module):
         master_grid = BaseGrid(*args)
 
         config = self.cfg['schedule']
-        self.scheduler.schedule(config['buffer_jobs_tasks'], self.modules['db']['queue_buffer_jobs_tasks'])
+        self.scheduler.schedule(config['buffer_jobs_tasks'],
+                self.modules['db']['queue_buffer_jobs_tasks'])
+
+        self.scheduler.schedule(config['task_stat_monitoring'],
+                self.modules['db']['cron_task_stat_monitoring'])
+
         self.scheduler.schedule(config['check_iceprod'], master_grid.check_iceprod)
 
         try:

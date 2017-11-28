@@ -520,3 +520,33 @@ class cron(_Methods_Base):
             if dataset_id not in processing_datasets:
                 num = 0
             self.parent.statsd.gauge('datasets.{}.tasks.{}.{}'.format(dataset_num,name,status), num)
+
+    @tornado.gen.coroutine
+    def cron_task_stat_monitoring(self, limit=1000):
+        """
+        Monitor task statistics in ES.
+        """
+        sql = 'select task_stat_id from task_stat'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        task_stat_ids = {row[0] for row in ret}
+
+        task_stat_updates = []
+        for ts_id in task_stat_ids:
+            if not self.parent.elastic.head('task_stat',ts_id):
+                task_stat_updates.append(ts_id)
+                if len(task_stat_updates) >= limit:
+                    logger.info('task_stat_monitoring hit limit')
+                    break
+
+        if task_stat_updates:
+            sql = 'select * from task_stat where task_stat_id in (%s)'
+            for f in self._bulk_select(sql, task_stat_updates):
+                ret = yield f
+                for task_stat, task_id, data in ret:
+                    data = json.loads(data)
+                    data['task_id'] = task_id
+                    if 'task_stats' in data:
+                        del data['task_stats']
+                    self.parent.elastic.put('task_stat', ts_id, data)
+
