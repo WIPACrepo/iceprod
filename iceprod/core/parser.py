@@ -199,6 +199,8 @@ def parser(data):
             # bad token
             raise SyntaxError()
     if last_word or nestings or stack:
+        if last_word:
+            logger.warning('last_word: %s', last_word)
         raise SyntaxError()
 
 class ExpParser:
@@ -266,6 +268,7 @@ class ExpParser:
         :param env: env dictionary, optional
         :returns: expanded string
         """
+        logging.warning("parse: %s",input)
         if not isinstance(input,dataclasses.String) or not input:
             return input
 
@@ -280,71 +283,77 @@ class ExpParser:
             self.env = {}
         self.depth = 0 # start at a depth of 0
         
-        # parse input
-        stack = []
-        try:
-            for token,word in parser(input):
-                logger.debug('exp %s,%s,%r',token,word,stack)
-                if token in ('starter','name','word','scopeL','bracketL'):
-                    stack.append((token,word))
-                elif token == 'scopeR':
-                    # coelsce stack up to scopeL
-                    word = ''
-                    while stack and stack[-1][0] != 'scopeL':
-                        word = stack.pop()[1] + word
-                    stack.pop() # remove scopeL
-                    name = stack.pop()[1]
-                    stack.pop() # remove starter
+        while True:
+            # parse input
+            stack = []
+            try:
+                for token,word in parser(input):
+                    logger.debug('exp %s,%s,%r',token,word,stack)
+                    if token in ('starter','name','word','scopeL','bracketL'):
+                        stack.append((token,word))
+                    elif token == 'scopeR':
+                        # coelsce stack up to scopeL
+                        word = ''
+                        while stack and stack[-1][0] != 'scopeL':
+                            word = stack.pop()[1] + word
+                        stack.pop() # remove scopeL
+                        name = stack.pop()[1]
+                        stack.pop() # remove starter
 
-                    # try evaluating this
-                    try:
-                        args = []
-                        if name:
-                            args.append(name)
-                        args.append(word)
-                        ret = self.process_phrase(*args)
-                        stack.append(('word',str(ret)))
-                    except GrammarException:
-                        logger.debug('GrammarException')
-                        stack.append(('word','$'+(name if name else '')+'('+word+')'))
-                elif token == 'bracketR':
-                    # coelsce stack up to bracketL
-                    word = ''
-                    while stack and stack[-1][0] != 'bracketL':
-                        word = stack.pop()[1] + word
-                    stack.pop() # remove bracketL
+                        # try evaluating this
+                        try:
+                            args = []
+                            if name:
+                                args.append(name)
+                            args.append(word)
+                            ret = self.process_phrase(*args)
+                            stack.append(('word',str(ret)))
+                        except GrammarException:
+                            logger.debug('GrammarException')
+                            stack.append(('word','$'+(name if name else '')+'('+word+')'))
+                    elif token == 'bracketR':
+                        # coelsce stack up to bracketL
+                        word = ''
+                        while stack and stack[-1][0] != 'bracketL':
+                            word = stack.pop()[1] + word
+                        stack.pop() # remove bracketL
 
-                    # try evaluating this
-                    try:
-                        ret = self.process_phrase(word)
-                    except GrammarException:
-                        ret = word
+                        # try evaluating this
+                        try:
+                            ret = self.process_phrase(word)
+                        except GrammarException:
+                            ret = word
 
-                    # coelsce words
-                    word = ''
-                    while stack and stack[-1][0] == 'word':
-                        word  = stack.pop()[1] + word
+                        # coelsce words
+                        word = ''
+                        while stack and stack[-1][0] == 'word':
+                            word  = stack.pop()[1] + word
 
-                    # now do list/dict index
-                    try:
-                        ret = getType(word)[getType(ret)]
-                        stack.append(('word',str(ret)))
-                    except Exception:
-                        logger.debug('cannot eval: %s[%s]', word, ret,
-                                     exc_info=True)
-                        stack.append(('word',word+'['+ret+']'))
-                else:
-                    raise SyntaxError()
-        except Exception:
-            logger.info('SyntaxError', exc_info=True)
-            output = input
-        else:
-            output = getType(''.join(s[1] for s in stack))
+                        # now do list/dict index
+                        try:
+                            ret = getType(word)[getType(ret)]
+                            stack.append(('word',str(ret)))
+                        except Exception:
+                            logger.debug('cannot eval: %s[%s]', word, ret,
+                                         exc_info=True)
+                            stack.append(('word',word+'['+ret+']'))
+                    else:
+                        raise SyntaxError()
+            except Exception:
+                logger.info('SyntaxError', exc_info=True)
+                output = input
+            else:
+                output = getType(''.join(s[1] for s in stack))
+                if isinstance(output,dataclasses.String) and output != input:
+                    input = output
+                    continue
+            break
 
         # unset job and env
         self.job = None
         self.env = None
         # return parsed output
+        logger.warning('parser out: %r',output)
         return output
 
     def process_phrase(self,keyword,param=None):
