@@ -198,9 +198,9 @@ def parser(data):
         else:
             # bad token
             raise SyntaxError()
-    if last_word or nestings or stack:
-        if last_word:
-            logger.warning('last_word: %s', last_word)
+    if last_word:
+        yield ("word", last_word)
+    if nestings or stack:
         raise SyntaxError()
 
 class ExpParser:

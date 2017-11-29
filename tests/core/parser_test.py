@@ -519,6 +519,10 @@ class parser_test(unittest.TestCase):
         expected = 'test'
         self.assertEqual(ret,expected)
 
+        ret = p.parse('ab$(test2)cd',job=job)
+        expected = 'abtestcd'
+        self.assertEqual(ret,expected)
+
         ret = p.parse('$(test3)',job=job)
         expected = '$(test3)'
         self.assertEqual(ret,expected)
@@ -643,8 +647,8 @@ class parser_test(unittest.TestCase):
         with self.assertRaises(SyntaxError):
             list(parser.parser('$)'))
 
-        with self.assertRaises(SyntaxError):
-            list(parser.parser('()'))
+        ret = list(parser.parser('()'))
+        self.assertEqual(ret, [('word','()')])
 
         with self.assertRaises(SyntaxError):
             list(parser.parser('$(]'))
