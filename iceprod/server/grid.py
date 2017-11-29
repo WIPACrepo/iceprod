@@ -665,6 +665,12 @@ class BaseGrid(object):
         # add server options
         config['options']['task_id'] = task['task_id']
         config['options']['task'] = task['name']
+        if 'job' in task:
+            config['options']['job'] = task['job']
+        if 'jobs_submitted' in task:
+            config['options']['jobs_submitted'] = task['jobs_submitted']
+        if 'dataset_id' in task:
+            config['options']['dataset_id'] = task['dataset_id']
         config['options']['stillrunninginterval'] = self.queue_cfg['ping_interval']
         config['options']['debug'] = task['debug']
         config['options']['upload'] = 'logging'
