@@ -267,9 +267,12 @@ class _Methods_Base():
             bindings2 = bindings[:num]
             logger.info('bulk select %s %d',sql,len(bindings2))
             bindings = bindings[num:]
+            if extra_bindings:
+                cnt = sql.split('%s',1)[0].count('?')
             sql2 = sql%(','.join('?' for _ in bindings2))
             if extra_bindings:
-                bindings2.extend(extra_bindings)
+                extra_bindings = list(extra_bindings)
+                bindings2 = extra_bindings[:cnt] + bindings2 + extra_bindings[cnt:]
             ret.append(self.parent.db.query(sql2, bindings2))
         return ret
 

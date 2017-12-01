@@ -378,7 +378,7 @@ else:
 
         def _db_query(self, cur, sql, bindings=None):
             """Make a db query and do error handling"""
-            logger.debug('running query %s',sql)
+            logger.debug('running query %s, %r',sql,bindings)
             for i in range(10):
                 try:
                     if bindings is not None:
