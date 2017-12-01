@@ -30,7 +30,7 @@ if 'PYTHONPATH' in os.environ:
 else:
     os.environ['PYTHONPATH'] = '{}:{}:{}'.format(integration_dir,iceprod_dir,curdir)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('integration_tests')
 
 from iceprod.core.jsonRPCclient import JSONRPC
@@ -84,6 +84,9 @@ port = args.port
 cfg = {
     "modules":{
         "master_updater":False,
+    },
+    "logging":{
+        "level":"DEBUG"
     },
     "schedule":{
         "buffer_jobs_tasks":"every 1 minutes",

@@ -179,46 +179,6 @@ class queue(_Methods_Base):
         else:
             raise tornado.gen.Return(task_ret)
 
-
-    @tornado.gen.coroutine
-    def queue_set_task_status_raw(self, task, status):
-        """
-        Set the status of a task.
-
-        Args:
-            task (str or iterable): task_id or iterable of task_ids
-            status (str): status to set
-        """
-        now = nowstr()
-        if isinstance(task,String):
-            task = [task]
-        elif not isinstance(task,Iterable):
-            raise Exception('unknown type for task')
-
-        sql = 'update search set task_status = ? '
-        sql += ' where task_id in (%s)'
-        bindings = (status,)
-        sql2 = 'update task set prev_status = status, '
-        sql2 += ' status = ?, status_changed = ? where task_id in (%s)'
-        bindings2 = (status,now)
-
-        self._bulk_select(sql, task, extra_bindings=bindings)
-        self._bulk_select(sql2, task, extra_bindings=bindings2)
-
-        for tt in task:
-            if self._is_master():
-                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
-                bindings3 = (master_update_history_id,'search',tt,now)
-                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                bindings4 = (master_update_history_id,'task',tt,now)
-                yield self.parent.db.query([sql3,sql3],[bindings3,bindings4])
-            else:
-                bindings = (status,tt)
-                bindings2 = (status,now,tt)
-                yield self._send_to_master(('search',tt,now,sql%'?',bindings))
-                yield self._send_to_master(('task',tt,now,sql2%'?',bindings2))
-
     @tornado.gen.coroutine
     def queue_set_task_status(self, task, status):
         """
@@ -239,7 +199,31 @@ class queue(_Methods_Base):
             ret = yield f
             tids.extend(row[0] for row in ret)
         logger.debug("task_ids: %r",tids)
-        yield self.queue_set_task_status_raw(tids, status)
+        
+        now = nowstr()
+        sql = 'update search set task_status = ? '
+        sql += ' where task_id in (%s)'
+        bindings = (status,)
+        sql2 = 'update task set prev_status = status, '
+        sql2 += ' status = ?, status_changed = ? where task_id in (%s)'
+        bindings2 = (status,now)
+
+        self._bulk_select(sql, tids, extra_bindings=bindings)
+        self._bulk_select(sql2, tids, extra_bindings=bindings2)
+
+        for tt in tids:
+            if self._is_master():
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+                bindings3 = (master_update_history_id,'search',tt,now)
+                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+                bindings4 = (master_update_history_id,'task',tt,now)
+                yield self.parent.db.query([sql3,sql3],[bindings3,bindings4])
+            else:
+                bindings = (status,tt)
+                bindings2 = (status,now,tt)
+                yield self._send_to_master(('search',tt,now,sql%'?',bindings))
+                yield self._send_to_master(('task',tt,now,sql2%'?',bindings2))
 
     @tornado.gen.coroutine
     def queue_reset_tasks(self, reset=[], fail=[]):

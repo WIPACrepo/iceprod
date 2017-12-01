@@ -369,7 +369,7 @@ class rpc(_Methods_Base):
                                         count=error_info['resources'][r])
         with (yield self.parent.db.acquire_lock('queue')):
             try:
-                sql = 'select failures, requirements, task_rel_id from task '
+                sql = 'select status, failures, requirements, task_rel_id from task '
                 sql += 'where task_id = ?'
                 bindings = (task_id,)
                 ret = yield self.parent.db.query(sql, bindings)
@@ -378,11 +378,13 @@ class rpc(_Methods_Base):
                 failures = 0
                 task_reqs = {}
                 task_rel_id = None
-                for row in ret:
-                    failures = row[0] + 1
-                    task_rel_id = row[2]
+                for s,f,r,t in ret:
+                    if s not in ('queued','processing'):
+                        raise Exception('task was not queued or processing, so cannot reset')
+                    failures = f + 1
+                    task_rel_id = t
                     try:
-                        task_reqs = json_decode(row[1])
+                        task_reqs = json_decode(r)
                     except Exception:
                         pass
                 sql = 'select requirements from task_rel where task_rel_id = ?'
