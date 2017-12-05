@@ -95,8 +95,8 @@ cfg = {
         "a":{
             "type":"condor",
             "description":"test",
-            "tasks_on_queue":[10,20,10],
-            "pilots_on_queue":[10,20,10],
+            "tasks_on_queue":[30,50,20],
+            "pilots_on_queue":[30,50,20],
             "software_dir":os.environ['ICEPRODROOT'],
             "iceprod_dir":iceprod_dir
         },
@@ -139,7 +139,10 @@ try:
 
     client = JSONRPC('http://localhost:%d/jsonrpc'%port,passkey='passkey')
     def submit_dataset(cfg):
-        return client.submit_dataset(cfg, njobs=10)
+        desc = None
+        if 'description' in cfg:
+            desc = cfg['description']
+        return client.submit_dataset(cfg, njobs=10, description=desc)
     def wait_for_dataset(dataset_id):
         logger.info('waiting on dataset %s',dataset_id)
         while True:
