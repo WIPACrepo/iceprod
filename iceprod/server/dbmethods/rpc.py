@@ -284,9 +284,9 @@ class rpc(_Methods_Base):
             if self._is_master():
                 master_update_history_id = yield self.parent.db.increment_id('master_update_history')
                 sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
-                bindings3 = (master_update_history_id,'search',newtask['task_id'],now)
+                bindings3 = (master_update_history_id,'search',task_id,now)
                 master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                bindings4 = (master_update_history_id,'task',newtask['task_id'],now)
+                bindings4 = (master_update_history_id,'task',task_id,now)
                 try:
                     yield self.parent.db.query([sql3,sql3], [bindings3,bindings4])
                 except Exception:
