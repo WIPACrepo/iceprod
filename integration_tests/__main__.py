@@ -112,6 +112,10 @@ cfg = {
         "port":port,
         "tornado_port":port+1,
     },
+    "master":{
+        "status":"online",
+        "url":"",
+    },
 }
 if not os.path.exists('etc'):
     os.mkdir('etc')
