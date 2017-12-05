@@ -240,6 +240,7 @@
                 "RunMPHitFilter": "yes",
                 "seed": "$steering(seed)",
                 "summaryfile": "summary.xml",
+                "TotalEnergyToProcess": 750000,
                 "UseGPUs": true
               },
               "classes": [],
@@ -259,7 +260,7 @@
               },
               "projects": [],
               "resources": [],
-              "running_class": "icecube.simprod.modules.PPC",
+              "running_class": "icecube.simprod.modules.ClSim",
               "src": ""
             },
             {
