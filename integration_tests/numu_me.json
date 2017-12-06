@@ -31,7 +31,7 @@
       "MCPrescale": 500,
       "mctype": "nugen_numu",
       "mjd_16": "57531",
-      "nevents": 10,
+      "nevents": 15,
       "NUGEN::emax": "1e5",
       "NUGEN::emin": "5e3",
       "NUGEN::flavor": "NuMu",

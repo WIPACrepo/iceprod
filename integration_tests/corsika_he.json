@@ -95,7 +95,7 @@
                 }
               ],
               "env_clear": true,
-              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-env simulation/V05-02-00",
               "name": "",
               "parameters": {
               },
@@ -181,7 +181,7 @@
                 }
               ],
               "env_clear": true,
-              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-env simulation/V05-02-00",
               "name": "",
               "parameters": {
               },
@@ -254,7 +254,7 @@
                 }
               ],
               "env_clear": true,
-              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-env simulation/V05-02-00",
               "name": "clsim",
               "parameters": {
               },
@@ -299,7 +299,7 @@
                 }
               ],
               "env_clear": true,
-              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v2/icetray-env simulation/V05-01-00",
+              "env_shell": "/cvmfs/icecube.opensciencegrid.org/py2-v3/icetray-env simulation/V05-02-00",
               "name": "polyplopia",
               "parameters": {
               },
