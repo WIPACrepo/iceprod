@@ -891,12 +891,12 @@ def fork_module(cfg, env, module):
             if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
                 # pass through unchanged
                 env[k] = os.environ[k]
-            elif k in ('SROOT',) or 'ICEPROD' in k:
+            elif 'sroot' in k.lower() or 'iceprod' in k.lower():
                 # don't pass these at all
                 pass
             else:
                 # filter SROOT out of environ
-                ret = [x for x in os.environ[k].split(':') if x.strip() and not x.startswith(prefix)]
+                ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
                 if ret:
                     env[k] = ':'.join(ret)
         logger.warning('env = %r', env)
