@@ -106,8 +106,8 @@ class schedule(module.module):
         """For single-node systems, with no client-master relationship"""
         config = self.cfg['schedule']
         self.scheduler.schedule(config['job_completion'],
-                self.modules['db']['cron_job_completion'],
-                delete_jobs=False)
+                partial(self.modules['db']['cron_job_completion'],
+                        delete_jobs=False))
 
         self.scheduler.schedule(config['buffer_jobs_tasks'],
                 self.modules['db']['queue_buffer_jobs_tasks'])
@@ -119,8 +119,8 @@ class schedule(module.module):
                 self.modules['db']['cron_dataset_update'])
 
         self.scheduler.schedule(config['job_completion'],
-                self.modules['db']['cron_job_completion'],
-                delete_jobs=True)
+                partial(self.modules['db']['cron_job_completion'],
+                        delete_jobs=True))
 
     def _master_schedule(self):
         """For masters with clients"""
