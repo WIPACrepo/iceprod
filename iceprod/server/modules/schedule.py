@@ -85,7 +85,7 @@ class schedule(module.module):
 
         if 'status' in self.cfg['master'] and self.cfg['master']['status']:
             self._master_schedule()
-        else if 'url' in self.cfg['master'] and self.cfg['master']['url']:
+        elif 'url' in self.cfg['master'] and self.cfg['master']['url']:
             self._client_schedule()
         else:
             self._single_schedule()
