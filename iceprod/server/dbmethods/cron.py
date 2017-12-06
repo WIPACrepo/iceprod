@@ -124,7 +124,7 @@ class cron(_Methods_Base):
                 # TODO: consolidate dataset statistics
 
     @tornado.gen.coroutine
-    def cron_job_completion(self):
+    def cron_job_completion(self, delete_jobs=False):
         """
         Check for job status changes.
 
@@ -214,7 +214,7 @@ class cron(_Methods_Base):
                     logger.info('job %r can be removed', job_id)
                     clean_jobs.append(job_id)
 
-        if (not self._is_master()) and clean_jobs:
+        if delete_jobs and (not self._is_master()) and clean_jobs:
             # we are not the master, and just cleaning these jobs
             with (yield self.parent.db.acquire_lock('queue')):
                 sql = 'select task_id from search where job_id in (%s)'
@@ -245,7 +245,7 @@ class cron(_Methods_Base):
                 for f in self._bulk_select(sql, clean_jobs):
                     yield f
 
-        if self._is_master():
+        else:
             # we are the master, and are updating job statuses
             now = nowstr()
 

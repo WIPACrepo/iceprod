@@ -66,10 +66,6 @@ class schedule(module.module):
         self.scheduler.schedule(config['dataset_completion'],
                 self.modules['db']['cron_dataset_completion'])
 
-        # mark jobs complete
-        self.scheduler.schedule(config['job_completion'],
-                self.modules['db']['cron_job_completion'])
-
         # collate node resources
         self.scheduler.schedule(config['collate_resources'],
                 partial(self.modules['db']['node_collate_resources'],
@@ -81,22 +77,23 @@ class schedule(module.module):
         self.scheduler.schedule(config['generate_web_graphs'],
                 self.modules['db']['cron_generate_web_graphs'])
 
-        self.scheduler.schedule(config['pilot_monitoring'],
-                self.modules['db']['cron_pilot_monitoring'])
-
         self.scheduler.schedule(config['dataset_status_monitoring'],
                 self.modules['db']['cron_dataset_status_monitoring'])
 
-        if ('master' in self.cfg and 'status' in self.cfg['master'] and
-            self.cfg['master']['status']):
-            self._master_schedule()
-        else:
-            self._client_schedule()
+        if self.cfg['modules']['queue']:
+            self._queue_schedule()
 
-    def _client_schedule(self):
-        config = self.cfg['schedule']
-        self.scheduler.schedule(config['dataset_update'],
-                self.modules['db']['cron_dataset_update'])
+        if 'status' in self.cfg['master'] and self.cfg['master']['status']:
+            self._master_schedule()
+        else if 'url' in self.cfg['master'] and self.cfg['master']['url']:
+            self._client_schedule()
+        else:
+            self._single_schedule()
+
+    def _queue_schedule(self):
+        """For active grids"""
+        self.scheduler.schedule(config['pilot_monitoring'],
+                self.modules['db']['cron_pilot_monitoring'])
 
         self.scheduler.schedule(config['suspend_overusage_tasks'],
                 self.modules['db']['cron_suspend_overusage_tasks'])
@@ -104,7 +101,28 @@ class schedule(module.module):
         self.scheduler.schedule(config['check_active_pilots_tasks'],
                 self.modules['db']['cron_check_active_pilots_tasks'])
 
+    def _single_schedule(self):
+        """For single-node systems, with no client-master relationship"""
+        config = self.cfg['schedule']
+        self.scheduler.schedule(config['job_completion'],
+                self.modules['db']['cron_job_completion'],
+                delete_jobs=False)
+
+        self.scheduler.schedule(config['buffer_jobs_tasks'],
+                self.modules['db']['queue_buffer_jobs_tasks'])
+
+    def _client_schedule(self):
+        """For clients attached to masters"""
+        config = self.cfg['schedule']
+        self.scheduler.schedule(config['dataset_update'],
+                self.modules['db']['cron_dataset_update'])
+
+        self.scheduler.schedule(config['job_completion'],
+                self.modules['db']['cron_job_completion'],
+                delete_jobs=True)
+
     def _master_schedule(self):
+        """For masters with clients"""
         # fake a grid, so we can do grid-like things
         from iceprod.server.grid import BaseGrid
         args = [None, self.cfg['queue']['*'], self.cfg, self.modules,
@@ -112,6 +130,10 @@ class schedule(module.module):
         master_grid = BaseGrid(*args)
 
         config = self.cfg['schedule']
+
+        self.scheduler.schedule(config['job_completion'],
+                self.modules['db']['cron_job_completion'])
+
         self.scheduler.schedule(config['buffer_jobs_tasks'],
                 self.modules['db']['queue_buffer_jobs_tasks'])
 
