@@ -92,6 +92,7 @@ class schedule(module.module):
 
     def _queue_schedule(self):
         """For active grids"""
+        config = self.cfg['schedule']
         self.scheduler.schedule(config['pilot_monitoring'],
                 self.modules['db']['cron_pilot_monitoring'])
 
