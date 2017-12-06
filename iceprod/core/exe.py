@@ -888,7 +888,7 @@ def fork_module(cfg, env, module):
         env = {}
         if 'SROOT' in os.environ:
             prefix = os.environ['SROOT']
-        else if 'ICEPRODROOT' in os.environ:
+        elif 'ICEPRODROOT' in os.environ:
             prefix = os.environ['ICEPRODROOT']
         else:
             prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
