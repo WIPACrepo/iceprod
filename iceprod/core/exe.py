@@ -883,10 +883,15 @@ def fork_module(cfg, env, module):
         raise Exception('error running module')
 
     logger.warning('subprocess cmd=%r',cmd)
-    if module['env_clear'] and 'SROOT' in os.environ:
+    if module['env_clear']:
         # must be on cvmfs-like environ for this to apply
         env = {}
-        prefix = os.environ['SROOT']
+        if 'SROOT' in os.environ:
+            prefix = os.environ['SROOT']
+        else if 'ICEPRODROOT' in os.environ:
+            prefix = os.environ['ICEPRODROOT']
+        else:
+            prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         for k in os.environ:
             if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
                 # pass through unchanged
