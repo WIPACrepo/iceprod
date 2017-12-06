@@ -104,6 +104,7 @@ cfg = {
         "submit_pilots":args.pilots,
         "submit_dir":os.path.join(tmpdir,'submit'),
         "site_temp":site_temp,
+        "debug":true,
     },
     "system":{
         "ssl":False,
