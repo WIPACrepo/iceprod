@@ -145,7 +145,7 @@ try:
         while True:
             tasks = {'complete':0,'failed':0,'suspended':0}
             tasks.update(client.public_get_number_of_tasks_in_each_state(dataset_id))
-            if tasks['complete'] == sum(tasks.values()):
+            if tasks['complete'] == sum(tasks.values()) and tasks['complete'] > 10:
                 return
             if tasks['failed'] | tasks['suspended'] > 1:
                 raise Exception('dataset failed')
