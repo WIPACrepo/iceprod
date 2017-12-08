@@ -377,6 +377,7 @@ class rpc(_Methods_Base):
                     pos += 3
                     host = err[pos:err.find('/',pos)]
                     if host:
+                        host = host.replace('.','_')
                         self.parent.statsd.incr('task_error.gridftp.'+failure_type+'.'+host)
         if 'resources' in error_info:
             for r in error_info['resources']:
