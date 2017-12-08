@@ -345,6 +345,7 @@ class rpc(_Methods_Base):
             err = error_info['error_summary']
             logger.info('task killed because: %s', err)
             self.parent.statsd.incr('task_error.killed')
+            failure_type = ''
             if 'SIGTERM' in err:
                 self.parent.statsd.incr('task_error.kill.sigterm')
             elif 'Resource overuse' in err:
@@ -358,11 +359,25 @@ class rpc(_Methods_Base):
             elif '500 Server Error' in err:
                 self.parent.statsd.incr('task_error.kill.communication_failure')
             elif 'failed to download' in err:
+                failure_type = 'download'
                 self.parent.statsd.incr('task_error.kill.download_failure')
             elif 'failed to upload' in err:
+                failure_type = 'upload'
                 self.parent.statsd.incr('task_error.kill.upload_failure')
             elif 'module failed' in err:
                 self.parent.statsd.incr('task_error.kill.module_failure')
+
+            # check for gridftp error
+            pos = err.rfind('failed to download')
+            if pos == -1:
+                pos = err.rfind('failed to upload')
+            if pos != -1:
+                pos = err.find('://',pos)
+                if pos != -1:
+                    pos += 3
+                    host = err[pos:err.find('/',pos)]
+                    if host:
+                        self.parent.statsd.incr('task_error.gridftp.'+failure_type+'.'+host)
         if 'resources' in error_info:
             for r in error_info['resources']:
                 self.parent.statsd.incr('task_resources.'+r,
