@@ -546,9 +546,8 @@ class cron(_Methods_Base):
                 for task_stat, task_id, data in ret:
                     data = json_decode(data)
                     data['task_id'] = task_id
-                    if 'task_stats' in data:
-                        del data['task_stats']
-                    if 'task_stat' in data:
-                        del data['task_stat']
+                    for k in ('', 'task_stat', 'task_stats'):
+                        if k in data:
+                            del data[k]
                     self.parent.elasticsearch.put('task_stat', ts_id, data)
 
