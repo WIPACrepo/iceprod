@@ -544,7 +544,7 @@ class cron(_Methods_Base):
             for f in self._bulk_select(sql, task_stat_updates):
                 ret = yield f
                 for task_stat, task_id, data in ret:
-                    data = json.loads(data)
+                    data = json_decode(data)
                     data['task_id'] = task_id
                     if 'task_stats' in data:
                         del data['task_stats']
