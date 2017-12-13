@@ -533,7 +533,7 @@ class cron(_Methods_Base):
 
         task_stat_updates = []
         for ts_id in task_stat_ids:
-            if not self.parent.elastic.head('task_stat',ts_id):
+            if not self.parent.elasticsearch.head('task_stat',ts_id):
                 task_stat_updates.append(ts_id)
                 if len(task_stat_updates) >= limit:
                     logger.info('task_stat_monitoring hit limit')
@@ -548,5 +548,5 @@ class cron(_Methods_Base):
                     data['task_id'] = task_id
                     if 'task_stats' in data:
                         del data['task_stats']
-                    self.parent.elastic.put('task_stat', ts_id, data)
+                    self.parent.elasticsearch.put('task_stat', ts_id, data)
 

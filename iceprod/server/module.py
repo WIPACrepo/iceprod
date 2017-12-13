@@ -97,7 +97,7 @@ class module(object):
 
         if 'elasticsearch' in self.cfg and self.cfg['elasticsearch']:
             try:
-                self.elastic = ElasticClient(self.cfg['elasticsearch'])
+                self.elasticsearch = ElasticClient(self.cfg['elasticsearch'])
             except Exception:
                 logger.warning('failed to connet to elasicsearch: %r',
                             self.cfg['elasticsearch'], exc_info=True)
