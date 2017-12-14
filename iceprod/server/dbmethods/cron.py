@@ -637,7 +637,7 @@ class cron(_Methods_Base):
             for task_id in tasks:
                 data = tasks[task_id]
                 task_rel = task_rels[data['task_rel_id']]
-                data['task_index'] = task_rels['task_index']
+                data['task_index'] = task_rel['task_index']
                 if data['requirements']:
                     req = json_decode(data['requirements'])
                 else:
