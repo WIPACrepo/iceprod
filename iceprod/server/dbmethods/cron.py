@@ -574,6 +574,7 @@ class cron(_Methods_Base):
                             if 'time' not in payload and '_' in k and ':' in k and '-' in k:
                                 payload['time'] = k.split('_',1)[-1]
                     self.parent.elasticsearch.put('task_stat', task_stat, payload)
+                    yield None # yield to other events
 
     @tornado.gen.coroutine
     def cron_task_monitoring(self, limit=1000):
@@ -655,4 +656,5 @@ class cron(_Methods_Base):
                         if k.startswith('resources'):
                             data[k] = ret[k]
                 self.parent.elasticsearch.put('task', task_id, data)
+                yield None # yield to other events
 
