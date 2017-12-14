@@ -544,10 +544,116 @@ class cron(_Methods_Base):
             for f in self._bulk_select(sql, task_stat_updates):
                 ret = yield f
                 for task_stat, task_id, data in ret:
+                    payload = {
+                        'task_stat_id': task_stat,
+                        'task_id': task_id,
+                    }
                     data = json_decode(data)
-                    data['task_id'] = task_id
-                    for k in ('', 'task_stat', 'task_stats'):
-                        if k in data:
-                            del data[k]
-                    self.parent.elasticsearch.put('task_stat', ts_id, data)
+                    if 'error' in data:
+                        payload['error'] = data['error']
+                    else:
+                        payload['error'] = any(k.startswith('error') for k in data)
+                    if 'hostname' in data and isinstance(data['hostname'],str):
+                        payload['hostname'] = data['hostname']
+                    if 'resources' in data:
+                        for r in data['resources']:
+                            payload['resources_'+r] = data['resources'][r]
+                    elif 'time_used' in data:
+                        payload['resources_time'] = data['time_used']
+                    else:
+                        for k in data:
+                            if k.startswith('error') and isinstance(data[k],dict):
+                                if 'time_used' in data[k]:
+                                    payload['resources_time'] = data[k]['time_used']/3600.
+                                if 'hostname' in data[k]:
+                                    if isinstance(data[k]['hostname'], str):
+                                        payload['hostname'] = data[k]['hostname']
+                                    if isinstance(data[k]['hostname'], set):
+                                        payload['hostname'] = list(data[k]['hostname'])[0]
+                    self.parent.elasticsearch.put('task_stat', task_stat, payload)
+
+    @tornado.gen.coroutine
+    def cron_task_monitoring(self, limit=1000):
+        """
+        Monitor task status in ES.
+        """
+        if False:
+
+            tasks = {}
+            task_rel_ids = set()
+            sql = 'select * from task where task_id in (%s)'
+            for f in self._bulk_select(sql, task_ids):
+                ret = yield f
+                for row in ret:
+                    row = self._list_to_dict(row)
+                    tasks[row['task_id']] = row
+                    task_rel_ids.add(row['task_rel_id'])
+
+            job_ids = defaultdict(list)
+            sql = 'select task_id,dataset_id,job_id,name from search where task_id in (%s)'
+            for f in self._bulk_select(sql, task_ids):
+                ret = yield f
+                for task_id,dataset_id,job_id,name in ret:
+                    job_ids[job_id].append(task_id)
+                    tasks[task_id]['dataset_id'] = dataset_id
+                    tasks[task_id]['dataset'] = GlobalID.localID_ret(row[14],type='int')
+                    tasks[task_id]['name'] = name
+
+            jobs = {}
+            sql = 'select job_id,job_index from job where job_id in (%s)'
+            for f in self._bulk_select(sql, job_ids):
+                ret = yield f
+                for job_id,job_index in ret:
+                    jobs[job_id] = job_index
+
+            task_rels = {}
+            sql = 'select task_rel_id,task_index,requirements from task_rel where task_rel_id in (%s)'
+            for f in self._bulk_select(sql, task_rel_ids):
+                ret = yield f
+                for task_rel_id,task_index,requirements in ret:
+                    task_rels[task_rel_id] = {
+                        'task_index': task_index,
+                        'requirements': json.loads(requirements),
+                    }
+
+            def sanitize(data):
+                """fix up types"""
+                if 'reader:usr' in data:
+                    return {}
+                keys = list(data)
+                for key in keys:
+                    if isinstance(data[key],bool):
+                        pass
+                    elif isinstance(data[key],(int,long,float)):
+                        data[key] = float(data[key])
+                    elif isinstance(data[key], dict):
+                        data[key] = sanitize(data[key])
+                    else:
+                        data[key] = str(data[key])
+                return data
+
+            for task_stat_id in task_stat_data:
+                data = task_stat_data[task_stat_id]
+                if 'error' not in data:
+                    data['error'] = False
+                for k in ('', 'task_stats'):
+                    if k in data:
+                        del data[k]
+                for key in data:
+                    if key.startswith('error_'):
+                        data['error'] = True
+                        if key != 'error_summary':
+                            data['date'] = key.split('_',1)[-1]
+                        if isinstance(data[key], dict):
+                            for k2 in data[key]:
+                                if k2 in ('time_used','hostname'):
+                                    data[k2] = data[key][k2]
+                        del data[key]
+                if 'time_used' in data and not data['time_used']:
+                    data['time_used'] = 0
+                if 'time' in data and isinstance(data['time'],str):
+                    data['date'] = data['time']
+                    del data['time']
+                data = sanitize(data)
+                self.parent.elasticsearch.put('task', ts_id, data)
 
