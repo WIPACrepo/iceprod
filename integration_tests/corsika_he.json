@@ -70,7 +70,7 @@
                 "HistogramFilename": "histo.pkl",
                 "MakeFIFO": false,
                 "nproc": "$(jobs_submitted)",
-                "nshowers": "$eval($steering(CORSIKA::showers)*2)",
+                "nshowers": "$eval($steering(CORSIKA::showers)*3)",
                 "outputfile": "corsika_bg.i3.gz",
                 "oversampling": 10,
                 "procnum": "$(job)",
