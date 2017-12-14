@@ -580,8 +580,20 @@ class cron(_Methods_Base):
         """
         Monitor task status in ES.
         """
-        if False:
+        sql = 'select task_id from task'
+        bindings = tuple()
+        ret = yield self.parent.db.query(sql, bindings)
+        task_stat_ids = {row[0] for row in ret}
 
+        task_ids = []
+        for ts_id in task_ids:
+            if not self.parent.elasticsearch.head('task',ts_id):
+                task_ids.append(ts_id)
+                if len(task_ids) >= limit:
+                    logger.info('task_monitoring hit limit')
+                    break
+
+        if task_ids:
             tasks = {}
             task_rel_ids = set()
             sql = 'select * from task where task_id in (%s)'
@@ -598,6 +610,7 @@ class cron(_Methods_Base):
                 ret = yield f
                 for task_id,dataset_id,job_id,name in ret:
                     job_ids[job_id].append(task_id)
+                    tasks[task_id]['job_id'] = job_id
                     tasks[task_id]['dataset_id'] = dataset_id
                     tasks[task_id]['dataset'] = GlobalID.localID_ret(row[14],type='int')
                     tasks[task_id]['name'] = name
@@ -607,7 +620,8 @@ class cron(_Methods_Base):
             for f in self._bulk_select(sql, job_ids):
                 ret = yield f
                 for job_id,job_index in ret:
-                    jobs[job_id] = job_index
+                    for task_id in job_ids[job_id]:
+                        tasks[task_id]['job_index'] = job_index
 
             task_rels = {}
             sql = 'select task_rel_id,task_index,requirements from task_rel where task_rel_id in (%s)'
@@ -619,44 +633,25 @@ class cron(_Methods_Base):
                         'requirements': json.loads(requirements),
                     }
 
-            def sanitize(data):
-                """fix up types"""
-                if 'reader:usr' in data:
-                    return {}
-                keys = list(data)
-                for key in keys:
-                    if isinstance(data[key],bool):
-                        pass
-                    elif isinstance(data[key],(int,long,float)):
-                        data[key] = float(data[key])
-                    elif isinstance(data[key], dict):
-                        data[key] = sanitize(data[key])
-                    else:
-                        data[key] = str(data[key])
-                return data
-
-            for task_stat_id in task_stat_data:
-                data = task_stat_data[task_stat_id]
-                if 'error' not in data:
-                    data['error'] = False
-                for k in ('', 'task_stats'):
-                    if k in data:
-                        del data[k]
-                for key in data:
-                    if key.startswith('error_'):
-                        data['error'] = True
-                        if key != 'error_summary':
-                            data['date'] = key.split('_',1)[-1]
-                        if isinstance(data[key], dict):
-                            for k2 in data[key]:
-                                if k2 in ('time_used','hostname'):
-                                    data[k2] = data[key][k2]
-                        del data[key]
-                if 'time_used' in data and not data['time_used']:
-                    data['time_used'] = 0
-                if 'time' in data and isinstance(data['time'],str):
-                    data['date'] = data['time']
-                    del data['time']
-                data = sanitize(data)
-                self.parent.elasticsearch.put('task', ts_id, data)
+            for task_id in tasks:
+                data = tasks[task_id]
+                task_rel = task_rels[data['task_rel_id']]
+                data['task_index'] = task_rels['task_index']
+                if data['requirements']:
+                    req = json.loads(data['requirements'])
+                else:
+                    req = task_rel['requirements']
+                del data['requirements']
+                for k in req:
+                    data['requirements_'+k] = req[k]
+                ret = self.parent.elasticsearch.post('task_stat','_search', {
+                    "query": {
+                        "term" : { "task_id" : task_id }
+                    }
+                })
+                if ret:
+                    for k in ret:
+                        if k.startswith('resources'):
+                            data[k] = ret[k]
+                self.parent.elasticsearch.put('task', task_id, data)
 

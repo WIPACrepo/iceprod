@@ -141,6 +141,9 @@ class schedule(module.module):
         self.scheduler.schedule(config['task_stat_monitoring'],
                 self.modules['db']['cron_task_stat_monitoring'])
 
+        self.scheduler.schedule(config['task_monitoring'],
+                self.modules['db']['cron_task_monitoring'])
+
         self.scheduler.schedule(config['check_iceprod'], master_grid.check_iceprod)
 
         try:

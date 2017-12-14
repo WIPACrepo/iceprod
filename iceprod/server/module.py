@@ -43,6 +43,10 @@ class ElasticClient(object):
         r = self.session.get(self.hostname+name+'/'+index_name, timeout=5)
         r.raise_for_status()
         return r.json()
+    def post(self, name, index_name, data):
+        r = self.session.post(self.hostname+name+'/'+index_name, timeout=5)
+        r.raise_for_status()
+        return r.json()
     def put(self, name, index_name, data):
         r = None
         try:
