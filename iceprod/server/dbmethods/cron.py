@@ -613,7 +613,7 @@ class cron(_Methods_Base):
                     job_ids[job_id].append(task_id)
                     tasks[task_id]['job_id'] = job_id
                     tasks[task_id]['dataset_id'] = dataset_id
-                    tasks[task_id]['dataset'] = GlobalID.localID_ret(row[14],type='int')
+                    tasks[task_id]['dataset'] = GlobalID.localID_ret(dataset_id,type='int')
                     tasks[task_id]['name'] = name
 
             jobs = {}
