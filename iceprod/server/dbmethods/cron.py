@@ -601,7 +601,7 @@ class cron(_Methods_Base):
             for f in self._bulk_select(sql, task_ids):
                 ret = yield f
                 for row in ret:
-                    row = self._list_to_dict(row)
+                    row = self._list_to_dict('task',row)
                     tasks[row['task_id']] = row
                     task_rel_ids.add(row['task_rel_id'])
 
