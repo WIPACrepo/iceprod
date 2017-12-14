@@ -30,21 +30,21 @@ class ElasticClient(object):
         r = self.session.get(hostname, timeout=5)
         r.raise_for_status()
         # concat hostname and basename
-        self.hostname = hostname+'/'+basename+'/'
+        self.hostname = hostname+'/'+basename+'_'
     def head(self, name, index_name):
         try:
-            r = self.session.head(self.hostname+name+'/'+index_name, timeout=5)
+            r = self.session.head(self.hostname+name+'/item/'+index_name, timeout=5)
             r.raise_for_status()
         except Exception:
             return False
         else:
             return True
     def get(self, name, index_name):
-        r = self.session.get(self.hostname+name+'/'+index_name, timeout=5)
+        r = self.session.get(self.hostname+name+'/item/'+index_name, timeout=5)
         r.raise_for_status()
         return r.json()
     def post(self, name, index_name, data):
-        r = self.session.post(self.hostname+name+'/'+index_name, timeout=5)
+        r = self.session.post(self.hostname+name+'/item/'+index_name, timeout=5)
         r.raise_for_status()
         return r.json()
     def put(self, name, index_name, data):
@@ -55,11 +55,11 @@ class ElasticClient(object):
                 kwargs['json'] = data
             else:
                 kwargs['data'] = data
-            r = self.session.put(self.hostname+name+'/'+index_name, **kwargs)
+            r = self.session.put(self.hostname+name+'/item/'+index_name, **kwargs)
             r.raise_for_status()
         except Exception:
-            logger.warning('cannot put %s/%s to elasticsearch at %r', name,
-                         index_name, self.hostname, exc_info=True)
+            logger.warning('cannot put to elasticsearch: %s%s/%s',
+                           self.hostname, name, index_name, exc_info=True)
             if r:
                 logger.info('%r',r.content)
 
