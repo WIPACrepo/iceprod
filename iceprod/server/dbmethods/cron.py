@@ -631,7 +631,7 @@ class cron(_Methods_Base):
                 for task_rel_id,task_index,requirements in ret:
                     task_rels[task_rel_id] = {
                         'task_index': task_index,
-                        'requirements': json.loads(requirements),
+                        'requirements': json_decode(requirements),
                     }
 
             for task_id in tasks:
@@ -639,7 +639,7 @@ class cron(_Methods_Base):
                 task_rel = task_rels[data['task_rel_id']]
                 data['task_index'] = task_rels['task_index']
                 if data['requirements']:
-                    req = json.loads(data['requirements'])
+                    req = json_decode(data['requirements'])
                 else:
                     req = task_rel['requirements']
                 del data['requirements']
