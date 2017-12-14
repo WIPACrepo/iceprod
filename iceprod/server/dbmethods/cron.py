@@ -583,10 +583,10 @@ class cron(_Methods_Base):
         sql = 'select task_id from task'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
-        task_stat_ids = {row[0] for row in ret}
+        result = {row[0] for row in ret}
 
         task_ids = []
-        for ts_id in task_ids:
+        for ts_id in result:
             if not self.parent.elasticsearch.head('task',ts_id):
                 task_ids.append(ts_id)
                 if len(task_ids) >= limit:
