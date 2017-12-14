@@ -560,16 +560,19 @@ class cron(_Methods_Base):
                             payload['resources_'+r] = data['resources'][r]
                     elif 'time_used' in data:
                         payload['resources_time'] = data['time_used']
-                    else:
-                        for k in data:
-                            if k.startswith('error') and isinstance(data[k],dict):
-                                if 'time_used' in data[k]:
-                                    payload['resources_time'] = data[k]['time_used']/3600.
-                                if 'hostname' in data[k]:
-                                    if isinstance(data[k]['hostname'], str):
-                                        payload['hostname'] = data[k]['hostname']
-                                    if isinstance(data[k]['hostname'], set):
-                                        payload['hostname'] = list(data[k]['hostname'])[0]
+                    if 'time' in data:
+                        payload['time'] = data['time']
+                    for k in data:
+                        if k.startswith('error') and isinstance(data[k],dict):
+                            if 'time_used' in data[k] and 'resources_time' not in payload:
+                                payload['resources_time'] = data[k]['time_used']/3600.
+                            if 'hostname' in data[k] and 'hostname' not in payload:
+                                if isinstance(data[k]['hostname'], str):
+                                    payload['hostname'] = data[k]['hostname']
+                                if isinstance(data[k]['hostname'], set):
+                                    payload['hostname'] = list(data[k]['hostname'])[0]
+                            if 'time' not in payload and '_' in k and ':' in k and '-' in k:
+                                payload['time'] = k.split('_',1)[-1]
                     self.parent.elasticsearch.put('task_stat', task_stat, payload)
 
     @tornado.gen.coroutine
