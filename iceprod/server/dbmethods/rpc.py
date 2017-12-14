@@ -304,7 +304,7 @@ class rpc(_Methods_Base):
         json_stats = json_encode(stats)
         bindings = (task_stat_id, task_id, json_stats)
         yield self.parent.db.query(sql, bindings)
-        self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
+        #self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
         if self._is_master():
             master_update_history_id = yield self.parent.db.increment_id('master_update_history')
             sql3 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
@@ -486,7 +486,7 @@ class rpc(_Methods_Base):
                 json_stats = json_encode(error_info)
                 bindings3 = (task_stat_id, task_id, json_stats)
                 yield self.parent.db.query([sql,sql2,sql3], [bindings,bindings2,bindings3])
-                self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
+                #self.parent.elasticsearch.put('task_stat',task_stat_id,json_stats)
                 if self._is_master():
                     msql = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
                     master_update_history_id = yield self.parent.db.increment_id('master_update_history')
