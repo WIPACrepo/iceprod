@@ -592,6 +592,7 @@ class cron(_Methods_Base):
                 if len(task_ids) >= limit:
                     logger.info('task_monitoring hit limit')
                     break
+        logger.info('monitoring for task_ids: %r', task_ids)
 
         if task_ids:
             tasks = {}
