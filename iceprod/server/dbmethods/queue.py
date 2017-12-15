@@ -634,7 +634,7 @@ class queue(_Methods_Base):
                 sql += 'from task where task_rel_id in (%s)'
                 tasks = {}
                 datasets = {k:{} for k in dataset_prios}
-                for f in self._bulk_select(sql, task_rel_ids, num=50):
+                for f in self._bulk_select(sql, task_rel_ids):
                     for task_id, status, depends, reqs, task_rel_id in (yield f):
                         dataset, task_rel_reqs = task_rel_ids[task_rel_id]
                         tasks[task_id] = {'dataset':dataset, 'status':status}
