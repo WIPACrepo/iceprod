@@ -526,6 +526,9 @@ class cron(_Methods_Base):
         """
         Monitor task statistics in ES.
         """
+        if 'elasticsearch' not in self.parent.cfg or not self.parent.cfg['elasticsearch']:
+            return
+
         sql = 'select task_stat_id from task_stat'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
@@ -581,6 +584,9 @@ class cron(_Methods_Base):
         """
         Monitor task status in ES.
         """
+        if 'elasticsearch' not in self.parent.cfg or not self.parent.cfg['elasticsearch']:
+            return
+
         sql = 'select task_id from task'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
