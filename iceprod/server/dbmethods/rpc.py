@@ -4,6 +4,7 @@ RPC database methods
 
 import time
 import logging
+import random
 from datetime import datetime, timedelta
 from functools import partial
 from collections import OrderedDict, defaultdict
@@ -979,7 +980,16 @@ class rpc(_Methods_Base):
         groups = yield self.rpc_get_groups()
         datasets = dataset_prio.apply_group_prios(datasets,
                 groups=groups, filters=filters)
-        dataset_prios = dataset_prio.calc_datasets_prios(datasets,
+
+        # only queue small datasets or every 10th dataset
+        datasets2 = {}
+        total_tasks_submitted = sum(v['tasks_submitted'] for v in datasets.values())
+        for d in datasets:
+            if (datasets[d]['tasks_submitted'] < total_tasks_submitted/1000
+               or random.random() > 0.9):
+                datasets2[d] = datasets[d]
+
+        dataset_prios = dataset_prio.calc_datasets_prios(datasets2,
                 queueing_factor_priority=qf_p,
                 queueing_factor_dataset=qf_d,
                 queueing_factor_tasks=qf_t)

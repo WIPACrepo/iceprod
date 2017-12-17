@@ -579,7 +579,7 @@ class queue(_Methods_Base):
             gridspec (str): The gridspec
 
         Returns:
-            list: dataset_ids
+            dict: {dataset_id: dataset info}
         """
         bindings = []
         sql = 'select * from dataset where status in ("processing","truncated") '
