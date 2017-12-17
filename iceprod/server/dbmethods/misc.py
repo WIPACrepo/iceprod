@@ -257,34 +257,34 @@ class misc(_Methods_Base):
             sql (str): An sql statement
             bindings (tuple): Bindings for the sql statement
         """
-        with (yield self.parent.db.acquire_lock('update_master')):
+        #with (yield self.parent.db.acquire_lock('update_master')):
+        try:
+            sql2 = 'select timestamp from master_update_history '
+            sql2 += 'where table_name = ? and update_index = ?'
+            bindings2 = (table,index)
+            ret = yield self.parent.db.query(sql2, bindings2)
+            prev_timestamp = None
+            for row in ret:
+                prev_timestamp = row[0]
+            if prev_timestamp and prev_timestamp >= timestamp:
+                logger.info('newer data already present for %s %s %s',
+                            table, index, timestamp)
+                return
+            yield self.parent.db.query(sql, bindings)
+        except MySQLdb.Error:
+            logger.warning('dropping history for %r', sql, exc_info=True)
+        except Exception:
+            logger.warning('error updating master', exc_info=True)
+            raise
+        else:
+            master_update_history_id = yield self.parent.db.increment_id('master_update_history')
+            sql2 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
+            bindings2 = (master_update_history_id,table,index,timestamp)
             try:
-                sql2 = 'select timestamp from master_update_history '
-                sql2 += 'where table_name = ? and update_index = ?'
-                bindings2 = (table,index)
-                ret = yield self.parent.db.query(sql2, bindings2)
-                prev_timestamp = None
-                for row in ret:
-                    prev_timestamp = row[0]
-                if prev_timestamp and prev_timestamp >= timestamp:
-                    logger.info('newer data already present for %s %s %s',
-                                table, index, timestamp)
-                    return
-                yield self.parent.db.query(sql, bindings)
+                yield self.parent.db.query(sql2, bindings2)
             except MySQLdb.Error:
-                logger.warning('dropping history for %r', sql, exc_info=True)
+                logger.warning('mysql error updating update_history',
+                            exc_info=True)
             except Exception:
-                logger.warning('error updating master', exc_info=True)
+                logger.warning('error updating update_history', exc_info=True)
                 raise
-            else:
-                master_update_history_id = yield self.parent.db.increment_id('master_update_history')
-                sql2 = 'insert into master_update_history (master_update_history_id,table_name,update_index,timestamp) values (?,?,?,?)'
-                bindings2 = (master_update_history_id,table,index,timestamp)
-                try:
-                    yield self.parent.db.query(sql2, bindings2)
-                except MySQLdb.Error:
-                    logger.warning('mysql error updating update_history',
-                                exc_info=True)
-                except Exception:
-                    logger.warning('error updating update_history', exc_info=True)
-                    raise
