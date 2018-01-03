@@ -115,11 +115,11 @@ header {
 }
 
 header .title {
-    font: 35px sans-serif;
+    font: 40px Helvetica, sans-serif;
     color: #189cc4;
     color:  #fff;
-    padding: 0 .6em;
-    line-height: 44px;
+    padding: .2em .6em 0 .2em;
+    line-height: 40px;
 }
 header a:hover
 {
@@ -174,7 +174,8 @@ footer
 /* menu */
 nav.menu  {
     float: right;
-    margin: 0 1em;
+    margin: .75em 1em 0;
+    font: 16pt Helvetica, sans-serif;
 }
 nav.menu ul {
     list-style: none;
@@ -195,14 +196,15 @@ nav.menu li.current a,
 nav.menu li.master a:hover, nav.menu li.master a:active {
     color: #fff;
 }
-nav.menu li.current a, nav.menu li.current a:hover {
-    color: #ccc;
+nav.menu li.current a,
+nav.menu li.current a:hover  {
+    color: #ddd;
 }
 nav.menu li a:hover {
-    color: #ccc;
+    color: #006;
 }
 nav.menu li a:active {
-    color: #ccc;
+    color: #006;
 }
 nav.menu li.master {
     margin-left: 3em;
@@ -211,7 +213,7 @@ nav.menu li.master a {
     color: #3bcc07;
 }
 nav.menu li.master a:hover, nav.menu li.master a:active {
-    color: #ccc;
+    color: #ddd;
 }
 
 /* misc */
