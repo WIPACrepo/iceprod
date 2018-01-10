@@ -13,18 +13,17 @@ import shutil
 import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
-from threading import Thread
-
-import requests
 
 from tests.util import unittest_reporter, glob_tests
 
 import tornado.web
 import tornado.ioloop
+from tornado.httpclient import AsyncHTTPClient
+from tornado.testing import AsyncTestCase
 
 import iceprod.server.tornado
 
-class tornado_test(unittest.TestCase):
+class tornado_test(AsyncTestCase):
     def setUp(self):
         super(tornado_test,self).setUp()
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
@@ -57,18 +56,12 @@ class tornado_test(unittest.TestCase):
         config = {'rest': {'foo': True}}
         app = iceprod.server.tornado.setup_rest(config)
         port = random.randint(32000,38000)
-        iceprod.server.tornado.startup(app, port=port)
+        iceprod.server.tornado.startup(app, port=port, io_loop=self.io_loop)
 
-        io_loop = tornado.ioloop.IOLoop.current()
-        t = Thread(target=io_loop.start)
-        t.start()
-        try:
-            r = requests.get('http://localhost:%d/foo'%port)
-            self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.text, 'foo')
-        finally:
-            io_loop.stop()
-            t.join()
+        client = AsyncHTTPClient(self.io_loop)
+        r = yield client.fetch('http://localhost:%d/foo'%port)
+        self.assertEqual(r.code, 200)
+        self.assertEqual(r.body, b'foo')
 
 
 def load_tests(loader, tests, pattern):
