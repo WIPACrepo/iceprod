@@ -24,7 +24,7 @@ class Auth:
             payload (dict): any other fields that should be included
 
         Returns:
-            str representation of JWT token
+            str: representation of JWT token
         """
         exp = self.max_exp_temp if type == 'temp' else self.max_exp
         if expiration and exp > expiration:
@@ -50,7 +50,7 @@ class Auth:
             token (str): a JWT token
 
         Returns:
-            dict of data inside token
+            dict: data inside token
 
         Raises:
             Exception on failure to validate.

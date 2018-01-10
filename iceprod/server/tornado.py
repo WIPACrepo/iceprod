@@ -37,7 +37,7 @@ def setup_rest(config):
         config (:py:class:`iceprod.server.config.Config`): An IceProd config
 
     Returns:
-        :py:class:`tornado.web.Application`
+        :py:class:`tornado.web.Application`: Tornado application
     """
     rest = config.get('rest',{})
     routes = []
@@ -68,7 +68,7 @@ def startup(app, address='localhost', port=8080, io_loop=None):
     Start up a Tornado server.
 
     Note that after calling this method you still need to call
-    `IOLoop.current().start()` to start the server.
+    :code:`IOLoop.current().start()` to start the server.
 
     Args:
         app (:py:class:`tornado.web.Application`): Tornado application

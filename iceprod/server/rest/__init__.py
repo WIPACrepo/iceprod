@@ -1,4 +1,5 @@
 import logging
+import json
 
 import tornado.web
 
@@ -37,7 +38,26 @@ class RESTHandler(tornado.web.RequestHandler):
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__
-        
+
+    def get_template_namespace(self):
+        namespace = super(RESTHandler,self).get_template_namespace()
+        namespace['version'] = iceprod.__version__
+        return namespace
+
+    def get_current_user(self):
+        try:
+            type,token = self.request.headers['Authorization'].split(' ', 1)
+            if type.lower() != 'bearer':
+                raise Exception('bad header type')
+            logger.debug('token: %r', token)
+            data = self.auth.validate(token)
+            self.auth_data = data
+            self.auth_key = token
+            return data['sub']
+        except Exception:
+            logger.warn('failed auth', exc_info=True)
+        return None
+
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error json."""
         data = {
