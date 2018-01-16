@@ -164,6 +164,7 @@ DELETE  /groups/<group_id>                              delete a group
 GET     /users                                          get a list of users
 POST    /users                                          add a user
 GET     /users/<user_id>                                get a user
+DELETE  /users/<user_id>                                delete a user
 GET     /users/<user_id>/groups                         get the groups for a user
 POST    /users/<user_id>/groups                         add a group to a user
 PUT     /users/<user_id>/groups                         set the groups for a user

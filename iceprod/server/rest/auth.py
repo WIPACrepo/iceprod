@@ -5,6 +5,8 @@ import binascii
 import socket
 from threading import Thread,Event,Condition
 import logging
+import json
+import uuid
 from contextlib import contextmanager
 from functools import partial, wraps
 try:
@@ -24,7 +26,7 @@ import concurrent.futures
 import motor
 import ldap3
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup
+from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
 
 logger = logging.getLogger('rest.auth')
 
@@ -35,16 +37,16 @@ def setup(config):
     Sets up any database connections or other prerequisites.
 
     Args:
-        config (dict): an instance of :py:class:`tornado.server.config`.
+        config (dict): an instance of :py:class:`iceprod.server.config`.
 
-    Returns: list of routes for auth, which can be passed to
-             :py:class:`tornado.web.Application`.
+    Returns:
+        list: Routes for auth, which can be passed to :py:class:`tornado.web.Application`.
     """
     cfg_auth = config.get('rest',{}).get('auth',{})
     db_name = cfg_auth.get('database','mongodb://localhost:27017')
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name),
+        'database': motor.motor_tornado.MotorClient(db_name).auth,
     })
     ldap_cfg = dict(handler_cfg)
     ldap_cfg.update({
@@ -54,7 +56,9 @@ def setup(config):
 
     return [
         (r'/roles', MultiRoleHandler, handler_cfg),
-        (r'/roles/(.*)', RoleHandler, handler_cfg),
+        (r'/roles/(\w+)', RoleHandler, handler_cfg),
+        (r'/users', MultiUserHandler, handler_cfg),
+        (r'/users/(\w+)', UserHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
     ]
 
@@ -63,7 +67,7 @@ class AuthHandler(RESTHandler):
     """
     Base handler for Auth REST API. 
     """
-    def initialize(self, database=None, auth=None, **kwargs):
+    def initialize(self, database=None, **kwargs):
         super(AuthHandler, self).initialize(**kwargs)
         self.db = database
 
@@ -71,8 +75,8 @@ class MultiRoleHandler(AuthHandler):
     """
     Handle multi-role requests.
     """
-    @tornado.gen.coroutine
-    def get(self):
+    @catch_error
+    async def get(self):
         """Get a list of roles."""
         self.write({})
         self.finish()
@@ -93,9 +97,70 @@ class RoleHandler(AuthHandler):
 
     @tornado.gen.coroutine
     def delete(self, role):
-        """Get a role."""
+        """Delete a role."""
         self.send_error(404, "Role not found")
     
+class MultiUserHandler(AuthHandler):
+    """
+    Handle multi-user requests.
+    """
+    @authorization(roles=['admin'])
+    async def get(self):
+        """
+        Get a list of users.
+
+        Returns:
+            dict: {'results': list of users}
+        """
+        ret = await self.db.users.find(projection={'_id':False}).to_list(length=1000)
+        self.write({'results':ret})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def post(self):
+        """
+        Add a user.
+
+        Body should contain all necessary fields for a user.
+        """
+        data = json.loads(self.request.body)
+        data['user_id'] = uuid.uuid1().hex
+        ret = await self.db.users.insert_one(data)
+        self.set_status(201)
+        self.set_header('Location', '/users/'+data['user_id'])
+        self.write({'result': '/users/'+data['user_id']})
+        self.finish()
+
+class UserHandler(AuthHandler):
+    """
+    Handle individual user requests.
+    """
+    @authorization(roles=['admin'])
+    async def get(self, user_id):
+        """
+        Get a user.
+
+        Returns:
+            dict: user info
+        """
+        ret = await self.db.users.find_one({'user_id':user_id},projection={'_id':False})
+        if not ret:
+            self.send_error(404, "User not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def delete(self, user_id):
+        """
+        Delete a user.
+
+        Returns:
+            dict: empty dict
+        """
+        await self.db.users.delete_one({'user_id':user_id})
+        self.write({})
+        self.finish()
 
 class LDAPHandler(AuthHandler):
     """
@@ -106,8 +171,8 @@ class LDAPHandler(AuthHandler):
         self.ldap_uri = ldap_uri
         self.ldap_base = ldap_base
 
-    @tornado.gen.coroutine
-    def post(self):
+    @catch_error
+    async def post(self):
         """Validate LDAP login, creating a token."""
         try:
             username = self.get_argument('username')

@@ -6,7 +6,11 @@ import os
 import socket
 import logging
 import importlib
+
 import tornado.web
+from tornado.platform.asyncio import AsyncIOMainLoop
+import asyncio
+AsyncIOMainLoop().install()
 
 from iceprod.server import get_pkgdata_filename
 
