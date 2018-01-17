@@ -128,7 +128,7 @@ def authorization(**_auth):
     """
     Handle authorization.
 
-    Like :py:func:`authenticated`, this requires the Authorization header
+    Like :py:func:`iceprod.server.rest.authenticated`, this requires the Authorization header
     to be filled with a valid token.  Note that calling both decorators
     is not necessary, as this decorator will perform authentication
     checking as well.

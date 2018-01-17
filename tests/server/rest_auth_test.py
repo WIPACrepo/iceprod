@@ -64,8 +64,121 @@ class rest_auth_test(AsyncTestCase):
         except Exception:
             logger.info('failed setup', exc_info=True)
 
+
+    @unittest_reporter(name='REST GET    /groups')
+    def test_200_group(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [])
+
+    @unittest_reporter(name='REST POST   /groups')
+    def test_210_group(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [{'group_id':group_id, 'name': '/foo/bar'}])
+
+    @unittest_reporter(name='REST GET    /groups/<group_id>')
+    def test_220_group(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'group_id':group_id, 'name': '/foo/bar'})
+
+    @unittest_reporter(name='REST DELETE /groups/<group_id>')
+    def test_230_group(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'group_id':group_id, 'name': '/foo/bar'})
+
+        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+                method='DELETE',
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+                    headers={'Authorization': b'bearer '+self.token})
+        
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [])
+
+    @unittest_reporter(name='REST bad access to POST /groups')
+    def test_240_group(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': '/foo/bar'
+        }
+        user_token = Auth('secret').create_token('foo', type='user', payload={'role':'user'})
+        with self.assertRaises(Exception):
+            r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                    method='POST', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+user_token})
+
     @unittest_reporter(name='REST GET    /users')
-    def test_00_user(self):
+    def test_300_user(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
@@ -77,7 +190,7 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(data['results'], [])
 
     @unittest_reporter(name='REST POST   /users')
-    def test_10_user(self):
+    def test_310_user(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
@@ -101,7 +214,7 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(data['results'], [{'user_id':user_id, 'username':'foo'}])
 
     @unittest_reporter(name='REST GET    /users/<user_id>')
-    def test_20_user(self):
+    def test_320_user(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
@@ -124,7 +237,7 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(data, {'user_id':user_id, 'username':'foo'})
 
     @unittest_reporter(name='REST DELETE /users/<user_id>')
-    def test_30_user(self):
+    def test_330_user(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
@@ -162,9 +275,8 @@ class rest_auth_test(AsyncTestCase):
         self.assertIn('results', data)
         self.assertEqual(data['results'], [])
 
-
     @unittest_reporter(name='REST bad access to POST /users')
-    def test_40_user(self):
+    def test_340_user(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)

@@ -57,6 +57,8 @@ def setup(config):
     return [
         (r'/roles', MultiRoleHandler, handler_cfg),
         (r'/roles/(\w+)', RoleHandler, handler_cfg),
+        (r'/groups', MultiGroupHandler, handler_cfg),
+        (r'/groups/(\w+)', GroupHandler, handler_cfg),
         (r'/users', MultiUserHandler, handler_cfg),
         (r'/users/(\w+)', UserHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
@@ -99,7 +101,75 @@ class RoleHandler(AuthHandler):
     def delete(self, role):
         """Delete a role."""
         self.send_error(404, "Role not found")
-    
+
+class MultiGroupHandler(AuthHandler):
+    """
+    Handle multi-group requests.
+    """
+    @authorization(roles=['admin'])
+    async def get(self):
+        """
+        Get a list of groups.
+
+        Returns:
+            dict: {'results': list of groups}
+        """
+        ret = await self.db.groups.find(projection={'_id':False}).to_list(length=1000)
+        self.write({'results':ret})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def post(self):
+        """
+        Add a group.
+
+        Body should contain all necessary fields for a group.
+        """
+        data = json.loads(self.request.body)
+        data['group_id'] = uuid.uuid1().hex
+        ret = await self.db.groups.insert_one(data)
+        self.set_status(201)
+        self.set_header('Location', '/groups/'+data['group_id'])
+        self.write({'result': '/groups/'+data['group_id']})
+        self.finish()
+
+class GroupHandler(AuthHandler):
+    """
+    Handle individual group requests.
+    """
+    @authorization(roles=['admin'])
+    async def get(self, group_id):
+        """
+        Get a group.
+
+        Args:
+            group_id (str): the group to get
+
+        Returns:
+            dict: group info
+        """
+        ret = await self.db.groups.find_one({'group_id':group_id},projection={'_id':False})
+        if not ret:
+            self.send_error(404, "Group not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def delete(self, group_id):
+        """
+        Delete a group.
+
+        Args:
+            group_id (str): the group to delete
+
+        Returns:
+            dict: empty dict
+        """
+        await self.db.groups.delete_one({'group_id':group_id})
+        self.write({})
+        self.finish()
+
 class MultiUserHandler(AuthHandler):
     """
     Handle multi-user requests.
@@ -140,6 +210,9 @@ class UserHandler(AuthHandler):
         """
         Get a user.
 
+        Args:
+            user_id (str): the user to get
+
         Returns:
             dict: user info
         """
@@ -154,6 +227,9 @@ class UserHandler(AuthHandler):
     async def delete(self, user_id):
         """
         Delete a user.
+
+        Args:
+            user_id (str): the user to delete
 
         Returns:
             dict: empty dict
