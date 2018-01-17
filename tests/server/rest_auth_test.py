@@ -65,6 +65,107 @@ class rest_auth_test(AsyncTestCase):
             logger.info('failed setup', exc_info=True)
 
 
+
+    @unittest_reporter(name='REST GET    /roles')
+    def test_100_role(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        r = yield client.fetch('http://localhost:%d/roles'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [])
+
+    @unittest_reporter(name='REST PUT    /roles/<role_name>')
+    def test_110_role(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': 'foo'
+        }
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/roles'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [{'name': 'foo'}])
+
+    @unittest_reporter(name='REST GET    /roles/<role_name>')
+    def test_120_role(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': 'foo'
+        }
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'name': 'foo'})
+
+    @unittest_reporter(name='REST DELETE /roles/<role_name>')
+    def test_130_role(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': 'foo'
+        }
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'name': 'foo'})
+
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                method='DELETE',
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        with self.assertRaises(Exception):
+            r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                    headers={'Authorization': b'bearer '+self.token})
+
+        r = yield client.fetch('http://localhost:%d/roles'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertIn('results', data)
+        self.assertEqual(data['results'], [])
+
+    @unittest_reporter(name='REST bad access to PUT /roles/<role_name>')
+    def test_140_role(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'name': 'foo'
+        }
+        user_token = Auth('secret').create_token('foo', type='user', payload={'role':'user'})
+        with self.assertRaises(Exception):
+            r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port,data['name']),
+                    method='PUT', body=json.dumps(data),
+                    headers={'Authorization': b'bearer '+user_token})
+
     @unittest_reporter(name='REST GET    /groups')
     def test_200_group(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)

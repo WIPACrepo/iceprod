@@ -77,30 +77,77 @@ class MultiRoleHandler(AuthHandler):
     """
     Handle multi-role requests.
     """
-    @catch_error
+    @authorization(roles=['admin'])
     async def get(self):
-        """Get a list of roles."""
-        self.write({})
+        """
+        Get a list of roles.
+
+        Returns:
+            dict: {'results': list of roles}
+        """
+        ret = await self.db.roles.find(projection={'_id':False}).to_list(length=1000)
+        self.write({'results':ret})
         self.finish()
 
 class RoleHandler(AuthHandler):
     """
     Handle individual role requests.
     """
-    @tornado.gen.coroutine
-    def put(self, role):
-        """Create a role."""
-        self.send_error(400, "Error")
+    @authorization(roles=['admin'])
+    async def put(self, role_name):
+        """
+        Add/modify a role.
 
-    @tornado.gen.coroutine
-    def get(self, role):
-        """Get a role."""
-        self.send_error(404, "Role not found")
+        Body should contain all necessary fields for a role.
 
-    @tornado.gen.coroutine
-    def delete(self, role):
-        """Delete a role."""
-        self.send_error(404, "Role not found")
+        Args:
+            role_name (str): the role to add/modify
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'name' not in data:
+            data['name'] = role_name
+        elif data['name'] != role_name:
+            raise tornado.web.HTTPError(400, 'role name mismatch')
+        ret = await self.db.roles.find_one_and_replace({'name':role_name},
+                data, upsert=True)
+        self.write({})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def get(self, role_name):
+        """
+        Get a role.
+
+        Args:
+            role_name (str): the role to get
+
+        Returns:
+            dict: role info
+        """
+        ret = await self.db.roles.find_one({'name':role_name},projection={'_id':False})
+        if not ret:
+            self.send_error(404, "Role not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def delete(self, role_name):
+        """
+        Delete a role.
+
+        Args:
+            role_name (str): the role to delete
+
+        Returns:
+            dict: empty dict
+        """
+        await self.db.roles.delete_one({'name':role_name})
+        self.write({})
+        self.finish()
 
 class MultiGroupHandler(AuthHandler):
     """
