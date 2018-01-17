@@ -19,12 +19,14 @@ from unittest.mock import patch, MagicMock
 
 from tests.util import unittest_reporter, glob_tests
 
+import ldap3
 import tornado.web
 import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient
 from tornado.testing import AsyncTestCase
 
 import iceprod.server.tornado
+import iceprod.server.rest.auth
 from iceprod.server.auth import Auth
 
 class rest_auth_test(AsyncTestCase):
@@ -552,6 +554,26 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertEqual(data['roles'], ['baz','blah'])
+
+    @patch('ldap3.Connection')
+    @unittest_reporter(name='REST POST   /ldap')
+    def test_900_ldap(self, ldap_mock):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'username': 'foo',
+            'password': 'bar',
+        }
+        r = yield client.fetch('http://localhost:%d/ldap'%self.port,
+                method='POST', body=json.dumps(data))
+        self.assertEqual(r.code, 200)
+        tok = r.body
+        data = Auth('secret').validate(tok)
+        self.assertEqual(data['username'], 'foo')
+        self.assertIn('roles',data)
+        self.assertIn('groups',data)
+        
 
 
 def load_tests(loader, tests, pattern):

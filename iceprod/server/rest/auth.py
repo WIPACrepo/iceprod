@@ -54,6 +54,8 @@ def setup(config):
         db.groups.create_index('group_id', name='group_id_index', unique=True)
     if 'user_id_index' not in db.users.index_information():
         db.users.create_index('user_id', name='user_id_index', unique=True)
+    if 'username_index' not in db.users.index_information():
+        db.users.create_index('username', name='username_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
@@ -143,7 +145,7 @@ class RoleHandler(AuthHandler):
         ret = await self.db.roles.find_one({'name':role_name},
                 projection={'_id':False})
         if not ret:
-            self.send_error(404, "Role not found")
+            self.send_error(404, reason="Role not found")
         else:
             self.write(ret)
             self.finish()
@@ -212,7 +214,7 @@ class GroupHandler(AuthHandler):
         ret = await self.db.groups.find_one({'group_id':group_id},
                 projection={'_id':False})
         if not ret:
-            self.send_error(404, "Group not found")
+            self.send_error(404, reason="Group not found")
         else:
             self.write(ret)
             self.finish()
@@ -281,7 +283,7 @@ class UserHandler(AuthHandler):
         ret = await self.db.users.find_one({'user_id':user_id},
                 projection={'_id':False})
         if not ret:
-            self.send_error(404, "User not found")
+            self.send_error(404, reason="User not found")
         else:
             self.write(ret)
             self.finish()
@@ -349,7 +351,7 @@ class UserGroupsHandler(AuthHandler):
         ret = await self.db.users.find_one({'user_id':user_id},
                 projection={'_id':False})
         if not ret:
-            self.send_error(404, "User not found")
+            self.send_error(404, reason="User not found")
         else:
             if 'groups' in ret:
                 self.write({'results':ret['groups']})
@@ -419,24 +421,42 @@ class LDAPHandler(AuthHandler):
 
     @catch_error
     async def post(self):
-        """Validate LDAP login, creating a token."""
+        """
+        Validate LDAP login, creating a token.
+
+        Body should contain {'username', 'password'}
+
+        Returns:
+            str: auth token
+        """
         try:
-            username = self.get_argument('username')
-            password = self.get_argument('password')
+            data = json.loads(self.request.body)
+            username = data['username']
+            password = data['password']
             conn = ldap3.Connection(self.ldap_uri, 'uid={},{}'.format(username, self.ldap_base),
                                     password, auto_bind=True)
         except Exception:
-            self.send_error(403, "Login failed")
+            self.send_error(403, reason="Login failed")
         else:
             # get user info from DB
-
+            ret = await self.db.users.find_one({'username':username})
+            if not ret:
+                # create generic user
+                ret = {
+                    'user_id': uuid.uuid1().hex,
+                    'username': username,
+                    'groups': [],
+                    'roles': [],
+                }
+                await self.db.users.insert_one(ret)
 
             # create token
-            tok = self.auth.create_token(username)
+            data = {
+                'username': username,
+                'roles': ret['roles'],
+                'groups': ret['groups'],
+            }
+            tok = self.auth.create_token(username, type='user', payload=data)
             self.write(tok)
             self.finish()
-
-
-        
-
 
