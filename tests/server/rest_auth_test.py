@@ -390,6 +390,116 @@ class rest_auth_test(AsyncTestCase):
                     method='POST', body=json.dumps(data),
                     headers={'Authorization': b'bearer '+user_token})
 
+    @unittest_reporter(name='REST POST   /users/<user_id>/groups')
+    def test_410_user(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'username': 'foo',
+            'groups': ['bar']
+        }
+        r = yield client.fetch('http://localhost:%d/users'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        user_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'results': ['bar']})
+
+        # now add the new group
+        data = {
+            'name': 'baz'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        data = {'group': group_id}
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'results': ['bar',group_id]})
+
+    @unittest_reporter(name='REST PUT    /users/<user_id>/groups')
+    def test_420_user(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'username': 'foo',
+            'groups': ['bar']
+        }
+        r = yield client.fetch('http://localhost:%d/users'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        user_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'results': ['bar']})
+
+        # now add the new group
+        data = {
+            'name': 'baz'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        data = {
+            'name': 'blah'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id2 = data['result'].rsplit('/')[-1]
+
+        data = {'groups': [group_id, group_id2]}
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data, {'results': [group_id, group_id2]})
+
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

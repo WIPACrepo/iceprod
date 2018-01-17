@@ -23,6 +23,7 @@ import tornado.gen
 import tornado.concurrent
 import concurrent.futures
 
+import pymongo
 import motor
 import ldap3
 
@@ -44,6 +45,16 @@ def setup(config):
     """
     cfg_auth = config.get('rest',{}).get('auth',{})
     db_name = cfg_auth.get('database','mongodb://localhost:27017')
+
+    # add indexes
+    db = pymongo.MongoClient(db_name).auth
+    if 'name_index' not in db.roles.index_information():
+        db.roles.create_index('name', name='name_index', unique=True)
+    if 'group_id_index' not in db.groups.index_information():
+        db.groups.create_index('group_id', name='group_id_index', unique=True)
+    if 'user_id_index' not in db.users.index_information():
+        db.users.create_index('user_id', name='user_id_index', unique=True)
+
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(db_name).auth,
@@ -61,6 +72,7 @@ def setup(config):
         (r'/groups/(\w+)', GroupHandler, handler_cfg),
         (r'/users', MultiUserHandler, handler_cfg),
         (r'/users/(\w+)', UserHandler, handler_cfg),
+        (r'/users/(\w+)/groups', UserGroupsHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
     ]
 
@@ -127,7 +139,8 @@ class RoleHandler(AuthHandler):
         Returns:
             dict: role info
         """
-        ret = await self.db.roles.find_one({'name':role_name},projection={'_id':False})
+        ret = await self.db.roles.find_one({'name':role_name},
+                projection={'_id':False})
         if not ret:
             self.send_error(404, "Role not found")
         else:
@@ -195,7 +208,8 @@ class GroupHandler(AuthHandler):
         Returns:
             dict: group info
         """
-        ret = await self.db.groups.find_one({'group_id':group_id},projection={'_id':False})
+        ret = await self.db.groups.find_one({'group_id':group_id},
+                projection={'_id':False})
         if not ret:
             self.send_error(404, "Group not found")
         else:
@@ -263,7 +277,8 @@ class UserHandler(AuthHandler):
         Returns:
             dict: user info
         """
-        ret = await self.db.users.find_one({'user_id':user_id},projection={'_id':False})
+        ret = await self.db.users.find_one({'user_id':user_id},
+                projection={'_id':False})
         if not ret:
             self.send_error(404, "User not found")
         else:
@@ -282,6 +297,83 @@ class UserHandler(AuthHandler):
             dict: empty dict
         """
         await self.db.users.delete_one({'user_id':user_id})
+        self.write({})
+        self.finish()
+
+class UserGroupsHandler(AuthHandler):
+    """
+    Handle groups for an individual user.
+    """
+    @authorization(roles=['admin'])
+    async def get(self, user_id):
+        """
+        Get the groups for a user.
+
+        Args:
+            user_id (str): the user
+
+        Returns:
+            dict: {results: list of groups}
+        """
+        ret = await self.db.users.find_one({'user_id':user_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, "User not found")
+        else:
+            if 'groups' in ret:
+                self.write({'results':ret['groups']})
+            else:
+                self.write({'results':[]})
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def post(self, user_id):
+        """
+        Add a group to a user.
+
+        Body should contain {'group': <group_name>}
+
+        Args:
+            user_id (str): the user
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'group' not in data:
+            raise tornado.web.HTTPError(400, 'missing group')
+        ret = await self.db.groups.find_one({'group_id': data['group']},
+                projection=['_id'])
+        if not ret:
+            raise tornado.web.HTTPError(400, 'invalid group')
+        ret = await self.db.users.find_one_and_update({'user_id':user_id},
+                {'$addToSet': {'groups': data['group']}})
+        self.write({})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def put(self, user_id):
+        """
+        Set the groups for a user.
+
+        Body should contain {'groups': [ <group_name> ] }
+
+        Args:
+            user_id (str): the user
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'groups' not in data:
+            raise tornado.web.HTTPError(400, 'missing groups')
+        for g in data['groups']:
+            ret = await self.db.groups.find_one({'group_id': g},
+                    projection=['_id'])
+            if not ret:
+                raise tornado.web.HTTPError(400, 'invalid group')
+        ret = await self.db.users.find_one_and_update({'user_id':user_id},
+                {'$set': {'groups': data['groups']}})
         self.write({})
         self.finish()
 
