@@ -72,6 +72,7 @@ def setup(config):
         (r'/groups/(\w+)', GroupHandler, handler_cfg),
         (r'/users', MultiUserHandler, handler_cfg),
         (r'/users/(\w+)', UserHandler, handler_cfg),
+        (r'/users/(\w+)/roles', UserRolesHandler, handler_cfg),
         (r'/users/(\w+)/groups', UserGroupsHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
     ]
@@ -300,6 +301,36 @@ class UserHandler(AuthHandler):
         self.write({})
         self.finish()
 
+class UserRolesHandler(AuthHandler):
+    """
+    Handle roles for an individual user.
+    """
+    @authorization(roles=['admin'])
+    async def put(self, user_id):
+        """
+        Set the roles for a user.
+
+        Body should contain {'roles': [ <role_name> ] }
+
+        Args:
+            user_id (str): the user
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'roles' not in data:
+            raise tornado.web.HTTPError(400, reason='missing roles')
+        for role_name in data['roles']:
+            ret = await self.db.roles.find_one({'name': role_name},
+                    projection=['_id'])
+            if not ret:
+                raise tornado.web.HTTPError(400, reason='invalid role name')
+        ret = await self.db.users.find_one_and_update({'user_id':user_id},
+                {'$set': {'roles': data['roles']}})
+        self.write({})
+        self.finish()
+
 class UserGroupsHandler(AuthHandler):
     """
     Handle groups for an individual user.
@@ -341,11 +372,11 @@ class UserGroupsHandler(AuthHandler):
         """
         data = json.loads(self.request.body)
         if 'group' not in data:
-            raise tornado.web.HTTPError(400, 'missing group')
+            raise tornado.web.HTTPError(400, reason='missing group')
         ret = await self.db.groups.find_one({'group_id': data['group']},
                 projection=['_id'])
         if not ret:
-            raise tornado.web.HTTPError(400, 'invalid group')
+            raise tornado.web.HTTPError(400, reason='invalid group')
         ret = await self.db.users.find_one_and_update({'user_id':user_id},
                 {'$addToSet': {'groups': data['group']}})
         self.write({})

@@ -500,6 +500,59 @@ class rest_auth_test(AsyncTestCase):
         data = json.loads(r.body)
         self.assertEqual(data, {'results': [group_id, group_id2]})
 
+    @unittest_reporter(name='REST PUT    /users/<user_id>/roles')
+    def test_500_user(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'username': 'foo',
+            'roles': ['bar']
+        }
+        r = yield client.fetch('http://localhost:%d/users'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        user_id = data['result'].rsplit('/')[-1]
+
+        r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data['roles'], ['bar'])
+
+        # now add the new role
+        data = {
+            'name': 'baz'
+        }
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port, 'baz'),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        data = {
+            'name': 'blah'
+        }
+        r = yield client.fetch('http://localhost:%d/roles/%s'%(self.port, 'blah'),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        data = {'roles': ['baz','blah']}
+        r = yield client.fetch('http://localhost:%d/users/%s/roles'%(self.port, user_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+        self.assertEqual(data['roles'], ['baz','blah'])
+
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
