@@ -49,6 +49,9 @@ def setup_rest(config):
         logger.warn('setting up tornado for REST.%s', key)
         mod = importlib.import_module('iceprod.server.rest.'+key)
         routes.extend(mod.setup(config))
+    logger.info('REST routes being served:')
+    for r in routes:
+        logger.info('  %s', r[0])
 
     # get package data
     static_path = get_pkgdata_filename('iceprod.server','data/www')
