@@ -151,12 +151,14 @@ def authorization(**_auth):
             attrs = _auth.get('attrs', {})
             logger.debug('roles: %r    attrs: %r', roles, attrs)
 
+            authorized = False
+
             auth_role = self.auth_data.get('role',[])
             logger.debug('token_roles: %r', auth_role)
-            if roles and auth_role not in roles:
-                raise tornado.web.HTTPError(403, reason="authorization failed")
+            if roles and auth_role in roles:
+                authorized = True
 
-            if 'dataset_id:read' in attrs or 'dataset_id:write' in attrs:
+            if (not authorized) and ('dataset_id:read' in attrs or 'dataset_id:write' in attrs):
                 # we need to ask /auths about this
                 dataset_id = kwargs.get('dataset_id', None)
                 if (not dataset_id) or not isinstance(dataset_id,str):
@@ -170,6 +172,9 @@ def authorization(**_auth):
                     await to_asyncio_future(http_client.fetch(url+'write',
                             headers={'Authorization': 'bearer '+self.auth_key}))
 
-            return await method(self, *args, **kwargs)
+            if authorized:
+                return await method(self, *args, **kwargs)
+            else:
+                raise tornado.web.HTTPError(403, reason="authorization failed")
         return wrapper
     return make_wrapper
