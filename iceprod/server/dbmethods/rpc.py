@@ -982,21 +982,21 @@ class rpc(_Methods_Base):
                 groups=groups, filters=filters)
 
         # only queue small datasets or every 10th dataset
-        datasets2 = {}
-        total_tasks_submitted = sum(v['tasks_submitted'] for v in datasets.values())
-        for d in datasets:
-            if (datasets[d]['tasks_submitted'] < total_tasks_submitted/1000
-               or random.random() > 0.9):
-                datasets2[d] = datasets[d]
+        #datasets2 = {}
+        #total_tasks_submitted = sum(v['tasks_submitted'] for v in datasets.values())
+        #for d in datasets:
+        #    if (datasets[d]['tasks_submitted'] < total_tasks_submitted/1000
+        #       or random.random() > 0.9):
+        #        datasets2[d] = datasets[d]
 
-        dataset_prios = dataset_prio.calc_datasets_prios(datasets2,
+        dataset_prios = dataset_prio.calc_datasets_prios(datasets,
                 queueing_factor_priority=qf_p,
                 queueing_factor_dataset=qf_d,
                 queueing_factor_tasks=qf_t)
         logger.debug('rpc_queue_master(): dataset prios: %r',dataset_prios)
 
         tasks = yield self.parent.service['queue_get_queueing_tasks'](
-                dataset_prios, num=num, resources=resources,
+                dataset_prios, num=num, #resources=resources,
                 global_queueing=True)
         if not isinstance(tasks,dict):
             raise Exception('queue_get_queueing_tasks() did not return a dict')

@@ -631,10 +631,15 @@ class queue(_Methods_Base):
                     raise tornado.gen.Return({})
 
                 sql = 'select task_id, status, depends, requirements, task_rel_id '
-                sql += 'from task where task_rel_id in (%s)'
+                sql += 'from task where task_rel_id in (%s) '
+                if global_queueing:
+                    sql += ' and status = "idle" '
+                else:
+                    sql += ' and status in ("idle","waiting") '
+                sql += ' limit '+str(num)
                 tasks = {}
                 datasets = {k:{} for k in dataset_prios}
-                for f in self._bulk_select(sql, task_rel_ids):
+                for f in self._bulk_select(sql, task_rel_ids, num=1):
                     for task_id, status, depends, reqs, task_rel_id in (yield f):
                         dataset, task_rel_reqs = task_rel_ids[task_rel_id]
                         tasks[task_id] = {'dataset':dataset, 'status':status}
