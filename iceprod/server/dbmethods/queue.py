@@ -636,7 +636,7 @@ class queue(_Methods_Base):
                     sql += ' and status = "idle" '
                 else:
                     sql += ' and status in ("idle","waiting") '
-                sql += ' limit '+str(num)
+                sql += ' limit '+str(num*10)
                 tasks = {}
                 datasets = {k:{} for k in dataset_prios}
                 for f in self._bulk_select(sql, task_rel_ids, num=1):
