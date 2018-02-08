@@ -11,6 +11,7 @@ import requests
 
 try:
     import boto3
+    import botocore.client
 except ImportError:
     boto3 = None
 
@@ -117,7 +118,7 @@ class module(object):
                 self.s3 = boto3.client('s3','us-east-1',
                     aws_access_key_id=self.cfg['s3']['access_key'],
                     aws_secret_access_key=self.cfg['s3']['secret_key'],
-                    config=Config(max_pool_connections=101))
+                    config=botocore.client.Config(max_pool_connections=101))
             except Exception:
                 logger.warning('failed to connect to s3: %r',
                             self.cfg['s3'], exc_info=True)
