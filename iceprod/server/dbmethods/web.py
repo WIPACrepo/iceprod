@@ -235,7 +235,7 @@ class web(_Methods_Base):
                                 Key=tmp['task_log_id'].decode('utf-8'))
                         tmp['data'] = f.getvalue()
                 except Exception:
-                    logger.info('failed to download log from s3')
+                    logger.info('failed to download log from s3', exc_info=True)
             if tmp['name'] and tmp['data']:
                 data = json_compressor.uncompress(tmp['data'])
                 if lines and isinstance(lines,int):
