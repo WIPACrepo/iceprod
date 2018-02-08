@@ -228,6 +228,14 @@ class web(_Methods_Base):
         logs = {}
         for row in ret:
             tmp = self._list_to_dict('task_log',row)
+            if not tmp['data']:
+                try:
+                    with BytesIO() as f:
+                        self.parent.s3.download_fileobj(Bucket='iceprod-logs',
+                                Key=tmp['task_log_id'].decode('utf-8'))
+                        tmp['data'] = f.getvalue()
+                except Exception:
+                    logger.info('failed to download log from s3')
             if tmp['name'] and tmp['data']:
                 data = json_compressor.uncompress(tmp['data'])
                 if lines and isinstance(lines,int):
