@@ -232,7 +232,7 @@ class web(_Methods_Base):
                 try:
                     with BytesIO() as f:
                         self.parent.s3.download_fileobj(Bucket='iceprod-logs',
-                                Key=tmp['task_log_id'].decode('utf-8'))
+                                                        Key=tmp['task_log_id'])
                         tmp['data'] = f.getvalue()
                 except Exception:
                     logger.info('failed to download log from s3', exc_info=True)
