@@ -51,16 +51,16 @@ def setup(config):
 
     return [
         (r'/roles', MultiRoleHandler, handler_cfg),
-        (r'/roles/(\w+)', RoleHandler, handler_cfg),
+        (r'/roles/(?P<role_name>\w+)', RoleHandler, handler_cfg),
         (r'/groups', MultiGroupHandler, handler_cfg),
-        (r'/groups/(\w+)', GroupHandler, handler_cfg),
+        (r'/groups/(?P<group_id>\w+)', GroupHandler, handler_cfg),
         (r'/users', MultiUserHandler, handler_cfg),
-        (r'/users/(\w+)', UserHandler, handler_cfg),
-        (r'/users/(\w+)/roles', UserRolesHandler, handler_cfg),
-        (r'/users/(\w+)/groups', UserGroupsHandler, handler_cfg),
+        (r'/users/(?P<user_id>\w+)', UserHandler, handler_cfg),
+        (r'/users/(?P<user_id>\w+)/roles', UserRolesHandler, handler_cfg),
+        (r'/users/(?P<user_id>\w+)/groups', UserGroupsHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
-        (r'/auths/(\w+)', AuthDatasetHandler, handler_cfg),
-        (r'/auths/(\w+)/actions/(\w+)', AuthDatasetActionHandler, handler_cfg),
+        (r'/auths/(?P<dataset_id>\w+)', AuthDatasetHandler, handler_cfg),
+        (r'/auths/(?P<dataset_id>\w+)/actions/(?P<action>\w+)', AuthDatasetActionHandler, handler_cfg),
     ]
 
 
