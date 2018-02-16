@@ -128,6 +128,9 @@ elif [ -z $X509_USER_PROXY ]; then
     export X509_USER_PROXY=$PWD/x509up
 fi
 
+# make sure we never use a user's home directory
+export PYTHONNOUSERSITE=1
+
 # run i3exec
 cmd="$PYBIN -m iceprod.core.i3exec $@"
 echo $cmd

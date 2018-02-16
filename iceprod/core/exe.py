@@ -885,7 +885,7 @@ def fork_module(cfg, env, module):
     logger.warning('subprocess cmd=%r',cmd)
     if module['env_clear']:
         # must be on cvmfs-like environ for this to apply
-        env = {}
+        env = {'PYTHONNOUSERSITE':'1'}
         if 'SROOT' in os.environ:
             prefix = os.environ['SROOT']
         elif 'ICEPRODROOT' in os.environ:

@@ -9,6 +9,12 @@ import logging
 from statsd import StatsClient
 import requests
 
+try:
+    import boto3
+    import botocore.client
+except ImportError:
+    boto3 = None
+
 logger = logging.getLogger('module')
 
 class FakeStatsClient(object):
@@ -103,8 +109,19 @@ class module(object):
             try:
                 self.elasticsearch = ElasticClient(self.cfg['elasticsearch'])
             except Exception:
-                logger.warning('failed to connet to elasicsearch: %r',
+                logger.warning('failed to connect to elasicsearch: %r',
                             self.cfg['elasticsearch'], exc_info=True)
+
+        if (boto3 and 's3' in self.cfg and 'access_key' in self.cfg['s3'] and
+            'secret_key' in self.cfg['s3']):
+            try:
+                self.s3 = boto3.client('s3','us-east-1',
+                    aws_access_key_id=self.cfg['s3']['access_key'],
+                    aws_secret_access_key=self.cfg['s3']['secret_key'],
+                    config=botocore.client.Config(max_pool_connections=101))
+            except Exception:
+                logger.warning('failed to connect to s3: %r',
+                            self.cfg['s3'], exc_info=True)
 
     def stop(self):
         logger.warning('stopping module %s', self.__class__.__name__)
