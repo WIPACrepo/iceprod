@@ -7,7 +7,7 @@ import pymongo
 import motor
 import ldap3
 
-from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
+from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, authenticated, catch_error
 
 logger = logging.getLogger('rest.auth')
 
@@ -36,6 +36,8 @@ def setup(config):
         db.users.create_index('user_id', name='user_id_index', unique=True)
     if 'username_index' not in db.users.index_information():
         db.users.create_index('username', name='username_index', unique=True)
+    if 'dataset_id_index' not in db.auths_dataset.index_information():
+        db.users.create_index('dataset_id', name='dataset_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
@@ -57,6 +59,8 @@ def setup(config):
         (r'/users/(\w+)/roles', UserRolesHandler, handler_cfg),
         (r'/users/(\w+)/groups', UserGroupsHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
+        (r'/auths/(\w+)', AuthDatasetHandler, handler_cfg),
+        (r'/auths/(\w+)/actions/(\w+)', AuthDatasetActionHandler, handler_cfg),
     ]
 
 
@@ -440,3 +444,89 @@ class LDAPHandler(AuthHandler):
             self.write(tok)
             self.finish()
 
+class AuthDatasetHandler(AuthHandler):
+    """
+    Handle dataset authorization rules.
+    """
+    @authorization(roles=['admin'])
+    async def get(self, dataset_id):
+        """
+        Get the authorization rules for a dataset.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: {'read_groups': [ <group_id> ], 'write_groups': [ <group_id> ] }
+        """
+        ret = await self.db.auths_dataset.find_one({'dataset_id':dataset_id},
+                projection={'_id':False,'dataset_id':False})
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin'])
+    async def put(self, dataset_id):
+        """
+        Set the authorization rules for a dataset.
+
+        Body should contain `{'read_groups': [ <group_id> ], 'write_groups': [ <group_id> ] }`
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'read_groups' not in data:
+            raise tornado.web.HTTPError(400, reason='missing read_groups')
+        if 'write_groups' not in data:
+            raise tornado.web.HTTPError(400, reason='missing write_groups')
+        for group in set(data['read_groups'])|set(data['write_groups']):
+            ret = await self.db.groups.find_one({'group_id': group},
+                    projection=['_id'])
+            if not ret:
+                raise tornado.web.HTTPError(400, reason='invalid group id')
+        ret = await self.db.auths_dataset.find_one_and_update({'dataset_id':dataset_id},
+                {'$set': {'read_groups': data['read_groups'], 'write_groups': data['write_groups']}},
+                upsert=True)
+        self.write({})
+        self.finish()
+
+class AuthDatasetActionHandler(AuthHandler):
+    """
+    Handle dataset authorization rules.
+    """
+    @authenticated
+    @catch_error
+    async def get(self, dataset_id, action):
+        """
+        Check the auth token against the authorization rules for a dataset.
+
+        Returns a 403 error on authorization failure.
+
+        Args:
+            dataset_id (str): the dataset
+            action (str): 'read' or 'write'
+
+        Returns:
+            dict: empty dict
+        """
+        if action not in ('read','write'):
+            raise tornado.web.HTTPError(400, reason='invalid action')
+        if 'groups' not in self.auth_data:
+            raise tornado.web.HTTPError(400, reason='invalid auth token')
+        ret = await self.db.auths_dataset.find_one({'dataset_id':dataset_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(403, reason="Dataset not found")
+        elif action+'_groups' not in ret:
+            self.send_error(403, reason="Action not found")
+        elif not set(ret[action+'_groups'])&set(self.auth_data['groups']):
+            self.send_error(403, reason="Denied")
+        else:
+            self.write({})
+            self.finish()

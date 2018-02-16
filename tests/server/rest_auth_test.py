@@ -557,7 +557,7 @@ class rest_auth_test(AsyncTestCase):
 
     @patch('ldap3.Connection')
     @unittest_reporter(name='REST POST   /ldap')
-    def test_900_ldap(self, ldap_mock):
+    def test_700_ldap(self, ldap_mock):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
         
         client = AsyncHTTPClient(self.io_loop)
@@ -573,7 +573,194 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(data['username'], 'foo')
         self.assertIn('roles',data)
         self.assertIn('groups',data)
+
+    @unittest_reporter(name='REST PUT    /auths/<dataset_id>')
+    def test_900_auths(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+
+        # add group
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        # add dataset auth
+        data = {
+            'read_groups': [group_id],
+            'write_groups': []
+        }
+        dataset_id = '123'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        data = json.loads(r.body)
+
+    @unittest_reporter(name='REST GET    /auths/<dataset_id>')
+    def test_901_auths(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+
+        # add group
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+
+        # add dataset auth
+        data = {
+            'read_groups': [group_id],
+            'write_groups': []
+        }
+        dataset_id = '123'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
         
+        # get dataset auth
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='GET',
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(data, ret)
+
+    @unittest_reporter(name='REST GET    /auths/<dataset_id>/actions/read')
+    def test_902_auths(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+
+        # add group
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+        
+        token2 = Auth('secret').create_token('foo', type='user',
+                payload={'role':'user','groups':[group_id]})
+
+        # add dataset auth
+        data = {
+            'read_groups': [group_id],
+            'write_groups': []
+        }
+        dataset_id = '123'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        
+        # get authorization
+        r = yield client.fetch('http://localhost:%d/auths/%s/actions/read'%(self.port,dataset_id),
+                method='GET',
+                headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(r.code, 200)
+
+        # add bad dataset auth
+        data = {
+            'read_groups': [],
+            'write_groups': [group_id]
+        }
+        dataset_id = '456'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        
+        # get authorization
+        with self.assertRaises(tornado.httpclient.HTTPError) as e:
+            r = yield client.fetch('http://localhost:%d/auths/%s/actions/read'%(self.port,dataset_id),
+                    method='GET',
+                    headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(e.exception.code, 403)
+
+    @unittest_reporter(name='REST GET    /auths/<dataset_id>/actions/write')
+    def test_903_auths(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+
+        # add group
+        data = {
+            'name': '/foo/bar'
+        }
+        r = yield client.fetch('http://localhost:%d/groups'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        data = json.loads(r.body)
+        self.assertIn('result', data)
+        self.assertEqual(data['result'], r.headers['Location'])
+        group_id = data['result'].rsplit('/')[-1]
+        
+        token2 = Auth('secret').create_token('foo', type='user',
+                payload={'role':'user','groups':[group_id]})
+
+        # add dataset auth
+        data = {
+            'read_groups': [],
+            'write_groups': [group_id]
+        }
+        dataset_id = '123'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        
+        # get authorization
+        r = yield client.fetch('http://localhost:%d/auths/%s/actions/write'%(self.port,dataset_id),
+                method='GET',
+                headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(r.code, 200)
+
+        # add bad dataset auth
+        data = {
+            'read_groups': [group_id],
+            'write_groups': []
+        }
+        dataset_id = '456'
+        r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        
+        # get authorization
+        with self.assertRaises(tornado.httpclient.HTTPError) as e:
+            r = yield client.fetch('http://localhost:%d/auths/%s/actions/write'%(self.port,dataset_id),
+                    method='GET',
+                    headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(e.exception.code, 403)
 
 
 def load_tests(loader, tests, pattern):
