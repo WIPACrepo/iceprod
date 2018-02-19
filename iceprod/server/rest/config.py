@@ -5,7 +5,6 @@ import uuid
 import tornado.web
 import pymongo
 import motor
-import ldap3
 
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
 
@@ -33,7 +32,7 @@ def setup(config):
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).auth,
+        'database': motor.motor_tornado.MotorClient(db_name).config,
     })
 
     return [

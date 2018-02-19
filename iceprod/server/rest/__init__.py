@@ -167,10 +167,10 @@ def authorization(**_auth):
                 http_client = tornado.httpclient.AsyncHTTPClient()
                 if 'dataset_id:read' in attrs:
                     await to_asyncio_future(http_client.fetch(url+'read',
-                            headers={'Authorization': 'bearer '+self.auth_key}))
+                            headers={'Authorization': b'bearer '+self.auth_key}))
                 if 'dataset_id:write' in attrs:
                     await to_asyncio_future(http_client.fetch(url+'write',
-                            headers={'Authorization': 'bearer '+self.auth_key}))
+                            headers={'Authorization': b'bearer '+self.auth_key}))
 
             if authorized:
                 return await method(self, *args, **kwargs)

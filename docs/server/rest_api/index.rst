@@ -20,7 +20,7 @@ IceProd REST API
 ======  ==============================================  ==================================================================
 Method  Path                                            Description
 ======  ==============================================  ==================================================================
-GET     /datasets                                       get a list of datasets
+GET     /datasets                                       get a dict of datasets
 POST    /datasets                                       create new dataset
 GET     /datasets/<dataset_id>                          get a dataset
 PUT     /datasets/<dataset_id>/status                   update dataset status

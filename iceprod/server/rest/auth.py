@@ -467,7 +467,7 @@ class AuthDatasetHandler(AuthHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','system']) # let other components (/datasets) set this
     async def put(self, dataset_id):
         """
         Set the authorization rules for a dataset.

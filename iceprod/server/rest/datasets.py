@@ -1,0 +1,219 @@
+import logging
+import json
+import uuid
+
+import tornado.web
+import tornado.httpclient
+from tornado.platform.asyncio import to_asyncio_future
+import pymongo
+import motor
+
+from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from iceprod.server.util import nowstr
+
+logger = logging.getLogger('rest.datasets')
+
+def setup(config):
+    """
+    Setup method for Dataset REST API.
+
+    Sets up any database connections or other prerequisites.
+
+    Args:
+        config (dict): an instance of :py:class:`iceprod.server.config`.
+
+    Returns:
+        list: Routes for dataset, which can be passed to :py:class:`tornado.web.Application`.
+    """
+    cfg_dataset = config.get('rest',{}).get('datasets',{})
+    db_name = cfg_dataset.get('database','mongodb://localhost:27017')
+
+    # add indexes
+    db = pymongo.MongoClient(db_name).auth
+    if 'dataset_id_index' not in db.dataset.index_information():
+        db.dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
+
+    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg.update({
+        'database': motor.motor_tornado.MotorClient(db_name).dataset,
+        'system_token': config.get('rest',{}).get('system_token',None)
+    })
+
+    return [
+        (r'/datasets', MultiDatasetHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
+    ]
+
+class BaseHandler(RESTHandler):
+    """
+    Base handler for Dataset REST API. 
+    """
+    def initialize(self, database=None, system_token=None, **kwargs):
+        super(BaseHandler, self).initialize(**kwargs)
+        self.db = database
+        self.system_token = system_token
+
+class MultiDatasetHandler(BaseHandler):
+    """
+    Handle multi-group requests.
+    """
+    @authorization(roles=['admin']) #TODO: figure out how to do auth for each dataset in the list
+    async def get(self):
+        """
+        Get a dict of datasets.
+
+        Returns:
+            dict: {<dataset_id>: metadata}
+        """
+        ret = {}
+        async for row in self.db.datasets.find(projection={'_id':False}):
+            k = row.pop('dataset_id')
+            ret[k] = row
+        self.write(ret)
+        self.finish()
+
+    @authorization(roles=['admin','user']) # anyone should be able to create a dataset
+    async def post(self):
+        """
+        Add a dataset.
+
+        Body should contain all necessary fields for a dataset.
+        """
+        data = json.loads(self.request.body)
+
+        # validate first
+        req_fields = {
+            'description': str,
+            'jobs_submitted': int,
+            'tasks_submitted': int,
+            'group_id': str
+        }
+        for k in req_fields:
+            if k not in data:
+                raise tornado.web.HTTPError(400, reason='missing key: '+k)
+            if not isinstance(data[k], req_fields[k]):
+                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                raise tornado.web.HTTPError(400, reason=r)
+
+        # generate dataset number
+        ret = await self.db.settings.find_one_and_update(
+            {'name': 'dataset_num'},
+            {'$inc': {'num': 1}},
+            projection={'num': True, '_id': False},
+            upsert=True,
+            return_document=pymongo.ReturnDocument.AFTER)
+        dataset_num = ret['num']
+
+        # set some fields
+        data['dataset_id'] = uuid.uuid1().hex
+        data['dataset'] = dataset_num
+        data['status'] = 'processing'
+        data['start_date'] = nowstr()
+        data['username'] = self.auth_data['username']
+        if 'debug' not in data:
+            data['debug'] = False
+
+        # insert
+        ret = await self.db.datasets.insert_one(data)
+
+        # set auth rules
+        url = self.auth_url+'/auths/'+data['dataset_id']
+        http_client = tornado.httpclient.AsyncHTTPClient()
+        auth_data = {
+            'read_groups':[data['group_id']],
+            'write_groups':[data['group_id']],
+        }
+        await to_asyncio_future(http_client.fetch(url,
+                method='PUT', body=json.dumps(auth_data),
+                headers={'Authorization': 'bearer '+self.auth_key}))
+
+        # return success
+        self.set_status(201)
+        self.set_header('Location', '/datasets/'+data['dataset_id'])
+        self.write({'result': '/datasets/'+data['dataset_id']})
+        self.finish()
+
+class DatasetHandler(BaseHandler):
+    """
+    Handle dataset requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get a dataset.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: dataset metadata
+        """
+        ret = await self.db.datasets.find_one({'dataset_id':dataset_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+class DatasetDescriptionHandler(BaseHandler):
+    """
+    Handle dataset description updates.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id):
+        """
+        Set a dataset description.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'description' not in data:
+            raise tornado.web.HTTPError(400, reason='missing description')
+        elif not isinstance(data['description'],str):
+            raise tornado.web.HTTPError(400, reason='bad description')
+
+        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
+                {'$set':{'description': data['description']}},
+                projection=['_id'])
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetStatusHandler(BaseHandler):
+    """
+    Handle dataset status updates.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id):
+        """
+        Set a dataset status.
+
+        Args:
+            dataset_id (str): the dataset
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='missing status')
+        elif data['status'] not in ('processing','suspended','errors','complete'):
+            raise tornado.web.HTTPError(400, reason='bad status')
+
+        ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
+                {'$set':{'status': data['status']}},
+                projection=['_id'])
+        if not ret:
+            self.send_error(404, reason="Dataset not found")
+        else:
+            self.write({})
+            self.finish()
