@@ -29,13 +29,13 @@ def setup(config):
     db_name = cfg_dataset.get('database','mongodb://localhost:27017')
 
     # add indexes
-    db = pymongo.MongoClient(db_name).auth
-    if 'dataset_id_index' not in db.dataset.index_information():
+    db = pymongo.MongoClient(db_name).datasets
+    if 'dataset_id_index' not in db.datasets.index_information():
         db.dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).dataset,
+        'database': motor.motor_tornado.MotorClient(db_name).datasets,
         'system_token': config.get('rest',{}).get('system_token',None)
     })
 

@@ -26,13 +26,13 @@ def setup(config):
     db_name = cfg_auth.get('database','mongodb://localhost:27017')
 
     # add indexes
-    db = pymongo.MongoClient(db_name).auth
+    db = pymongo.MongoClient(db_name).logs
     if 'log_id_index' not in db.logs.index_information():
         db.logs.create_index('log_id', name='log_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).config,
+        'database': motor.motor_tornado.MotorClient(db_name).logs,
     })
 
     return [

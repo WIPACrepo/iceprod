@@ -26,7 +26,7 @@ def setup(config):
     db_name = cfg_auth.get('database','mongodb://localhost:27017')
 
     # add indexes
-    db = pymongo.MongoClient(db_name).auth
+    db = pymongo.MongoClient(db_name).config
     if 'dataset_id_index' not in db.config.index_information():
         db.config.create_index('dataset_id', name='dataset_id_index', unique=True)
 
