@@ -28,7 +28,7 @@ def setup(config):
 
     # add indexes
     db = pymongo.MongoClient(db_name).grids
-    if 'grid_id_index' not in db.logs.index_information():
+    if 'grid_id_index' not in db.grids.index_information():
         db.grids.create_index('grid_id', name='grid_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
