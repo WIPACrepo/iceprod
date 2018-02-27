@@ -41,7 +41,8 @@ def setup(config):
     return [
         (r'/tasks', MultiTasksHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
-        (r'/dataset/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -168,3 +169,27 @@ class DatasetMultiTasksHandler(BaseHandler):
         self.write({row['task_id']:row for row in ret})
         self.finish()
 
+class DatasetTasksHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id):
+        """
+        Get a task entry.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: task entry
+        """
+        logger.info('dataset_id: %r', dataset_id)
+        ret = await self.db.tasks.find_one({'task_id':task_id,'dataset_id':dataset_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
