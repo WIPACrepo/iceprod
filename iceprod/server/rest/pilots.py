@@ -119,7 +119,7 @@ class PilotsHandler(BaseHandler):
             self.send_error(404, reason="Pilot not found")
         else:
             self.write(ret)
-            self.finish
+            self.finish()
 
     @authorization(roles=['admin','client','pilot'])
     async def patch(self, pilot_id):
