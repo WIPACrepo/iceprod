@@ -41,6 +41,7 @@ def setup(config):
     return [
         (r'/tasks', MultiTasksHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
+        (r'/dataset/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -146,3 +147,24 @@ class TasksHandler(BaseHandler):
         else:
             self.write(ret)
             self.finish()
+
+class DatasetMultiTasksHandler(BaseHandler):
+    """
+    Handle multi tasks requests.
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get all tasks for a dataset.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {'uuid': {pilot_data}}
+        """
+        ret = await self.db.tasks.find({'dataset_id':dataset_id},
+                projection={'_id':False}).to_list(10000000)
+        self.write({row['task_id']:row for row in ret})
+        self.finish()
+
