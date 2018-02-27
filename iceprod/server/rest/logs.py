@@ -38,6 +38,7 @@ def setup(config):
     return [
         (r'/logs', MultiLogsHandler, handler_cfg),
         (r'/logs/(?P<log_id>\w+)', LogsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/logs', DatasetMultiLogsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/logs/(?P<log_id>\w+)', DatasetLogsHandler, handler_cfg),
     ]
 
@@ -91,6 +92,32 @@ class LogsHandler(BaseHandler):
         else:
             self.write(ret['data'])
             self.finish()
+
+class DatasetMultiLogsHandler(BaseHandler):
+    """
+    Handle logs requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def post(self, dataset_id):
+        """
+        Create a log entry.
+
+        Body should contain the log message.
+
+        Args:
+            dataset_id (str): the dataset id of the config
+
+        Returns:
+            dict: {'result': <log_id>}
+        """
+        data = {
+            'log_id': uuid.uuid1().hex,
+            'data': self.request.body,
+        }
+        ret = await self.db.logs.insert_one(data)
+        self.set_status(201)
+        self.write({'result': data['log_id']})
+        self.finish()
 
 class DatasetLogsHandler(BaseHandler):
     """

@@ -99,8 +99,21 @@ class rest_logs_test(AsyncTestCase):
         ret = r.body.decode('utf-8')
         self.assertEqual(data, ret)
 
-    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id>')
+    @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs')
     def test_120_logs(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = 'foo bar baz'
+        r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
+                method='POST', body=data,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        log_id = ret['result']
+
+    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id>')
+    def test_130_logs(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
