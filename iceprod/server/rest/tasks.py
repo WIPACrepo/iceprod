@@ -1,6 +1,7 @@
 import logging
 import json
 import uuid
+from collections import defaultdict
 
 import tornado.web
 import pymongo
@@ -44,6 +45,7 @@ def setup(config):
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -165,9 +167,12 @@ class DatasetMultiTasksHandler(BaseHandler):
         Returns:
             dict: {'uuid': {pilot_data}}
         """
-        ret = await self.db.tasks.find({'dataset_id':dataset_id},
-                projection={'_id':False}).to_list(10000000)
-        self.write({row['task_id']:row for row in ret})
+        cursor = self.db.tasks.find({'dataset_id':dataset_id},
+                projection={'_id':False})
+        ret = {}
+        async for row in cursor:
+            ret[row['task_id']] = row
+        self.write(ret)
         self.finish()
 
 class DatasetTasksHandler(BaseHandler):
@@ -229,3 +234,26 @@ class DatasetTasksStatusHandler(BaseHandler):
         else:
             self.write({})
             self.finish()
+
+class DatasetTaskSummaryStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task summary for all tasks in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<status>: [<task_id>,]}
+        """
+        cursor = self.db.tasks.find({'dataset_id':dataset_id},
+                projection={'_id':False,'status':True,'task_id':True})
+        ret = defaultdict(list)
+        async for row in cursor:
+            ret[row['status']].append(row['task_id'])
+        self.write(ret)
+        self.finish()
