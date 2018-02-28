@@ -42,6 +42,8 @@ def setup(config):
 
     return [
         (r'/tasks/(?P<task_id>\w+)/task_stats', MultiTaskStatsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats', DatasetsMultiTaskStatsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/task_stats/(?P<task_stat_id>\w+)', DatasetsTaskStatsHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -74,11 +76,58 @@ class MultiTaskStatsHandler(BaseHandler):
         data = {
             'task_stat_id': uuid.uuid1().hex,
             'task_id': task_id,
-            'dataset_id': stat_data.pop('dataset_id', ''),
+            'dataset_id': stat_data['dataset_id'],
             'create_date': nowstr(),
+            'stats': stat_data,
         }
 
         ret = await self.db.task_stats.insert_one(data)
         self.set_status(201)
         self.write({'result': data['task_stat_id']})
         self.finish()
+
+class DatasetsMultiTaskStatsHandler(BaseHandler):
+    """
+    Handle multi task_stats requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id):
+        """
+        Get all task_stats for a dataset and task.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): task id
+
+        Returns:
+            dict: {<task_stat_id>: stats}
+        """
+        ret = await self.db.task_stats.find({'dataset_id':dataset_id,'task_id':task_id},
+                projection={'_id':False}).to_list(10000)
+        self.write({row['task_stat_id']:row for row in ret})
+        self.finish()
+
+class DatasetsTaskStatsHandler(BaseHandler):
+    """
+    Handle single task_stat requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id, task_stat_id):
+        """
+        Get a task_stat entry.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): task id
+            task_stat_id (str): the task_stat id
+
+        Returns:
+            dict: task_stat entry
+        """
+        ret = await self.db.task_stats.find_one({'dataset_id':dataset_id,'task_id':task_id,'task_stat_id':task_stat_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="Task stat not found")
+        else:
+            self.write(ret)
+            self.finish()
