@@ -43,6 +43,7 @@ def setup(config):
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -185,11 +186,46 @@ class DatasetTasksHandler(BaseHandler):
         Returns:
             dict: task entry
         """
-        logger.info('dataset_id: %r', dataset_id)
         ret = await self.db.tasks.find_one({'task_id':task_id,'dataset_id':dataset_id},
                 projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)
+            self.finish()
+
+class DatasetTasksStatusHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id, task_id):
+        """
+        Set a task status.
+
+        Body should have {'status': <new_status>}
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing status in body')
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        update_data = {
+            'status': data['status'],
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
+                {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write({})
             self.finish()

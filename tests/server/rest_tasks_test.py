@@ -207,6 +207,38 @@ class rest_tasks_test(AsyncTestCase):
             self.assertIn(k, ret)
         self.assertEqual(ret['status'], 'idle')
 
+    @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/tasks/<task_id>/status')
+    def test_220_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'dataset_id': 'foo',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        data2 = {'status':'failed'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('status', ret)
+        self.assertEqual(ret['status'], 'failed')
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(rest_tasks_test))
