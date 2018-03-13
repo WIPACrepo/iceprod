@@ -147,6 +147,9 @@ class parser_test(unittest.TestCase):
 
         ret = p.eval_func('(4+3*2)%3')
         self.assertEqual(ret, '1')
+        
+        ret = p.eval_func('2**2')
+        self.assertEqual(ret, '4')
 
         with self.assertRaises(parser.GrammarException):
             p.eval_func('import os')
