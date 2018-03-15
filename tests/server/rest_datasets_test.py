@@ -220,6 +220,40 @@ class rest_datasets_test(AsyncTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], data['status'])
 
+    @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
+    @unittest_reporter(name='REST GET    /dataset_summaries/status')
+    def test_300_datasets(self, fetch):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        # need to mock the REST auth interface
+        def mocked(self, url, *args, **kwargs):
+            if 'auth' in url:
+                return tornado.gen.maybe_future(HTTPResponse(HTTPRequest(url), 200))
+            else:
+                return orig_fetch(self, url, *args, **kwargs)
+        fetch.side_effect = mocked
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'description': 'blah',
+            'jobs_submitted': 1,
+            'tasks_submitted': 4,
+            'group_id': 'foo',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        uri = ret['result']
+        dataset_id = uri.split('/')[-1]
+        
+        r = yield client.fetch('http://localhost:%d/dataset_summaries/status'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {'processing': [dataset_id]})
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(rest_datasets_test))

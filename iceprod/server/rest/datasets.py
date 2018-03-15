@@ -1,6 +1,7 @@
 import logging
 import json
 import uuid
+from collections import defaultdict
 
 import tornado.web
 import tornado.httpclient
@@ -44,6 +45,7 @@ def setup(config):
         (r'/datasets/(?P<dataset_id>\w+)', DatasetHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/description', DatasetDescriptionHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/status', DatasetStatusHandler, handler_cfg),
+        (r'/dataset_summaries/status', DatasetSummariesStatusHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -217,3 +219,23 @@ class DatasetStatusHandler(BaseHandler):
         else:
             self.write({})
             self.finish()
+
+class DatasetSummariesStatusHandler(BaseHandler):
+    """
+    Handle dataset summary grouping by status.
+    """
+    @authorization(roles=['admin','system']) #TODO: figure out how to do auth for each dataset in the list
+    async def get(self):
+        """
+        Get the dataset summary for all datasets, group by status.
+
+        Returns:
+            dict: {<status>: [<dataset_id>,]}
+        """
+        cursor = self.db.datasets.find(
+                projection={'_id':False,'status':True,'dataset_id':True})
+        ret = defaultdict(list)
+        async for row in cursor:
+            ret[row['status']].append(row['dataset_id'])
+        self.write(ret)
+        self.finish()
