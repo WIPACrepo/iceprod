@@ -240,6 +240,28 @@ class rest_jobs_test(AsyncTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret, {'processing': [job_id]})
 
+    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_counts/status')
+    def test_400_jobs(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {
+            'dataset_id': 'foo',
+            'job_index': 0,
+        }
+        r = yield client.fetch('http://localhost:%d/jobs'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        job_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/job_counts/status'%(self.port,data['dataset_id']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {'processing': 1})
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(rest_jobs_test))

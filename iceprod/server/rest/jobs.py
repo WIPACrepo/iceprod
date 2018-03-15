@@ -45,7 +45,8 @@ def setup(config):
         (r'/datasets/(?P<dataset_id>\w+)/jobs', DatasetMultiJobsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)', DatasetJobsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/jobs/(?P<job_id>\w+)/status', DatasetJobsStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummaryStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/job_summaries/status', DatasetJobSummariesStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/job_counts/status', DatasetJobCountsStatusHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -225,9 +226,9 @@ class DatasetJobsStatusHandler(BaseHandler):
             self.send_error(404, reason="Job not found")
         else:
             self.write({})
-            self.finish()
+            self.finish
 
-class DatasetJobSummaryStatusHandler(BaseHandler):
+class DatasetJobSummariesStatusHandler(BaseHandler):
     """
     Handle job summary grouping by status.
     """
@@ -247,5 +248,30 @@ class DatasetJobSummaryStatusHandler(BaseHandler):
         ret = defaultdict(list)
         async for row in cursor:
             ret[row['status']].append(row['job_id'])
+        self.write(ret)
+        self.finish()
+
+class DatasetJobCountsStatusHandler(BaseHandler):
+    """
+    Handle job counts by status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the job counts for all jobs in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<status>: [<job_id>,]}
+        """
+        cursor = self.db.jobs.aggregate([
+            {'$match':{'dataset_id':dataset_id}},
+            {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+        ])
+        ret = {}
+        async for row in cursor:
+            ret[row['_id']] = row['total']
         self.write(ret)
         self.finish()
