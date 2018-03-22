@@ -655,7 +655,7 @@ def get_gpu_utilization_by_id(gpu_id):
     """Get gpu utilization based on gpu id"""
     ret = {'utilization':-1,'power':-1}
     try:
-        out = subprocess.check_output(['nvidia-smi','-q','-i',str(gpu_id),'-d','UTILIZATION,POWER'])
+        out = subprocess.check_output(['nvidia-smi','-q','-i',str(gpu_id),'-d','UTILIZATION,POWER']).decode('utf-8')
         for line in out.split('\n'):
             line = line.strip()
             if (not line) or ':' not in line:
