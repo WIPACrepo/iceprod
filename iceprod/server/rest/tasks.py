@@ -42,10 +42,13 @@ def setup(config):
     return [
         (r'/tasks', MultiTasksHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
+        (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
+        (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -257,3 +260,130 @@ class DatasetTaskSummaryStatusHandler(BaseHandler):
             ret[row['status']].append(row['task_id'])
         self.write(ret)
         self.finish()
+
+class DatasetTaskCountsStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task counts for all tasks in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<status>: [<task_id>,]}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id}},
+            {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+        ])
+        ret = {}
+        async for row in cursor:
+            ret[row['_id']] = row['total']
+        self.write(ret)
+        self.finish()
+
+class TasksActionsQueueHandler(BaseHandler):
+    """
+    Handle task action for waiting -> queued.
+    """
+    @authorization(roles=['admin','pilot'])
+    async def post(self):
+        """
+        Take a number of waiting tasks and queue them.
+
+        Order by dataset priority.
+
+        Body args (json):
+            num_tasks: int
+            dataset_prio: dict of weights
+
+        Returns:
+            dict: {queued: num tasks queued}
+        """
+        data = json.loads(self.request.body)
+        num_tasks = data.get('num_tasks', 100)
+
+        steps = [
+            {'$match':{'status':'waiting'}},
+        ]
+        if 'dataset_prio' in data and data['dataset_prio']:
+            weights = {}
+            last_weight = weights
+            last_cond = None
+            for d in data['dataset_prio']:
+                last_weight['$cond'] = [
+                    {'$eq': ['$dataset_id', d]},
+                    data['dataset_prio'][d],
+                    {}
+                ]
+                last_cond = last_weight['$cond']
+                last_weight = last_cond[-1]
+            last_cond[-1] = 0
+            logger.info('weights: %r', weights)
+            steps.extend([
+                {'$addFields':{'weight': weights}},
+                {'$sort': {'weight': -1}},
+            ])
+        steps.extend([
+            {'$limit': num_tasks*10},
+        ])
+
+        cursor = self.db.tasks.aggregate(steps, allowDiskUse=True)
+        ret = {}
+        updated = 0
+        async for row in cursor:
+            logger.info('row: %r', row)
+            passed = True
+            for d in row['depends']:
+                ret = await self.db.tasks.find_one({'task_id':d})
+                if (not ret) or ret['status'] != 'complete':
+                    passed = False
+                    break
+            if not passed:
+                continue
+            ret = await self.db.tasks.update_one({'task_id':row['task_id']},
+                    {'$set':{'status':'queued'}})
+            updated += ret.modified_count
+            if updated >= num_tasks:
+                break
+        self.write({'queued':updated})
+        self.finish()
+
+class TasksActionsProcessingHandler(BaseHandler):
+    """
+    Handle task action for queued -> processing.
+    """
+    @authorization(roles=['admin','pilot'])
+    async def post(self):
+        """
+        Take one queued task, set its status to processing, and return it.
+
+        Body args (json):
+            requirements: dict
+
+        Returns:
+            dict: <task dict>
+        """
+        filter_query = {'status':'queued'}
+        if self.request.body:
+            data = json.loads(self.request.body)
+            reqs = data.get('requirements', {})
+            for k in reqs:
+                if isinstance(reqs[k], (int,float)):
+                    filter_query['requirements.'+k] = {'$lte': reqs[k]}
+                else:
+                    filter_query['requirements.'+k] = reqs[k]
+        ret = await self.db.tasks.find_one_and_update(filter_query,
+                {'$set':{'status':'processing'}},
+                projection={'_id':False},
+                return_document=pymongo.ReturnDocument.AFTER)
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
