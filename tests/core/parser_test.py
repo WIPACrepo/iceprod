@@ -148,6 +148,9 @@ class parser_test(unittest.TestCase):
         ret = p.eval_func('(4+3*2)%3')
         self.assertEqual(ret, '1')
 
+        ret = p.eval_func('-1')
+        self.assertEqual(ret, '-1')
+
         with self.assertRaises(parser.GrammarException):
             p.eval_func('import os')
 
@@ -394,6 +397,10 @@ class parser_test(unittest.TestCase):
 
         ret = p.parse('$eval((4+3*2)%3)')
         expected = 1
+        self.assertEqual(ret,expected)
+
+        ret = p.parse('$eval(-1.23)')
+        expected = -1.23
         self.assertEqual(ret,expected)
 
         ret = p.parse('$eval(import os)')

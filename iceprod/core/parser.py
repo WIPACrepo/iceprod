@@ -30,7 +30,12 @@ class safe_eval:
                  ast.FloorDiv: op.floordiv,
                  ast.Mod: op.mod,
                  ast.Pow: op.pow,
-                 ast.BitXor: op.xor}
+                 ast.BitXor: op.xor,
+                 ast.Invert: op.invert,
+                 ast.Not: op.not_,
+                 ast.UAdd: op.pos,
+                 ast.USub: op.neg,
+                }
     @classmethod
     def eval(cls,expr):
         """
@@ -42,10 +47,12 @@ class safe_eval:
     def __eval(cls,node):
         if isinstance(node, cls.ast.Num): # <number>
             return node.n
-        elif isinstance(node, cls.ast.operator): # <operator>
+        elif isinstance(node, (cls.ast.operator,cls.ast.unaryop)): # <operator>
             return cls.operators[type(node)]
         elif isinstance(node, cls.ast.BinOp): # <left> <operator> <right>
             return cls.__eval(node.op)(cls.__eval(node.left), cls.__eval(node.right))
+        elif isinstance(node, cls.ast.UnaryOp): # <operator> <right>
+            return cls.__eval(node.op)(cls.__eval(node.operand))
         else:
             raise TypeError(node)
 
