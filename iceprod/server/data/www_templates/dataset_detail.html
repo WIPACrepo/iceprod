@@ -87,15 +87,15 @@
     <table>
         <tr>
             <th>Name</th>
-            <th>Avg (hours)</th>
-            <th><sup>max</sup>/<sub>min</sub> (hours)</th>
+            <th>Avg/stddev (hours)</th>
+            <th>Max/min (hours)</th>
             <th>Eff</th>
         </tr>
         {% for t in task_info %}
         <tr>
             <td>{{ task_info[t]['task_name'] }}</td>
-            <td>{{ '{:.2f}'.format(task_info[t]['avg_runtime']/3600) }}</td>
-            <td><sup>{{ '{:0.2f}'.format(task_info[t]['max_runtime']/3600) }}</sup>/<sub>{{ '{:0.2f}'.format(task_info[t]['min_runtime']/3600) }}</sub></td>
+            <td>{{ '{:0.2f}'.format(task_info[t]['avg_runtime']/3600) }} / {{ '{:0.2f}'.format(task_info[t]['stddev_runtime']/3600) }}</td>
+            <td>{{ '{:0.2f}'.format(task_info[t]['max_runtime']/3600) }} / {{ '{:0.2f}'.format(task_info[t]['min_runtime']/3600) }}</td>
             <td>{{ '{:d}'.format(int(task_info[t]['efficiency']*100)) }}%</td>
         </tr>
         {% end %}

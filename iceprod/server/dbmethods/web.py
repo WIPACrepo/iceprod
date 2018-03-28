@@ -333,13 +333,13 @@ class web(_Methods_Base):
 
         # get status numbers
         logger.info('get status numbers')
-        sql = 'select count(*), status, sum(walltime), sum(walltime_err), '
+        sql = 'select count(*), status, std(walltime), sum(walltime), sum(walltime_err), '
         sql += 'sum(walltime_err_n), max(walltime), min(walltime), task_rel_id '
         sql += 'from task where task_rel_id in (%s) group by task_rel_id,status'
-        task_groups = {trid:[0,0,0,0,0,0.0,0.0,0,0,0] for trid in task_rel}
+        task_groups = {trid:[0,0,0,0,0,0.0,0.0,0,0,0,0] for trid in task_rel}
         for f in self._bulk_select(sql,task_rel_ids):
             ret = yield f
-            for n,status,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
+            for n,status,stddev,wall,wall_e,wall_en,wall_max,wall_min,trid in ret:
                 if status == 'waiting':
                     task_groups[trid][0] += n
                 elif status == 'queued':
@@ -359,6 +359,7 @@ class web(_Methods_Base):
                     if ((not task_groups[trid][9]) or
                         task_groups[trid][9] > wall_min):
                         task_groups[trid][9] = wall_min
+                    task_groups[trid][10] = stddev
 
         logger.info('make stats')
         stats = OrderedDict()
@@ -378,6 +379,7 @@ class web(_Methods_Base):
                 'num_error': task_groups[trid][3],
                 'num_completions': task_groups[trid][4],
                 'avg_runtime': avg,
+                'stddev_runtime': task_groups[trid][10],
                 'max_runtime': task_groups[trid][8],
                 'min_runtime': task_groups[trid][9],
                 'error_count': task_groups[trid][7],
