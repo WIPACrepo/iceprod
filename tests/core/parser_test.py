@@ -154,6 +154,9 @@ class parser_test(unittest.TestCase):
         ret = p.eval_func('-1')
         self.assertEqual(ret, '-1')
 
+        ret = p.eval_func('-1')
+        self.assertEqual(ret, '-1')
+
         with self.assertRaises(parser.GrammarException):
             p.eval_func('import os')
 

@@ -240,7 +240,7 @@ def setupenv(cfg, obj, oldenv={}):
                 try:
                     uploadData(env, d)
                 except util.NoncriticalError as e:
-                    logger.error('failed when uploading file %s - %s' % (str(d),str(d)))
+                    logger.error('failed when uploading file %s - %s' % (str(d),str(e)), exc_info=True)
                     if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
                         raise
     finally:
