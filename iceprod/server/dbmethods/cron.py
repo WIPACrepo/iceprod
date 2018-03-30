@@ -580,14 +580,14 @@ class cron(_Methods_Base):
                     yield None # yield to other events
 
     @tornado.gen.coroutine
-    def cron_task_monitoring(self, limit=1000):
+    def cron_task_monitoring(self, limit=10000):
         """
         Monitor task status in ES.
         """
         if 'elasticsearch' not in self.parent.cfg or not self.parent.cfg['elasticsearch']:
             return
 
-        sql = 'select task_id from task'
+        sql = 'select task_id from task where status="complete"'
         bindings = tuple()
         ret = yield self.parent.db.query(sql, bindings)
         result = {row[0] for row in ret}
@@ -611,6 +611,18 @@ class cron(_Methods_Base):
                     row = self._list_to_dict('task',row)
                     tasks[row['task_id']] = row
                     task_rel_ids.add(row['task_rel_id'])
+
+            sql = 'select * from task_stat where task_id in (%s) order by task_stat_id'
+            for f in self._bulk_select(sql, task_ids):
+                ret = yield f
+                for ts,tid,data in ret:
+                    try:
+                        data = json_decode(data)
+                        if 'resources' in data:
+                            for r in data['resources']:
+                                tasks[tid]['resources_'+r] = data['resources'][r]
+                    except Exception:
+                        pass
 
             job_ids = defaultdict(list)
             sql = 'select task_id,dataset_id,job_id,name from search where task_id in (%s)'
@@ -652,15 +664,18 @@ class cron(_Methods_Base):
                 del data['requirements']
                 for k in req:
                     data['requirements_'+k] = req[k]
-                ret = self.parent.elasticsearch.post('task_stat','_search', {
-                    "query": {
-                        "term" : { "task_id" : task_id }
-                    }
-                })
-                if ret:
-                    for k in ret:
-                        if k.startswith('resources'):
-                            data[k] = ret[k]
-                self.parent.elasticsearch.put('task', task_id, data)
-                yield None # yield to other events
-
+                #ret = self.parent.elasticsearch.post('task_stat','_search', {
+                #    "query": {
+                #        "term" : { "task_id" : task_id }
+                #    }
+                #})
+                #if ret:
+                #    for k in ret:
+                #        if k.startswith('resources') or k.startswith('requirements'):
+                #            data[k] = ret[k]
+                for i in range(10):
+                    yield None # yield to other events
+                    try:
+                        self.parent.elasticsearch.put('task', task_id, data)
+                    except Exception:
+                        yield tornado.gen.sleep(0.3*2**i)
