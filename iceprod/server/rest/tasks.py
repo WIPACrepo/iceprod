@@ -42,6 +42,7 @@ def setup(config):
     return [
         (r'/tasks', MultiTasksHandler, handler_cfg),
         (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
+        (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
         (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
         (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
@@ -153,6 +154,41 @@ class TasksHandler(BaseHandler):
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)
+            self.finish()
+
+class TasksStatusHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin','client','system'])
+    async def put(self, task_id):
+        """
+        Set a task status.
+
+        Body should have {'status': <new_status>}
+
+        Args:
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing status in body')
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        update_data = {
+            'status': data['status'],
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.tasks.update_one({'task_id':task_id},
+                {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write({})
             self.finish()
 
 class DatasetMultiTasksHandler(BaseHandler):
