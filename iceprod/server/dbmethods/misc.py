@@ -259,18 +259,19 @@ class misc(_Methods_Base):
         """
         #with (yield self.parent.db.acquire_lock('update_master')):
         try:
-            sql2 = 'select timestamp from master_update_history '
-            sql2 += 'where table_name = ? and update_index = ?'
-            bindings2 = (table,index)
-            ret = yield self.parent.db.query(sql2, bindings2)
-            prev_timestamp = None
-            for row in ret:
-                prev_timestamp = row[0]
-            if prev_timestamp and prev_timestamp >= timestamp:
-                logger.info('newer data already present for %s %s %s',
-                            table, index, timestamp)
-                return
+            #sql2 = 'select timestamp from master_update_history '
+            #sql2 += 'where table_name = ? and update_index = ?'
+            #bindings2 = (table,index)
+            #ret = yield self.parent.db.query(sql2, bindings2)
+            #prev_timestamp = None
+            #for row in ret:
+            #    prev_timestamp = row[0]
+            #if prev_timestamp and prev_timestamp >= timestamp:
+            #    logger.info('newer data already present for %s %s %s',
+            #                table, index, timestamp)
+            #    return
             yield self.parent.db.query(sql, bindings)
+            return
         except MySQLdb.Error:
             logger.warning('dropping history for %r', sql, exc_info=True)
         except Exception:
