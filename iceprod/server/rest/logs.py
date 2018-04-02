@@ -40,6 +40,7 @@ def setup(config):
         (r'/logs/(?P<log_id>\w+)', LogsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/logs', DatasetMultiLogsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/logs/(?P<log_id>\w+)', DatasetLogsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/logs', DatasetTaskLogsHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -56,15 +57,21 @@ class MultiLogsHandler(BaseHandler):
         """
         Create a log entry.
 
-        Body should contain the log message.
+        Body should contain the following fields:
+            data: str
+
+        Optional fields:
+            dataset_id: str
+            task_id: str
+            name: str
 
         Returns:
             dict: {'result': <log_id>}
         """
-        data = {
-            'log_id': uuid.uuid1().hex,
-            'data': self.request.body,
-        }
+        data = json.loads(self.request.body)
+        if 'data' not in data:
+            raise tornado.web.HTTPError(400, reason='data field not in body')
+        data['log_id'] = uuid.uuid1().hex
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': data['log_id']})
@@ -83,14 +90,14 @@ class LogsHandler(BaseHandler):
             log_id (str): the log id of the entry
 
         Returns:
-            str: log entry
+            dict: all body fields
         """
         ret = await self.db.logs.find_one({'log_id':log_id},
                 projection={'_id':False, 'data':True})
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
-            self.write(ret['data'])
+            self.write(ret)
             self.finish()
 
 class DatasetMultiLogsHandler(BaseHandler):
@@ -102,18 +109,24 @@ class DatasetMultiLogsHandler(BaseHandler):
         """
         Create a log entry.
 
-        Body should contain the log message.
+        Body should contain the following fields:
+            data: str
+
+        Optional fields:
+            task_id: str
+            name: str
 
         Args:
-            dataset_id (str): the dataset id of the config
+            dataset_id (str): the dataset id
 
         Returns:
             dict: {'result': <log_id>}
         """
-        data = {
-            'log_id': uuid.uuid1().hex,
-            'data': self.request.body,
-        }
+        data = json.loads(self.request.body)
+        if 'data' not in data:
+            raise tornado.web.HTTPError(400, reason='data field not in body')
+        data['log_id'] = uuid.uuid1().hex
+        data['dataset_id'] = dataset_id
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': data['log_id']})
@@ -126,19 +139,46 @@ class DatasetLogsHandler(BaseHandler):
     @authorization(roles=['admin'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, log_id):
         """
-        Get a config.
+        Get a log.
 
         Args:
-            dataset_id (str): the dataset id of the config
+            dataset_id (str): the dataset id
             log_id (str): the log id of the entry
 
         Returns:
-            dict: config
+            dict: all body fields
         """
         ret = await self.db.logs.find_one({'log_id':log_id},
-                projection={'_id':False, 'data':True})
+                projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
-            self.write(ret['data'])
+            self.write(ret)
+            self.finish()
+
+class DatasetTaskLogsHandler(BaseHandler):
+    """
+    Handle log requests for a task
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id):
+        """
+        Get a log.
+
+        Args:
+            dataset_id (str): the dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: {'logs': [log entry dict, log entry dict]}
+        """
+        cur = self.db.logs.find({'dataset_id':dataset_id, 'task_id':task_id},
+                projection={'_id':False})
+        ret = []
+        async for entry in cur:
+            ret.append(entry)
+        if not ret:
+            self.send_error(404, reason="Log not found")
+        else:
+            self.write({'logs':ret})
             self.finish()

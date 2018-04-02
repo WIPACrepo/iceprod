@@ -72,9 +72,9 @@ class rest_logs_test(AsyncTestCase):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
-        data = 'foo bar baz'
+        data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=data,
+                method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
@@ -85,9 +85,9 @@ class rest_logs_test(AsyncTestCase):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
-        data = 'foo bar baz'
+        data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=data,
+                method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
@@ -96,17 +96,17 @@ class rest_logs_test(AsyncTestCase):
         r = yield client.fetch('http://localhost:%d/logs/%s'%(self.port,log_id),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
-        ret = r.body.decode('utf-8')
-        self.assertEqual(data, ret)
+        ret = json.loads(r.body)
+        self.assertEqual(data['data'], ret['data'])
 
     @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs')
     def test_120_logs(self):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
-        data = 'foo bar baz'
+        data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
-                method='POST', body=data,
+                method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
@@ -117,9 +117,9 @@ class rest_logs_test(AsyncTestCase):
         iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
 
         client = AsyncHTTPClient(self.io_loop)
-        data = 'foo bar baz'
+        data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
-                method='POST', body=data,
+                method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 201)
         ret = json.loads(r.body)
@@ -128,8 +128,30 @@ class rest_logs_test(AsyncTestCase):
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs/%s'%(self.port,log_id),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
-        ret = r.body.decode('utf-8')
-        self.assertEqual(data, ret)
+        ret = json.loads(r.body)
+        self.assertEqual(data['data'], ret['data'])
+
+    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/logs')
+    def test_140_logs(self):
+        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+
+        client = AsyncHTTPClient(self.io_loop)
+        data = {'data':'foo bar baz', 'dataset_id': 'foo', 'task_id': 'bar'}
+        r = yield client.fetch('http://localhost:%d/logs'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        log_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('logs', ret)
+        self.assertEqual(len(ret['logs']), 1)
+        self.assertEqual(ret['logs'][0]['log_id'], log_id)
+        self.assertEqual(data['data'], ret['logs'][0]['data'])
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
