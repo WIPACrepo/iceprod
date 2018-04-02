@@ -7,6 +7,7 @@ import os
 import time
 from copy import deepcopy
 from functools import wraps
+from datetime import datetime
 
 import logging
 logger = logging.getLogger('exe_json')
@@ -14,9 +15,9 @@ logger = logging.getLogger('exe_json')
 from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core import dataclasses
-from iceprod.core.serialization import dict_to_dataclasses
-from iceprod.core.jsonRPCclient import JSONRPC
-from iceprod.core.jsonUtil import json_compressor,json_decode
+from .serialization import dict_to_dataclasses
+from .jsonUtil import json_compressor,json_decode
+from .rest_client import Client
 
 
 def send_through_pilot(func):
@@ -69,7 +70,7 @@ class ServerComms:
     def __init__(self, url, passkey, config, **kwargs):
         self.url = url
         self.cfg = config
-        self.rpc = JSONRPC(address=url,passkey=passkey,**kwargs)
+        self.rest = Client(address=url,auth_key=passkey,**kwargs)
 
     def download_task(self, gridspec, resources={}):
         """
@@ -92,10 +93,15 @@ class ServerComms:
         if 'gpu' in resources and isinstance(resources['gpu'],list):
             resources['gpu'] = len(resources['gpu'])
         os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
-        task = self.rpc.new_task(gridspec=gridspec, hostname=hostname, 
-                                 domain=domain, ifaces=ifaces,
-                                 os=os_type,
-                                 **resources)
+        if os_type:
+            resources['os'] = os_type
+        task = self.rest.request('GET', '/task_actions/process',
+                {'gridspec': gridspec,
+                 'hostname': hostname, 
+                 'domain': domain,
+                 'ifaces': ifaces,
+                 'requirements': resources,
+                })
         if not task:
             return None
         if task and not isinstance(task,list):
@@ -122,14 +128,13 @@ class ServerComms:
         Args:
             task_id (str): task_id to mark as processing
         """
-        self.rpc.set_processing(task_id=task_id)
+        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
+                          {'status': 'processing'})
 
     @send_through_pilot
     def finish_task(self, stats={}, start_time=None, resources=None):
         """
         Finish a task.
-
-        
         """
         if 'stats' in self.cfg.config['options']:
             # filter task stats
@@ -142,19 +147,28 @@ class ServerComms:
             t = time.time() - start_time
         else:
             t = None
-        stats = {'hostname': hostname, 'domain': domain,
-                 'time_used': t, 'task_stats': stats}
+        iceprod_stats = {
+            'hostname': hostname,
+            'domain': domain,
+            'time_used': t,
+            'task_stats': stats,
+            'time': datetime.utcnow().isoformat(),
+        }
         if resources:
-            stats['resources'] = resources
-        self.rpc.finish_task(task_id=self.cfg.config['options']['task_id'],
-                             stats=stats)
+            iceprod_stats['resources'] = resources
+
+        task_id = self.cfg.config['options']['task_id']
+        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
+                          iceprod_stats)
+        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
+                          {'status': 'complete'})
 
     @send_through_pilot
     def still_running(self):
         """Check if the task should still be running according to the DB"""
         task_id = self.cfg.config['options']['task_id']
-        ret = self.rpc.stillrunning(task_id=task_id)
-        if not ret:
+        ret = self.rest.request('GET', '/tasks/{}'.format(task_id))
+        if (not ret) or 'status' not in ret or ret['status'] != 'processing':
             self.cfg.config['options']['DBkill'] = True
             raise Exception('task should be stopped')
 
@@ -169,26 +183,32 @@ class ServerComms:
             reason (str): one-line summary of error
             resources (dict): task resource usage
         """
+        iceprod_stats = {}
         try:
             hostname = functions.gethostname()
             domain = '.'.join(hostname.split('.')[-2:])
-            error_info = {
-                'hostname': hostname, 'domain': domain,
-                'time_used': None,
-                'error_summary': '',
-                'task_stats': stats,
-            }
             if start_time:
-                error_info['time_used'] = time.time() - start_time
-            if reason:
-                error_info['error_summary'] = reason
+                t = time.time() - start_time
+            else:
+                t = None
+            iceprod_stats = {
+                'hostname': hostname,
+                'domain': domain,
+                'time_used': t,
+                'task_stats': stats,
+                'time': datetime.utcnow().isoformat(),
+                'error_summary': reason if reason else '',
+            }
             if resources:
-                error_info['resources'] = resources
+                iceprod_stats['resources'] = resources
         except Exception:
             logger.warning('failed to collect error info', exc_info=True)
-            error_info = None
+
         task_id = self.cfg.config['options']['task_id']
-        self.rpc.task_error(task_id=task_id, error_info=error_info)
+        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
+                          iceprod_stats)
+        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
+                          {'status': 'reset'})
 
     def task_kill(self, task_id, resources=None, reason=None, message=None):
         """
@@ -203,33 +223,55 @@ class ServerComms:
         try:
             hostname = functions.gethostname()
             domain = '.'.join(hostname.split('.')[-2:])
-            error_info = {
-                'hostname': hostname, 'domain': domain,
-                'error_summary':'',
-                'time_used':None,
+            iceprod_stats = {
+                'hostname': hostname,
+                'domain': domain,
+                'task_stats': stats,
+                'time': datetime.utcnow().isoformat(),
+                'error_summary': reason if reason else '',
             }
-            if resources and 'time' in resources:
-                error_info['time_used'] = resources['time']
             if resources:
-                error_info['resources'] = resources
-            if reason:
-                error_info['error_summary'] = reason
+                iceprod_stats['resources'] = resources
         except Exception:
             logger.warning('failed to collect error info', exc_info=True)
             error_info = None
+        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
+                          iceprod_stats)
+        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
+                          {'status': 'reset'})
         if message:
-            data = json_compressor.compress(message)
-            self.rpc.upload_logfile(task=task_id,name='stdlog',data=data)
-            self.rpc.upload_logfile(task=task_id,name='stdout',data='')
-            self.rpc.upload_logfile(task=task_id,name='stderr',data='')
-        self.rpc.task_error(task_id=task_id, error_info=error_info)
+            data = {'name': 'stdlog', 'task_id': task_id}
+            try:
+                data['dataset_id'] = self.cfg.config['options']['dataset_id']
+            except Exception:
+                pass
+            try:
+                data = json_compressor.compress(message)
+            except Exception as e:
+                data['data'] = str(e)
+            self.rest.request('POST', '/logs', data)
+            data.update({'name':'stdout', 'data': ''})
+            self.rest.request('POST', '/logs', data)
+            data.update({'name':'stderr', 'data': ''})
+            self.rest.request('POST', '/logs', data)
 
     @send_through_pilot
     def _upload_logfile(self, name, filename):
         """Upload a log file"""
-        task_id = self.cfg.config['options']['task_id']
-        data = json_compressor.compress(open(filename,'rb').read())
-        ret = self.rpc.upload_logfile(task=task_id,name=name,data=data)
+        data = {'name': name}
+        try:
+            data['task_id'] = self.cfg.config['options']['task_id']
+        except Exception:
+            pass
+        try:
+            data['dataset_id'] = self.cfg.config['options']['dataset_id']
+        except Exception:
+            pass
+        try:
+            data['data'] = json_compressor.compress(open(filename,'rb').read())
+        except Exception as e:
+            data['data'] = str(e)
+        self.rest.request('POST', '/logs', data)
 
     def uploadLog(self):
         """Upload log file"""
@@ -254,4 +296,4 @@ class ServerComms:
             pilot_id (str): pilot id
             **kwargs: passed through to rpc function
         """
-        self.rpc.update_pilot(pilot_id=pilot_id, **kwargs)
+        self.rest.request('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
