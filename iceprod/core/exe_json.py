@@ -156,6 +156,8 @@ class ServerComms:
         }
         if resources:
             iceprod_stats['resources'] = resources
+        if 'dataset_id' in self.cfg.config['options']:
+            iceprod_stats['dataset_id'] = self.cfg.config['options']['dataset_id']
 
         task_id = self.cfg.config['options']['task_id']
         self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
@@ -201,6 +203,8 @@ class ServerComms:
             }
             if resources:
                 iceprod_stats['resources'] = resources
+            if 'dataset_id' in self.cfg.config['options']:
+                iceprod_stats['dataset_id'] = self.cfg.config['options']['dataset_id']
         except Exception:
             logger.warning('failed to collect error info', exc_info=True)
 
@@ -220,13 +224,16 @@ class ServerComms:
             reason (str): short summary for kill
             message (str): long message to replace log upload
         """
+        if not reason:
+            reason = 'killed'
+        if not message:
+            message = reason
         try:
             hostname = functions.gethostname()
             domain = '.'.join(hostname.split('.')[-2:])
             iceprod_stats = {
                 'hostname': hostname,
                 'domain': domain,
-                'task_stats': stats,
                 'time': datetime.utcnow().isoformat(),
                 'error_summary': reason if reason else '',
             }
@@ -234,26 +241,26 @@ class ServerComms:
                 iceprod_stats['resources'] = resources
         except Exception:
             logger.warning('failed to collect error info', exc_info=True)
-            error_info = None
+            iceprod_stats = {}
         self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                           iceprod_stats)
         self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                           {'status': 'reset'})
-        if message:
-            data = {'name': 'stdlog', 'task_id': task_id}
-            try:
-                data['dataset_id'] = self.cfg.config['options']['dataset_id']
-            except Exception:
-                pass
-            try:
-                data = json_compressor.compress(message)
-            except Exception as e:
-                data['data'] = str(e)
-            self.rest.request('POST', '/logs', data)
-            data.update({'name':'stdout', 'data': ''})
-            self.rest.request('POST', '/logs', data)
-            data.update({'name':'stderr', 'data': ''})
-            self.rest.request('POST', '/logs', data)
+
+        data = {'name': 'stdlog', 'task_id': task_id}
+        try:
+            data['dataset_id'] = self.cfg.config['options']['dataset_id']
+        except Exception:
+            pass
+        try:
+            data['data'] = json_compressor.compress(message)
+        except Exception as e:
+            data['data'] = str(e)
+        self.rest.request('POST', '/logs', data)
+        data.update({'name':'stdout', 'data': ''})
+        self.rest.request('POST', '/logs', data)
+        data.update({'name':'stderr', 'data': ''})
+        self.rest.request('POST', '/logs', data)
 
     @send_through_pilot
     def _upload_logfile(self, name, filename):
