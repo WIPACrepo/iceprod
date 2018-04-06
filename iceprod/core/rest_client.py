@@ -7,6 +7,7 @@ The REST protocol is built on http(s), with the body containing
 a json-encoded dictionary as necessary.
 """
 
+import os
 import logging
 
 from .session import Session
@@ -36,11 +37,11 @@ class Client(object):
         if 'username' in self.kwargs and 'password' in self.kwargs:
             self.session.auth = (self.kwargs['username'], self.kwargs['password'])
         if 'sslcert' in self.kwargs:
-            if 'sslkey' in self.__kwargs:
+            if 'sslkey' in self.kwargs:
                 self.session.cert = (self.kwargs['sslcert'], self.kwargs['sslkey'])
             else:
                 self.session.cert = self.kwargs['sslcert']
-        if 'cacert' in self.__kwargs:
+        if 'cacert' in self.kwargs:
             self.session.verify = self.kwargs['cacert']
 
     def close(self):
@@ -50,7 +51,7 @@ class Client(object):
 
     def request(self, method, path, args):
         """Send request to REST Server"""
-        url = os.path.join(self.__address, path)
+        url = os.path.join(self.address, path)
         kwargs = {
             'timeout': self.timeout,
         }
