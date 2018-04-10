@@ -60,7 +60,7 @@ class rest_client_test(unittest.TestCase):
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request()')
-    def test_10_request(self, mock):
+    async def test_10_request(self, mock):
         """Test request"""
         address = 'http://test'
         auth_key = 'passkey'
@@ -73,14 +73,14 @@ class rest_client_test(unittest.TestCase):
             return iceprod.core.jsonUtil.json_encode(result).encode('utf-8')
         mock.post('/test', content=response)
 
-        ret = rpc.request('POST','test',{})
+        ret = await rpc.request('POST','test',{})
 
         self.assertTrue(mock.called)
         self.assertEqual(ret, result)
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request() - empty string')
-    def test_11_request(self, mock):
+    async def test_11_request(self, mock):
         """Test request"""
         address = 'http://test'
         auth_key = 'passkey'
@@ -90,14 +90,14 @@ class rest_client_test(unittest.TestCase):
 
         mock.get('/test', content=b'')
 
-        ret = rpc.request('GET','test',{})
+        ret = await rpc.request('GET','test',{})
 
         self.assertTrue(mock.called)
         self.assertIs(ret, None)
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request() - timeout')
-    def test_20_timeout(self, mock):
+    async def test_20_timeout(self, mock):
         """Test timeout"""
         address = 'http://test'
         auth_key = 'passkey'
@@ -108,11 +108,11 @@ class rest_client_test(unittest.TestCase):
         mock.post('/test', exc=Timeout)
 
         with self.assertRaises(Timeout):
-            ret = rpc.request('POST','test',{})
+            ret = await rpc.request('POST','test',{})
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request() - SSL error')
-    def test_21_ssl_error(self, mock):
+    async def test_21_ssl_error(self, mock):
         """Test ssl error"""
         address = 'http://test'
         auth_key = 'passkey'
@@ -123,11 +123,11 @@ class rest_client_test(unittest.TestCase):
         mock.post('/test', exc=SSLError)
 
         with self.assertRaises(SSLError):
-            ret = rpc.request('POST','test',{})
+            ret = await rpc.request('POST','test',{})
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request() - bad json')
-    def test_22_request(self, mock):
+    async def test_22_request(self, mock):
         """Test request"""
         address = 'http://test'
         auth_key = 'passkey'
@@ -138,7 +138,27 @@ class rest_client_test(unittest.TestCase):
         mock.get('/test', content=b'{"foo"}')
 
         with self.assertRaises(Exception):
-            ret = rpc.request('GET','test',{})
+            ret = await rpc.request('GET','test',{})
+
+    @requests_mock.mock()
+    @unittest_reporter(name='Client.request_seq()')
+    def test_90_request(self, mock):
+        """Test request"""
+        address = 'http://test'
+        auth_key = 'passkey'
+        result = {'result':'the result'}
+
+        rpc = iceprod.core.rest_client.Client(address, auth_key, timeout=0.1)
+
+        def response(req, ctx):
+            body = iceprod.core.jsonUtil.json_decode(req.body)
+            return iceprod.core.jsonUtil.json_encode(result).encode('utf-8')
+        mock.post('/test', content=response)
+
+        ret = rpc.request_seq('POST','test',{})
+
+        self.assertTrue(mock.called)
+        self.assertEqual(ret, result)
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

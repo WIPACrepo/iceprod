@@ -9,6 +9,7 @@ a json-encoded dictionary as necessary.
 
 import os
 import logging
+import asyncio
 
 from .session import Session
 from .jsonUtil import json_encode,json_decode
@@ -49,8 +50,20 @@ class Client(object):
         logger.warning('close REST http session')
         self.session.close()
 
-    def request(self, method, path, args):
-        """Send request to REST Server"""
+    async def request(self, method, path, args):
+        """
+        Send request to REST Server.
+
+        Async request - use with coroutines.
+
+        Args:
+            method (str): the http method
+            path (str): the url path on the server
+            args (dict): any arguments to pass
+
+        Returns:
+            dict: json dict or raw string
+        """
         url = os.path.join(self.address, path)
         kwargs = {
             'timeout': self.timeout,
@@ -62,7 +75,7 @@ class Client(object):
             kwargs['json'] = args
 
         # make request to server
-        r = self.session.request(method, url, **kwargs)
+        r = await asyncio.wrap_future(self.session.request(method, url, **kwargs))
         r.raise_for_status()
 
         # translate response from json
@@ -74,3 +87,10 @@ class Client(object):
         except Exception:
             logger.info('json data: %r', r.content)
             raise
+
+    def request_seq(self, *args, **kwargs):
+        """Sequential version of `request`."""
+        loop = asyncio.get_event_loop()
+        ret = loop.run_until_complete(self.request(*args, **kwargs))
+        loop.close()
+        return ret        

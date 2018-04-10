@@ -95,7 +95,7 @@ class ServerComms:
         os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
         if os_type:
             resources['os'] = os_type
-        task = self.rest.request('GET', '/task_actions/process',
+        task = self.rest.request_seq('GET', '/task_actions/process',
                 {'gridspec': gridspec,
                  'hostname': hostname, 
                  'domain': domain,
@@ -128,8 +128,8 @@ class ServerComms:
         Args:
             task_id (str): task_id to mark as processing
         """
-        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                          {'status': 'processing'})
+        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+                              {'status': 'processing'})
 
     @send_through_pilot
     def finish_task(self, stats={}, start_time=None, resources=None):
@@ -160,16 +160,16 @@ class ServerComms:
             iceprod_stats['dataset_id'] = self.cfg.config['options']['dataset_id']
 
         task_id = self.cfg.config['options']['task_id']
-        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
-                          iceprod_stats)
-        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                          {'status': 'complete'})
+        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+                              iceprod_stats)
+        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+                              {'status': 'complete'})
 
     @send_through_pilot
     def still_running(self):
         """Check if the task should still be running according to the DB"""
         task_id = self.cfg.config['options']['task_id']
-        ret = self.rest.request('GET', '/tasks/{}'.format(task_id))
+        ret = self.rest.request_seq('GET', '/tasks/{}'.format(task_id))
         if (not ret) or 'status' not in ret or ret['status'] != 'processing':
             self.cfg.config['options']['DBkill'] = True
             raise Exception('task should be stopped')
@@ -209,10 +209,10 @@ class ServerComms:
             logger.warning('failed to collect error info', exc_info=True)
 
         task_id = self.cfg.config['options']['task_id']
-        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
-                          iceprod_stats)
-        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                          {'status': 'reset'})
+        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+                              iceprod_stats)
+        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+                              {'status': 'reset'})
 
     def task_kill(self, task_id, resources=None, reason=None, message=None):
         """
@@ -242,10 +242,10 @@ class ServerComms:
         except Exception:
             logger.warning('failed to collect error info', exc_info=True)
             iceprod_stats = {}
-        self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
-                          iceprod_stats)
-        self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                          {'status': 'reset'})
+        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+                              iceprod_stats)
+        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+                              {'status': 'reset'})
 
         data = {'name': 'stdlog', 'task_id': task_id}
         try:
@@ -256,11 +256,11 @@ class ServerComms:
             data['data'] = json_compressor.compress(message)
         except Exception as e:
             data['data'] = str(e)
-        self.rest.request('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
         data.update({'name':'stdout', 'data': ''})
-        self.rest.request('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
         data.update({'name':'stderr', 'data': ''})
-        self.rest.request('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
 
     @send_through_pilot
     def _upload_logfile(self, name, filename):
@@ -278,7 +278,7 @@ class ServerComms:
             data['data'] = json_compressor.compress(open(filename,'rb').read())
         except Exception as e:
             data['data'] = str(e)
-        self.rest.request('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
 
     def uploadLog(self):
         """Upload log file"""
@@ -303,4 +303,4 @@ class ServerComms:
             pilot_id (str): pilot id
             **kwargs: passed through to rpc function
         """
-        self.rest.request('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
+        self.rest.request_seq('PATCH', '/pilots/{}'.format(pilot_id), kwargs)

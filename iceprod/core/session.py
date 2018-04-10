@@ -7,6 +7,7 @@ Get a `requests`_ Session that fully retries errors.
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests_futures.sessions import FuturesSession
 
 def Session(retries=10, backoff_factor=0.3,
             method_whitelist=('HEAD','TRACE','GET','POST','PUT','OPTIONS','DELETE'),
@@ -24,7 +25,7 @@ def Session(retries=10, backoff_factor=0.3,
     Returns:
         :py:class:`requests.Session`: session object
     """
-    session = requests.Session()
+    session = FuturesSession()
     retry = Retry(
         total=retries,
         connect=retries,
