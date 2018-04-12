@@ -68,9 +68,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /tasks')
     def test_105_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -85,11 +85,70 @@ class rest_tasks_test(AsyncTestCase):
         ret = json.loads(r.body)
         self.assertIn('result', ret)
 
+    @unittest_reporter(name='REST GET    /tasks')
+    def test_106_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('tasks', ret)
+        self.assertEqual(len(ret['tasks']), 1)
+        self.assertIn('task_id', ret['tasks'][0])
+        self.assertEqual(ret['tasks'][0]['task_id'], task_id)
+
+        r = yield client.fetch('http://localhost:%d/tasks?keys=dataset_id|name'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('tasks', ret)
+        self.assertEqual(len(ret['tasks']), 1)
+        self.assertNotIn('task_id', ret['tasks'][0])
+        self.assertIn('dataset_id', ret['tasks'][0])
+        self.assertIn('name', ret['tasks'][0])
+
+        data = {'status':'queued'}
+        r = yield client.fetch('http://localhost:%d/tasks/%s/status'%(self.port,task_id),
+                method='PUT', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+
+        r = yield client.fetch('http://localhost:%d/tasks?status=waiting'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('tasks', ret)
+        self.assertEqual(len(ret['tasks']), 0)
+
+        r = yield client.fetch('http://localhost:%d/tasks?status=queued'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('tasks', ret)
+        self.assertEqual(len(ret['tasks']), 1)
+        self.assertIn('task_id', ret['tasks'][0])
+        self.assertEqual(ret['tasks'][0]['task_id'], task_id)
+
     @unittest_reporter(name='REST GET    /tasks/<task_id>')
     def test_110_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -118,9 +177,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PATCH  /tasks/<task_id>')
     def test_120_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -150,9 +209,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PUT    /tasks/<task_id>/status')
     def test_130_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -182,9 +241,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks')
     def test_200_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -210,9 +269,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>')
     def test_210_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -241,9 +300,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/tasks/<task_id>/status')
     def test_220_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -273,9 +332,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/task_summaries/status')
     def test_300_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -298,9 +357,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/task_counts/status')
     def test_400_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -323,9 +382,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /task_actions/queue')
     def test_500_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -424,9 +483,9 @@ class rest_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /task_actions/process')
     def test_600_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,
@@ -461,7 +520,7 @@ class rest_tasks_test(AsyncTestCase):
         self.assertEqual(ret['status'], 'processing')
 
         # now try with requirements
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'task_index': 0,

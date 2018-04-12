@@ -72,9 +72,9 @@ class rest_datasets_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets')
     def test_100_datasets(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
@@ -84,7 +84,7 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST POST   /datasets')
     def test_110_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
@@ -94,7 +94,7 @@ class rest_datasets_test(AsyncTestCase):
                 return orig_fetch(self, url, *args, **kwargs)
         fetch.side_effect = mocked
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'description': 'blah',
             'jobs_submitted': 1,
@@ -128,9 +128,9 @@ class rest_datasets_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>')
     def test_120_datasets(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         with self.assertRaises(HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/datasets/bar'%self.port,
                     headers={'Authorization': b'bearer '+self.token})
@@ -139,7 +139,7 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/description')
     def test_200_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
@@ -149,7 +149,7 @@ class rest_datasets_test(AsyncTestCase):
                 return orig_fetch(self, url, *args, **kwargs)
         fetch.side_effect = mocked
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'description': 'blah',
             'jobs_submitted': 1,
@@ -181,7 +181,7 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/status')
     def test_210_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
@@ -191,7 +191,7 @@ class rest_datasets_test(AsyncTestCase):
                 return orig_fetch(self, url, *args, **kwargs)
         fetch.side_effect = mocked
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'description': 'blah',
             'jobs_submitted': 1,
@@ -223,7 +223,7 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST GET    /dataset_summaries/status')
     def test_300_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
@@ -233,7 +233,7 @@ class rest_datasets_test(AsyncTestCase):
                 return orig_fetch(self, url, *args, **kwargs)
         fetch.side_effect = mocked
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'description': 'blah',
             'jobs_submitted': 1,

@@ -62,6 +62,32 @@ class MultiTasksHandler(BaseHandler):
     Handle multi tasks requests.
     """
     @authorization(roles=['admin','system'])
+    async def get(self):
+        """
+        Get task entries.
+
+        Params (optional):
+            status: task status to filter by
+            keys: | separated list of keys to return for each task
+
+        Returns:
+            dict: {'result': <task_id>}
+        """
+        filters = {}
+
+        status = self.get_argument('status',None)
+        if status:
+            filters['status'] = status
+
+        projection = {x:True for x in self.get_argument('keys','').split('|') if x}
+        projection['_id'] = False
+
+        ret = []
+        async for row in self.db.tasks.find(filters, projection=projection):
+            ret.append(row)
+        self.write({'tasks': ret})
+
+    @authorization(roles=['admin','system'])
     async def post(self):
         """
         Create a task entry.
@@ -326,7 +352,7 @@ class TasksActionsQueueHandler(BaseHandler):
     """
     Handle task action for waiting -> queued.
     """
-    @authorization(roles=['admin','pilot'])
+    @authorization(roles=['admin','system'])
     async def post(self):
         """
         Take a number of waiting tasks and queue them.

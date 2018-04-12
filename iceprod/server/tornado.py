@@ -70,7 +70,7 @@ def setup_rest(config):
     }
     return tornado.web.Application(routes, **kwargs)
 
-def startup(app, address='localhost', port=8080, io_loop=None):
+def startup(app, address='localhost', port=8080):
     """
     Start up a Tornado server.
 
@@ -85,6 +85,6 @@ def startup(app, address='localhost', port=8080, io_loop=None):
     logger.warning('tornado bound to %s:%d', address, port)
     
     http_server = tornado.httpserver.HTTPServer(
-            app, xheaders=True, io_loop=io_loop)
+            app, xheaders=True)
     http_server.bind(port, address=address, family=socket.AF_INET)
     http_server.start()

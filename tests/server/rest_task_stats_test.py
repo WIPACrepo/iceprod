@@ -69,9 +69,9 @@ class rest_task_stats_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /tasks/<task_id>/task_stats')
     def test_100_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'bar': 1.23456,
@@ -86,9 +86,9 @@ class rest_task_stats_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats')
     def test_200_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'bar': 1.23456,
@@ -115,9 +115,9 @@ class rest_task_stats_test(AsyncTestCase):
     # note: the name is so long it needs a break to wrap correctly
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/ task_stats/<task_stat_id>')
     def test_210_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
             'bar': 1.23456,

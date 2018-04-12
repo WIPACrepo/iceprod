@@ -68,9 +68,9 @@ class rest_pilots_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /pilots')
     def test_100_pilots(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
@@ -79,9 +79,9 @@ class rest_pilots_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /pilots')
     def test_105_pilots(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'version': '1.2.3',
@@ -104,9 +104,9 @@ class rest_pilots_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /pilots/<pilot_id>')
     def test_110_pilots(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'version': '1.2.3',
@@ -130,9 +130,9 @@ class rest_pilots_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PATCH  /pilots/<pilot_id>')
     def test_120_pilots(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'version': '1.2.3',
@@ -160,9 +160,9 @@ class rest_pilots_test(AsyncTestCase):
 
     @unittest_reporter(name='REST DELETE /pilots/<pilot_id>')
     def test_130_pilots(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'version': '1.2.3',

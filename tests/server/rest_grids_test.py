@@ -68,9 +68,9 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /grids')
     def test_100_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/grids'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
@@ -79,9 +79,9 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /grids')
     def test_105_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'queues': {'foo': 'HTCondor'},
@@ -105,9 +105,9 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /grids/<grid_id>')
     def test_110_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'queues': {'foo': 'HTCondor'},
@@ -130,9 +130,9 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PATCH  /grids/<grid_id>')
     def test_120_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
             'queues': {'foo': 'HTCondor'},

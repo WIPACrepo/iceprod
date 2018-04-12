@@ -69,9 +69,9 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /logs')
     def test_100_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
@@ -82,9 +82,9 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /logs/<log_id>')
     def test_110_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
@@ -101,9 +101,9 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs')
     def test_120_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
                 method='POST', body=json.dumps(data),
@@ -114,9 +114,9 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id>')
     def test_130_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
@@ -133,9 +133,9 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/logs')
     def test_140_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(self.app, port=self.port)
 
-        client = AsyncHTTPClient(self.io_loop)
+        client = AsyncHTTPClient()
         data = {'data':'foo bar baz', 'dataset_id': 'foo', 'task_id': 'bar'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
