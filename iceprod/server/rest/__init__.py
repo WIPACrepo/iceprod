@@ -153,8 +153,8 @@ def authorization(**_auth):
 
             authorized = False
 
-            auth_role = self.auth_data.get('role',[])
-            logger.debug('token_roles: %r', auth_role)
+            auth_role = self.auth_data.get('role',None)
+            logger.debug('token_role: %r', auth_role)
             if roles and auth_role in roles:
                 authorized = True
 

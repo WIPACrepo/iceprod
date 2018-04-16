@@ -571,8 +571,90 @@ class rest_auth_test(AsyncTestCase):
         tok = r.body
         data = Auth('secret').validate(tok)
         self.assertEqual(data['username'], 'foo')
-        self.assertIn('roles',data)
+        self.assertIn('role',data)
         self.assertIn('groups',data)
+
+    @unittest_reporter(name='REST POST   /create_token')
+    def test_800_auths(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+
+        # test temp token
+        data = {
+            'username': 'bar',
+            'roles': ['foo','user']
+        }
+        r = yield client.fetch('http://localhost:%d/users'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        data = {
+            'type': 'temp',
+            'role': 'foo',
+        }
+        token2 = Auth('secret').create_token('bar', type='user',
+                payload={'username':'bar','role':'user','groups':['baz']})
+        r = yield client.fetch('http://localhost:%d/create_token'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(r.code, 200)
+        tok = r.body
+        data = Auth('secret').validate(tok)
+        self.assertEqual(data['type'], 'temp')
+        self.assertEqual(data['username'], 'bar')
+        self.assertIn('role',data)
+        self.assertEqual(data['role'], 'user')
+        self.assertIn('groups',data)
+
+        # test switching roles
+        data = {
+            'username': 'foo',
+            'roles': ['admin','user']
+        }
+        r = yield client.fetch('http://localhost:%d/users'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        data = {
+            'type': 'user',
+            'role': 'admin',
+            'exp': 10
+        }
+        token2 = Auth('secret').create_token('foo', type='user',
+                payload={'username':'foo','role':'user','groups':['baz']})
+        r = yield client.fetch('http://localhost:%d/create_token'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(r.code, 200)
+        tok = r.body
+        data = Auth('secret').validate(tok)
+        self.assertEqual(data['type'], 'user')
+        self.assertEqual(data['username'], 'foo')
+        self.assertIn('role',data)
+        self.assertEqual(data['role'], 'admin')
+        self.assertIn('groups',data)
+        self.assertLess(data['exp'], time.time()+10)
+
+        # test internal token
+        data = {
+            'type': 'system',
+            'role': 'pilot',
+        }
+        token2 = Auth('secret').create_token('foo', type='system',
+                payload={'username':'foo','role':'client','groups':[]})
+        r = yield client.fetch('http://localhost:%d/create_token'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+token2})
+        self.assertEqual(r.code, 200)
+        tok = r.body
+        data = Auth('secret').validate(tok)
+        self.assertEqual(data['type'], 'system')
+        self.assertEqual(data['username'], 'foo')
+        self.assertIn('role',data)
+        self.assertEqual(data['role'], 'pilot')
 
     @unittest_reporter(name='REST PUT    /auths/<dataset_id>')
     def test_900_auths(self):

@@ -1,6 +1,7 @@
 import logging
 import json
 import uuid
+import time
 
 import tornado.web
 import pymongo
@@ -37,7 +38,7 @@ def setup(config):
     if 'username_index' not in db.users.index_information():
         db.users.create_index('username', name='username_index', unique=True)
     if 'dataset_id_index' not in db.auths_dataset.index_information():
-        db.users.create_index('dataset_id', name='dataset_id_index', unique=True)
+        db.auths_dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
@@ -59,6 +60,7 @@ def setup(config):
         (r'/users/(?P<user_id>\w+)/roles', UserRolesHandler, handler_cfg),
         (r'/users/(?P<user_id>\w+)/groups', UserGroupsHandler, handler_cfg),
         (r'/ldap', LDAPHandler, ldap_cfg),
+        (r'/create_token', CreateTokenHandler, handler_cfg),
         (r'/auths/(?P<dataset_id>\w+)', AuthDatasetHandler, handler_cfg),
         (r'/auths/(?P<dataset_id>\w+)/actions/(?P<action>\w+)', AuthDatasetActionHandler, handler_cfg),
     ]
@@ -242,7 +244,17 @@ class MultiUserHandler(AuthHandler):
         Body should contain all necessary fields for a user.
         """
         data = json.loads(self.request.body)
+        if 'username' not in data:
+            raise tornado.web.HTTPError(400, reason='missing username')
+        ret = await self.db.users.find_one({'username': data['username']})
+        if ret:
+            raise tornado.web.HTTPError(400, reason='duplicate username')
+
         data['user_id'] = uuid.uuid1().hex
+        if 'groups' not in data:
+            data['groups'] = []
+        if 'roles' not in data:
+            data['roles'] = []
         ret = await self.db.users.insert_one(data)
         self.set_status(201)
         self.set_header('Location', '/users/'+data['user_id'])
@@ -437,12 +449,102 @@ class LDAPHandler(AuthHandler):
             # create token
             data = {
                 'username': username,
-                'roles': ret['roles'],
+                'role': 'user' if 'user' in ret['roles'] else 'anonymous',
                 'groups': ret['groups'],
             }
             tok = self.auth.create_token(username, type='user', payload=data)
             self.write(tok)
             self.finish()
+
+class CreateTokenHandler(AuthHandler):
+    """
+    Handle new token creation from an existing token.
+    """
+    @authorization(roles=['user','admin','client'])
+    async def post(self):
+        """
+        Create a new token based on the existing token.
+
+        Refresh is not allowed.  This is a sub-token with no
+        extra expiration time.
+
+        Body (json) args:
+            type (str): the token type
+            role (str): the role for the new token
+            exp (int): expiration time (in seconds, from now)
+
+        Returns:
+            str: auth token
+        """
+        if 'username' not in self.auth_data:
+            raise tornado.web.HTTPError(400, reason='invalid username')
+        if 'role' not in self.auth_data:
+            raise tornado.web.HTTPError(400, reason='invalid role')
+        if 'type' not in self.auth_data or self.auth_data['type'] not in ('user','system'):
+            raise tornado.web.HTTPError(400, reason='invalid token type')
+
+        # get user info from DB
+        ret = await self.db.users.find_one({'username':self.auth_data['username']})
+        if not ret:
+            raise tornado.web.HTTPError(400, reason='invalid username')
+
+        # get args
+        args = json.loads(self.request.body)
+
+        # calculate expiration
+        max_exp = self.auth_data['exp']-time.time()
+        try:
+            exp = int(args.get('exp', max_exp))
+        except Exception:
+            raise tornado.web.HTTPError(400, reason='invalid expiration')
+        else:
+            if exp < 0 or exp > max_exp:
+                raise tornado.web.HTTPError(400, reason='invalid expiration')
+
+        # create token
+        data = {'username': self.auth_data['username']}
+        tok_type = args.get('type', 'temp')
+        logger.debug('token type: %r', tok_type)
+        if tok_type == 'temp':
+            # temp token for current role
+            if self.auth_data['role'] not in ('admin','user'):
+                raise tornado.web.HTTPError(400, reason='invalid role')
+            if self.auth_data['role'] not in ret['roles']:
+                raise tornado.web.HTTPError(400, reason='invalid role request')
+            data.update({
+                'role': self.auth_data['role'],
+                'groups': ret['groups'] if 'groups' in ret else [],
+            })
+        elif tok_type == 'user':
+            # switching roles
+            if 'admin' not in ret['roles']:
+                raise tornado.web.HTTPError(400, reason='invalid role')
+            role = args.get('role', None)
+            if (not role) or role not in ('admin','user'):
+                raise tornado.web.HTTPError(400, reason='invalid role request')
+            data.update({
+                'role': role,
+                'groups': ret['groups'] if 'groups' in ret else [],
+            })
+        elif tok_type == 'system':
+            # iceprod internal tokens
+            if self.auth_data['role'] not in ('admin','client'):
+                raise tornado.web.HTTPError(400, reason='invalid role')
+            role = args.get('role', None)
+            if (not role) or not ((self.auth_data['role'] == 'admin' and role in ('system','client'))
+                                  or (self.auth_data['role'] == 'client' and role == 'pilot')):
+                raise tornado.web.HTTPError(400, reason='invalid role request')
+            data.update({
+                'role': role,
+                'groups': [],
+            })
+        else:
+            raise tornado.web.HTTPError(400, reason='invalid token type request')
+
+        logger.debug('making new token with payload: %r', data)
+        tok = self.auth.create_token(data['username'], expiration=exp,
+                                     type=tok_type, payload=data)
+        self.write(tok)
 
 class AuthDatasetHandler(AuthHandler):
     """
