@@ -65,10 +65,11 @@ def unittest_reporter(*args,**kwargs):
                 return
             try:
                 with to_log(sys.stdout), to_log(sys.stderr):
-                    if inspect.isgeneratorfunction(obj):
+                    if inspect.isgeneratorfunction(obj) or inspect.iscoroutinefunction(obj):
                         logging.info('test is async')
                         gen_test(obj)(self, *args,**kwargs)
                     else:
+                        logging.info('test is seq')
                         obj(self, *args,**kwargs)
             except Exception as e:
                 logging.error('Error running %s test',name,
