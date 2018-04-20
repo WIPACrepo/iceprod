@@ -58,8 +58,10 @@ class MultiPilotsHandler(BaseHandler):
         Returns:
             dict: {'uuid': {pilot_data}}
         """
-        ret = await self.db.pilots.find(projection={'_id':False}).to_list(1000)
-        self.write({row['pilot_id']:row for row in ret})
+        ret = {}
+        async for row in self.db.pilots.find(projection={'_id':False}):
+            ret[row['pilot_id']] = row
+        self.write(ret)
         self.finish()
 
     @authorization(roles=['admin','client'])
@@ -76,8 +78,9 @@ class MultiPilotsHandler(BaseHandler):
 
         # validate first
         req_fields = {
-            'host': str,
-            'version': str, # iceprod version
+            'queue_host': str,
+            'queue_version': str, # iceprod version
+            'resources': dict, # min resources requested
         }
         for k in req_fields:
             if k not in data:
@@ -88,10 +91,17 @@ class MultiPilotsHandler(BaseHandler):
 
         # set some fields
         data['pilot_id'] = uuid.uuid1().hex
-        data['start_date'] = nowstr()
+        data['submit_time'] = nowstr()
+        data['start_time'] = nowstr()
         data['last_update'] = data['start_date']
         if 'tasks' not in data:
             data['tasks'] = []
+        if 'host' not in data:
+            data['host'] = ''
+        if 'version' not in data:
+            data['version'] = ''
+        if 'grid_queue_id' not in data:
+            data['grid_queue_id'] = ''
 
         ret = await self.db.pilots.insert_one(data)
         self.set_status(201)

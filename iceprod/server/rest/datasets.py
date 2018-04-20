@@ -114,6 +114,8 @@ class MultiDatasetHandler(BaseHandler):
         data['status'] = 'processing'
         data['start_date'] = nowstr()
         data['username'] = self.auth_data['username']
+        if 'priority' not in data:
+            data['priority'] = 0
         if 'debug' not in data:
             data['debug'] = False
 
