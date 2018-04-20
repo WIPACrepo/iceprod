@@ -34,6 +34,35 @@ class parser_test(unittest.TestCase):
         super(parser_test,self).tearDown()
 
     @unittest_reporter
+    def test_00_getType(self):
+        ret = parser.getType('0')
+        self.assertEqual(ret, 0)
+
+        ret = parser.getType('1.24')
+        self.assertEqual(ret, 1.24)
+        
+        ret = parser.getType('foo')
+        self.assertEqual(ret, 'foo')
+        
+        ret = parser.getType('{"bar":"baz"}')
+        self.assertEqual(ret, {"bar":"baz"})
+        
+        ret = parser.getType('[1,2,3,4]')
+        self.assertEqual(ret, [1,2,3,4])
+        
+        ret = parser.getType('{"bar":[1,2,3,4]}')
+        self.assertEqual(ret, {"bar":[1,2,3,4]})
+        
+        ret = parser.getType('f"oo"')
+        self.assertEqual(ret, 'f"oo"')
+        
+        ret = parser.getType('f"o\"o"')
+        self.assertEqual(ret, 'f"o\"o"')
+        
+        ret = parser.getType('f"o\'o"')
+        self.assertEqual(ret, 'f"o\'o"')
+
+    @unittest_reporter
     def test_01_steering(self):
         """Test parser steering"""
         job = dataclasses.Job()
@@ -599,7 +628,21 @@ class parser_test(unittest.TestCase):
             # run tests
             ret = p.parse("$sprintf('%06d-%06d',$eval($(job)//10000*10000),$eval($eval($(job)//10000+1)*10000))",job=job)
             expected = '%06d-%06d'%(j//10000*10000,(j//10000+1)*10000)
-        self.assertEqual(ret,expected)
+            self.assertEqual(ret,expected)
+
+    @unittest_reporter
+    def test_31_parse_array_notation(self):
+        """Test parsing array notation. A bug found during prod."""
+        job = dataclasses.Job()
+        job['steering'] = dataclasses.Steering()
+        job['steering']['parameters']['array'] = ["foo", "bar", "baz"]
+        p = parser.ExpParser()
+
+        # run tests
+        for i in range(3):
+            ret = p.parse("$steering(array)[{}]".format(i),job=job)
+            expected = job['steering']['parameters']['array'][i]
+            self.assertEqual(ret,expected)
 
     @unittest_reporter
     def test_100_scanner(self):
