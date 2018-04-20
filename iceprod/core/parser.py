@@ -64,7 +64,7 @@ def getType(output):
     try:
         if isinstance(output,dataclasses.String):
             try:
-                output = json.loads(output)
+                output = json.loads(output.replace("'",'"'))
             except Exception:
                 if output.lower() == 'true':
                     output = True
@@ -334,7 +334,7 @@ class ExpParser:
                         # coelsce words
                         word = ''
                         while stack and stack[-1][0] == 'word':
-                            word  = stack.pop()[1] + word
+                            word = stack.pop()[1] + word
 
                         # now do list/dict index
                         try:
