@@ -25,23 +25,22 @@ try:
 except:
     import pickle
 
+import asyncio
 import unittest
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch,MagicMock
 
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.plugins.condor import condor
 from iceprod.core import dataclasses
+from iceprod.core import rest_client
 
 from tests.server import grid_test
 
 class plugins_condor_test(grid_test.grid_test):
     @unittest_reporter
-    def test_100_generate_submit_file(self):
+    async def test_100_generate_submit_file(self):
         """Test generate_submit_file"""
         site = 'thesite'
         name = 'grid1'
@@ -52,21 +51,24 @@ class plugins_condor_test(grid_test.grid_test):
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
                         name:{'batchopts':{},
-                              'monitor_address':None,
                               }},
                'download':{'http_username':None,'http_password':None},
-               'db':{'address':None,'ssl':False}}
+               'db':{'address':None,'ssl':False},
+               'rest_api':'foo'}
 
         # init
+        client = MagicMock(spec=rest_client.Client)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient())
-        self.assertTrue(g)
+                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 client)
+        if not g:
+            raise Exception('init did not return grid object')
 
         # call normally
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid', 'submit_dir':submit_dir}
-        yield g.generate_submit_file(task)
+        await asyncio.ensure_future(g.generate_submit_file(task))
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         for l in open(os.path.join(submit_dir,'condor.submit')):
@@ -81,7 +83,7 @@ class plugins_condor_test(grid_test.grid_test):
         # add passkey
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
         passkey = 'aklsdfj'
-        yield g.generate_submit_file(task,passkey=passkey)
+        await asyncio.ensure_future(g.generate_submit_file(task,passkey=passkey))
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         for l in open(os.path.join(submit_dir,'condor.submit')):
@@ -96,7 +98,7 @@ class plugins_condor_test(grid_test.grid_test):
         cfg['steering']['batchsys'] = dataclasses.Batchsys()
         cfg['steering']['batchsys']['condor'] = {'+GPU_JOB':'true',
                 'Requirements':'Target.Has_GPU == True'}
-        yield g.generate_submit_file(task,cfg=cfg)
+        await asyncio.ensure_future(g.generate_submit_file(task,cfg=cfg))
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         gpu_job = False
@@ -120,7 +122,7 @@ class plugins_condor_test(grid_test.grid_test):
         cfg['tasks'][0]['batchsys'] = dataclasses.Batchsys()
         cfg['tasks'][0]['batchsys']['condor'] = {'+GPU_JOB':'true',
                 'Requirements':'Target.Has_GPU == True'}
-        yield g.generate_submit_file(task,cfg=cfg)
+        await asyncio.ensure_future(g.generate_submit_file(task,cfg=cfg))
         if not os.path.isfile(os.path.join(submit_dir,'condor.submit')):
             raise Exception('submit file not written')
         gpu_job = False
@@ -140,7 +142,7 @@ class plugins_condor_test(grid_test.grid_test):
 
     @patch('subprocess.check_output')
     @unittest_reporter
-    def test_101_submit(self, check_output):
+    async def test_101_submit(self, check_output):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -159,15 +161,17 @@ class plugins_condor_test(grid_test.grid_test):
                'queue':{'max_resets':5,
                         'submit_dir':submit_dir,
                         name:{'batchopts':{},
-                              'monitor_address':None,
                               }},
                'download':{'http_username':None,'http_password':None},
                'db':{'address':None,'ssl':False}}
 
         # init
+        client = MagicMock(spec=rest_client.Client)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient())
-        self.assertTrue(g)
+                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 client)
+        if not g:
+            raise Exception('init did not return grid object')
 
         # call normally
         caller.called = False
@@ -175,7 +179,7 @@ class plugins_condor_test(grid_test.grid_test):
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
-        yield g.submit(task)
+        await asyncio.ensure_future(g.submit(task))
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_submit':
@@ -190,16 +194,12 @@ class plugins_condor_test(grid_test.grid_test):
         g.tasks_queued = 0
 
         task = {'task_id':'thetaskid','submit_dir':submit_dir}
-        try:
-            yield g.submit(task)
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        with self.assertRaises(Exception):
+            await asyncio.ensure_future(g.submit(task))
 
     @patch('subprocess.check_output')
     @unittest_reporter
-    def test_102_get_grid_status(self, check_output):
+    async def test_102_get_grid_status(self, check_output):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -224,15 +224,18 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
+        client = MagicMock(spec=rest_client.Client)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient())
-        self.assertTrue(g)
+                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 client)
+        if not g:
+            raise Exception('init did not return grid object')
 
         # call empty queue
         caller.called = False
         caller.ret = ''
 
-        ret = yield g.get_grid_status()
+        ret = await asyncio.ensure_future(g.get_grid_status())
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -245,7 +248,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 1 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = yield g.get_grid_status()
+        ret = await asyncio.ensure_future(g.get_grid_status())
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -259,7 +262,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 2 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = yield g.get_grid_status()
+        ret = await asyncio.ensure_future(g.get_grid_status())
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -273,7 +276,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 4 '+os.path.join(submit_dir,'loader.sh')
 
-        ret = yield g.get_grid_status()
+        ret = await asyncio.ensure_future(g.get_grid_status())
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -288,7 +291,7 @@ class plugins_condor_test(grid_test.grid_test):
             caller.called = False
             caller.ret = '1234.0 '+s+' '+os.path.join(submit_dir,'loader.sh')
 
-            ret = yield g.get_grid_status()
+            ret = await asyncio.ensure_future(g.get_grid_status())
             if not caller.called:
                 raise Exception('subprocess.call not called')
             if caller.args[0][0] != 'condor_q':
@@ -302,7 +305,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = '1234.0 blah '+os.path.join(submit_dir,'loader.sh')
 
-        ret = yield g.get_grid_status()
+        ret = await asyncio.ensure_future(g.get_grid_status())
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_q':
@@ -315,28 +318,18 @@ class plugins_condor_test(grid_test.grid_test):
         # call failed
         caller.called = False
         caller.ret = Exception('bad call')
-
-        try:
-            yield g.get_grid_status()
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        with self.assertRaises(Exception):
+            await asyncio.ensure_future(g.get_grid_status())
 
         # call with junk output
         caller.called = False
         caller.ret = 'blah\nfoo bar'
-
-        try:
-            ret = yield g.get_grid_status()
-        except Exception:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        with self.assertRaises(Exception):
+            await asyncio.ensure_future(g.get_grid_status())
 
     @patch('subprocess.check_call')
     @unittest_reporter
-    def test_103_remove(self, check_call):
+    async def test_103_remove(self, check_call):
         def caller(*args,**kwargs):
             caller.called = True
             caller.args = args
@@ -361,15 +354,18 @@ class plugins_condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
+        client = MagicMock(spec=rest_client.Client)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
-                 self.io_loop, self.executor, module.FakeStatsClient())
-        self.assertTrue(g)
+                 self.io_loop, self.executor, module.FakeStatsClient(),
+                 client)
+        if not g:
+            raise Exception('init did not return grid object')
 
         # remove task
         caller.called = False
         caller.ret = ''
 
-        yield g.remove(['1','2'])
+        await asyncio.ensure_future(g.remove(['1','2']))
         if not caller.called:
             raise Exception('subprocess.call not called')
         if caller.args[0][0] != 'condor_rm':
@@ -386,7 +382,7 @@ class plugins_condor_test(grid_test.grid_test):
         caller.called = False
         caller.ret = ''
 
-        yield g.remove([])
+        await asyncio.ensure_future(g.remove([]))
         if caller.called:
             raise Exception('subprocess.call when no tasks')
 

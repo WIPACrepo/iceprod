@@ -15,6 +15,8 @@ try:
 except ImportError:
     boto3 = None
 
+from iceprod.core import rest_client
+
 logger = logging.getLogger('module')
 
 class FakeStatsClient(object):
@@ -84,6 +86,8 @@ class module(object):
         self.executor = executor
         self.statsd = FakeStatsClient()
         self.elasticsearch = FakeStatsClient()
+        self.s3 = None
+        self.rest_client = None
         self.modules = modules
         self.service = {'start': self.start,
                         'stop': self.stop,
@@ -122,6 +126,12 @@ class module(object):
             except Exception:
                 logger.warning('failed to connect to s3: %r',
                             self.cfg['s3'], exc_info=True)
+        if 'rest_api' in self.cfg and self.cfg['rest_api']:
+            try:
+                self.rest_client = rest_client.Client(self.cfg['rest_api'])
+            except Exception:
+                logger.warning('failed to connect to rest api: %r',
+                               self.cfg['rest_api'], exc_info=True)
 
     def stop(self):
         logger.warning('stopping module %s', self.__class__.__name__)

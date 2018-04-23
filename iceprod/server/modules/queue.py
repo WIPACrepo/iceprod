@@ -7,12 +7,14 @@ import os
 import time
 import logging
 from contextlib import contextmanager
+import socket
 
 import tornado.httpclient
 import tornado.gen
 from tornado.concurrent import run_on_executor
 import certifi
 
+import iceprod
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.master_communication import send_master
@@ -111,7 +113,8 @@ class queue(module.module):
             logger.warning('queueing plugin found: %s = %s', p_name, p_cfg['type'])
             # try instantiating the plugin
             args = (self.cfg['site_id']+'.'+p_name, p_cfg, self.cfg,
-                    self.modules, self.io_loop, self.executor, self.statsd)
+                    self.modules, self.io_loop, self.executor, self.statsd,
+                    self.rest_client)
             try:
                 self.plugins.append(iceprod.server.run_module(p,*args))
             except Exception as e:
@@ -130,105 +133,80 @@ class queue(module.module):
                 if duration > self.max_duration:
                     self.max_duration = duration
 
-        @tornado.gen.coroutine
-        def cb():
-            # add gridspec and types to the db
+        # add gridspec and types to the db
+        args = {
+            'host': socket.getfqdn(),
+            'queues': {p_name:p_cfg['type'] for p,p_name,p_cfg in plugins_tmp},
+            'version': iceprod.__version__,
+        }
+        if 'grid_id' in self.cfg and self.cfg['grid_id']:
             try:
-                yield self.modules['db']['queue_set_site_queues'](
-                        site_id=self.cfg['site_id'], queues=gridspec_types)
+                self.rest_client.request_seq('GET',
+                        '/grids/{}'.format(self.cfg['grid_id']))
             except Exception:
-                logger.warning('error setting site queues',exc_info=True)
-            # start queue loop
-            yield self.queue_loop()
-        self.io_loop.add_callback(cb)
-
-    @tornado.gen.coroutine
-    def queue_loop(self):
-        """Run the queueing loop"""
-        try:
-            # check and clean grids
-            for p in self.plugins:
-                try:
-                    yield p.check_and_clean()
-                except Exception:
-                    logger.error('plugin %s.check_and_clean() raised exception',
-                                 p.__class__.__name__,exc_info=True)
-
-            # check proxy cert
+                logger.warning('grid_id %s not present in DB',
+                                self.cfg['grid_id'], exc_info=True)
+                del self.cfg['grid_id']
+        if 'grid_id' not in self.cfg:
+            # register grid
             try:
-                yield self.check_proxy(self.max_duration)
+                ret = self.rest_client.request_seq('POST',
+                        '/grids', args)
+                self.cfg['grid_id'] = ret['result']
             except Exception:
-                logger.error('error checking proxy',exc_info=True)
-
-            # buffer jobs and tasks for active datasets
-            if ('master' in self.cfg and 'url' in self.cfg['master']
-                and self.cfg['master']['url']):
-                gridspecs = [p.gridspec for p in self.plugins]
-            else:
-                # queue for all gridspecs, since we don't have a master
-                gridspecs = None
-            try:
-                yield self.buffer_jobs_tasks(gridspecs)
-            except Exception:
-                logger.error('error buffering jobs and tasks',
-                             exc_info=True)
-
-            # queue tasks to grids
-            num_queued = 0
-            for p in self.plugins:
-                try:
-                    yield p.queue()
-                    num_queued += p.tasks_queued + p.tasks_processing
-                except Exception:
-                    logger.error('plugin %s.queue() raised exception',
-                                 p.__class__.__name__,exc_info=True)
-
-            # do global queueing
-            try:
-                plugin_cfg = self.plugins[0].queue_cfg
-
-                # get num tasks to queue
-                tasks_on_queue = plugin_cfg['tasks_on_queue']
-                num = min(tasks_on_queue[1] - num_queued, tasks_on_queue[0])
-                if len(tasks_on_queue) > 2:
-                    num = min(num, tasks_on_queue[2])
-                if num > 0:
-                    # get priority factors
-                    qf_p = 1.0
-                    qf_d = 1.0
-                    qf_t = 1.0
-                    if 'queueing_factor_priority' in self.cfg['queue']:
-                        qf_p = self.cfg['queue']['queueing_factor_priority']
-                    elif 'queueing_factor_priority' in plugin_cfg:
-                        qf_p = plugin_cfg['queueing_factor_priority']
-                    if 'queueing_factor_dataset' in self.cfg['queue']:
-                        qf_d = self.cfg['queue']['queueing_factor_dataset']
-                    elif 'queueing_factor_dataset' in plugin_cfg:
-                        qf_d = plugin_cfg['queueing_factor_dataset']
-                    if 'queueing_factor_tasks' in self.cfg['queue']:
-                        qf_t = self.cfg['queue']['queueing_factor_tasks']
-                    elif 'queueing_factor_tasks' in plugin_cfg:
-                        qf_t = plugin_cfg['queueing_factor_tasks']
-                    yield self.global_queueing(qf_p,qf_d,qf_t,num=num)
-            except Exception:
-                logger.error('error in global queueing', exc_info=True)
-
-        except Exception:
-            logger.error('queue_loop stopped because of exception',
-                        exc_info=True)
+                logger.fatal('cannot register grid in DB', exc_info=True)
+                raise
         else:
-            # set timeout
-            if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
-                timeout = self.cfg['queue']['queue_interval']
-                if timeout <= 0:
-                    timeout = 300
-            else:
-                timeout = 300
-            self.io_loop.call_later(timeout, self.queue_loop)
+            # update grid
+            try:
+                ret = self.rest_client.request_seq('PATCH',
+                        '/grids/{}'.format(self.cfg['grid_id']), args)
+            except Exception:
+                logger.warning('error updating grid in DB', exc_info=True)
 
-    @run_on_executor
+        self.io_loop.add_callback(self.queue_loop)
+
+    async def queue_loop(self):
+        """Run the queueing loop"""
+        # check and clean grids
+        for p in self.plugins:
+            try:
+                await p.check_and_clean()
+            except Exception:
+                logger.error('plugin %s.check_and_clean() raised exception',
+                             p.__class__.__name__,exc_info=True)
+
+        # check proxy cert
+        try:
+             self.check_proxy(self.max_duration)
+        except Exception:
+            logger.error('error checking proxy',exc_info=True)
+
+        # queue tasks to grids
+        num_queued = 0
+        for p in self.plugins:
+            try:
+                await p.queue()
+                num_queued += p.tasks_queued + p.tasks_processing
+            except Exception:
+                logger.error('plugin %s.queue() raised exception',
+                             p.__class__.__name__,exc_info=True)
+
+        # set timeout
+        if 'queue' in self.cfg and 'queue_interval' in self.cfg['queue']:
+            timeout = self.cfg['queue']['queue_interval']
+            if timeout <= 0:
+                timeout = 300
+        else:
+            timeout = 300
+        self.io_loop.call_later(timeout, self.queue_loop)
+
     def check_proxy(self, duration=None):
-        """Check the x509 proxy"""
+        """
+        Check the x509 proxy.
+
+        Blocking function.
+        """
         try:
             if duration:
                 self.proxy.set_duration(duration//3600)
@@ -236,49 +214,3 @@ class queue(module.module):
             self.cfg['queue']['x509proxy'] = self.proxy.get_proxy()
         except Exception:
             logger.warning('cannot setup x509 proxy', exc_info=True)
-
-    @tornado.gen.coroutine
-    def global_queueing(self, queueing_factor_priority=1.0,
-                        queueing_factor_dataset=1.0,
-                        queueing_factor_tasks=1.0,
-                        num=100):
-        """
-        Do global queueing.
-
-        Fetch tasks from the global server that match the local resources
-        and add them to the local DB. This is non-blocking, but only
-        one at a time can run.
-
-        :param queueing_factor_priority: queueing factor for priority
-        :param queueing_factor_dataset: queueing factor for dataset id
-        :param queueing_factor_tasks: queueing factor for number of tasks
-        :param num: number of tasks to queue
-        """
-        if ('master' not in self.cfg or 'url' not in self.cfg['master'] or
-            not self.cfg['master']['url']):
-            logger.debug('no master url, so skip global queueing')
-            return
-
-        #resources = yield self.modules['db']['node_get_site_resources'](
-        #        site_id=self.cfg['site_id'])
-
-        url = self.cfg['master']['url']
-        params = {#'resources':resources,
-                  'queueing_factor_priority':queueing_factor_priority,
-                  'queueing_factor_dataset':queueing_factor_dataset,
-                  'queueing_factor_tasks':queueing_factor_tasks,
-                  'num':num,
-                 }
-        if 'group_filters' in self.cfg:
-            params['filters'] = self.cfg['group_filters']
-        ret = yield send_master(self.cfg, 'queue_master', **params)
-
-        yield self.modules['db']['misc_update_tables'](tables=ret)
-
-    @tornado.gen.coroutine
-    def buffer_jobs_tasks(self,gridspecs):
-        """Make sure active datasets have jobs and tasks defined"""
-        buffer = self.cfg['queue']['task_buffer']
-        if buffer > 0:
-            yield self.modules['db']['queue_buffer_jobs_tasks'](gridspec=gridspecs,
-                                                                num_jobs=buffer)
