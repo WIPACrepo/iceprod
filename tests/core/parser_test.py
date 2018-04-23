@@ -645,6 +645,33 @@ class parser_test(unittest.TestCase):
             self.assertEqual(ret,expected)
 
     @unittest_reporter
+    def test_32_parse_dict_notation(self):
+        """Test parsing dict notation. A bug found during prod."""
+        job = dataclasses.Job()
+        job['steering'] = dataclasses.Steering()
+        job['steering']['parameters']['dict'] = {"foo":1, "bar":2, "baz":3}
+        p = parser.ExpParser()
+
+        # run tests
+        for i,n in enumerate(('foo','bar','baz')):
+            ret = p.parse("$steering(dict)[{}]".format(n),job=job)
+            self.assertEqual(ret,i+1)
+
+    @unittest_reporter
+    def test_33_parse_dict_array_notation(self):
+        """Test parsing dict+array nested notation. A bug found during prod."""
+        job = dataclasses.Job()
+        job['steering'] = dataclasses.Steering()
+        job['steering']['parameters']['array'] = ["foo", "bar", "baz"]
+        job['steering']['parameters']['dict'] = {"foo":1, "bar":2, "baz":3}
+        p = parser.ExpParser()
+
+        # run tests
+        for i in range(3):
+            ret = p.parse("$steering(dict)[$steering(array)[{}]]".format(i),job=job)
+            self.assertEqual(ret,i+1)
+
+    @unittest_reporter
     def test_100_scanner(self):
         ret = list(parser.scanner('$foo(bar)'))
         expected = [('starter','$'),('word','foo'),('scopeL','('),('word','bar'),('scopeR',')')]
