@@ -266,15 +266,20 @@ class ExpParser:
         for reduction in 'sum', 'min', 'max', 'len':
             self.keywords[reduction] = functools.partial(self.reduce_func, getattr(builtins, reduction))
     
-    def parse(self,input,job=None,env=None):
+    def parse(self,input,job=None,env=None,depth=10):
         """
         Parse the input, expanding where possible.
         
         :param input: input string
         :param job: :class:`iceprod.core.dataclasses.Job`, optional
         :param env: env dictionary, optional
+        :param depth: how deep to recursively parse
         :returns: expanded string
         """
+        if depth < 1:
+            logging.warning("recursion depth of parse exceeded")
+            return input
+
         logging.warning("parse: %s",input)
         if not isinstance(input,dataclasses.String) or not input:
             return input
@@ -326,6 +331,9 @@ class ExpParser:
                         stack.pop() # remove bracketL
 
                         # try evaluating this
+                        if word.endswith(']'):
+                            # nested bracket, so recurse
+                            word = self.parse(word, job=job, env=env, depth=depth-1)
                         try:
                             ret = self.process_phrase(word)
                         except GrammarException:
@@ -338,7 +346,8 @@ class ExpParser:
 
                         # now do list/dict index
                         try:
-                            ret = getType(word)[getType(ret)]
+                            innerType = getType(ret)
+                            ret = getType(word)[innerType]
                             stack.append(('word',str(ret)))
                         except Exception:
                             logger.debug('cannot eval: %s[%s]', word, ret,
@@ -356,9 +365,6 @@ class ExpParser:
                     continue
             break
 
-        # unset job and env
-        self.job = None
-        self.env = None
         # return parsed output
         logger.warning('parser out: %r',output)
         return output
