@@ -341,7 +341,9 @@ class ExpParser:
 
                         # coelsce words
                         word = ''
-                        while stack and stack[-1][0] == 'word':
+                        while (stack and stack[-1][0] == 'word'
+                               and (not word.startswith('['))
+                               and (not word.startswith('{'))):
                             word = stack.pop()[1] + word
 
                         # now do list/dict index
