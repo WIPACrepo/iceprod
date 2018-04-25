@@ -679,6 +679,32 @@ class parser_test(unittest.TestCase):
         self.assertEqual(ret,1)
 
     @unittest_reporter
+    def test_35_parse_array_with_prefix(self):
+        """Test parsing array with a prefix."""
+        job = dataclasses.Job()
+        job['steering'] = dataclasses.Steering()
+        job['steering']['parameters']['array'] = ["foo", "bar", "baz"]
+        job['steering']['parameters']['dict'] = {"foo":1, "bar":2, "baz":3}
+        job['steering']['parameters']['choose'] = '$steering(array)[0]'
+        p = parser.ExpParser()
+
+        ret = p.parse("http://test/$steering(choose)",job=job)
+        self.assertEqual(ret,'http://test/foo')
+
+    @unittest_reporter
+    def test_36_parse_dict_array_with_prefix(self):
+        """Test parsing dict+array hidden nested notation, with a prefix. A bug found during prod."""
+        job = dataclasses.Job()
+        job['steering'] = dataclasses.Steering()
+        job['steering']['parameters']['array'] = ["foo", "bar", "baz"]
+        job['steering']['parameters']['dict'] = {"foo":1, "bar":2, "baz":3}
+        job['steering']['parameters']['choose'] = '$steering(array)[0]'
+        p = parser.ExpParser()
+
+        ret = p.parse("http://test/$steering(dict)[$steering(choose)]",job=job)
+        self.assertEqual(ret,'http://test/1')
+
+    @unittest_reporter
     def test_100_scanner(self):
         ret = list(parser.scanner('$foo(bar)'))
         expected = [('starter','$'),('word','foo'),('scopeL','('),('word','bar'),('scopeR',')')]
