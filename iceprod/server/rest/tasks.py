@@ -50,6 +50,8 @@ def setup(config):
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -202,7 +204,7 @@ class TasksStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -348,6 +350,31 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
         self.write(ret)
         self.finish()
 
+class DatasetTaskCountsNameStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by name and status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task counts for all tasks in a dataset, group by name,status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<name>: {<status>: [<task_id>,]}}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id}},
+            {'$group':{'_id':{'name':'$name','status':'$status'}, 'total': {'$sum':1}}},
+        ])
+        ret = defaultdict(dict)
+        async for row in cursor:
+            ret[row['_id']['name']][row['_id']['status']] = row['total']
+        self.write(ret)
+        self.finish()
+
 class TasksActionsQueueHandler(BaseHandler):
     """
     Handle task action for waiting -> queued.
@@ -449,3 +476,38 @@ class TasksActionsProcessingHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
+class DatasetTaskStatsHandler(BaseHandler):
+    """
+    Handle task stats
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task statistics for all tasks in a dataset, group by name.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<name>: {<stat>: <value>}}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
+            {'$group':{'_id':'$name',
+                'count': {'$sum': 1},
+                'total_hrs': {'$sum': '$walltime'},
+                'total_err_hrs': {'$sum': '$walltime_err'},
+                'avg_hrs': {'$avg': '$walltime'},
+                'stddev_hrs': {'$stdDevSamp': '$walltime'},
+                'min_hrs': {'$min': '$walltime'},
+                'max_hrs': {'$max': '$walltime'},
+            }},
+        ])
+        ret = {}
+        async for row in cursor:
+            denom = row['total_hrs'] + row['total_err_hrs']
+            row['efficiency'] = row['total_hrs']/denom if denom > 0 else 0.0
+            name = row.pop('_id')
+            ret[name] = row
+        self.write(ret)
+        self.finish()

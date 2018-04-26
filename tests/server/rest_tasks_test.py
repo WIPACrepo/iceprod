@@ -380,6 +380,72 @@ class rest_tasks_test(AsyncTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret, {'idle': 1})
 
+    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/task_counts/name_status')
+    def test_410_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_counts/name_status'%(self.port,data['dataset_id']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {'bar':{'idle': 1}})
+
+    @unittest_reporter(name='REST GET    /datasets/<dataset_id>/task_stats')
+    def test_450_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_stats'%(self.port,data['dataset_id']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {})
+
+        # now mark complete
+        data2 = {'status':'complete'}
+        r = yield client.fetch('http://localhost:%d/tasks/%s/status'%(self.port,task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_stats'%(self.port,data['dataset_id']),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        logger.info('ret: %r', ret)
+        self.assertIn('bar', ret)
+        for s in ('count','total_hrs','total_err_hrs','avg_hrs','stddev_hrs','min_hrs','max_hrs','efficiency'):
+            self.assertIn(s, ret['bar'])
+
     @unittest_reporter(name='REST POST   /task_actions/queue')
     def test_500_tasks(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
