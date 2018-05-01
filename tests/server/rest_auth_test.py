@@ -314,7 +314,10 @@ class rest_auth_test(AsyncTestCase):
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
-        self.assertEqual(data['results'], [{'user_id':user_id, 'username':'foo'}])
+        self.assertGreater(len(data['results']), 0)
+        for k,v in {'user_id':user_id, 'username':'foo'}.items():
+            self.assertIn(k, data['results'][0])
+            self.assertEqual(data['results'][0][k], v)
 
     @unittest_reporter(name='REST GET    /users/<user_id>')
     def test_320_user(self):
@@ -337,7 +340,9 @@ class rest_auth_test(AsyncTestCase):
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'user_id':user_id, 'username':'foo'})
+        for k,v in {'user_id':user_id, 'username':'foo'}.items():
+            self.assertIn(k, data)
+            self.assertEqual(data[k], v)
 
     @unittest_reporter(name='REST DELETE /users/<user_id>')
     def test_330_user(self):
@@ -360,7 +365,9 @@ class rest_auth_test(AsyncTestCase):
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'user_id':user_id, 'username':'foo'})
+        for k,v in {'user_id':user_id, 'username':'foo'}.items():
+            self.assertIn(k, data)
+            self.assertEqual(data[k], v)
 
         r = yield client.fetch('http://localhost:%d/users/%s'%(self.port, user_id),
                 method='DELETE',
@@ -568,7 +575,7 @@ class rest_auth_test(AsyncTestCase):
         r = yield client.fetch('http://localhost:%d/ldap'%self.port,
                 method='POST', body=json.dumps(data))
         self.assertEqual(r.code, 200)
-        tok = r.body
+        tok = json.loads(r.body)['token']
         data = Auth('secret').validate(tok)
         self.assertEqual(data['username'], 'foo')
         self.assertIn('role',data)
@@ -600,7 +607,7 @@ class rest_auth_test(AsyncTestCase):
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+token2})
         self.assertEqual(r.code, 200)
-        tok = r.body
+        tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
         self.assertEqual(data['type'], 'temp')
         self.assertEqual(data['username'], 'bar')
@@ -629,7 +636,7 @@ class rest_auth_test(AsyncTestCase):
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+token2})
         self.assertEqual(r.code, 200)
-        tok = r.body
+        tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
         self.assertEqual(data['type'], 'user')
         self.assertEqual(data['username'], 'foo')
@@ -649,7 +656,7 @@ class rest_auth_test(AsyncTestCase):
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+token2})
         self.assertEqual(r.code, 200)
-        tok = r.body
+        tok = json.loads(r.body)['result']
         data = Auth('secret').validate(tok)
         self.assertEqual(data['type'], 'system')
         self.assertEqual(data['username'], 'foo')

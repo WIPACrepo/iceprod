@@ -42,6 +42,8 @@ import tornado.escape
 tornado.escape.json_encode = iceprod.core.jsonUtil.json_encode
 tornado.escape.json_decode = iceprod.core.jsonUtil.json_decode
 
+from iceprod.core.jsonUtil import json_encode,json_decode
+
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
@@ -60,6 +62,8 @@ from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
 from iceprod.server import documentation
 
+from iceprod.core import rest_client
+
 logger = logging.getLogger('website')
 
 class website(module.module):
@@ -72,20 +76,12 @@ class website(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(website,self).__init__(*args,**kwargs)
-        self.service['logrotate'] = self.logrotate
 
         # set up local variables
-        self.nginx = None
         self.http_server = None
 
     def stop(self):
         """Stop website"""
-        # stop nginx
-        try:
-            if self.nginx:
-                self.nginx.stop()
-        except Exception:
-            logger.error('cannot stop Nginx', exc_info=True)
         # stop tornado
         try:
             if self.http_server:
@@ -93,27 +89,6 @@ class website(module.module):
         except Exception:
             logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
-
-    def kill(self):
-        """Kill website"""
-        # kill nginx
-        try:
-            if self.nginx:
-                self.nginx.kill()
-        except Exception:
-            logger.error('cannot kill Nginx', exc_info=True)
-        super(website,self).kill()
-
-    def logrotate(self):
-        """Rotate the Nginx logs."""
-        logger.warning('got a logrotate() call')
-        try:
-            if self.nginx:
-                # rotate nginx logs
-                self.nginx.logrotate()
-            # tornado uses regular python logs, which rotate automatically
-        except Exception:
-            logger.warning('error in logrotate', exc_info=True)
 
     def start(self):
         """Run the website"""
@@ -140,87 +115,7 @@ class website(module.module):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
-            # detect nginx
-            try:
-                if ('nginx' in self.cfg['webserver'] and
-                    not self.cfg['webserver']['nginx']):
-                    raise Exception('nginx explicitly disabled')
-                find_nginx()
-            except Exception:
-                if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl'] is not False):
-                    logger.error('Nginx not present when SSL requested')
-                    raise
-                logger.error('Nginx not present, running Tornado directly')
-                logger.error('(Note that this mode is not secure)')
-                self.nginx = None
-            else:
-                # configure nginx
-                kwargs = {}
-                if (self.cfg and 'webserver' in self.cfg and
-                    'request_timeout' in self.cfg['webserver']):
-                    try:
-                        timeout = int(self.cfg['webserver']['request_timeout'])
-                    except Exception:
-                        pass
-                    else:
-                        kwargs['request_timeout'] = timeout
-                if ('download' in self.cfg and 'http_username' in self.cfg['download']
-                    and self.cfg['download']['http_username']):
-                    kwargs['username'] = self.cfg['download']['http_username']
-                if ('download' in self.cfg and 'http_password' in self.cfg['download']
-                    and self.cfg['download']['http_password']):
-                    kwargs['password'] = self.cfg['download']['http_password']
-                if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl'] is not False):
-                    cert = None
-                    key = None
-                    if ('autogen' in self.cfg['system']['ssl']
-                        and self.cfg['system']['ssl']['autogen']):
-                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
-                            and os.path.exists(self.cfg['system']['ssl']['key'])):
-                            cert = self.cfg['system']['ssl']['cert']
-                            key = self.cfg['system']['ssl']['key']
-                            if not verify_cert(cert,key):
-                                cert = None
-                                key = None
-                    elif ('cert' in self.cfg['system']['ssl']
-                          and 'key' in self.cfg['system']['ssl']):
-                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
-                            and os.path.exists(self.cfg['system']['ssl']['key'])):
-                            cert = self.cfg['system']['ssl']['cert']
-                            key = self.cfg['system']['ssl']['key']
-                        else:
-                            raise Exception('Bad ssl cert or key')
-
-                    if not cert:
-                        # auto-generate self-signed cert
-                        create_cert('$PWD/cert','$PWD/key',days=365)
-                        cert = os.path.expandvars('$PWD/cert')
-                        key = os.path.expandvars('$PWD/key')
-                        self.cfg['system']['ssl']['autogen'] = True
-                        self.cfg['system']['ssl']['cert'] = cert
-                        self.cfg['system']['ssl']['key'] = key
-                    kwargs['sslcert'] = cert
-                    kwargs['sslkey'] = key
-
-                    if 'cacert' in self.cfg['system']['ssl']:
-                        if not os.path.exists(self.cfg['system']['ssl']['cacert']):
-                            raise Exception('Bad path to cacert')
-                        kwargs['cacert'] = self.cfg['system']['ssl']['cacert']
-                kwargs['port'] = self.cfg['webserver']['port']
-                kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
-                kwargs['static_dir'] = static_path
-
-                # start nginx
-                try:
-                    self.nginx = Nginx(**kwargs)
-                    self.nginx.start()
-                except Exception:
-                    logger.critical('cannot start Nginx:',exc_info=True)
-                    raise
-
-            # configure tornado
+            # configure logging
             def tornado_logger(handler):
                 if handler.get_status() < 400:
                     log_method = logger.debug
@@ -231,19 +126,16 @@ class website(module.module):
                 request_time = 1000.0 * handler.request.request_time()
                 log_method("%d %s %.2fms", handler.get_status(),
                         handler._request_summary(), request_time)
-            #UploadHandler.upload_prefix = '/upload'
+
             handler_args = {
                 'cfg':self.cfg,
                 'modules':self.modules,
                 'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
+                'rest_api':self.cfg['rest_api'],
             }
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
-            lib_args = handler_args.copy()
-            lib_args['prefix'] = '/lib/'
-            lib_args['directory'] = os.path.expanduser(os.path.expandvars(
-                    self.cfg['webserver']['lib_dir']))
             if 'cookie_secret' in self.cfg['webserver']:
                 cookie_secret = self.cfg['webserver']['cookie_secret']
             else:
@@ -251,7 +143,6 @@ class website(module.module):
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
             self.application = tornado.web.Application([
                 (r"/jsonrpc", JSONRPCHandler, handler_args),
-                (r"/lib/.*", LibHandler, lib_args),
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
                 (r"/config", Config, handler_args),
@@ -277,12 +168,8 @@ class website(module.module):
                     xheaders=True)
 
             # start tornado
-            if self.nginx is None:
-                tornado_port = self.cfg['webserver']['port']
-                tornado_address = '0.0.0.0' # bind to all
-            else:
-                tornado_port = self.cfg['webserver']['tornado_port']
-                tornado_address = 'localhost' # bind locally
+            tornado_port = self.cfg['webserver']['port']
+            tornado_address = '0.0.0.0' # bind to all
             logger.warning('tornado bound to port %d', tornado_port)
             self.http_server.bind(tornado_port, address=tornado_address, family=socket.AF_INET)
             self.http_server.start()
@@ -330,7 +217,7 @@ def authenticated_secure(method):
                         next_url = self.request.full_url()
                     else:
                         next_url = self.request.uri
-                    url += "?" + urlencode(dict(next=next_url,secure=True))
+                    url += "?" + urlencode({'next':next_url,'secure':True})
                 self.redirect(url)
                 return
             raise HTTPError(403)
@@ -338,9 +225,10 @@ def authenticated_secure(method):
     return wrapper
 
 
-class MyHandler(tornado.web.RequestHandler):
+class PublicHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, modules, fileio, debug=False, statsd=None):
+    def initialize(self, cfg, modules, fileio, debug=False, statsd=None,
+                   rest_api=None):
         """
         Get some params from the website module
 
@@ -348,199 +236,20 @@ class MyHandler(tornado.web.RequestHandler):
         :param modules: modules handle
         :param fileio: AsyncFileIO object
         :param debug: debug flag (optional)
+        :param rest_api: the rest api url
         """
         self.cfg = cfg
         self.modules = modules
         self.fileio = fileio
         self.debug = debug
         self.statsd = statsd
-
-    @tornado.gen.coroutine
-    def db_call(self,func_name,*args,**kwargs):
-        """Make a database call, returning the result"""
-        logger.info('db_call for %s',func_name)
-        try:
-            f = self.modules['db'][func_name](*args,**kwargs)
-            if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
-                f = yield tornado.gen.with_timeout(timedelta(seconds=120),f)
-        except Exception:
-            logger.warning('db_call error for %s',func_name,exc_info=True)
-            raise
-        raise tornado.gen.Return(f)
-
-    def get(self):
-        """GET is invalid and returns an error"""
-        raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
-
-    def post(self):
-        """POST is invalid and returns an error"""
-        raise tornado.web.HTTPError(400,'POST is invalid.  Use GET')
+        self.rest_api = rest_api
+        self.current_user = None
+        self.rest_client = None
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__
 
-class JSONRPCHandler(MyHandler):
-    """JSONRPC 2.0 Handler.
-
-       Call DB methods using RPC over json.
-    """
-    def check_xsrf_cookie(self):
-        pass
-
-    @tornado.gen.coroutine
-    def post(self):
-        """Parses json in the jsonrpc format, returning results in
-           jsonrpc format as well.
-        """
-        # parse JSON
-        try:
-            request = tornado.escape.json_decode(self.request.body)
-        except Exception as e:
-            self.json_error({'code':-32700,'message':'Parse Error',
-                             'data':'invalid json'})
-
-        # check for all parts of jsonrpc 2.0 spec
-        if 'jsonrpc' not in request or (request['jsonrpc'] != '2.0' and
-            request['jsonrpc'] != 2.0):
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                             'data':'jsonrpc is not 2.0'})
-            return
-        if 'method' not in request:
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                'data':'method not in request'})
-            return
-        if request['method'].startswith('_'):
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                             'data':'method name cannot start with underscore'})
-            return
-
-        self.statsd.incr('jsonrpc.'+request['method'])
-
-        # add rpc_ to method name to prevent calling other DB methods
-        method = 'rpc_'+request['method']
-        if 'params' in request:
-            params = request['params']
-        else:
-            params = {}
-        if 'id' in request:
-            request_id = request['id']
-        else:
-            request_id = None
-
-        if method.startswith("rpc_public"):
-            if isinstance(params,dict):
-                params.pop('passkey',None)
-        else:
-            # check for auth
-            if (isinstance(params,dict) and 'passkey' not in params) or (not params):
-                self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'missing passkey'},
-                                request_id=request_id)
-                return
-            passkey = params.pop('passkey') if isinstance(params,dict) else params.pop(0)
-
-            try:
-                if ((isinstance(params,dict) and 'site_id' in params) or
-                    isinstance(params,(tuple,list))):
-                    # authorize site
-                    site_id = params.pop('site_id') if isinstance(params,dict) else params.pop(0)
-                    yield self.db_call('auth_authorize_site',site_id=site_id,key=passkey)
-                else:
-                    # authorize task
-                    yield self.db_call('auth_authorize_task',key=passkey)
-            except Exception:
-                logger.info('auth error', exc_info=True)
-                self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'passkey invalid'},
-                                request_id=request_id)
-                return
-
-        # check for args and kwargs
-        if isinstance(params,dict):
-            args = params.pop('args') if 'args' in params else []
-        else:
-            args = params
-            params = {}
-
-        # call method on DB if exists
-        try:
-            ret = yield self.db_call(method,*args,**params)
-        except KeyError:
-            logger.info('DB method not found: %r', method)
-            self.json_error({'code':-32601,'message':'Method not found'},
-                            request_id=request_id)
-        except tornado.gen.TimeoutError:
-            logger.info('Timeout error in DB method: %r', method, exc_info=True)
-            self.json_error({'code':-32001,'message':'Server error'},
-                            status=503, request_id=request_id)
-        except Exception:
-            logger.info('error in DB method: %r', method, exc_info=True)
-            self.json_error({'code':-32000,'message':'Server error'},
-                            status=500, request_id=request_id)
-        else:
-            if request_id is not None:
-                try:
-                    self.write({'jsonrpc':'2.0', 'result':ret, 'id':request_id})
-                except:
-                    logger.info('jsonrpc response: %r', ret)
-                    raise
-
-    def json_error(self,error,status=400,request_id=None):
-        """Create a proper jsonrpc error message"""
-        self.statsd.incr('jsonrpc_error')
-        self.set_status(status)
-        if isinstance(error,Exception):
-            error = str(error)
-        logger.info('json_error: %r',error)
-        if request_id is not None:
-            self.write({'jsonrpc':'2.0', 'error':error, 'id':request_id})
-
-class LibHandler(MyHandler):
-    """Handler for iceprod library downloads.
-
-       These are straight http downloads like normal.
-    """
-
-    def initialize(self, prefix, directory, **kwargs):
-        """
-        Get some params from the website module
-
-        :param fileio: AsyncFileIO object
-        :param prefix: library url prefix
-        :param directory: library directory on disk
-        """
-        super(LibHandler,self).initialize(**kwargs)
-        self.prefix = prefix
-        self.directory = directory
-
-    @tornado.gen.coroutine
-    def get(self):
-        """Look up a library"""
-        self.statsd.incr('lib')
-        try:
-            url = self.request.uri[len(self.prefix):]
-        except Exception:
-            url = ''
-        if not url:
-            # TODO: make this human-browsable in future
-            raise tornado.web.HTTPError(404,'not browsable')
-        else:
-            # TODO: make this work better for multi-site
-            filename = os.path.join(self.directory,url)
-            # open the file and send it
-            file = yield self.fileio.open(filename)
-            num = 65536
-            data = yield self.fileio.read(file,bytes=num)
-            self.write(data)
-            self.flush()
-            while len(data) >= num:
-                data = yield self.fileio.read(file,bytes=num)
-                self.write(data)
-                self.flush()
-            yield self.fileio.close(file)
-
-class PublicHandler(MyHandler):
-    """Handler for public facing website"""
     def get_template_namespace(self):
         namespace = super(MyHandler,self).get_template_namespace()
         namespace['version'] = iceprod.__version__
@@ -557,14 +266,21 @@ class PublicHandler(MyHandler):
                               'sites' in self.cfg['webserver']) else None)
         return namespace
 
-    def get_current_user(self):
-        user = self.get_secure_cookie("user", max_age_days=1)
-        user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
-        self.current_user_secure = (user_secure is not None)
-        if user_secure is None or user == user_secure:
-            return user
-        else:
-            return None
+    def prepare(self):
+        try:
+            data = json_decode(self.get_secure_cookie("user", max_age_days=1))
+            user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
+            if user_secure is not None and data['username'] != user_secure:
+                self.clear_cookie("user")
+                self.clear_cookie("user_secure")
+                raise Exception('mismatch between user_secure and username')
+            self.current_user = data['username']
+            self.current_user_data = data
+            self.current_user_secure = (user_secure is not None)
+            self.rest_client = rest_client.Client(self.rest_api, data['token'])
+        except Exception:
+            logger.info('error getting current user', exc_info=True)
+        return None
 
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
@@ -595,18 +311,16 @@ class Submit(PublicHandler):
     """Handle /submit urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self):
+    async def get(self):
         self.statsd.incr('submit')
         url = self.request.uri[1:]
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
-        grids = yield self.db_call('web_get_gridspec')
+        ret = await self.rest_client.request('POST','/create_token')
+        token = ret['result']
+        grids = await self.db_call('web_get_gridspec')
         if isinstance(grids,Exception):
             raise grids
         render_args = {
-            'passkey':passkey,
+            'passkey':token,
             'grids':grids,
             'edit':False,
             'dataset':None,
@@ -939,26 +653,26 @@ class Login(PublicHandler):
         self.statsd.incr('login')
         n = self.get_argument('next', default='/')
         secure = self.get_argument('secure', default=None)
-        if 'password' in self.cfg['webserver']:
-            self.render('login.html', status=None, next=n)
-        else:
-            # TODO: remove this entirely
-            if secure:
-                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
-            self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(n)
+        self.clear_cookie("user")
+        self.clear_cookie("user_secure")
+        self.render('login.html', status=None, next=n)
 
     @catch_error
-    def post(self):
+    async def post(self):
         n = self.get_argument('next', default='/')
         secure = self.get_argument('secure', default=None)
-        if ('password' in self.cfg['webserver'] and
-            self.get_argument('pwd') == self.cfg['webserver']['password']):
+        username = self.get_argument('username')
+        password = self.get_argument('password')
+        self.clear_cookie("user")
+        self.clear_cookie("user_secure")
+        try:
+            data = await self.rest_client.request('POST','/ldap',{'username':username,'password':password})
+            cookie = json_encode(data)
             if secure:
-                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
-            self.set_secure_cookie('user', 'admin', expires_days=1)
+                self.set_secure_cookie('user_secure', username, expires_days=0.01)
+            self.set_secure_cookie('user', cookie, expires_days=1)
             self.redirect(n)
-        else:
+        except Exception:
             self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):

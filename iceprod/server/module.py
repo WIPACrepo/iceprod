@@ -126,9 +126,11 @@ class module(object):
             except Exception:
                 logger.warning('failed to connect to s3: %r',
                             self.cfg['s3'], exc_info=True)
-        if 'rest_api' in self.cfg and self.cfg['rest_api']:
+        if ('rest_api' in self.cfg and 'url' in self.cfg['rest_api']
+            and 'auth_key' in self.cfg['rest_api']):
             try:
-                self.rest_client = rest_client.Client(self.cfg['rest_api'])
+                self.rest_client = rest_client.Client(self.cfg['rest_api']['url'],
+                                                      self.cfg['rest_api']['auth_key'])
             except Exception:
                 logger.warning('failed to connect to rest api: %r',
                                self.cfg['rest_api'], exc_info=True)

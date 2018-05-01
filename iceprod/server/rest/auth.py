@@ -423,7 +423,7 @@ class LDAPHandler(AuthHandler):
         Body should contain {'username', 'password'}
 
         Returns:
-            str: auth token
+            dict: {'token': auth token, 'roles':[roles], 'current_role':role}
         """
         try:
             data = json.loads(self.request.body)
@@ -453,7 +453,12 @@ class LDAPHandler(AuthHandler):
                 'groups': ret['groups'],
             }
             tok = self.auth.create_token(username, type='user', payload=data)
-            self.write(tok)
+            self.write({
+                'token': tok.decode('utf-8'),
+                'username': username,
+                'roles': ret['roles'],
+                'current_role': data['role'],
+            })
             self.finish()
 
 class CreateTokenHandler(AuthHandler):
@@ -474,7 +479,7 @@ class CreateTokenHandler(AuthHandler):
             exp (int): expiration time (in seconds, from now)
 
         Returns:
-            str: auth token
+            dict: {'result': token}
         """
         if 'username' not in self.auth_data:
             raise tornado.web.HTTPError(400, reason='invalid username')
@@ -544,7 +549,7 @@ class CreateTokenHandler(AuthHandler):
         logger.debug('making new token with payload: %r', data)
         tok = self.auth.create_token(data['username'], expiration=exp,
                                      type=tok_type, payload=data)
-        self.write(tok)
+        self.write({'result': tok.decode('utf-8')})
 
 class AuthDatasetHandler(AuthHandler):
     """
