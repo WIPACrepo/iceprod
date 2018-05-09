@@ -102,6 +102,7 @@ $RECYCLE.BIN/
 
 # swap files
 *.swp
+*.swo
 
 # iceprod details
 docs/server/details/dbtables.rst
