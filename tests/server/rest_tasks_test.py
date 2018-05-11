@@ -73,6 +73,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -92,6 +93,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -151,6 +153,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -182,6 +185,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -214,6 +218,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -246,6 +251,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -274,6 +280,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -305,6 +312,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -337,6 +345,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -362,6 +371,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -387,6 +397,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -412,6 +423,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -453,6 +465,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -488,6 +501,7 @@ class rest_tasks_test(AsyncTestCase):
         # now try with dataset priorities
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -508,6 +522,7 @@ class rest_tasks_test(AsyncTestCase):
 
         data = {
             'dataset_id': 'bar',
+            'job_id': 'bar1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -554,6 +569,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],
@@ -589,6 +605,7 @@ class rest_tasks_test(AsyncTestCase):
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
+            'job_id': 'foo1',
             'task_index': 0,
             'name': 'bar',
             'depends': [],

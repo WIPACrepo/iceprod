@@ -83,8 +83,9 @@ class rest_pilots_test(AsyncTestCase):
 
         client = AsyncHTTPClient()
         data = {
-            'host': 'foo.bar.baz',
-            'version': '1.2.3',
+            'queue_host': 'foo.bar.baz',
+            'queue_version': '1.2.3',
+            'resources': {'foo':1}
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
@@ -108,8 +109,9 @@ class rest_pilots_test(AsyncTestCase):
 
         client = AsyncHTTPClient()
         data = {
-            'host': 'foo.bar.baz',
-            'version': '1.2.3',
+            'queue_host': 'foo.bar.baz',
+            'queue_version': '1.2.3',
+            'resources': {'foo':1}
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
@@ -134,8 +136,9 @@ class rest_pilots_test(AsyncTestCase):
 
         client = AsyncHTTPClient()
         data = {
-            'host': 'foo.bar.baz',
-            'version': '1.2.3',
+            'queue_host': 'foo.bar.baz',
+            'queue_version': '1.2.3',
+            'resources': {'foo':1}
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),
@@ -164,8 +167,9 @@ class rest_pilots_test(AsyncTestCase):
 
         client = AsyncHTTPClient()
         data = {
-            'host': 'foo.bar.baz',
-            'version': '1.2.3',
+            'queue_host': 'foo.bar.baz',
+            'queue_version': '1.2.3',
+            'resources': {'foo':1}
         }
         r = yield client.fetch('http://localhost:%d/pilots'%self.port,
                 method='POST', body=json.dumps(data),

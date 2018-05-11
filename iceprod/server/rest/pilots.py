@@ -92,7 +92,7 @@ class MultiPilotsHandler(BaseHandler):
         # set some fields
         data['pilot_id'] = uuid.uuid1().hex
         data['submit_time'] = nowstr()
-        data['start_time'] = nowstr()
+        data['start_date'] = nowstr()
         data['last_update'] = data['start_date']
         if 'tasks' not in data:
             data['tasks'] = []

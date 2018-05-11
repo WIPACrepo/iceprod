@@ -73,7 +73,7 @@ class MultiTasksHandler(BaseHandler):
             keys: | separated list of keys to return for each task
 
         Returns:
-            dict: {'result': <task_id>}
+            dict: {'tasks': [<task>]}
         """
         filters = {}
 
@@ -104,6 +104,7 @@ class MultiTasksHandler(BaseHandler):
         # validate first
         req_fields = {
             'dataset_id': str,
+            'job_id': str,
             'task_index': int,
             'name': str,
             'depends': list,
