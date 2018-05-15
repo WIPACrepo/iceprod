@@ -19,14 +19,18 @@ from datetime import datetime,timedelta
 from functools import partial
 import unittest
 from contextlib import contextmanager
+import urllib
 
-try:
-    from unittest.mock import patch, MagicMock
-except ImportError:
-    from mock import patch, MagicMock
+from unittest.mock import patch, MagicMock
+
+import asyncio
 
 import tornado.ioloop
-import requests
+from tornado.testing import AsyncTestCase
+from tornado.httpclient import AsyncHTTPClient, HTTPError
+
+
+from bs4 import BeautifulSoup
 
 import iceprod.core.logger
 from iceprod.core import to_log
@@ -34,6 +38,8 @@ import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
 import iceprod.server
 from iceprod.server.modules.website import website
+import iceprod.server.modules.website
+import iceprod.server.module
 try:
     from iceprod.server import ssl_cert
 except ImportError:
@@ -49,37 +55,35 @@ try:
     with to_log(sys.stdout):
         subprocess.check_call(['which','phantomjs'])
     testjs = True
-except Exception:
+except ImportError:
     logger.info('skipping javascript tests', exc_info=True)
     testjs = False
 
 
-class modules_website_test(module_test):
+class modules_website_test(AsyncTestCase):
     def setUp(self):
         super(modules_website_test,self).setUp()
+
+        orig_dir = os.getcwd()
+        self.test_dir = tempfile.mkdtemp(dir=orig_dir)
+        os.chdir(self.test_dir)
+        def clean_dir():
+            os.chdir(orig_dir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(clean_dir)
+
         os.environ['I3PROD'] = self.test_dir
         try:
             # set hostname
             self.hostname = b'localhost'
-            
-            self.ca_cert = os.path.join(self.test_dir,'ca.crt')
-            self.ca_key = os.path.join(self.test_dir,'ca.key')
-            self.ssl_key = os.path.join(self.test_dir,'test.key')
-            self.ssl_cert = os.path.join(self.test_dir,'test.crt')
 
-            self.cfg = {'webserver':{'tornado_port':random.randint(10000,32000),
-                                     'port':random.randint(10000,32000),
-                                     'numcpus':1,
-                                     'lib_dir':os.path.join(self.test_dir,'lib'),
-                                     'proxycache_dir':os.path.join(self.test_dir,'proxy'),
-                                     'proxy_request_timeout':10,
-                                    },
+            self.cfg = {'webserver':{'port':random.randint(10000,32000)},
                         'db':{'name':'test'},
                         'site_id':'abc',
-                        'system':{'ssl':False},
                         'download':{'http_username':None,
                                     'http_password':None,
                                    },
+                        'rest_api':{'url':'foo','auth_key':'bar'},
                        }
             self.executor = {}
             self.modules = services_mock()
@@ -89,193 +93,148 @@ class modules_website_test(module_test):
             logger.warn('error setting up modules_website', exc_info=True)
             raise
 
+        self.auth_cookie = None
+
     @contextmanager
     def start(self):
-        self.website.start()
-        t = threading.Thread(target=self.wait)
-        t.start()
         try:
+            self.website.start()
             yield
         finally:
-            self.stop()
-            t.join()
             self.website.stop()
 
-    @patch('iceprod.server.modules.website.Nginx')
+    async def get_auth_cookie(self):
+        address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
+
+        # login site
+        client = AsyncHTTPClient()
+        r = await client.fetch(address+'/login')
+        soup = BeautifulSoup(r.body, "html.parser")
+        xsrf = None
+        for e in soup.findAll("input"):
+            logger.info('element: %r', e)
+            if 'name' in e.attrs and e['name'] == '_xsrf':
+                xsrf = e['value']
+                break
+        self.assertIsNotNone(xsrf)
+
+        xsrf_cookie = None
+        for text in r.headers['set-cookie'].split(','):
+            for part in text.split(';'):
+                logger.info('cookie: %r', part)
+                if part.startswith('_xsrf'):
+                    xsrf_cookie = part
+                    break
+            if xsrf_cookie:
+                break
+        self.assertIsNotNone(xsrf_cookie)
+
+        data = {
+            'username': 'foo',
+            'password': 'bar',
+            '_xsrf': xsrf,
+        }
+        body = urllib.parse.urlencode(data)
+        headers = {
+            'content-type': 'application/x-www-form-urlencoded',
+            'cookie': xsrf_cookie,
+        }
+        logger.info('headers: %r', headers)
+        logger.info('body: %r', body)
+        
+        async def rest(method, url, args=None):
+            if url.startswith('/ldap'):
+                rest.called = True
+                return {
+                    'token': 'thetoken',
+                    'username': 'foo',
+                    'roles': ['user'],
+                    'current_role': 'user',
+                }
+            else:
+                raise Exception()
+        rest.called = False
+        self.website.rest_client.request = rest
+        r = await client.fetch(address+'/login',
+            method='POST', body=body,
+            headers=headers,
+            raise_error=False, follow_redirects=False)
+        self.assertTrue(rest.called)
+        self.assertEqual(r.code, 302)
+
+        auth_cookie = None
+        for text in r.headers['set-cookie'].split(','):
+            for part in text.split(';'):
+                logger.info('cookie: %r', part)
+                if part.startswith('user='):
+                    auth_cookie = part
+                    break
+            if auth_cookie:
+                break
+        self.assertIsNotNone(auth_cookie)
+        self.auth_cookie = auth_cookie
+
+    def request(self, *args, **kwargs):
+        if self.auth_cookie:
+            if 'headers' in kwargs:
+                kwargs['headers']['cookie'] = self.auth_cookie
+            else:
+                kwargs['headers'] = {'cookie': self.auth_cookie}
+        if 'follow_redirects' not in kwargs:
+            kwargs['follow_redirects'] = False
+        client = AsyncHTTPClient()
+        return client.fetch(*args, **kwargs)
+
+
     @unittest_reporter(name='start/stop/kill')
-    def test_10_start_stop_kill(self, nginx):
+    async def test_010_start_stop_kill(self):
         self.website.start()
-        self.assertTrue(nginx.called)
-        self.assertTrue(nginx.return_value.start.called)
 
         self.website.stop()
-        self.assertTrue(nginx.return_value.stop.called)
 
         self.website.start()
         self.website.kill()
-        self.assertTrue(nginx.return_value.kill.called)
 
-    @unittest_reporter(name='start() no ssl')
-    def test_11_start_no_ssl(self):
+    @unittest_reporter(name=' /login')
+    async def test_100_Login(self):
         with self.start():
-            datasets_status = {'processing':3}
-            self.modules.ret['db']['web_get_datasets'] = datasets_status
+            await self.get_auth_cookie()
+            self.assertIsNotNone(self.auth_cookie)
 
-            auth = (self.cfg['download']['http_username'],
-                    self.cfg['download']['http_password'])
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /')
+    async def test_110_Default(self, req):
+        with self.start():
+            datasets_status = {'processing':['d1','d2']}
 
             address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
             logger.info('try connecting at %s',address)
 
-            r = requests.get(address, auth=auth)
-            r.raise_for_status()
+            await self.get_auth_cookie()
 
-    @unittest_reporter(skip=not ssl_cert, name='start() with ssl')
-    def test_12_start_ssl(self):
-        # self-signed cert
-        ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
-                             hostname=self.hostname)
-        self.cfg['system']['ssl'] = {
-            'cert':self.ssl_cert,
-            'key':self.ssl_key,
-        }
-
-        with self.start():
-            datasets_status = {'processing':3}
-            self.modules.ret['db']['web_get_datasets'] = datasets_status
-
-            auth = (self.cfg['download']['http_username'],
-                    self.cfg['download']['http_password'])
-
-            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
-            logger.info('try connecting at %s',address)
-
-            r = requests.get(address, auth=auth, verify=self.ssl_cert)
-            r.raise_for_status()
-
-    @unittest_reporter(skip=not ssl_cert, name='start() with ssl, ca cert')
-    def test_13_start_ssl_ca(self):
-        # make certs
-        ssl_cert.create_ca(self.ca_cert,self.ca_key,days=1,
-                          hostname=self.hostname)
-        ssl_cert.create_cert(self.ssl_cert,self.ssl_key,days=1,
-                            cacert=self.ca_cert,cakey=self.ca_key,
-                            hostname=self.hostname)
-        self.cfg['system']['ssl'] = {
-            'cert':self.ssl_cert,
-            'key':self.ssl_key,
-            'cacert':self.ca_cert,
-        }
-
-        with self.start():
-            datasets_status = {'processing':3}
-            self.modules.ret['db']['web_get_datasets'] = datasets_status
-
-            auth = (self.cfg['download']['http_username'],
-                    self.cfg['download']['http_password'])
-
-            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
-            logger.info('try connecting at %s',address)
-
-            r = requests.get(address, auth=auth, verify=self.ca_cert)
-            r.raise_for_status()
-
-    @unittest_reporter
-    def test_20_JSONRPCHandler(self):
-        with self.start():
-            self.modules.ret['db']['auth_authorize_task'] = True
-            self.modules.ret['db']['rpc_echo'] = 'e'
-            self.modules.ret['db']['rpc_test'] = 'testing'
-
-            passkey = 'key'
-            address = 'http://localhost:%d/jsonrpc'%(
-                      self.cfg['webserver']['port'])
-            logger.info('try connecting to %s',address)
-
-            ssl_opts = {'username': self.cfg['download']['http_username'],
-                        'password': self.cfg['download']['http_password'],
-                       }
-
-            rpc = iceprod.core.jsonRPCclient.JSONRPC(address=address,
-                                                     passkey=passkey,
-                                                     timeout=0.1,
-                                                     backoff=False,
-                                                     ssl_options=ssl_opts)
-            try:
-                ret = rpc.test()
-                self.assertEqual(ret, 'testing')
-                
-                ret = rpc.test(1,2,3)
-                self.assertEqual(self.modules.called[-1][2], (1,2,3))
-                
-                ret = rpc.test(a=1,b=2)
-                self.assertEqual(self.modules.called[-1][3], {'a':1,'b':2})
-                
-                ret = rpc.test(1,2,c=3)
-                self.assertEqual(self.modules.called[-1][2], (1,2))
-                self.assertEqual(self.modules.called[-1][3], {'c':3})
-
-                self.modules.ret['db']['rpc_test'] = Exception()
-                with self.assertRaises(Exception):
-                    rpc.test()
-            finally:
-                rpc.stop()
-
-    @unittest_reporter
-    def test_30_MainHandler(self):
-        with self.start():
-            gridspec = 'thegrid'
-            passkey = 'key'
-            datasets = {'d1':1,'d2':2}
-            datasets_status = {'processing':3}
-            datasets_full = [{'dataset_id':'d1','name':'dataset 1','status':'processing','description':'desc','gridspec':gridspec}]
-            dataset_details = datasets_full
-            tasks = {'task_1':3,'task_2':4}
-            task_details = {'waiting':{'c':1,'d':2}}
-            tasks_status = {'waiting':10,'queued':30}
-            
-            self.modules.ret['db']['auth_new_passkey'] = passkey
-            self.modules.ret['db']['web_get_gridspec'] = gridspec
-            self.modules.ret['db']['web_get_datasets_details'] = dataset_details
-            self.modules.ret['db']['web_get_datasets'] = datasets_status
-            self.modules.ret['db']['web_get_tasks_by_status'] = tasks_status
-            self.modules.ret['db']['web_get_datasets_by_status'] = datasets
-            self.modules.ret['db']['web_get_tasks_details'] = task_details
-
-            address = 'http://localhost:%d'%(self.cfg['webserver']['port'])
-            logger.info('try connecting at %s',address)
-
-            outfile = os.path.join(self.test_dir,
-                                   str(random.randint(0,10000)))
+            async def rest(method, url, args=None):
+                if url.startswith('/dataset_summaries/status'):
+                    rest.called = True
+                    return datasets_status
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
 
             # main site
-            logger.info('url: /')
-            r = requests.get(address)
-            r.raise_for_status()
-            if any(k not in r.text for k in datasets_status):
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            body = r.body.decode('utf-8')
+            if any(k not in body for k in datasets_status):
                 raise Exception('main: fetched file data incorrect')
+            self.assertTrue(rest.called)
 
-            # test for bad page
-            logger.info('url: %s','/bad_page')
-            try:
-                r = requests.get(address+'bad_page')
-                r.raise_for_status()
-            except:
-                pass
-            else:
-                raise Exception('did not raise Exception')
+            # test error
+            req.request.side_effect = Exception()
+            with self.assertRaises(Exception):
+                r = await client.fetch(address)
 
-            # test internal error
-            logger.info('url: /task?status=waiting  internal error')
-            self.modules.ret['db']['web_get_tasks_details'] = None
-            try:
-                r = requests.get(address+'task?status=waiting')
-                r.raise_for_status()
-            except:
-                pass
-            else:
-                raise Exception('did not raise Exception')
-
+"""
     @unittest_reporter(skip=not testjs)
     def test_40_groups(self):
         with self.start():
@@ -341,6 +300,7 @@ class modules_website_test(module_test):
             self.assertEqual(c[:2], ('db','rpc_set_groups'))
             web_groups = c[-1]['groups']
             self.assertDictEqual(groups, web_groups)
+"""
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

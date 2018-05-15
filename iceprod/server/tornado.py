@@ -88,3 +88,4 @@ def startup(app, address='localhost', port=8080):
             app, xheaders=True)
     http_server.bind(port, address=address, family=socket.AF_INET)
     http_server.start()
+    return http_server

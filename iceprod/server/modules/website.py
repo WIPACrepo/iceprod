@@ -2,20 +2,11 @@
 The website module uses `Tornado <http://www.tornadoweb.org>`_,
 a fast and scalable python web server.
 
-There are three groups of handlers:
+Main website
+------------
 
-* Main website
-    This is the external website users will see when interacting with IceProd.
-    It has been broken down into several sub-handlers for easier maintenance.
-
-* JSONRPC
-    This is the machine-readable portion of the website. Jobs talk to the
-    server through this mechanism. The main website also uses this for
-    various actions.
-
-* lib downloads
-    This is a directory of downloads local to the IceProd instance.
-    Usually this will be the necessary software to run the iceprod core.
+This is the external website users will see when interacting with IceProd.
+It has been broken down into several sub-handlers for easier maintenance.
 
 """
 from __future__ import absolute_import, division, print_function
@@ -36,12 +27,6 @@ except ImportError:
     from urllib.parse import urlparse
 from datetime import timedelta
 
-# override tornado json encoder and decoder so we can use dataclasses objects
-import iceprod.core.jsonUtil
-import tornado.escape
-tornado.escape.json_encode = iceprod.core.jsonUtil.json_encode
-tornado.escape.json_decode = iceprod.core.jsonUtil.json_decode
-
 from iceprod.core.jsonUtil import json_encode,json_decode
 
 import tornado.ioloop
@@ -61,6 +46,7 @@ from iceprod.server.file_io import AsyncFileIO
 from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
 from iceprod.server import documentation
+from iceprod.server.tornado import tornado_logger, startup
 
 from iceprod.core import rest_client
 
@@ -115,18 +101,6 @@ class website(module.module):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
-            # configure logging
-            def tornado_logger(handler):
-                if handler.get_status() < 400:
-                    log_method = logger.debug
-                elif handler.get_status() < 500:
-                    log_method = logger.warning
-                else:
-                    log_method = logger.error
-                request_time = 1000.0 * handler.request.request_time()
-                log_method("%d %s %.2fms", handler.get_status(),
-                        handler._request_summary(), request_time)
-
             handler_args = {
                 'cfg':self.cfg,
                 'modules':self.modules,
@@ -134,6 +108,8 @@ class website(module.module):
                 'statsd':self.statsd,
                 'rest_api':self.cfg['rest_api'],
             }
+            login_handler_args = handler_args.copy()
+            login_handler_args['module_rest_client'] = self.rest_client
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
             if 'cookie_secret' in self.cfg['webserver']:
@@ -141,8 +117,8 @@ class website(module.module):
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-            self.application = tornado.web.Application([
-                (r"/jsonrpc", JSONRPCHandler, handler_args),
+
+            routes = [
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
                 (r"/config", Config, handler_args),
@@ -154,26 +130,25 @@ class website(module.module):
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/log/(.*)/(.*)", Log, handler_args),
                 (r"/groups", GroupsHandler, handler_args),
-                (r"/login", Login, handler_args),
+                (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
-            ],static_path=static_path,
-              template_path=template_path,
-              log_function=tornado_logger,
-              xsrf_cookies=True,
-              cookie_secret=binascii.unhexlify(cookie_secret),
-              login_url='/login')
-            self.http_server = tornado.httpserver.HTTPServer(
-                    self.application,
-                    xheaders=True)
+            ]
+            self.application = tornado.web.Application(
+                routes,
+                static_path=static_path,
+                template_path=template_path,
+                log_function=tornado_logger,
+                xsrf_cookies=True,
+                cookie_secret=binascii.unhexlify(cookie_secret),
+                login_url='/login',
+            )
 
             # start tornado
-            tornado_port = self.cfg['webserver']['port']
-            tornado_address = '0.0.0.0' # bind to all
-            logger.warning('tornado bound to port %d', tornado_port)
-            self.http_server.bind(tornado_port, address=tornado_address, family=socket.AF_INET)
-            self.http_server.start()
-            logger.warning('tornado starting')
+            self.http_server = startup(self.application,
+                port=self.cfg['webserver']['port'],
+                address='0.0.0.0', # bind to all
+            )
         except Exception:
             logger.error('website startup error',exc_info=True)
             raise
@@ -251,7 +226,7 @@ class PublicHandler(tornado.web.RequestHandler):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__
 
     def get_template_namespace(self):
-        namespace = super(MyHandler,self).get_template_namespace()
+        namespace = super(PublicHandler,self).get_template_namespace()
         namespace['version'] = iceprod.__version__
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['master'] = ('master' in self.cfg and
@@ -268,11 +243,12 @@ class PublicHandler(tornado.web.RequestHandler):
 
     def prepare(self):
         try:
-            data = json_decode(self.get_secure_cookie("user", max_age_days=1))
+            data = self.get_secure_cookie("user", max_age_days=1)
+            if not data:
+                raise Exception('user cookie is missing/empty')
+            data = json_decode(data)
             user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
             if user_secure is not None and data['username'] != user_secure:
-                self.clear_cookie("user")
-                self.clear_cookie("user_secure")
                 raise Exception('mismatch between user_secure and username')
             self.current_user = data['username']
             self.current_user_data = data
@@ -280,7 +256,9 @@ class PublicHandler(tornado.web.RequestHandler):
             self.rest_client = rest_client.Client(self.rest_api, data['token'])
         except Exception:
             logger.info('error getting current user', exc_info=True)
-        return None
+            self.clear_cookie("user")
+            self.clear_cookie("user_secure")
+            self.current_user = None
 
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
@@ -296,15 +274,11 @@ class PublicHandler(tornado.web.RequestHandler):
 class Default(PublicHandler):
     """Handle / urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self):
+    @tornado.web.authenticated
+    async def get(self):
         self.statsd.incr('default')
-        datasets = yield self.db_call('web_get_datasets',groups=['status'])
-        if isinstance(datasets,Exception):
-            raise datasets
-        if not datasets:
-            logger.info('no datasets to display: %r',datasets)
-            datasets = [] # set to iterable to prevent None error
+        ret = await self.rest_client.request('POST','/dataset_summaries/status')
+        datasets = {k:len(ret[k]) for k in ret}
         self.render('main.html',datasets=datasets)
 
 class Submit(PublicHandler):
@@ -648,6 +622,15 @@ class Other(PublicHandler):
 
 class Login(PublicHandler):
     """Handle the login url"""
+    def initialize(self, module_rest_client, *args, **kwargs):
+        """
+        Get some params from the website module
+
+        :param module_rest_client: a REST Client
+        """
+        super(Login, self).initialize(*args, **kwargs)
+        self.module_rest_client = module_rest_client
+
     @catch_error
     def get(self):
         self.statsd.incr('login')
@@ -666,13 +649,14 @@ class Login(PublicHandler):
         self.clear_cookie("user")
         self.clear_cookie("user_secure")
         try:
-            data = await self.rest_client.request('POST','/ldap',{'username':username,'password':password})
+            data = await self.module_rest_client.request('POST','/ldap',{'username':username,'password':password})
             cookie = json_encode(data)
             if secure:
                 self.set_secure_cookie('user_secure', username, expires_days=0.01)
             self.set_secure_cookie('user', cookie, expires_days=1)
             self.redirect(n)
         except Exception:
+            logger.info('failed', exc_info=True)
             self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):
