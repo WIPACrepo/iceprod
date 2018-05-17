@@ -117,7 +117,7 @@ class rest_logs_test(AsyncTestCase):
         iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
-        data = {'data':'foo bar baz'}
+        data = {'dataset_id':'12345','data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})

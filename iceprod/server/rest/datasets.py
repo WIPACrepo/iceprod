@@ -71,7 +71,7 @@ class MultiDatasetHandler(BaseHandler):
         """
         ret = {}
         async for row in self.db.datasets.find(projection={'_id':False}):
-            k = row.pop('dataset_id')
+            k = row['dataset_id']
             ret[k] = row
         self.write(ret)
         self.finish()

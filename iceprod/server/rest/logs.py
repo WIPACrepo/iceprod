@@ -148,7 +148,7 @@ class DatasetLogsHandler(BaseHandler):
         Returns:
             dict: all body fields
         """
-        ret = await self.db.logs.find_one({'log_id':log_id},
+        ret = await self.db.logs.find_one({'dataset_id':dataset_id,'log_id':log_id},
                 projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Log not found")

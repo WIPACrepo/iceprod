@@ -227,21 +227,36 @@ class DatasetMultiTasksHandler(BaseHandler):
     @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
-        Get all tasks for a dataset.
+        Get task entries.
+
+        Params (optional):
+            status: task status to filter by
+            job_id: job_id to filter by
+            keys: | separated list of keys to return for each task
 
         Args:
             dataset_id (str): dataset id
 
         Returns:
-            dict: {'uuid': {pilot_data}}
+            dict: {'task_id': {task data}}
         """
-        cursor = self.db.tasks.find({'dataset_id':dataset_id},
-                projection={'_id':False})
+        filters = {'dataset_id':dataset_id}
+
+        for k in ('status','job_id'):
+            tmp = self.get_argument(k, None)
+            if tmp:
+                filters[k] = tmp
+
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['task_id'] = True
+
         ret = {}
-        async for row in cursor:
+        async for row in self.db.tasks.find(filters, projection=projection):
             ret[row['task_id']] = row
         self.write(ret)
-        self.finish()
 
 class DatasetTasksHandler(BaseHandler):
     """
@@ -496,6 +511,7 @@ class DatasetTaskStatsHandler(BaseHandler):
             {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
             {'$group':{'_id':'$name',
                 'count': {'$sum': 1},
+                'gpu': {'$sum': '$requirements.gpu'},
                 'total_hrs': {'$sum': '$walltime'},
                 'total_err_hrs': {'$sum': '$walltime_err'},
                 'avg_hrs': {'$avg': '$walltime'},

@@ -122,13 +122,15 @@ class website(module.module):
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
                 (r"/config", Config, handler_args),
-                (r"/dataset(/.*)?", Dataset, handler_args),
-                (r"/task(/.*)?", Task, handler_args),
-                (r"/job(/.*)?", Job, handler_args),
-                (r"/site(/.*)?", Site, handler_args),
+                (r"/dataset", DatasetBrowse, handler_args),
+                (r"/dataset/(\w+)", Dataset, handler_args),
+                (r"/dataset/(\w+)/task", TaskBrowse, handler_args),
+                (r"/dataset/(\w+)/task/(\w+)", Task, handler_args),
+                (r"/dataset/(\w+)/job", JobBrowse, handler_args),
+                (r"/dataset/(\w+)/job/(\w+)", Job, handler_args),
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
-                (r"/log/(.*)/(.*)", Log, handler_args),
+                (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
                 (r"/groups", GroupsHandler, handler_args),
                 (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
@@ -220,6 +222,7 @@ class PublicHandler(tornado.web.RequestHandler):
         self.statsd = statsd
         self.rest_api = rest_api
         self.current_user = None
+        self.current_user_secure = None
         self.rest_client = None
 
     def set_default_headers(self):
@@ -290,12 +293,8 @@ class Submit(PublicHandler):
         url = self.request.uri[1:]
         ret = await self.rest_client.request('POST','/create_token')
         token = ret['result']
-        grids = await self.db_call('web_get_gridspec')
-        if isinstance(grids,Exception):
-            raise grids
         render_args = {
             'passkey':token,
-            'grids':grids,
             'edit':False,
             'dataset':None,
             'config':None,
@@ -303,32 +302,23 @@ class Submit(PublicHandler):
         self.render('submit.html',**render_args)
 
 class Config(PublicHandler):
-    """Handle /submit urls"""
+    """Handle /config urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self):
+    async def get(self):
         self.statsd.incr('config')
         dataset_id = self.get_argument('dataset_id',default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
             return
-        dataset = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-        if isinstance(dataset,Exception):
-            raise dataset
-        if dataset_id not in dataset:
-            raise Exception('get_dataset_details does not have dataset_id '+dataset_id)
-        dataset = dataset[dataset_id]
+        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
+            ret = await self.rest_client.request('POST','/create_token')
+            passkey = ret['result']
         else:
             passkey = None
-        config = yield self.db_call('queue_get_cfg_for_dataset',dataset_id=dataset_id)
-        if isinstance(config,Exception):
-            raise config
+        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
         render_args = {
             'edit':edit,
             'passkey':passkey,
@@ -338,209 +328,140 @@ class Config(PublicHandler):
         }
         self.render('submit.html',**render_args)
 
-class Site(PublicHandler):
-    """Handle /site urls"""
+class DatasetBrowse(PublicHandler):
+    """Handle /dataset urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self,url):
-        self.statsd.incr('site')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-
-        def cb(m):
-            print(m)
-
-        running_modules = self.modules['daemon']['get_running_modules']()
-
-        module_state = []
-        for mod in self.cfg['modules']:
-            state = mod in running_modules
-            module_state.append([mod, state])
-
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
-
-        config = self.config.save_to_string()
-
-        self.render('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
-        '''
-        filter_options = {}
+    async def get(self):
+        self.statsd.incr('dataset')
+        filter_options = {'status':DBAPI.status_options['dataset']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
-        if url and url_parts:
-            site_id = url_parts[0]
-            ret = yield self.db_call('web_get_site_details',dataset_id=dataset_id)
-            if isinstance(ret,Exception):
-                raise ret
-            if ret:
-                site = ret.values()[0]
-            else:
-                site = None
-            tasks = yield self.db_call('web_get_tasks_by_status',site_id=site_id)
-            if isinstance(tasks,Exception):
-                raise tasks
-            self.render('site_detail.html',site_id=site_id,
-                               site=site,tasks=tasks)
-        else:
-            sites = yield self.db_call('web_get_sites',**filter_results)
-            if isinstance(sites,Exception):
-                raise sites
-            self.render('site_browse.html',sites=sites,
-                               filter_options=filter_options,
-                               filter_results=filter_results)
-        '''
+
+        ret = await self.rest_client.request('GET','/datasets')
+        datasets = ret.values()
+        logger.info('datasets: %r', datasets)
+        self.render('dataset_browse.html',datasets=datasets,
+                    filter_options=filter_options,
+                    filter_results=filter_results)
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
         self.statsd.incr('dataset')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
         filter_options = {'status':DBAPI.status_options['dataset']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
-        if url and url_parts:
-            dataset_id = url_parts[0]
-            ret = None
-            if dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            if not ret:
-                ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-                if isinstance(ret,Exception):
-                    raise ret
-                dataset_num = GlobalID.localID_ret(dataset_id,type='int')
-            if ret:
-                dataset = list(ret.values())[0]
-            else:
-                raise Exception('dataset not found')
 
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
+        dataset = None
+        if dataset_id.isdigit():
+            try:
+                if int(dataset_id) < 10000000:
+                    try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
+                    dataset = await self.rest_client.request('GET','/datasets/{}'.format(try_dataset_id))
+                    dataset_num = dataset_id
+                    dataset_id = try_dataset_id
+            except Exception:
+                pass
+        if not dataset:
+            try:
+                dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+            except Exception:
+                raise tornado.web.HTTPError(404, reason='Dataset not found')
+            dataset_num = GlobalID.localID_ret(dataset_id,type='int')
 
-            jobs = yield self.db_call('web_get_job_counts_by_status',
-                                      dataset_id=dataset_id)
-            tasks = yield self.db_call('web_get_tasks_by_status',
-                                       dataset_id=dataset_id)
-            task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
-            self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                        dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,passkey=passkey)
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
+
+        jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
+        tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
+        task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
+        task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
+        for t in task_info:
+            logger.info('task_info[%s] = %r', t, task_info[t])
+            for s in ('waiting','queued','processing','complete'):
+                if s not in task_info[t]:
+                    task_info[t][s] = 0.
+            error = 0.
+            for s in ('reset','resume','failed'):
+                if s in task_info[t]:
+                    error += task_info[t][s]
+            task_info[t]['error'] = error
+            task_info[t]['type'] = 'GPU' if t in task_stats and task_stats[t]['gpu'] else 'CPU'
+        self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
+                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
+
+class TaskBrowse(PublicHandler):
+    """Handle /task urls"""
+    @catch_error
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
+        self.statsd.incr('task')
+        status = self.get_argument('status',default=None)
+
+        if status:
+            tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
+            for t in tasks:
+                job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
+                tasks[t]['job_index'] = job['job_index']
+            ret = await self.rest_client.request('POST','/create_token')
+            passkey = ret['result']
+            self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
-            datasets = yield self.db_call('web_get_datasets',**filter_results)
-            if isinstance(datasets,Exception):
-                raise datasets
-            self.render('dataset_browse.html',datasets=datasets,
-                        filter_options=filter_options,
-                        filter_results=filter_results)
+            status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
+            self.render('tasks.html',status=status)
 
 class Task(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-        dataset_id = self.get_argument('dataset_id',default=None)
         status = self.get_argument('status',default=None)
 
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
 
-        if url and url_parts:
-            if dataset_id and dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            task_id = url_parts[0]
-            ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
-                                     dataset_id=dataset_id)
-            if ret:
-                task_details = list(ret.values())[0]
-            else:
-                task_details = None
-            logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
-            del task_details['task_status'] # task_status and status are repeats. Remove task_status.
-            self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
-        elif status:
-            tasks = yield self.db_call('web_get_tasks_details',status=status,
-                                       dataset_id=dataset_id)
-            if isinstance(tasks,Exception):
-                raise tasks
-            self.render('task_browse.html',tasks=tasks, passkey=passkey)
-        else:
-            status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-            if isinstance(status,Exception):
-                raise status
-            self.render('tasks.html',status=status)
+        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
+        ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
+        logs = ret['logs']
+        self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
+
+class JobBrowse(PublicHandler):
+    """Handle /job urls"""
+    @catch_error
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
+        self.statsd.incr('job')
+        status = self.get_argument('status',default=None)
+
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
+
+        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
+        if status:
+            for t in list(jobs):
+                if jobs[t]['status'] != status:
+                    del jobs[t]
+                    continue
+        self.render('job_browse.html', jobs=jobs, passkey=passkey)
 
 class Job(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, job_id):
         self.statsd.incr('job')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-        dataset_id = self.get_argument('dataset_id',default=None)
         status = self.get_argument('status',default=None)
 
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
 
-        if url and url_parts:
-            job_id = url_parts[0]
-            ret = yield self.db_call('web_get_jobs_details',job_id=job_id)
-            if isinstance(ret,Exception):
-                raise ret
-            if ret:
-                job_details = ret
-            else:
-                job_details = {}
-            self.render('job_detail.html', job=job_details, passkey=passkey)
-        else:
-            if dataset_id and dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            jobs = yield self.db_call('web_get_jobs_by_status', status=status,
-                                       dataset_id=dataset_id)
-            if isinstance(jobs,Exception):
-                raise jobs
-            self.render('job_browse.html', jobs=jobs, passkey=passkey)
+        job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
+        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}'.format(dataset_id,job_id))
+        job['tasks'] = list(tasks.values())
+        job['tasks'].sort(key=lambda x:x['task_index'])
+        self.render('job_detail.html', job=job, passkey=passkey)
 
 class Documentation(PublicHandler):
     @catch_error
@@ -552,57 +473,16 @@ class Documentation(PublicHandler):
 
 class Log(PublicHandler):
     @catch_error
-    @tornado.gen.coroutine
-    def get(self, url, log):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, log_id):
         self.statsd.incr('log')
-        logs = yield self.db_call('web_get_logs',task_id=url)
-        log_text = logs[log]
-        html = '<html><body>'
+        ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
+        log_text = ret['data']
+        html = '<html><head><title>' + ret['name'] + '</title></head><body>'
         html += log_text.replace('\n', '<br/>')
         html += '</body></html>'
         self.write(html)
         self.flush()
-
-class GroupsHandler(PublicHandler):
-    """View/modify groups"""
-    @catch_error
-    @tornado.gen.coroutine
-    def get(self):
-        render_args = {
-            'edit': True if self.current_user else False,
-        }
-        render_args['groups'] = yield self.db_call('rpc_get_groups')
-        if render_args['edit']:
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
-            render_args['passkey'] = passkey
-        self.render('groups.html', **render_args)
-
-class UserAccount(PublicHandler):
-    """View/modify a user account"""
-    @catch_error
-    @authenticated_secure
-    @tornado.gen.coroutine
-    def get(self):
-        username = self.get_argument('username', default=self.current_user)
-        account = yield self.db_call('website_get_user_account')
-        if isinstance(account, Exception):
-            raise account
-        self.render('user_account.html', account=account)
-
-    @catch_error
-    @authenticated_secure
-    @tornado.gen.coroutine
-    def post(self):
-        username = self.get_argument('username', default=self.current_user)
-        password = self.get_argument('password', default=None)
-        if not password:
-            raise Exception('invalid password')
-        ret = yield self.db_call('website_edit_user_account', password=password)
-        if isinstance(ret, Exception):
-            raise ret
-        self.get()
 
 class Help(PublicHandler):
     """Help Page"""

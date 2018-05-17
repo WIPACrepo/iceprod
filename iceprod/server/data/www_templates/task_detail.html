@@ -16,10 +16,10 @@
   {% if k == 'dataset_id' %}
     <a href="/dataset/{{ url_escape(task[k]) }}">{{ escape(task[k]) }}</a>
   {% elif k == 'job_id' %}
-    <a href="/job/{{ url_escape(task[k]) }}">{{ escape(task[k]) }}</a>
+    <a href="/dataset/{{ url_escape(task['dataset_id']) }}/job/{{ url_escape(task[k]) }}">{{ escape(task[k]) }}</a>
   {% elif k == 'depends' %}
     {% for t in task[k].split(',') %}
-        <a href="/task/{{ t }}">{{ escape(t) }}</a>&nbsp;&nbsp;
+        <a href="/dataset/{{ url_escape(task['dataset_id']) }}/task/{{ t }}">{{ escape(t) }}</a>&nbsp;&nbsp;
     {% end %}
   {% else %}
     {{ task[k] }}
@@ -38,10 +38,10 @@
 
 </div>
 
-{% for k in logs %}
+{% for log in logs %}
 <div class="logs">
-  <p class="log_name"><a href='/log/{{ task['task_id'] }}/{{k}}'>{{ escape(k) }}</a></p>
-  <div class="log_body">{{ '<br />'.join(map(escape,logs[k].replace('\r','').split('\n'))) }}</div>
+  <p class="log_name"><a href='/dataset/{{ url_escape(task['dataset_id']) }}/log/{{ url_escape(log['log_id']) }}'>{{ escape(log['name']) }}</a></p>
+  <div class="log_body">{{ '<br />'.join(map(escape,log['data'].replace('\r','').split('\n')[-40:])) }}</div>
 </div>
 {% end %}
 

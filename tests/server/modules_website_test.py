@@ -229,10 +229,439 @@ class modules_website_test(AsyncTestCase):
                 raise Exception('main: fetched file data incorrect')
             self.assertTrue(rest.called)
 
-            # test error
-            req.request.side_effect = Exception()
-            with self.assertRaises(Exception):
-                r = await client.fetch(address)
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /submit')
+    async def test_200_Submit(self, req):
+        with self.start():
+            address = 'http://localhost:%d/submit'%(self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                if url.startswith('/create_token'):
+                    rest.called = True
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /config')
+    async def test_210_Config(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            address = 'http://localhost:{}/config?dataset_id={}'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                if url.startswith('/datasets/{}'.format(dataset_id)):
+                    return {'dataset_id':'foo'}
+                elif url.startswith('/config/{}'.format(dataset_id)):
+                    rest.called = True
+                    return {'dataset_id':'foo'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            
+            address = 'http://localhost:{}/config?dataset_id={}&edit=1'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            logger.info('try connecting at %s',address)
+
+            async def rest(method, url, args=None):
+                if url.startswith('/create_token'):
+                    rest.called = True
+                    return {'result': 'token'}
+                elif url.startswith('/datasets/{}'.format(dataset_id)):
+                    return {'dataset_id':'foo'}
+                elif url.startswith('/config/{}'.format(dataset_id)):
+                    return {'dataset_id':'foo'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            
+            address = 'http://localhost:{}/config'.format(
+                self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
+
+            r = await self.request(address, raise_error=False)
+            self.assertEqual(r.code, 400)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset')
+    async def test_300_Dataset(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            address = 'http://localhost:{}/dataset'.format(
+                self.cfg['webserver']['port'])
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                if url.startswith('/datasets'):
+                    rest.called = True
+                    return {dataset_id:{'dataset_id':dataset_id, 'status':'processing',
+                                        'dataset': 1234, 'description':'desc'}}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id>')
+    async def test_301_Dataset(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            address = 'http://localhost:{}/dataset/{}'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                if url == '/datasets/{}'.format(dataset_id):
+                    rest.called = True
+                    return {'dataset_id':dataset_id, 'status':'processing',
+                            'dataset': 1234, 'description':'desc'}
+                elif url.startswith('/datasets/{}/job_counts/status'.format(dataset_id)):
+                    return {'processing':['foo','bar']}
+                elif url.startswith('/datasets/{}/task_counts/status'.format(dataset_id)):
+                    return {'processing':['1','2','3'], 'complete': ['4','5'], 'suspended':['6']}
+                elif url.startswith('/datasets/{}/task_counts/name_status'.format(dataset_id)):
+                    return {'generator':{'complete':2},
+                            'hits':{'processing':1,'reset':1},
+                            'detector':{'waiting':1,'suspended':1},
+                           }
+                elif url.startswith('/datasets/{}/task_stats'.format(dataset_id)):
+                    return {'generator':{'count': 2, 'gpu': 0, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                            'hits':{'count': 2, 'gpu': 2, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                            'detector':{'count': 2, 'gpu': 0, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                           }
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+            async def rest(method, url, args=None):
+                raise Exception()
+            req.return_value.request = rest
+            r = await self.request(address, raise_error=False)
+            self.assertEqual(r.code, 404)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @patch('iceprod.server.GlobalID.globalID_gen')
+    @unittest_reporter(name=' /dataset/<dataset_num>')
+    async def test_302_Dataset(self, globalid, req):
+        with self.start():
+            dataset_id = 'foo'
+            dataset_num = 120
+            address = 'http://localhost:{}/dataset/{}'.format(
+                self.cfg['webserver']['port'], dataset_num)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            globalid.return_value = dataset_id
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url == '/datasets/{}'.format(dataset_id):
+                    rest.called = True
+                    return {'dataset_id':dataset_id, 'status':'processing',
+                            'dataset': dataset_num, 'description':'desc'}
+                elif url.startswith('/datasets/{}/job_counts/status'.format(dataset_id)):
+                    return {'processing':['foo','bar']}
+                elif url.startswith('/datasets/{}/task_counts/status'.format(dataset_id)):
+                    return {'processing':['1','2','3'], 'complete': ['4','5'], 'suspended':['6']}
+                elif url.startswith('/datasets/{}/task_counts/name_status'.format(dataset_id)):
+                    return {'generator':{'complete':2},
+                            'hits':{'processing':1,'reset':1},
+                            'detector':{'waiting':1,'suspended':1},
+                           }
+                elif url.startswith('/datasets/{}/task_stats'.format(dataset_id)):
+                    return {'generator':{'count': 2, 'gpu': 0, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                            'hits':{'count': 2, 'gpu': 2, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                            'detector':{'count': 2, 'gpu': 0, 'total_hrs': 1.2, 'total_err_hrs': 3.4,
+                                         'avg_hrs': 0.7, 'stddev_hrs': 0.3, 'min_hrs': 0.4,
+                                         'max_hrs': 1.1, 'efficiency': 0.54},
+                           }
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+            async def rest(method, url, args=None):
+                raise Exception()
+            req.return_value.request = rest
+            r = await self.request(address, raise_error=False)
+            self.assertEqual(r.code, 404)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id>/task')
+    async def test_400_Task(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            task_id = 'bar'
+            address = 'http://localhost:{}/dataset/{}/task'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                if url.startswith('/datasets/{}/task_counts/status'.format(dataset_id)):
+                    rest.called = True
+                    return {'processing':['1','2','3'], 'complete': ['4','5'], 'suspended':['6']}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            
+            address = 'http://localhost:{}/dataset/{}/task?status=processing'.format(
+                self.cfg['webserver']['port'], dataset_id)
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url.startswith('/datasets/{}/tasks'.format(dataset_id)):
+                    rest.called = True
+                    return {task_id:{'task_id':task_id,'dataset_id':dataset_id,
+                                     'job_id':'j', 'status':'processing',
+                                     'name':'generator', 'failures':0}}
+                elif url.startswith('/datasets/{}/job'.format(dataset_id)):
+                    return {'job_index':0}
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            soup = BeautifulSoup(r.body, "html.parser")
+            for e in soup.findAll("td"):
+                if e.text == 'bar':
+                    break
+            else:
+                raise Exception('did not find task_id bar')
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url.startswith('/datasets/{}/tasks'.format(dataset_id)):
+                    rest.called = True
+                    return {}
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+                
+            address = 'http://localhost:{}/dataset/{}/task?status=waiting'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            soup = BeautifulSoup(r.body, "html.parser")
+            for e in soup.findAll("td"):
+                self.assertNotEqual(e.text, 'bar')
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id>/task/<task_id>')
+    async def test_401_Task(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            task_id = 'bar'
+            address = 'http://localhost:{}/dataset/{}/task/{}'.format(
+                self.cfg['webserver']['port'], dataset_id, task_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url == '/datasets/{}/tasks/{}'.format(dataset_id,task_id):
+                    rest.called = True
+                    return {'task_id':task_id,'dataset_id':dataset_id,
+                            'job_id':'j', 'status':'processing',
+                            'name':'generator', 'failures':0}
+                elif url.startswith('/datasets/{}/tasks/{}/log'.format(dataset_id,task_id)):
+                    return {'logs':[{'log_id':'baz','name':'stdout','data':'foo\nbar',
+                                     'dataset_id':dataset_id,'task_id':task_id}]}
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id>/job')
+    async def test_500_Job(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            job_id = 'bar'
+            address = 'http://localhost:{}/dataset/{}/job'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url.startswith('/datasets/{}/jobs'.format(dataset_id)):
+                    rest.called = True
+                    return {job_id:{'job_id':job_id,'dataset_id':dataset_id,
+                                    'status':'processing', 'status_changed':'2018',
+                                    'job_index':0}}
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+            address = 'http://localhost:{}/dataset/{}/job?status=processing'.format(
+                self.cfg['webserver']['port'], dataset_id)
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            soup = BeautifulSoup(r.body, "html.parser")
+            for e in soup.findAll("td"):
+                if e.text == 'bar':
+                    break
+            else:
+                raise Exception('did not find task_id bar')
+                
+            address = 'http://localhost:{}/dataset/{}/job?status=waiting'.format(
+                self.cfg['webserver']['port'], dataset_id)
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            soup = BeautifulSoup(r.body, "html.parser")
+            for e in soup.findAll("td"):
+                self.assertNotEqual(e.text, 'bar')
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id>/job/<job_id>')
+    async def test_501_Job(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            job_id = 'bar'
+            address = 'http://localhost:{}/dataset/{}/job/{}'.format(
+                self.cfg['webserver']['port'], dataset_id, job_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url.startswith('/datasets/{}/jobs/{}'.format(dataset_id,job_id)):
+                    rest.called = True
+                    return {'job_id':job_id,'dataset_id':dataset_id,
+                            'status':'processing', 'status_changed':'2018',
+                            'job_index':0}
+                elif url.startswith('/datasets/{}/tasks'.format(dataset_id)):
+                    return {'baz':{'task_id':'baz','dataset_id':dataset_id,
+                                   'job_id':job_id,'name':'generate',
+                                   'status':'queued', 'status_changed':'2018',
+                                   'task_index':0, 'failures':0, 'requirements':{'cpu':1},
+                                   'walltime':0.,'walltime_err':0.}}
+                elif url.startswith('/create_token'):
+                    return {'result': 'token'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+
+    @patch('iceprod.server.modules.website.rest_client.Client')
+    @unittest_reporter(name=' /dataset/<dataset_id/log/<log_id>')
+    async def test_600_Log(self, req):
+        with self.start():
+            dataset_id = 'foo'
+            log_id = 'bar'
+            address = 'http://localhost:{}/dataset/{}/log/{}'.format(
+                self.cfg['webserver']['port'], dataset_id, log_id)
+            logger.info('try connecting at %s',address)
+
+            await self.get_auth_cookie()
+
+            async def rest(method, url, args=None):
+                logger.info('REST %s %s', method, url)
+                if url.startswith('/datasets/{}/logs/{}'.format(dataset_id,log_id)):
+                    rest.called = True
+                    return {'log_id':log_id,'dataset_id':dataset_id,
+                            'name':'name', 'data': 'this is a log\nfoo bar'}
+                else:
+                    raise Exception()
+            rest.called = False
+            req.return_value.request = rest
+
+            r = await self.request(address)
+            self.assertEqual(r.code, 200)
+            self.assertTrue(rest.called)
+            self.assertIn(b'this is a log', r.body)
 
 """
     @unittest_reporter(skip=not testjs)
