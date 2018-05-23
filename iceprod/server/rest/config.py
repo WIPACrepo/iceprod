@@ -47,7 +47,7 @@ class ConfigHandler(RESTHandler):
         super(ConfigHandler, self).initialize(**kwargs)
         self.db = database
 
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get a config.

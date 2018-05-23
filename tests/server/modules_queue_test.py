@@ -67,20 +67,18 @@ class modules_queue_test(module_test):
             logger.warn('error setting up modules_queue', exc_info=True)
             raise
 
-    @patch('iceprod.server.listmodules')
-    @patch('iceprod.server.run_module')
     @unittest_reporter
-    def test_10_start(self, run_module, listmodules):
-        listmodules.return_value = ['iceprod.server.plugins.Test1']
-        run_module.return_value = MagicMock()
+    def test_10_start(self):
+        self.mock_listmodules.return_value = ['iceprod.server.plugins.Test1']
+        self.mock_listmodules.return_value = MagicMock()
         self.queue.rest_client = MagicMock(spec=rest_client.Client)
         self.queue.rest_client.request_seq.return_value = {'result':'foo'}
 
         self.queue.start()
 
-        listmodules.assert_called_once_with('iceprod.server.plugins')
-        self.assertTrue(run_module.called)
-        self.assertEqual(self.queue.plugins, [run_module.return_value])
+        self.mock_listmodules.assert_called_once_with('iceprod.server.plugins')
+        self.assertTrue(self.mock_listmodules.called)
+        self.assertEqual(self.queue.plugins, [self.mock_run_module.return_value])
         self.assertTrue(self.queue.rest_client.request_seq.call_count, 2)
         self.assertTrue(self.queue.rest_client.request_seq.call_args[0][1], '/grids/foo')
 

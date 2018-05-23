@@ -41,7 +41,11 @@ def printer(input,passed=True,skipped=False):
 
 def unittest_reporter(*args,**kwargs):
     def make_wrapper(obj):
-        module = os.path.basename(obj.__globals__['__file__']).split('_test')[0]
+        filename = obj.__globals__['__file__']
+        module = os.path.basename(filename).split('_test')[0]
+        prevdir = os.path.basename(os.path.dirname(filename))
+        if prevdir not in ('core','server'):
+            module = prevdir+'/'+module
         if 'module' in kwargs:
             module = kwargs['module']
         name = '_'.join(obj.__name__.split('_')[2:])+'()'
