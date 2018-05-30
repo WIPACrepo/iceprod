@@ -213,7 +213,7 @@ class DatasetJobsStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+        if data['status'] not in ('processing','failed','suspended','complete'):
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],

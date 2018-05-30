@@ -31,8 +31,5 @@ class schedule(module.module):
 
         # find scheduled tasks, which register with the ioloop
         # and will run at built-in delays
-        kwargs = {
-            'rest_client': self.rest_client,
-        }
         task_names = iceprod.server.listmodules('iceprod.server.scheduled_tasks')
-        self.tasks = [iceprod.server.run_module(n,**kwargs) for n in task_names]
+        self.tasks = [iceprod.server.run_module(n,self) for n in task_names]

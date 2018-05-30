@@ -102,6 +102,8 @@ class MultiPilotsHandler(BaseHandler):
             data['version'] = ''
         if 'grid_queue_id' not in data:
             data['grid_queue_id'] = ''
+        data['available'] = {}
+        data['claimed'] = {}
 
         ret = await self.db.pilots.insert_one(data)
         self.set_status(201)

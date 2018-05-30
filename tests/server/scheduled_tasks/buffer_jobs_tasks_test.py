@@ -18,6 +18,7 @@ from tornado.testing import AsyncTestCase
 from tests.util import unittest_reporter, glob_tests
 
 from iceprod.core import rest_client
+from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import buffer_jobs_tasks
 
 class buffer_jobs_tasks_test(AsyncTestCase):
@@ -42,8 +43,8 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter
     def test_100_buffer_jobs_tasks(self):
-        rc = MagicMock(spec=rest_client.Client)
-        buffer_jobs_tasks.buffer_jobs_tasks(rc)
+        s = schedule(self.cfg,None,None,None)
+        buffer_jobs_tasks.buffer_jobs_tasks(s)
 
     @unittest_reporter
     async def test_200_run(self):
