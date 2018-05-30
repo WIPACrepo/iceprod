@@ -5,8 +5,10 @@
 async function fetch_json(url, passkey, json=null) {
 	try {
 		var payload = {
-				headers: new Headers({'Authorization': passkey})
-				'Content-Type': 'application/json',
+				headers: new Headers({
+								'Authorization': 'Bearer ' + passkey,
+								'Content-Type': 'application/json',
+							}),
 		};
 		if (json) {
 			payload['body'] = JSON.stringify(json);
