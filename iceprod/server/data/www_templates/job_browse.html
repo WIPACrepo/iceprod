@@ -13,9 +13,9 @@
         <th>Job Index</th>
         <th>Status Changed</th>
         {% if (current_user) %}
-        <th><a href='javascript:set_jobs_status(task_ids_on_page, "reset", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset All</a></th>
-        <th><a href='javascript:set_jobs_status(task_ids_on_page, "reset", "{{ passkey }}");'>Hard Reset All</a></th>
-        <th><a href='javascript:set_jobs_status(task_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}");'>Hard Reset All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</a></th>
         {% end %}
     </tr>
     {% for j in jobs %}
