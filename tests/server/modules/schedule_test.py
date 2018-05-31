@@ -16,11 +16,11 @@ from iceprod.server.modules.schedule import schedule
 from iceprod.core import rest_client
 
 from tests.util import unittest_reporter, glob_tests, services_mock
-from .module_test import module_test
+from ..module_test import module_test
 
-class modules_schedule_test(module_test):
+class schedule_test(module_test):
     def setUp(self):
-        super(modules_schedule_test,self).setUp()
+        super(schedule_test,self).setUp()
         try:
             self.cfg = {'queue':{
                             'init_queue_interval':0.1,
@@ -59,6 +59,6 @@ class modules_schedule_test(module_test):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(modules_schedule_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,modules_schedule_test))
+    alltests = glob_tests(loader.getTestCaseNames(schedule_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,schedule_test))
     return suite

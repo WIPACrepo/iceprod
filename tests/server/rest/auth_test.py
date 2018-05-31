@@ -50,6 +50,7 @@ class rest_auth_test(AsyncTestCase):
                                   '--logpath', dblog])
             self.addCleanup(partial(time.sleep, 0.05))
             self.addCleanup(m.terminate)
+            time.sleep(0.05)
 
             config = {
                 'auth': {

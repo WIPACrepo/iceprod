@@ -56,7 +56,7 @@ class tornado_test(AsyncTestCase):
         config = {'rest': {'foo': True}}
         app = iceprod.server.tornado.setup_rest(config)
         port = random.randint(32000,38000)
-        iceprod.server.tornado.startup(app, port=port, io_loop=self.io_loop)
+        iceprod.server.tornado.startup(app, port=port)
 
         client = AsyncHTTPClient(self.io_loop)
         r = yield client.fetch('http://localhost:%d/foo'%port)

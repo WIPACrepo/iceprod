@@ -38,7 +38,7 @@ from iceprod.core import rest_client
 
 from tests.server import grid_test
 
-class plugins_condor_test(grid_test.grid_test):
+class condor_test(grid_test.grid_test):
     @unittest_reporter
     async def test_100_generate_submit_file(self):
         """Test generate_submit_file"""
@@ -389,6 +389,6 @@ class plugins_condor_test(grid_test.grid_test):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(plugins_condor_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,plugins_condor_test))
+    alltests = glob_tests(loader.getTestCaseNames(condor_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,condor_test))
     return suite

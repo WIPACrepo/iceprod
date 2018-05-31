@@ -17,7 +17,6 @@ import certifi
 import iceprod
 import iceprod.server
 from iceprod.server import module
-from iceprod.server.master_communication import send_master
 from iceprod.server.globus import SiteGlobusProxy
 import iceprod.core.functions
 

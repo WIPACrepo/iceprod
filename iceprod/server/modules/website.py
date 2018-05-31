@@ -40,10 +40,8 @@ import concurrent.futures
 import iceprod
 from iceprod.server import GlobalID, get_pkgdata_filename
 from iceprod.server import module
-from iceprod.server.nginx import Nginx, find_nginx
 from iceprod.server.ssl_cert import create_cert, verify_cert
 from iceprod.server.file_io import AsyncFileIO
-from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
 from iceprod.server import documentation
 from iceprod.server.tornado import tornado_logger, startup
@@ -131,7 +129,7 @@ class website(module.module):
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
-                (r"/groups", GroupsHandler, handler_args),
+                #(r"/groups", GroupsHandler, handler_args),
                 (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
@@ -334,7 +332,7 @@ class DatasetBrowse(PublicHandler):
     @tornado.web.authenticated
     async def get(self):
         self.statsd.incr('dataset')
-        filter_options = {'status':DBAPI.status_options['dataset']}
+        filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
         ret = await self.rest_client.request('GET','/datasets')
@@ -350,7 +348,7 @@ class Dataset(PublicHandler):
     @tornado.web.authenticated
     async def get(self, dataset_id):
         self.statsd.incr('dataset')
-        filter_options = {'status':DBAPI.status_options['dataset']}
+        filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
         dataset = None

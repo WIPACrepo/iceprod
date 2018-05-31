@@ -51,7 +51,7 @@ def setup_rest(config):
         routes.extend(mod.setup(config))
     logger.info('REST routes being served:')
     for r in routes:
-        logger.info('  %s', r[0])
+        logger.info('  %r', r)
 
     # get package data
     static_path = get_pkgdata_filename('iceprod.server','data/www')

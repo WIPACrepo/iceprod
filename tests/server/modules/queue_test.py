@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 from tests.util import unittest_reporter, glob_tests, services_mock
 
 import logging
-logger = logging.getLogger('queue_test')
+logger = logging.getLogger('modules_queue_test')
 
 import os
 import sys
@@ -30,12 +30,11 @@ from iceprod.core import rest_client
 from iceprod.server import module
 from iceprod.server.modules.queue import queue
 
-from .module_test import module_test
-from .dbmethods_test import TestExecutor
+from ..module_test import module_test, TestExecutor
 
-class modules_queue_test(module_test):
+class queue_test(module_test):
     def setUp(self):
-        super(modules_queue_test,self).setUp()
+        super(queue_test,self).setUp()
         try:
             patcher = patch('iceprod.server.modules.queue.SiteGlobusProxy', autospec=True)
             self.mock_proxy = patcher.start()
@@ -70,7 +69,6 @@ class modules_queue_test(module_test):
     @unittest_reporter
     def test_10_start(self):
         self.mock_listmodules.return_value = ['iceprod.server.plugins.Test1']
-        self.mock_listmodules.return_value = MagicMock()
         self.queue.rest_client = MagicMock(spec=rest_client.Client)
         self.queue.rest_client.request_seq.return_value = {'result':'foo'}
 
@@ -146,6 +144,6 @@ class modules_queue_test(module_test):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(modules_queue_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,modules_queue_test))
+    alltests = glob_tests(loader.getTestCaseNames(queue_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,queue_test))
     return suite

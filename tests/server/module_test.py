@@ -14,6 +14,8 @@ import sys
 import shutil
 import tempfile
 
+from asyncio import Future
+
 try:
     import cPickle as pickle
 except:
@@ -24,6 +26,25 @@ import unittest
 from tornado.testing import AsyncTestCase
 
 from iceprod.server import module
+
+
+class TestExecutor(object):
+    def __init__(self, *args, **kwargs):
+        pass
+    def submit(self, fn, *args, **kwargs):
+        f = Future()
+        f.set_result(fn(*args, **kwargs))
+        return f
+    def map(self, fn, *iterables, **kwargs):
+        for i in iterables:
+            yield self.submit(fn, i)
+    def shutdown(self, wait=True):
+        pass
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
 
 class module_test(AsyncTestCase):
     def setUp(self):

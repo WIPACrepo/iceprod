@@ -3,12 +3,10 @@
         "level":"INFO"
     },
     "modules":{
-        "db": true,
-        "proxy": false,
         "queue": true,
         "schedule": true,
-        "website": true,
-        "master_updater": false
+        "rest_api": true,
+        "website": false
     },
     "queue":{
         "max_resets":10,

@@ -170,7 +170,7 @@ class Pilot(object):
                                 print(f2.read(), file=f)
 
         if self.errors <= 0:
-            sys.exit(1)
+            raise RuntimeError('too many errors')
 
     def term_handler(self):
         """Handle a SIGTERM gracefully"""

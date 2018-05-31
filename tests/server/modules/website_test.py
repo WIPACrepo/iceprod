@@ -45,7 +45,7 @@ try:
 except ImportError:
     ssl_cert = None
 
-from .module_test import module_test
+from ..module_test import module_test
 
 # check for javascript testing
 try:
@@ -60,9 +60,9 @@ except ImportError:
     testjs = False
 
 
-class modules_website_test(AsyncTestCase):
+class website_test(AsyncTestCase):
     def setUp(self):
-        super(modules_website_test,self).setUp()
+        super(website_test,self).setUp()
 
         orig_dir = os.getcwd()
         self.test_dir = tempfile.mkdtemp(dir=orig_dir)
@@ -733,6 +733,6 @@ class modules_website_test(AsyncTestCase):
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    alltests = glob_tests(loader.getTestCaseNames(modules_website_test))
-    suite.addTests(loader.loadTestsFromNames(alltests,modules_website_test))
+    alltests = glob_tests(loader.getTestCaseNames(website_test))
+    suite.addTests(loader.loadTestsFromNames(alltests,website_test))
     return suite

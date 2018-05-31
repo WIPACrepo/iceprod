@@ -10,6 +10,7 @@ from collections import defaultdict, Iterable
 from functools import wraps, partial
 
 from tornado.concurrent import Future
+from tornado.ioloop import IOLoop
 from tornado.testing import gen_test
 
 def printer(input,passed=True,skipped=False):
@@ -69,9 +70,12 @@ def unittest_reporter(*args,**kwargs):
                 return
             try:
                 with to_log(sys.stdout), to_log(sys.stderr):
-                    if inspect.isgeneratorfunction(obj) or inspect.iscoroutinefunction(obj):
+                    if inspect.isgeneratorfunction(obj):
                         logging.info('test is async')
                         gen_test(obj)(self, *args,**kwargs)
+                    elif inspect.iscoroutinefunction(obj):
+                        logging.info('test is async')
+                        IOLoop.current().run_sync(partial(obj, self, *args,**kwargs))
                     else:
                         logging.info('test is seq')
                         obj(self, *args,**kwargs)

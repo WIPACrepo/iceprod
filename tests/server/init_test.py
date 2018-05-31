@@ -2,7 +2,6 @@
 Test script for server init scripts
 """
 
-from __future__ import absolute_import, division, print_function
 
 from tests.util import unittest_reporter, glob_tests
 
