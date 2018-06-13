@@ -2,20 +2,11 @@
 The website module uses `Tornado <http://www.tornadoweb.org>`_,
 a fast and scalable python web server.
 
-There are three groups of handlers:
+Main website
+------------
 
-* Main website
-    This is the external website users will see when interacting with IceProd.
-    It has been broken down into several sub-handlers for easier maintenance.
-
-* JSONRPC
-    This is the machine-readable portion of the website. Jobs talk to the
-    server through this mechanism. The main website also uses this for
-    various actions.
-
-* lib downloads
-    This is a directory of downloads local to the IceProd instance.
-    Usually this will be the necessary software to run the iceprod core.
+This is the external website users will see when interacting with IceProd.
+It has been broken down into several sub-handlers for easier maintenance.
 
 """
 from __future__ import absolute_import, division, print_function
@@ -36,11 +27,7 @@ except ImportError:
     from urllib.parse import urlparse
 from datetime import timedelta
 
-# override tornado json encoder and decoder so we can use dataclasses objects
-import iceprod.core.jsonUtil
-import tornado.escape
-tornado.escape.json_encode = iceprod.core.jsonUtil.json_encode
-tornado.escape.json_decode = iceprod.core.jsonUtil.json_decode
+from iceprod.core.jsonUtil import json_encode,json_decode
 
 import tornado.ioloop
 import tornado.web
@@ -53,12 +40,13 @@ import concurrent.futures
 import iceprod
 from iceprod.server import GlobalID, get_pkgdata_filename
 from iceprod.server import module
-from iceprod.server.nginx import Nginx, find_nginx
 from iceprod.server.ssl_cert import create_cert, verify_cert
 from iceprod.server.file_io import AsyncFileIO
-from iceprod.server.modules.db import DBAPI
 import iceprod.core.functions
 from iceprod.server import documentation
+from iceprod.server.tornado import tornado_logger, startup
+
+from iceprod.core import rest_client
 
 logger = logging.getLogger('website')
 
@@ -72,20 +60,12 @@ class website(module.module):
     def __init__(self,*args,**kwargs):
         # run default init
         super(website,self).__init__(*args,**kwargs)
-        self.service['logrotate'] = self.logrotate
 
         # set up local variables
-        self.nginx = None
         self.http_server = None
 
     def stop(self):
         """Stop website"""
-        # stop nginx
-        try:
-            if self.nginx:
-                self.nginx.stop()
-        except Exception:
-            logger.error('cannot stop Nginx', exc_info=True)
         # stop tornado
         try:
             if self.http_server:
@@ -93,27 +73,6 @@ class website(module.module):
         except Exception:
             logger.error('cannot stop tornado', exc_info=True)
         super(website,self).stop()
-
-    def kill(self):
-        """Kill website"""
-        # kill nginx
-        try:
-            if self.nginx:
-                self.nginx.kill()
-        except Exception:
-            logger.error('cannot kill Nginx', exc_info=True)
-        super(website,self).kill()
-
-    def logrotate(self):
-        """Rotate the Nginx logs."""
-        logger.warning('got a logrotate() call')
-        try:
-            if self.nginx:
-                # rotate nginx logs
-                self.nginx.logrotate()
-            # tornado uses regular python logs, which rotate automatically
-        except Exception:
-            logger.warning('error in logrotate', exc_info=True)
 
     def start(self):
         """Run the website"""
@@ -140,153 +99,56 @@ class website(module.module):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
-            # detect nginx
-            try:
-                if ('nginx' in self.cfg['webserver'] and
-                    not self.cfg['webserver']['nginx']):
-                    raise Exception('nginx explicitly disabled')
-                find_nginx()
-            except Exception:
-                if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl'] is not False):
-                    logger.error('Nginx not present when SSL requested')
-                    raise
-                logger.error('Nginx not present, running Tornado directly')
-                logger.error('(Note that this mode is not secure)')
-                self.nginx = None
-            else:
-                # configure nginx
-                kwargs = {}
-                if (self.cfg and 'webserver' in self.cfg and
-                    'request_timeout' in self.cfg['webserver']):
-                    try:
-                        timeout = int(self.cfg['webserver']['request_timeout'])
-                    except Exception:
-                        pass
-                    else:
-                        kwargs['request_timeout'] = timeout
-                if ('download' in self.cfg and 'http_username' in self.cfg['download']
-                    and self.cfg['download']['http_username']):
-                    kwargs['username'] = self.cfg['download']['http_username']
-                if ('download' in self.cfg and 'http_password' in self.cfg['download']
-                    and self.cfg['download']['http_password']):
-                    kwargs['password'] = self.cfg['download']['http_password']
-                if ('system' in self.cfg and 'ssl' in self.cfg['system']
-                    and self.cfg['system']['ssl'] is not False):
-                    cert = None
-                    key = None
-                    if ('autogen' in self.cfg['system']['ssl']
-                        and self.cfg['system']['ssl']['autogen']):
-                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
-                            and os.path.exists(self.cfg['system']['ssl']['key'])):
-                            cert = self.cfg['system']['ssl']['cert']
-                            key = self.cfg['system']['ssl']['key']
-                            if not verify_cert(cert,key):
-                                cert = None
-                                key = None
-                    elif ('cert' in self.cfg['system']['ssl']
-                          and 'key' in self.cfg['system']['ssl']):
-                        if (os.path.exists(self.cfg['system']['ssl']['cert'])
-                            and os.path.exists(self.cfg['system']['ssl']['key'])):
-                            cert = self.cfg['system']['ssl']['cert']
-                            key = self.cfg['system']['ssl']['key']
-                        else:
-                            raise Exception('Bad ssl cert or key')
-
-                    if not cert:
-                        # auto-generate self-signed cert
-                        create_cert('$PWD/cert','$PWD/key',days=365)
-                        cert = os.path.expandvars('$PWD/cert')
-                        key = os.path.expandvars('$PWD/key')
-                        self.cfg['system']['ssl']['autogen'] = True
-                        self.cfg['system']['ssl']['cert'] = cert
-                        self.cfg['system']['ssl']['key'] = key
-                    kwargs['sslcert'] = cert
-                    kwargs['sslkey'] = key
-
-                    if 'cacert' in self.cfg['system']['ssl']:
-                        if not os.path.exists(self.cfg['system']['ssl']['cacert']):
-                            raise Exception('Bad path to cacert')
-                        kwargs['cacert'] = self.cfg['system']['ssl']['cacert']
-                kwargs['port'] = self.cfg['webserver']['port']
-                kwargs['proxy_port'] = self.cfg['webserver']['tornado_port']
-                kwargs['static_dir'] = static_path
-
-                # start nginx
-                try:
-                    self.nginx = Nginx(**kwargs)
-                    self.nginx.start()
-                except Exception:
-                    logger.critical('cannot start Nginx:',exc_info=True)
-                    raise
-
-            # configure tornado
-            def tornado_logger(handler):
-                if handler.get_status() < 400:
-                    log_method = logger.debug
-                elif handler.get_status() < 500:
-                    log_method = logger.warning
-                else:
-                    log_method = logger.error
-                request_time = 1000.0 * handler.request.request_time()
-                log_method("%d %s %.2fms", handler.get_status(),
-                        handler._request_summary(), request_time)
-            #UploadHandler.upload_prefix = '/upload'
             handler_args = {
                 'cfg':self.cfg,
                 'modules':self.modules,
                 'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
+                'rest_api':self.cfg['rest_api'],
             }
+            login_handler_args = handler_args.copy()
+            login_handler_args['module_rest_client'] = self.rest_client
             if 'debug' in self.cfg['webserver'] and self.cfg['webserver']['debug']:
                 handler_args['debug'] = True
-            lib_args = handler_args.copy()
-            lib_args['prefix'] = '/lib/'
-            lib_args['directory'] = os.path.expanduser(os.path.expandvars(
-                    self.cfg['webserver']['lib_dir']))
             if 'cookie_secret' in self.cfg['webserver']:
                 cookie_secret = self.cfg['webserver']['cookie_secret']
             else:
                 cookie_secret = ''.join(hex(random.randint(0,15))[-1] for _ in range(64))
                 self.cfg['webserver']['cookie_secret'] = cookie_secret
-            self.application = tornado.web.Application([
-                (r"/jsonrpc", JSONRPCHandler, handler_args),
-                (r"/lib/.*", LibHandler, lib_args),
+
+            routes = [
                 (r"/", Default, handler_args),
                 (r"/submit", Submit, handler_args),
                 (r"/config", Config, handler_args),
-                (r"/dataset(/.*)?", Dataset, handler_args),
-                (r"/task(/.*)?", Task, handler_args),
-                (r"/job(/.*)?", Job, handler_args),
-                (r"/site(/.*)?", Site, handler_args),
+                (r"/dataset", DatasetBrowse, handler_args),
+                (r"/dataset/(\w+)", Dataset, handler_args),
+                (r"/dataset/(\w+)/task", TaskBrowse, handler_args),
+                (r"/dataset/(\w+)/task/(\w+)", Task, handler_args),
+                (r"/dataset/(\w+)/job", JobBrowse, handler_args),
+                (r"/dataset/(\w+)/job/(\w+)", Job, handler_args),
                 (r"/help", Help, handler_args),
                 (r"/docs/(.*)", Documentation, handler_args),
-                (r"/log/(.*)/(.*)", Log, handler_args),
-                (r"/groups", GroupsHandler, handler_args),
-                (r"/login", Login, handler_args),
+                (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
+                #(r"/groups", GroupsHandler, handler_args),
+                (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
-            ],static_path=static_path,
-              template_path=template_path,
-              log_function=tornado_logger,
-              xsrf_cookies=True,
-              cookie_secret=binascii.unhexlify(cookie_secret),
-              login_url='/login')
-            self.http_server = tornado.httpserver.HTTPServer(
-                    self.application,
-                    xheaders=True)
+            ]
+            self.application = tornado.web.Application(
+                routes,
+                static_path=static_path,
+                template_path=template_path,
+                log_function=tornado_logger,
+                xsrf_cookies=True,
+                cookie_secret=binascii.unhexlify(cookie_secret),
+                login_url='/login',
+            )
 
             # start tornado
-            if self.nginx is None:
-                tornado_port = self.cfg['webserver']['port']
-                tornado_address = '0.0.0.0' # bind to all
-            else:
-                tornado_port = self.cfg['webserver']['tornado_port']
-                tornado_address = 'localhost' # bind locally
-            logger.warning('tornado bound to port %d', tornado_port)
-            self.http_server.bind(tornado_port, address=tornado_address, family=socket.AF_INET)
-            self.http_server.start()
-            logger.warning('tornado starting')
+            self.http_server = startup(self.application,
+                port=self.cfg['webserver']['port'],
+                address='0.0.0.0', # bind to all
+            )
         except Exception:
             logger.error('website startup error',exc_info=True)
             raise
@@ -330,7 +192,7 @@ def authenticated_secure(method):
                         next_url = self.request.full_url()
                     else:
                         next_url = self.request.uri
-                    url += "?" + urlencode(dict(next=next_url,secure=True))
+                    url += "?" + urlencode({'next':next_url,'secure':True})
                 self.redirect(url)
                 return
             raise HTTPError(403)
@@ -338,9 +200,10 @@ def authenticated_secure(method):
     return wrapper
 
 
-class MyHandler(tornado.web.RequestHandler):
+class PublicHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, modules, fileio, debug=False, statsd=None):
+    def initialize(self, cfg, modules, fileio, debug=False, statsd=None,
+                   rest_api=None):
         """
         Get some params from the website module
 
@@ -348,201 +211,23 @@ class MyHandler(tornado.web.RequestHandler):
         :param modules: modules handle
         :param fileio: AsyncFileIO object
         :param debug: debug flag (optional)
+        :param rest_api: the rest api url
         """
         self.cfg = cfg
         self.modules = modules
         self.fileio = fileio
         self.debug = debug
         self.statsd = statsd
-
-    @tornado.gen.coroutine
-    def db_call(self,func_name,*args,**kwargs):
-        """Make a database call, returning the result"""
-        logger.info('db_call for %s',func_name)
-        try:
-            f = self.modules['db'][func_name](*args,**kwargs)
-            if isinstance(f, (tornado.concurrent.Future, concurrent.futures.Future)):
-                f = yield tornado.gen.with_timeout(timedelta(seconds=120),f)
-        except Exception:
-            logger.warning('db_call error for %s',func_name,exc_info=True)
-            raise
-        raise tornado.gen.Return(f)
-
-    def get(self):
-        """GET is invalid and returns an error"""
-        raise tornado.web.HTTPError(400,'GET is invalid.  Use POST')
-
-    def post(self):
-        """POST is invalid and returns an error"""
-        raise tornado.web.HTTPError(400,'POST is invalid.  Use GET')
+        self.rest_api = rest_api
+        self.current_user = None
+        self.current_user_secure = None
+        self.rest_client = None
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__
 
-class JSONRPCHandler(MyHandler):
-    """JSONRPC 2.0 Handler.
-
-       Call DB methods using RPC over json.
-    """
-    def check_xsrf_cookie(self):
-        pass
-
-    @tornado.gen.coroutine
-    def post(self):
-        """Parses json in the jsonrpc format, returning results in
-           jsonrpc format as well.
-        """
-        # parse JSON
-        try:
-            request = tornado.escape.json_decode(self.request.body)
-        except Exception as e:
-            self.json_error({'code':-32700,'message':'Parse Error',
-                             'data':'invalid json'})
-
-        # check for all parts of jsonrpc 2.0 spec
-        if 'jsonrpc' not in request or (request['jsonrpc'] != '2.0' and
-            request['jsonrpc'] != 2.0):
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                             'data':'jsonrpc is not 2.0'})
-            return
-        if 'method' not in request:
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                'data':'method not in request'})
-            return
-        if request['method'].startswith('_'):
-            self.json_error({'code':-32600,'message':'Invalid Request',
-                             'data':'method name cannot start with underscore'})
-            return
-
-        self.statsd.incr('jsonrpc.'+request['method'])
-
-        # add rpc_ to method name to prevent calling other DB methods
-        method = 'rpc_'+request['method']
-        if 'params' in request:
-            params = request['params']
-        else:
-            params = {}
-        if 'id' in request:
-            request_id = request['id']
-        else:
-            request_id = None
-
-        if method.startswith("rpc_public"):
-            if isinstance(params,dict):
-                params.pop('passkey',None)
-        else:
-            # check for auth
-            if (isinstance(params,dict) and 'passkey' not in params) or (not params):
-                self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'missing passkey'},
-                                request_id=request_id)
-                return
-            passkey = params.pop('passkey') if isinstance(params,dict) else params.pop(0)
-
-            try:
-                if ((isinstance(params,dict) and 'site_id' in params) or
-                    isinstance(params,(tuple,list))):
-                    # authorize site
-                    site_id = params.pop('site_id') if isinstance(params,dict) else params.pop(0)
-                    yield self.db_call('auth_authorize_site',site_id=site_id,key=passkey)
-                else:
-                    # authorize task
-                    yield self.db_call('auth_authorize_task',key=passkey)
-            except Exception:
-                logger.info('auth error', exc_info=True)
-                self.json_error({'code':403,'message':'Not Authorized',
-                                 'data':'passkey invalid'},
-                                request_id=request_id)
-                return
-
-        # check for args and kwargs
-        if isinstance(params,dict):
-            args = params.pop('args') if 'args' in params else []
-        else:
-            args = params
-            params = {}
-
-        # call method on DB if exists
-        try:
-            ret = yield self.db_call(method,*args,**params)
-        except KeyError:
-            logger.info('DB method not found: %r', method)
-            self.json_error({'code':-32601,'message':'Method not found'},
-                            request_id=request_id)
-        except tornado.gen.TimeoutError:
-            logger.info('Timeout error in DB method: %r', method, exc_info=True)
-            self.json_error({'code':-32001,'message':'Server error'},
-                            status=503, request_id=request_id)
-        except Exception:
-            logger.info('error in DB method: %r', method, exc_info=True)
-            self.json_error({'code':-32000,'message':'Server error'},
-                            status=500, request_id=request_id)
-        else:
-            if request_id is not None:
-                try:
-                    self.write({'jsonrpc':'2.0', 'result':ret, 'id':request_id})
-                except:
-                    logger.info('jsonrpc response: %r', ret)
-                    raise
-
-    def json_error(self,error,status=400,request_id=None):
-        """Create a proper jsonrpc error message"""
-        self.statsd.incr('jsonrpc_error')
-        self.set_status(status)
-        if isinstance(error,Exception):
-            error = str(error)
-        logger.info('json_error: %r',error)
-        if request_id is not None:
-            self.write({'jsonrpc':'2.0', 'error':error, 'id':request_id})
-
-class LibHandler(MyHandler):
-    """Handler for iceprod library downloads.
-
-       These are straight http downloads like normal.
-    """
-
-    def initialize(self, prefix, directory, **kwargs):
-        """
-        Get some params from the website module
-
-        :param fileio: AsyncFileIO object
-        :param prefix: library url prefix
-        :param directory: library directory on disk
-        """
-        super(LibHandler,self).initialize(**kwargs)
-        self.prefix = prefix
-        self.directory = directory
-
-    @tornado.gen.coroutine
-    def get(self):
-        """Look up a library"""
-        self.statsd.incr('lib')
-        try:
-            url = self.request.uri[len(self.prefix):]
-        except Exception:
-            url = ''
-        if not url:
-            # TODO: make this human-browsable in future
-            raise tornado.web.HTTPError(404,'not browsable')
-        else:
-            # TODO: make this work better for multi-site
-            filename = os.path.join(self.directory,url)
-            # open the file and send it
-            file = yield self.fileio.open(filename)
-            num = 65536
-            data = yield self.fileio.read(file,bytes=num)
-            self.write(data)
-            self.flush()
-            while len(data) >= num:
-                data = yield self.fileio.read(file,bytes=num)
-                self.write(data)
-                self.flush()
-            yield self.fileio.close(file)
-
-class PublicHandler(MyHandler):
-    """Handler for public facing website"""
     def get_template_namespace(self):
-        namespace = super(MyHandler,self).get_template_namespace()
+        namespace = super(PublicHandler,self).get_template_namespace()
         namespace['version'] = iceprod.__version__
         namespace['section'] = self.request.uri.lstrip('/').split('?')[0].split('/')[0]
         namespace['master'] = ('master' in self.cfg and
@@ -557,14 +242,24 @@ class PublicHandler(MyHandler):
                               'sites' in self.cfg['webserver']) else None)
         return namespace
 
-    def get_current_user(self):
-        user = self.get_secure_cookie("user", max_age_days=1)
-        user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
-        self.current_user_secure = (user_secure is not None)
-        if user_secure is None or user == user_secure:
-            return user
-        else:
-            return None
+    def prepare(self):
+        try:
+            data = self.get_secure_cookie("user", max_age_days=1)
+            if not data:
+                raise Exception('user cookie is missing/empty')
+            data = json_decode(data)
+            user_secure = self.get_secure_cookie("user_secure", max_age_days=0.01)
+            if user_secure is not None and data['username'] != user_secure:
+                raise Exception('mismatch between user_secure and username')
+            self.current_user = data['username']
+            self.current_user_data = data
+            self.current_user_secure = (user_secure is not None)
+            self.rest_client = rest_client.Client(self.rest_api, data['token'])
+        except Exception:
+            logger.info('error getting current user', exc_info=True)
+            self.clear_cookie("user")
+            self.clear_cookie("user_secure")
+            self.current_user = None
 
     def write_error(self,status_code=500,**kwargs):
         """Write out custom error page."""
@@ -580,34 +275,24 @@ class PublicHandler(MyHandler):
 class Default(PublicHandler):
     """Handle / urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self):
+    @tornado.web.authenticated
+    async def get(self):
         self.statsd.incr('default')
-        datasets = yield self.db_call('web_get_datasets',groups=['status'])
-        if isinstance(datasets,Exception):
-            raise datasets
-        if not datasets:
-            logger.info('no datasets to display: %r',datasets)
-            datasets = [] # set to iterable to prevent None error
+        ret = await self.rest_client.request('POST','/dataset_summaries/status')
+        datasets = {k:len(ret[k]) for k in ret}
         self.render('main.html',datasets=datasets)
 
 class Submit(PublicHandler):
     """Handle /submit urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self):
+    async def get(self):
         self.statsd.incr('submit')
         url = self.request.uri[1:]
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
-        grids = yield self.db_call('web_get_gridspec')
-        if isinstance(grids,Exception):
-            raise grids
+        ret = await self.rest_client.request('POST','/create_token')
+        token = ret['result']
         render_args = {
-            'passkey':passkey,
-            'grids':grids,
+            'passkey':token,
             'edit':False,
             'dataset':None,
             'config':None,
@@ -615,32 +300,23 @@ class Submit(PublicHandler):
         self.render('submit.html',**render_args)
 
 class Config(PublicHandler):
-    """Handle /submit urls"""
+    """Handle /config urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self):
+    async def get(self):
         self.statsd.incr('config')
         dataset_id = self.get_argument('dataset_id',default=None)
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
             return
-        dataset = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-        if isinstance(dataset,Exception):
-            raise dataset
-        if dataset_id not in dataset:
-            raise Exception('get_dataset_details does not have dataset_id '+dataset_id)
-        dataset = dataset[dataset_id]
+        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
+            ret = await self.rest_client.request('POST','/create_token')
+            passkey = ret['result']
         else:
             passkey = None
-        config = yield self.db_call('queue_get_cfg_for_dataset',dataset_id=dataset_id)
-        if isinstance(config,Exception):
-            raise config
+        config = await self.rest_client.request('GET','/config/{}'.format(dataset_id))
         render_args = {
             'edit':edit,
             'passkey':passkey,
@@ -650,209 +326,140 @@ class Config(PublicHandler):
         }
         self.render('submit.html',**render_args)
 
-class Site(PublicHandler):
-    """Handle /site urls"""
+class DatasetBrowse(PublicHandler):
+    """Handle /dataset urls"""
     @catch_error
     @tornado.web.authenticated
-    @tornado.gen.coroutine
-    def get(self,url):
-        self.statsd.incr('site')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-
-        def cb(m):
-            print(m)
-
-        running_modules = self.modules['daemon']['get_running_modules']()
-
-        module_state = []
-        for mod in self.cfg['modules']:
-            state = mod in running_modules
-            module_state.append([mod, state])
-
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
-
-        config = self.config.save_to_string()
-
-        self.render('site.html', url = url[1:], modules = module_state, passkey=passkey, config = config)
-        '''
-        filter_options = {}
+    async def get(self):
+        self.statsd.incr('dataset')
+        filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
-        if url and url_parts:
-            site_id = url_parts[0]
-            ret = yield self.db_call('web_get_site_details',dataset_id=dataset_id)
-            if isinstance(ret,Exception):
-                raise ret
-            if ret:
-                site = ret.values()[0]
-            else:
-                site = None
-            tasks = yield self.db_call('web_get_tasks_by_status',site_id=site_id)
-            if isinstance(tasks,Exception):
-                raise tasks
-            self.render('site_detail.html',site_id=site_id,
-                               site=site,tasks=tasks)
-        else:
-            sites = yield self.db_call('web_get_sites',**filter_results)
-            if isinstance(sites,Exception):
-                raise sites
-            self.render('site_browse.html',sites=sites,
-                               filter_options=filter_options,
-                               filter_results=filter_results)
-        '''
+
+        ret = await self.rest_client.request('GET','/datasets')
+        datasets = ret.values()
+        logger.info('datasets: %r', datasets)
+        self.render('dataset_browse.html',datasets=datasets,
+                    filter_options=filter_options,
+                    filter_results=filter_results)
 
 class Dataset(PublicHandler):
     """Handle /dataset urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
         self.statsd.incr('dataset')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-        filter_options = {'status':DBAPI.status_options['dataset']}
+        filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
-        if url and url_parts:
-            dataset_id = url_parts[0]
-            ret = None
-            if dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            if not ret:
-                ret = yield self.db_call('web_get_datasets_details',dataset_id=dataset_id)
-                if isinstance(ret,Exception):
-                    raise ret
-                dataset_num = GlobalID.localID_ret(dataset_id,type='int')
-            if ret:
-                dataset = list(ret.values())[0]
-            else:
-                raise Exception('dataset not found')
 
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
+        dataset = None
+        if dataset_id.isdigit():
+            try:
+                if int(dataset_id) < 10000000:
+                    try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
+                    dataset = await self.rest_client.request('GET','/datasets/{}'.format(try_dataset_id))
+                    dataset_num = dataset_id
+                    dataset_id = try_dataset_id
+            except Exception:
+                pass
+        if not dataset:
+            try:
+                dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+            except Exception:
+                raise tornado.web.HTTPError(404, reason='Dataset not found')
+            dataset_num = GlobalID.localID_ret(dataset_id,type='int')
 
-            jobs = yield self.db_call('web_get_job_counts_by_status',
-                                      dataset_id=dataset_id)
-            tasks = yield self.db_call('web_get_tasks_by_status',
-                                       dataset_id=dataset_id)
-            task_info = yield self.db_call('web_get_task_completion_stats', dataset_id=dataset_id)
-            self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
-                        dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,passkey=passkey)
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
+
+        jobs = await self.rest_client.request('GET','/datasets/{}/job_counts/status'.format(dataset_id))
+        tasks = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
+        task_info = await self.rest_client.request('GET','/datasets/{}/task_counts/name_status'.format(dataset_id))
+        task_stats = await self.rest_client.request('GET','/datasets/{}/task_stats'.format(dataset_id))
+        for t in task_info:
+            logger.info('task_info[%s] = %r', t, task_info[t])
+            for s in ('waiting','queued','processing','complete'):
+                if s not in task_info[t]:
+                    task_info[t][s] = 0.
+            error = 0.
+            for s in ('reset','resume','failed'):
+                if s in task_info[t]:
+                    error += task_info[t][s]
+            task_info[t]['error'] = error
+            task_info[t]['type'] = 'GPU' if t in task_stats and task_stats[t]['gpu'] else 'CPU'
+        self.render('dataset_detail.html',dataset_id=dataset_id,dataset_num=dataset_num,
+                    dataset=dataset,jobs=jobs,tasks=tasks,task_info=task_info,task_stats=task_stats,passkey=passkey)
+
+class TaskBrowse(PublicHandler):
+    """Handle /task urls"""
+    @catch_error
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
+        self.statsd.incr('task')
+        status = self.get_argument('status',default=None)
+
+        if status:
+            tasks = await self.rest_client.request('GET','/datasets/{}/tasks?status={}'.format(dataset_id,status))
+            for t in tasks:
+                job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id, tasks[t]['job_id']))
+                tasks[t]['job_index'] = job['job_index']
+            ret = await self.rest_client.request('POST','/create_token')
+            passkey = ret['result']
+            self.render('task_browse.html',tasks=tasks, passkey=passkey)
         else:
-            datasets = yield self.db_call('web_get_datasets',**filter_results)
-            if isinstance(datasets,Exception):
-                raise datasets
-            self.render('dataset_browse.html',datasets=datasets,
-                        filter_options=filter_options,
-                        filter_results=filter_results)
+            status = await self.rest_client.request('GET','/datasets/{}/task_counts/status'.format(dataset_id))
+            self.render('tasks.html',status=status)
 
 class Task(PublicHandler):
     """Handle /task urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, task_id):
         self.statsd.incr('task')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-        dataset_id = self.get_argument('dataset_id',default=None)
         status = self.get_argument('status',default=None)
 
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
 
-        if url and url_parts:
-            if dataset_id and dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            task_id = url_parts[0]
-            ret = yield self.db_call('web_get_tasks_details',task_id=task_id,
-                                     dataset_id=dataset_id)
-            if ret:
-                task_details = list(ret.values())[0]
-            else:
-                task_details = None
-            logs = yield self.db_call('web_get_logs',task_id=task_id,lines=40) #TODO: make lines adjustable
-            del task_details['task_status'] # task_status and status are repeats. Remove task_status.
-            self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
-        elif status:
-            tasks = yield self.db_call('web_get_tasks_details',status=status,
-                                       dataset_id=dataset_id)
-            if isinstance(tasks,Exception):
-                raise tasks
-            self.render('task_browse.html',tasks=tasks, passkey=passkey)
-        else:
-            status = yield self.db_call('web_get_tasks_by_status',dataset_id=dataset_id)
-            if isinstance(status,Exception):
-                raise status
-            self.render('tasks.html',status=status)
+        task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
+        ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
+        logs = ret['logs']
+        self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
+
+class JobBrowse(PublicHandler):
+    """Handle /job urls"""
+    @catch_error
+    @tornado.web.authenticated
+    async def get(self, dataset_id):
+        self.statsd.incr('job')
+        status = self.get_argument('status',default=None)
+
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
+
+        jobs = await self.rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
+        if status:
+            for t in list(jobs):
+                if jobs[t]['status'] != status:
+                    del jobs[t]
+                    continue
+        self.render('job_browse.html', jobs=jobs, passkey=passkey)
 
 class Job(PublicHandler):
     """Handle /job urls"""
     @catch_error
-    @tornado.gen.coroutine
-    def get(self,url):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, job_id):
         self.statsd.incr('job')
-        if url:
-            url_parts = [x for x in url.split('/') if x]
-        dataset_id = self.get_argument('dataset_id',default=None)
         status = self.get_argument('status',default=None)
 
-        passkey = yield self.db_call('auth_new_passkey')
-        if isinstance(passkey,Exception):
-            raise passkey
+        ret = await self.rest_client.request('POST','/create_token')
+        passkey = ret['result']
 
-        if url and url_parts:
-            job_id = url_parts[0]
-            ret = yield self.db_call('web_get_jobs_details',job_id=job_id)
-            if isinstance(ret,Exception):
-                raise ret
-            if ret:
-                job_details = ret
-            else:
-                job_details = {}
-            self.render('job_detail.html', job=job_details, passkey=passkey)
-        else:
-            if dataset_id and dataset_id.isdigit():
-                try:
-                    if int(dataset_id) < 10000000:
-                        try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                        ret = yield self.db_call('web_get_datasets_details',
-                                                 dataset_id=try_dataset_id)
-                        if isinstance(ret,Exception):
-                            ret = None
-                        elif ret:
-                            dataset_num = dataset_id
-                            dataset_id = try_dataset_id
-                except Exception:
-                    pass
-            jobs = yield self.db_call('web_get_jobs_by_status', status=status,
-                                       dataset_id=dataset_id)
-            if isinstance(jobs,Exception):
-                raise jobs
-            self.render('job_browse.html', jobs=jobs, passkey=passkey)
+        job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
+        tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}'.format(dataset_id,job_id))
+        job['tasks'] = list(tasks.values())
+        job['tasks'].sort(key=lambda x:x['task_index'])
+        self.render('job_detail.html', job=job, passkey=passkey)
 
 class Documentation(PublicHandler):
     @catch_error
@@ -864,57 +471,16 @@ class Documentation(PublicHandler):
 
 class Log(PublicHandler):
     @catch_error
-    @tornado.gen.coroutine
-    def get(self, url, log):
+    @tornado.web.authenticated
+    async def get(self, dataset_id, log_id):
         self.statsd.incr('log')
-        logs = yield self.db_call('web_get_logs',task_id=url)
-        log_text = logs[log]
-        html = '<html><body>'
+        ret = await self.rest_client.request('GET','/datasets/{}/logs/{}'.format(dataset_id, log_id))
+        log_text = ret['data']
+        html = '<html><head><title>' + ret['name'] + '</title></head><body>'
         html += log_text.replace('\n', '<br/>')
         html += '</body></html>'
         self.write(html)
         self.flush()
-
-class GroupsHandler(PublicHandler):
-    """View/modify groups"""
-    @catch_error
-    @tornado.gen.coroutine
-    def get(self):
-        render_args = {
-            'edit': True if self.current_user else False,
-        }
-        render_args['groups'] = yield self.db_call('rpc_get_groups')
-        if render_args['edit']:
-            passkey = yield self.db_call('auth_new_passkey')
-            if isinstance(passkey,Exception):
-                raise passkey
-            render_args['passkey'] = passkey
-        self.render('groups.html', **render_args)
-
-class UserAccount(PublicHandler):
-    """View/modify a user account"""
-    @catch_error
-    @authenticated_secure
-    @tornado.gen.coroutine
-    def get(self):
-        username = self.get_argument('username', default=self.current_user)
-        account = yield self.db_call('website_get_user_account')
-        if isinstance(account, Exception):
-            raise account
-        self.render('user_account.html', account=account)
-
-    @catch_error
-    @authenticated_secure
-    @tornado.gen.coroutine
-    def post(self):
-        username = self.get_argument('username', default=self.current_user)
-        password = self.get_argument('password', default=None)
-        if not password:
-            raise Exception('invalid password')
-        ret = yield self.db_call('website_edit_user_account', password=password)
-        if isinstance(ret, Exception):
-            raise ret
-        self.get()
 
 class Help(PublicHandler):
     """Help Page"""
@@ -934,31 +500,41 @@ class Other(PublicHandler):
 
 class Login(PublicHandler):
     """Handle the login url"""
+    def initialize(self, module_rest_client, *args, **kwargs):
+        """
+        Get some params from the website module
+
+        :param module_rest_client: a REST Client
+        """
+        super(Login, self).initialize(*args, **kwargs)
+        self.module_rest_client = module_rest_client
+
     @catch_error
     def get(self):
         self.statsd.incr('login')
         n = self.get_argument('next', default='/')
         secure = self.get_argument('secure', default=None)
-        if 'password' in self.cfg['webserver']:
-            self.render('login.html', status=None, next=n)
-        else:
-            # TODO: remove this entirely
-            if secure:
-                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
-            self.set_secure_cookie('user', 'admin', expires_days=1)
-            self.redirect(n)
+        self.clear_cookie("user")
+        self.clear_cookie("user_secure")
+        self.render('login.html', status=None, next=n)
 
     @catch_error
-    def post(self):
+    async def post(self):
         n = self.get_argument('next', default='/')
         secure = self.get_argument('secure', default=None)
-        if ('password' in self.cfg['webserver'] and
-            self.get_argument('pwd') == self.cfg['webserver']['password']):
+        username = self.get_argument('username')
+        password = self.get_argument('password')
+        self.clear_cookie("user")
+        self.clear_cookie("user_secure")
+        try:
+            data = await self.module_rest_client.request('POST','/ldap',{'username':username,'password':password})
+            cookie = json_encode(data)
             if secure:
-                self.set_secure_cookie('user_secure', 'admin', expires_days=0.01)
-            self.set_secure_cookie('user', 'admin', expires_days=1)
+                self.set_secure_cookie('user_secure', username, expires_days=0.01)
+            self.set_secure_cookie('user', cookie, expires_days=1)
             self.redirect(n)
-        else:
+        except Exception:
+            logger.info('failed', exc_info=True)
             self.render('login.html', status='failed', next=n)
 
 class Logout(PublicHandler):

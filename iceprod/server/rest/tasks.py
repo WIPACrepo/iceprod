@@ -1,0 +1,531 @@
+import logging
+import json
+import uuid
+from collections import defaultdict
+
+import tornado.web
+import pymongo
+import motor
+
+from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
+from iceprod.server.util import nowstr
+
+logger = logging.getLogger('rest.tasks')
+
+def setup(config):
+    """
+    Setup method for Tasks REST API.
+
+    Sets up any database connections or other prerequisites.
+
+    Args:
+        config (dict): an instance of :py:class:`iceprod.server.config`.
+
+    Returns:
+        list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
+    """
+    cfg_auth = config.get('rest',{}).get('tasks',{})
+    db_name = cfg_auth.get('database','mongodb://localhost:27017')
+
+    # add indexes
+    db = pymongo.MongoClient(db_name).tasks
+    if 'task_id_index' not in db.tasks.index_information():
+        db.tasks.create_index('task_id', name='task_id_index', unique=True)
+    if 'dataset_id_index' not in db.tasks.index_information():
+        db.tasks.create_index('dataset_id', name='dataset_id_index', unique=False)
+
+    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg.update({
+        'database': motor.motor_tornado.MotorClient(db_name).tasks,
+    })
+
+    return [
+        (r'/tasks', MultiTasksHandler, handler_cfg),
+        (r'/tasks/(?P<task_id>\w+)', TasksHandler, handler_cfg),
+        (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
+        (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
+        (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
+    ]
+
+class BaseHandler(RESTHandler):
+    def initialize(self, database=None, **kwargs):
+        super(BaseHandler, self).initialize(**kwargs)
+        self.db = database
+
+class MultiTasksHandler(BaseHandler):
+    """
+    Handle multi tasks requests.
+    """
+    @authorization(roles=['admin','system'])
+    async def get(self):
+        """
+        Get task entries.
+
+        Params (optional):
+            status: task status to filter by
+            keys: | separated list of keys to return for each task
+
+        Returns:
+            dict: {'tasks': [<task>]}
+        """
+        filters = {}
+
+        status = self.get_argument('status',None)
+        if status:
+            filters['status'] = status
+
+        projection = {x:True for x in self.get_argument('keys','').split('|') if x}
+        projection['_id'] = False
+
+        ret = []
+        async for row in self.db.tasks.find(filters, projection=projection):
+            ret.append(row)
+        self.write({'tasks': ret})
+
+    @authorization(roles=['admin','system'])
+    async def post(self):
+        """
+        Create a task entry.
+
+        Body should contain the task data.
+
+        Returns:
+            dict: {'result': <task_id>}
+        """
+        data = json.loads(self.request.body)
+
+        # validate first
+        req_fields = {
+            'dataset_id': str,
+            'job_id': str,
+            'task_index': int,
+            'name': str,
+            'depends': list,
+            'requirements': dict,
+        }
+        for k in req_fields:
+            if k not in data:
+                raise tornado.web.HTTPError(400, reason='missing key: '+k)
+            if not isinstance(data[k], req_fields[k]):
+                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                raise tornado.web.HTTPError(400, reason=r)
+
+        # set some fields
+        data.update({
+            'task_id': uuid.uuid1().hex,
+            'status': 'idle',
+            'status_changed': nowstr(),
+            'failures': 0,
+            'evictions': 0,
+            'walltime': 0.0,
+            'walltime_err': 0.0,
+            'walltime_err_n': 0,
+        })
+
+        ret = await self.db.tasks.insert_one(data)
+        self.set_status(201)
+        self.write({'result': data['task_id']})
+        self.finish()
+
+class TasksHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin','client','system','pilot'])
+    async def get(self, task_id):
+        """
+        Get a task entry.
+
+        Args:
+            task_id (str): the task id
+
+        Returns:
+            dict: task entry
+        """
+        ret = await self.db.tasks.find_one({'task_id':task_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+    @authorization(roles=['admin','client','system'])
+    async def patch(self, task_id):
+        """
+        Update a task entry.
+
+        Body should contain the task data to update.  Note that this will
+        perform a merge (not replace).
+
+        Args:
+            task_id (str): the task id
+
+        Returns:
+            dict: updated task entry
+        """
+        data = json.loads(self.request.body)
+        if not data:
+            raise tornado.web.HTTPError(400, reason='Missing update data')
+
+        ret = await self.db.tasks.find_one_and_update({'task_id':task_id},
+                {'$set':data},
+                projection={'_id':False},
+                return_document=pymongo.ReturnDocument.AFTER)
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+class TasksStatusHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin','client','system'])
+    async def put(self, task_id):
+        """
+        Set a task status.
+
+        Body should have {'status': <new_status>}
+
+        Args:
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing status in body')
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        update_data = {
+            'status': data['status'],
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.tasks.update_one({'task_id':task_id},
+                {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetMultiTasksHandler(BaseHandler):
+    """
+    Handle multi tasks requests.
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get task entries.
+
+        Params (optional):
+            status: task status to filter by
+            job_id: job_id to filter by
+            job_index: job_index to filter by
+            keys: | separated list of keys to return for each task
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {'task_id': {task data}}
+        """
+        filters = {'dataset_id':dataset_id}
+
+        for k in ('status','job_id','job_index'):
+            tmp = self.get_argument(k, None)
+            if tmp:
+                filters[k] = tmp
+
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['task_id'] = True
+
+        ret = {}
+        async for row in self.db.tasks.find(filters, projection=projection):
+            ret[row['task_id']] = row
+        self.write(ret)
+
+class DatasetTasksHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id):
+        """
+        Get a task entry.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: task entry
+        """
+        ret = await self.db.tasks.find_one({'task_id':task_id,'dataset_id':dataset_id},
+                projection={'_id':False})
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+class DatasetTasksStatusHandler(BaseHandler):
+    """
+    Handle single task requests.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    async def put(self, dataset_id, task_id):
+        """
+        Set a task status.
+
+        Body should have {'status': <new_status>}
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): the task id
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'status' not in data:
+            raise tornado.web.HTTPError(400, reason='Missing status in body')
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        update_data = {
+            'status': data['status'],
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
+                {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetTaskSummaryStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task summary for all tasks in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<status>: [<task_id>,]}
+        """
+        cursor = self.db.tasks.find({'dataset_id':dataset_id},
+                projection={'_id':False,'status':True,'task_id':True})
+        ret = defaultdict(list)
+        async for row in cursor:
+            ret[row['status']].append(row['task_id'])
+        self.write(ret)
+        self.finish()
+
+class DatasetTaskCountsStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task counts for all tasks in a dataset, group by status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<status>: [<task_id>,]}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id}},
+            {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+        ])
+        ret = {}
+        async for row in cursor:
+            ret[row['_id']] = row['total']
+        self.write(ret)
+        self.finish()
+
+class DatasetTaskCountsNameStatusHandler(BaseHandler):
+    """
+    Handle task summary grouping by name and status.
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task counts for all tasks in a dataset, group by name,status.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<name>: {<status>: [<task_id>,]}}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id}},
+            {'$group':{'_id':{'name':'$name','status':'$status'}, 'total': {'$sum':1}}},
+        ])
+        ret = defaultdict(dict)
+        async for row in cursor:
+            ret[row['_id']['name']][row['_id']['status']] = row['total']
+        self.write(ret)
+        self.finish()
+
+class TasksActionsQueueHandler(BaseHandler):
+    """
+    Handle task action for waiting -> queued.
+    """
+    @authorization(roles=['admin','system'])
+    async def post(self):
+        """
+        Take a number of waiting tasks and queue them.
+
+        Order by dataset priority.
+
+        Body args (json):
+            num_tasks: int
+            dataset_prio: dict of weights
+
+        Returns:
+            dict: {queued: num tasks queued}
+        """
+        data = json.loads(self.request.body)
+        num_tasks = data.get('num_tasks', 100)
+
+        steps = [
+            {'$match':{'status':'waiting'}},
+        ]
+        if 'dataset_prio' in data and data['dataset_prio']:
+            weights = {}
+            last_weight = weights
+            last_cond = None
+            for d in data['dataset_prio']:
+                last_weight['$cond'] = [
+                    {'$eq': ['$dataset_id', d]},
+                    data['dataset_prio'][d],
+                    {}
+                ]
+                last_cond = last_weight['$cond']
+                last_weight = last_cond[-1]
+            last_cond[-1] = 0
+            logger.info('weights: %r', weights)
+            steps.extend([
+                {'$addFields':{'weight': weights}},
+                {'$sort': {'weight': -1}},
+            ])
+        steps.extend([
+            {'$limit': num_tasks*10},
+        ])
+
+        cursor = self.db.tasks.aggregate(steps, allowDiskUse=True)
+        ret = {}
+        updated = 0
+        async for row in cursor:
+            logger.info('row: %r', row)
+            passed = True
+            for d in row['depends']:
+                ret = await self.db.tasks.find_one({'task_id':d})
+                if (not ret) or ret['status'] != 'complete':
+                    passed = False
+                    break
+            if not passed:
+                continue
+            ret = await self.db.tasks.update_one({'task_id':row['task_id']},
+                    {'$set':{'status':'queued'}})
+            updated += ret.modified_count
+            if updated >= num_tasks:
+                break
+        self.write({'queued':updated})
+        self.finish()
+
+class TasksActionsProcessingHandler(BaseHandler):
+    """
+    Handle task action for queued -> processing.
+    """
+    @authorization(roles=['admin','pilot'])
+    async def post(self):
+        """
+        Take one queued task, set its status to processing, and return it.
+
+        Body args (json):
+            requirements: dict
+
+        Returns:
+            dict: <task dict>
+        """
+        filter_query = {'status':'queued'}
+        if self.request.body:
+            data = json.loads(self.request.body)
+            reqs = data.get('requirements', {})
+            for k in reqs:
+                if isinstance(reqs[k], (int,float)):
+                    filter_query['requirements.'+k] = {'$lte': reqs[k]}
+                else:
+                    filter_query['requirements.'+k] = reqs[k]
+        ret = await self.db.tasks.find_one_and_update(filter_query,
+                {'$set':{'status':'processing'}},
+                projection={'_id':False},
+                return_document=pymongo.ReturnDocument.AFTER)
+        if not ret:
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+class DatasetTaskStatsHandler(BaseHandler):
+    """
+    Handle task stats
+    """
+    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task statistics for all tasks in a dataset, group by name.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<name>: {<stat>: <value>}}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
+            {'$group':{'_id':'$name',
+                'count': {'$sum': 1},
+                'gpu': {'$sum': '$requirements.gpu'},
+                'total_hrs': {'$sum': '$walltime'},
+                'total_err_hrs': {'$sum': '$walltime_err'},
+                'avg_hrs': {'$avg': '$walltime'},
+                'stddev_hrs': {'$stdDevSamp': '$walltime'},
+                'min_hrs': {'$min': '$walltime'},
+                'max_hrs': {'$max': '$walltime'},
+            }},
+        ])
+        ret = {}
+        async for row in cursor:
+            denom = row['total_hrs'] + row['total_err_hrs']
+            row['efficiency'] = row['total_hrs']/denom if denom > 0 else 0.0
+            name = row.pop('_id')
+            ret[name] = row
+        self.write(ret)
+        self.finish()

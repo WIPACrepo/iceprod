@@ -110,9 +110,9 @@ class pilot_test(TestBase):
         runner.assert_called_once_with(task_cfg)
         update_args = rpc.update_pilot.call_args_list
         self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], 'a')
+        self.assertEqual(update_args[0][1]['tasks'], ['a'])
         self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], '')
+        self.assertEqual(update_args[1][1]['tasks'], [])
 
     @unittest_reporter(name='Pilot.run() split resources')
     def test_013_pilot_resources(self):
@@ -127,7 +127,7 @@ class pilot_test(TestBase):
         self.assertGreaterEqual(rpc.update_pilot.call_count, 3)
         update_args = rpc.update_pilot.call_args_list
         for call in update_args:
-            if call[1]['tasks'] == 'a,b':
+            if call[1]['tasks'] == ['a','b']:
                 break
         else:
             raise Exception('did not update_pilot with both tasks running')
@@ -140,12 +140,13 @@ class pilot_test(TestBase):
         rpc = mock.MagicMock()
         rpc.download_task.side_effect = return_once([task_cfg], [task_cfg2])
         runner = mock.MagicMock()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
+        with self.assertRaises(Exception):
+            p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
         runner.assert_has_calls([mock.call(task_cfg), mock.call(task_cfg2)])
         self.assertGreaterEqual(rpc.update_pilot.call_count, 3)
         update_args = rpc.update_pilot.call_args_list
         for call in update_args:
-            if call[1]['tasks'] == 'a,b':
+            if call[1]['tasks'] == ['a','b']:
                 break
         else:
             raise Exception('did not update_pilot with both tasks running')
@@ -173,9 +174,9 @@ class pilot_multi_test(TestBase):
         p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=1.1, debug=True)
         update_args = rpc.update_pilot.call_args_list
         self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], 'a')
+        self.assertEqual(update_args[0][1]['tasks'], ['a'])
         self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], '')
+        self.assertEqual(update_args[1][1]['tasks'], [])
 
     @unittest_reporter(name='Pilot.monitor() over limit')
     def test_102_pilot_monitor_over_limit(self):
@@ -196,12 +197,13 @@ class pilot_multi_test(TestBase):
         rpc.download_task.side_effect = return_once([task_cfg])
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
         runner = lambda x:time.sleep(random.random())
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01, debug=True)
+        with self.assertRaises(Exception):
+            p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01, debug=True)
         update_args = rpc.update_pilot.call_args_list
         self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], 'a')
+        self.assertEqual(update_args[0][1]['tasks'], ['a'])
         self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], '')
+        self.assertEqual(update_args[1][1]['tasks'], [])
 
     @unittest_reporter(name='Pilot.run() no resource specified, sequential')
     def test_110_pilot_sequential(self):

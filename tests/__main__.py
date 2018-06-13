@@ -24,6 +24,7 @@ import signal
 import logging
 import logging.handlers
 import argparse
+import glob
 import unittest
 
 # add iceprod to PYTHONPATH
@@ -95,7 +96,19 @@ test_suites = unittest.TestSuite()
 if args.core:
     test_suites.addTests(loader.discover('tests.core',args.file_glob+'_test.py'))
 if args.server:
-    test_suites.addTests(loader.discover('tests.server',args.file_glob+'_test.py'))
+    glob_dir = '*'
+    if '/' in args.file_glob:
+        glob_dir = args.file_glob.split('/')[0]
+        args.file_glob = args.file_glob.split('/')[-1]
+    test_dirs = []
+    for d in glob.glob('tests/server/'+glob_dir):
+        if os.path.isdir(d) and not d.endswith('__'):
+            test_dirs.append(d.replace('/','.'))
+    if glob_dir == '*' or not test_dirs:
+        test_dirs.append('tests.server')
+    for d in test_dirs:
+        #print('searching dir',d,'with glob',args.file_glob)
+        test_suites.addTests(loader.discover(d,args.file_glob+'_test.py'))
 
 # run tests
 test_result = unittest.TestResult()

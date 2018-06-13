@@ -204,10 +204,9 @@ class jsonUtil_test(unittest.TestCase):
 
         # test binary
         input = {"__jsonclass__":["binary","dGVzdGluZw=="]}
-        expected = b'testing'
+        expected = 'testing'
         output = iceprod.core.jsonUtil.JSONToObj(input)
-        if expected != output:
-            raise Exception('expected != output:  %r != %r'%(expected,output))
+        self.assertEqual(expected, output)
 
     @unittest_reporter
     def test_05_json_encode(self):
@@ -364,7 +363,7 @@ class jsonUtil_test(unittest.TestCase):
 
         # test binary
         input = '{"__jsonclass__":["binary","dGVzdGluZw=="]}'
-        expected = b'testing'
+        expected = 'testing'
         output = iceprod.core.jsonUtil.json_decode(input)
         if expected != output:
             raise Exception('expected != output:  %r != %r'%(expected,output))

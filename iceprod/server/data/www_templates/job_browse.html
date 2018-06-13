@@ -20,14 +20,14 @@
     </tr>
     {% for j in jobs %}
     <tr>
-        <td><a href="/job/{{ url_escape(j['job_id']) }}">{{ escape(j['job_id']) }}</a></td>
-        <td>{{ j['status'] }}</td>
-        <td>{{ j['job_index'] }}</td>
-        <td>{{ j['status_changed'] }}</td>
+        <td><a href="/dataset/{{ url_escape(jobs[j]['dataset_id']) }}/job/{{ url_escape(jobs[j]['job_id']) }}">{{ escape(jobs[j]['job_id']) }}</a></td>
+        <td>{{ jobs[j]['status'] }}</td>
+        <td>{{ jobs[j]['job_index'] }}</td>
+        <td>{{ jobs[j]['status_changed'] }}</td>
         {% if (current_user) %}
-        <td><a href="javascript:call('reset_jobs', '{{ j['job_id'] }}');">Reset</a></td>
-        <td><a href="javascript:call('hard_reset_jobs', '{{ j['job_id'] }}');">Hard Reset</a></td>
-        <td><a href="javascript:call('suspend_jobs', '{{ j['job_id'] }}');">Suspend</a></td>
+        <td><a href="javascript:call('reset_jobs', '{{ jobs[j]['job_id'] }}');">Reset</a></td>
+        <td><a href="javascript:call('hard_reset_jobs', '{{ jobs[j]['job_id'] }}');">Hard Reset</a></td>
+        <td><a href="javascript:call('suspend_jobs', '{{ jobs[j]['job_id'] }}');">Suspend</a></td>
         {% end %}
     </tr>
     {% end %}
@@ -43,7 +43,7 @@
 <script type="text/javascript">
  var all_job_ids = [
     {% for j in jobs %}
-        "{{ j['job_id'] }}", 
+        "{{ jobs[j]['job_id'] }}", 
     {% end %}
     ];
 function call(func_name, job_ids){

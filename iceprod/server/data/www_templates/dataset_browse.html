@@ -32,13 +32,11 @@
     {% for dataset in datasets %}
     <div class="entry">
         <div class="header">
-            <span class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset_id'] }}</a></span>
-            <span class="name">{{ dataset['name'] }}</span>
+            <span class="id"><a href="/dataset/{{ dataset['dataset_id'] }}">{{ dataset['dataset'] }}</a></span>
             <span class="status">{{ dataset['status'] }}</span>
             <div style="clear:right"></div>
         </div>
         <span class="description">{{ dataset['description'] }}</span>
-        <span class="gridspec">Grids: {{ dataset['gridspec'] }}</span>
     </div>
     {% end %}
 </div>

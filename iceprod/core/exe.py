@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import os
+import stat
 import time
 import imp
 import glob

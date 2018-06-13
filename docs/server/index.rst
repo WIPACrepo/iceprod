@@ -11,30 +11,18 @@ An overview of concepts and design patterns are available in:
 .. toctree::
     :titlesonly:
 
-    details/index
+    Server Details <details/index>
 
-Modules
--------
+REST API
+--------
 
-Independent modules of the server that execute in separate processes.
-
-.. toctree::
-   :glob:
-   :maxdepth: 2
-
-   modules/*
-
-Plugins
--------
-
-The different queueing plugins for different grid architectures.
+The low-level REST API.  This is the interface the server shows to
+the rest of the world.
 
 .. toctree::
-   :glob:
    :maxdepth: 2
 
-   plugins/*
-
+   REST API <rest_api/index>
 
 Regular Classes
 ---------------
@@ -42,8 +30,7 @@ Regular Classes
 Utilities, helpers, shared code, and other bits and pieces.
 
 .. toctree::
-   :glob:
    :maxdepth: 2
+   :glob:
 
    *
-

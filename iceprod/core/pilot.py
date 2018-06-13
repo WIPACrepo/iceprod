@@ -170,7 +170,7 @@ class Pilot(object):
                                 print(f2.read(), file=f)
 
         if self.errors <= 0:
-            sys.exit(1)
+            raise RuntimeError('too many errors')
 
     def term_handler(self):
         """Handle a SIGTERM gracefully"""
@@ -193,9 +193,9 @@ class Pilot(object):
                                reason=reason, message=message)
 
         # stop the pilot
-        self.rpc.update_pilot(self.pilot_id, tasks='',
-                              resources_available=self.resources.get_available(),
-                              resources_claimed=self.resources.get_claimed())
+        self.rpc.update_pilot(self.pilot_id, tasks=[],
+                              available=self.resources.get_available(),
+                              claimed=self.resources.get_claimed())
         self.ioloop.stop()
         sys.exit(1)
 
@@ -347,7 +347,7 @@ class Pilot(object):
                             break
                     else:
                         tasks_running += len(task_configs)
-                        self.rpc.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                        self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
                                               resources_available=self.resources.get_available(),
                                               resources_claimed=self.resources.get_claimed())
 
@@ -376,7 +376,7 @@ class Pilot(object):
                 if len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
-                    self.rpc.update_pilot(self.pilot_id, tasks=','.join(self.tasks),
+                    self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
                                           resources_available=self.resources.get_available(),
                                           resources_claimed=self.resources.get_claimed())
                     if self.running:
@@ -388,7 +388,7 @@ class Pilot(object):
                     break
 
         # last update for pilot state
-        self.rpc.update_pilot(self.pilot_id, tasks='',
+        self.rpc.update_pilot(self.pilot_id, tasks=[],
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
 

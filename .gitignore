@@ -107,3 +107,9 @@ $RECYCLE.BIN/
 docs/server/details/dbtables.rst
 iceprod/server/data/www/dataclasses.js
 .coverage*
+
+globus_proxy.json
+iceprod_stats
+iceprod_task_exception
+test.json
+
