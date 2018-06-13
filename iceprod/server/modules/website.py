@@ -99,12 +99,17 @@ class website(module.module):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
+            rest_address = 'http://{}:{}'.format(
+                    self.cfg['rest_api']['address'],
+                    self.cfg['rest_api']['port'],
+            )
+
             handler_args = {
                 'cfg':self.cfg,
                 'modules':self.modules,
                 'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
-                'rest_api':self.cfg['rest_api'],
+                'rest_api':rest_address,
             }
             login_handler_args = handler_args.copy()
             login_handler_args['module_rest_client'] = self.rest_client
@@ -254,7 +259,8 @@ class PublicHandler(tornado.web.RequestHandler):
             self.current_user = data['username']
             self.current_user_data = data
             self.current_user_secure = (user_secure is not None)
-            self.rest_client = rest_client.Client(self.rest_api, data['token'])
+            self.rest_client = rest_client.Client(self.rest_api, data['token'],
+                                                  timeout=10)
         except Exception:
             logger.info('error getting current user', exc_info=True)
             self.clear_cookie("user")
@@ -287,6 +293,7 @@ class Submit(PublicHandler):
     @catch_error
     @tornado.web.authenticated
     async def get(self):
+        logger.info('here')
         self.statsd.incr('submit')
         url = self.request.uri[1:]
         ret = await self.rest_client.request('POST','/create_token')

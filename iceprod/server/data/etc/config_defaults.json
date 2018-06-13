@@ -29,11 +29,14 @@
             "batchopts":{ }
         }
     },
+    "rest_api":{
+        "address":"localhost",
+        "port": 8890
+    },
     "webserver":{
         "request_timeout":10,
         "lib_dir":"$PWD",
-        "port":8888,
-        "tornado_port":8889,
+        "port":8889,
         "sites":{},
         "password":"admin"
     },
