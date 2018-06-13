@@ -3,9 +3,9 @@
         "level":"INFO"
     },
     "modules":{
-        "queue": true,
-        "schedule": true,
-        "rest_api": true,
+        "queue": false,
+        "schedule": false,
+        "rest_api": false,
         "website": false
     },
     "queue":{
@@ -28,12 +28,6 @@
             "queueing_factor_tasks":1.0,
             "batchopts":{ }
         }
-    },
-    "db":{
-        "type":"sqlite",
-        "name":"db",
-        "name_setting":"db_setting",
-        "nthreads":1
     },
     "webserver":{
         "request_timeout":10,
