@@ -112,16 +112,14 @@ var Submission = (function( $ ) {
         },
         submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            RPCclient('submit_dataset',{passkey:data.passkey,config:data.submit_data,njobs:num_jobs,gridspec:gridspec,description:description},callback=function(return_data){
-                $('#error').html('success');
-                window.location = '/dataset/' + return_data;
-            });
+            fetch_json('/datasets/', data.passkey, data.dataset, post=true);
+            fetch_json('/config/' + data.dataset.dataset_id, data.passkey, data.submit_data);
+            window.location = '/dataset/' + data.dataset.dataset_id;
         },
         update : function(description) {
             private_methods.clean_json();
-            RPCclient('update_dataset_config',{passkey:data.passkey,config:data.submit_data,dataset_id:data.dataset.dataset_id,description:description},callback=function(return_data){
-                $('#error').html('success');
-            });
+            fetch_json('/config/' + data.dataset.dataset_id, data.passkey, data.submit_data);
+            fetch_json('/datasets/' + data.dataset.dataset_id + '/description', data.passkey, description);
         },
         build_advanced : function( ) {
             private_methods.json_type_markup();

@@ -13,9 +13,9 @@
         <th>Job Index</th>
         <th>Status Changed</th>
         {% if (current_user) %}
-        <th><a href="javascript:call('reset_jobs');">Reset All</a></th>
-        <th><a href="javascript:call('hard_reset_jobs');">Hard Reset All</a></th>
-        <th><a href="javascript:call('suspend_jobs');">Suspend All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}");'>Hard Reset All</a></th>
+        <th><a href='javascript:set_jobs_status(job_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</a></th>
         {% end %}
     </tr>
     {% for j in jobs %}
@@ -25,9 +25,9 @@
         <td>{{ jobs[j]['job_index'] }}</td>
         <td>{{ jobs[j]['status_changed'] }}</td>
         {% if (current_user) %}
-        <td><a href="javascript:call('reset_jobs', '{{ jobs[j]['job_id'] }}');">Reset</a></td>
-        <td><a href="javascript:call('hard_reset_jobs', '{{ jobs[j]['job_id'] }}');">Hard Reset</a></td>
-        <td><a href="javascript:call('suspend_jobs', '{{ jobs[j]['job_id'] }}');">Suspend</a></td>
+        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "reset", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset", "failed", "suspended"]);'>Reset</a></td>
+        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "reset", "{{ passkey }}");'>Hard Reset</a></td>
+        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</a></td>
         {% end %}
     </tr>
     {% end %}
@@ -39,19 +39,14 @@
 {% block body_scripts %}
 
 {% if (current_user) %}
-<script type="text/javascript" src="/static/json-rpc.js"></script>
+<script type="text/javascript" src="/static/fetch.js"></script>
+<script type="text/javascript" src="/static/rest.js"></script>
 <script type="text/javascript">
- var all_job_ids = [
+var job_ids_on_page = [
     {% for j in jobs %}
         "{{ jobs[j]['job_id'] }}", 
     {% end %}
     ];
-function call(func_name, job_ids){
-    job_ids = (typeof job_ids === 'undefined') ? all_job_ids: job_ids;
-    RPCclient(func_name, {passkey: "{{ passkey }}", job_ids:job_ids }, callback=function(return_data){
-
-    });
-};
 {% end %}
 </script>
 {% end %}
