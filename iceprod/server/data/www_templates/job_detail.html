@@ -25,9 +25,9 @@
 
 {% if (current_user) %}
 <div class="action">
-    <button onclick='call("reset_jobs");'>Reset</button>
-    <button onclick='call("hard_reset_jobs");'>Hard Reset</button>
-    <button onclick='call("suspend_jobs");'>Suspend</button>
+    <button onclick='set_jobs_status(["{{ job["job_id"] }}"], "reset", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset</button>
+    <button onclick='set_jobs_status(["{{ job["job_id"] }}"], "reset", "{{ passkey }}");'>Hard Reset</button>
+    <button onclick='set_jobs_status(["{{ job["job_id"] }}"], "suspended", "{{ passkey }}");'>Suspend</button>
 </div>
 {% end %}
 
@@ -62,15 +62,7 @@
 {% block body_scripts %}
 
 {% if (current_user) %}
-<script type="text/javascript" src="/static/json-rpc.js"></script>
-<script type="text/javascript">
-    var job_id = "{{ job['job_id'] }}";
-    function call(func_name){
-        RPCclient(func_name, {passkey: "{{ passkey }}", job_ids:job_id }, callback=function(return_data){
-            location.reload(true);
-        });
-    };
-</script>
+<script type="text/javascript" src="/static/rest.js"></script>
 {% end %}
 
 {% end %}
