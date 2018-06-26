@@ -6,6 +6,9 @@ async function fetch_json(method, url, json, passkey) {
     if (method == 'GET' && json != null) {
         throw "fetch_json(): arument json must be null if method == GET";
     }
+    if (passkey == null) {
+        throw "fetch_json: passkey can't be null";
+    }
     try {
         var payload = {
                 'headers': new Headers({
