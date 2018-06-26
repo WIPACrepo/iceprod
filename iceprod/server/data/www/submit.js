@@ -110,11 +110,15 @@ var Submission = (function( $ ) {
             else
                 return json;
         },
-        // XXX none of the parameters are used...
-        // XXX not sure how to handle errors
+        // XXX gridspec is not used
         submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            response = fetch_json('POST', '/datasets/', data.dataset, data.passkey);
+            response = fetch_json('POST', '/datasets/',
+                            {'description': description,
+                                'jobs_submitted': num_jobs,
+                                'tasks_submitted': num_jobs * data.submit_data['tasks'].length, // XXX is this right?
+                                'group_id': 'NOT IMPLEMENTED YET',
+                            }, data.passkey);
             data.dataset.dataset_id = response['result'].split('/')[2];
             fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
             window.location = '/dataset/' + data.dataset.dataset_id;
