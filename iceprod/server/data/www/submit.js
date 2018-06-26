@@ -110,16 +110,17 @@ var Submission = (function( $ ) {
             else
                 return json;
         },
+        // XXX none of the parameters are used...
         submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            fetch_json('/datasets/', data.passkey, data.dataset, post=true);
-            fetch_json('/config/' + data.dataset.dataset_id, data.passkey, data.submit_data);
+            fetch_json('POST', '/datasets/', data.dataset, data.passkey);
+            fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
             window.location = '/dataset/' + data.dataset.dataset_id;
         },
         update : function(description) {
             private_methods.clean_json();
-            fetch_json('/config/' + data.dataset.dataset_id, data.passkey, data.submit_data);
-            fetch_json('/datasets/' + data.dataset.dataset_id + '/description', data.passkey, description);
+            fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
+            fetch_json('PUT', '/datasets/' + data.dataset.dataset_id + '/description', description, data.passkey);
         },
         build_advanced : function( ) {
             private_methods.json_type_markup();
