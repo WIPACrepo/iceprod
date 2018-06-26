@@ -111,9 +111,11 @@ var Submission = (function( $ ) {
                 return json;
         },
         // XXX none of the parameters are used...
+        // XXX not sure how to handle errors
         submit : function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            fetch_json('POST', '/datasets/', data.dataset, data.passkey);
+            response = fetch_json('POST', '/datasets/', data.dataset, data.passkey);
+            data.dataset.dataset_id = response['result'].split('/')[2];
             fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
             window.location = '/dataset/' + data.dataset.dataset_id;
         },
