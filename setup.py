@@ -4,8 +4,8 @@ import os
 import sys
 import glob
 
-if sys.version_info < (2, 7) or (3, 0) <= sys.version_info < (3, 2):
-    print('ERROR: IceProd requires at least Python 2.7 or 3.2 to run.')
+if sys.version_info < (3, 6):
+    print('ERROR: IceProd requires at least Python 3.6+ to run.')
     sys.exit(1)
 
 try:
@@ -57,9 +57,8 @@ if setuptools is not None:
                         'requests_toolbelt', 'requests-futures', 'statsd',
                         'cachetools>=2.0.0', 'sphinx>=1.4',
                         'coverage', 'flexmock', 'requests-mock','boto3',
+                        'pymongo','PyJWT',
                        ]
-    if sys.version_info < (3, 2):
-        install_requires.extend(['futures','subprocess32'])
     kwargs['install_requires'] = install_requires
     kwargs['zip_safe'] = False
 
@@ -67,7 +66,7 @@ setup(
     name='iceprod',
     scripts=glob.glob('bin/*'),
     packages=['iceprod', 'iceprod.core', 'iceprod.modules',
-              'iceprod.server', 'iceprod.server.dbmethods',
+              'iceprod.server', 'iceprod.server.rest', 'iceprod.server.scheduled_tasks',
               'iceprod.server.modules', 'iceprod.server.plugins'],
     package_data={
         # data files need to be listed both here (which determines what gets
