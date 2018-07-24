@@ -57,7 +57,7 @@ class rest_jobs_test(AsyncTestCase):
                 },
                 'rest': {
                     'jobs': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

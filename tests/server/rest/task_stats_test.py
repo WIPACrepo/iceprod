@@ -57,7 +57,7 @@ class rest_task_stats_test(AsyncTestCase):
                 },
                 'rest': {
                     'task_stats': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

@@ -57,7 +57,7 @@ class rest_pilots_test(AsyncTestCase):
                 },
                 'rest': {
                     'pilots': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

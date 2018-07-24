@@ -57,7 +57,7 @@ class rest_logs_test(AsyncTestCase):
                 },
                 'rest': {
                     'logs': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

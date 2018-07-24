@@ -58,7 +58,7 @@ class rest_auth_test(AsyncTestCase):
                 },
                 'rest': {
                     'auth': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

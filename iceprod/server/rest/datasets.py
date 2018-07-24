@@ -26,17 +26,17 @@ def setup(config):
     Returns:
         list: Routes for dataset, which can be passed to :py:class:`tornado.web.Application`.
     """
-    cfg_dataset = config.get('rest',{}).get('datasets',{})
-    db_name = cfg_dataset.get('database','mongodb://localhost:27017')
+    cfg_rest = config.get('rest',{}).get('datasets',{})
+    db_cfg = cfg_rest.get('database',{})
 
     # add indexes
-    db = pymongo.MongoClient(db_name).datasets
+    db = pymongo.MongoClient(**db_cfg).datasets
     if 'dataset_id_index' not in db.datasets.index_information():
         db.dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).datasets,
+        'database': motor.motor_tornado.MotorClient(**db_cfg).datasets,
         'system_token': config.get('rest',{}).get('system_token',None)
     })
 

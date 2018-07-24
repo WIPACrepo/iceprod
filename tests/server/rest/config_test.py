@@ -57,7 +57,7 @@ class rest_config_test(AsyncTestCase):
                 },
                 'rest': {
                     'config': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

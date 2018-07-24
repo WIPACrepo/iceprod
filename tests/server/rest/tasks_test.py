@@ -57,7 +57,7 @@ class rest_tasks_test(AsyncTestCase):
                 },
                 'rest': {
                     'tasks': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

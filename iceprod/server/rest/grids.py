@@ -23,17 +23,17 @@ def setup(config):
     Returns:
         list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
     """
-    cfg_auth = config.get('rest',{}).get('grids',{})
-    db_name = cfg_auth.get('database','mongodb://localhost:27017')
+    cfg_rest = config.get('rest',{}).get('grids',{})
+    db_cfg = cfg_rest.get('database',{})
 
     # add indexes
-    db = pymongo.MongoClient(db_name).grids
+    db = pymongo.MongoClient(**db_cfg).grids
     if 'grid_id_index' not in db.grids.index_information():
         db.grids.create_index('grid_id', name='grid_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).grids,
+        'database': motor.motor_tornado.MotorClient(**db_cfg).grids,
     })
 
     return [

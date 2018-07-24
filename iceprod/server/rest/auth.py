@@ -24,11 +24,11 @@ def setup(config):
     Returns:
         list: Routes for auth, which can be passed to :py:class:`tornado.web.Application`.
     """
-    cfg_auth = config.get('rest',{}).get('auth',{})
-    db_name = cfg_auth.get('database','mongodb://localhost:27017')
+    cfg_rest = config.get('rest',{}).get('auth',{})
+    db_cfg = cfg_rest.get('database',{})
 
     # add indexes
-    db = pymongo.MongoClient(db_name).auth
+    db = pymongo.MongoClient(**db_cfg).auth
     if 'name_index' not in db.roles.index_information():
         db.roles.create_index('name', name='name_index', unique=True)
     if 'group_id_index' not in db.groups.index_information():
@@ -42,12 +42,12 @@ def setup(config):
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).auth,
+        'database': motor.motor_tornado.MotorClient(**db_cfg).auth,
     })
     ldap_cfg = dict(handler_cfg)
     ldap_cfg.update({
-        'ldap_uri': cfg_auth.get('ldap_uri', ''),
-        'ldap_base': cfg_auth.get('ldap_base', ''),
+        'ldap_uri': cfg_rest.get('ldap_uri', ''),
+        'ldap_base': cfg_rest.get('ldap_base', ''),
     })
 
     return [

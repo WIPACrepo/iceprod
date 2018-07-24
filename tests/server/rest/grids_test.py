@@ -57,7 +57,7 @@ class rest_grids_test(AsyncTestCase):
                 },
                 'rest': {
                     'grids': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     }
                 },
             }

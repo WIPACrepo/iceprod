@@ -60,7 +60,7 @@ class rest_datasets_test(AsyncTestCase):
                 },
                 'rest': {
                     'datasets': {
-                        'database': 'mongodb://localhost:'+str(self.mongo_port),
+                        'database': {'port':self.mongo_port},
                     },
                 },
             }

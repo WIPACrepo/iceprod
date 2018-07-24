@@ -24,11 +24,11 @@ def setup(config):
     Returns:
         list: Routes for logs, which can be passed to :py:class:`tornado.web.Application`.
     """
-    cfg_auth = config.get('rest',{}).get('jobs',{})
-    db_name = cfg_auth.get('database','mongodb://localhost:27017')
+    cfg_rest = config.get('rest',{}).get('jobs',{})
+    db_cfg = cfg_rest.get('database',{})
 
     # add indexes
-    db = pymongo.MongoClient(db_name).jobs
+    db = pymongo.MongoClient(**db_cfg).jobs
     if 'job_id_index' not in db.jobs.index_information():
         db.jobs.create_index('job_id', name='job_id_index', unique=True)
     if 'dataset_id_index' not in db.jobs.index_information():
@@ -36,7 +36,7 @@ def setup(config):
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
-        'database': motor.motor_tornado.MotorClient(db_name).jobs,
+        'database': motor.motor_tornado.MotorClient(**db_cfg).jobs,
     })
 
     return [
