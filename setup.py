@@ -57,7 +57,7 @@ if setuptools is not None:
                         'requests_toolbelt', 'requests-futures', 'statsd',
                         'cachetools>=2.0.0', 'sphinx>=1.4',
                         'coverage', 'flexmock', 'requests-mock','boto3',
-                        'pymongo','PyJWT','motor',
+                        'pymongo','PyJWT','motor','ldap3',
                        ]
     kwargs['install_requires'] = install_requires
     kwargs['zip_safe'] = False
