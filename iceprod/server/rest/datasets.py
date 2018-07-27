@@ -226,7 +226,7 @@ class DatasetSummariesStatusHandler(BaseHandler):
     """
     Handle dataset summary grouping by status.
     """
-    @authorization(roles=['admin','system']) #TODO: figure out how to do auth for each dataset in the list
+    @authorization(roles=['admin','system','user']) #TODO: figure out how to do auth for each dataset in the list
     async def get(self):
         """
         Get the dataset summary for all datasets, group by status.
