@@ -50,7 +50,7 @@ class Client(object):
         logger.warning('close REST http session')
         self.session.close()
 
-    async def request(self, method, path, args):
+    async def request(self, method, path, args=None):
         """
         Send request to REST Server.
 
@@ -64,6 +64,8 @@ class Client(object):
         Returns:
             dict: json dict or raw string
         """
+        if not args:
+            args = {}
         if path.startswith('/'):
             path = path[1:]
         url = os.path.join(self.address, path)

@@ -83,7 +83,7 @@ class rest_client_test(unittest.TestCase):
             body = iceprod.core.jsonUtil.json_decode(req.body)
             return iceprod.core.jsonUtil.json_encode(result2).encode('utf-8')
         mock.post('/test2', content=response)
-        ret = await rpc.request('POST','/test2',{})
+        ret = await rpc.request('POST','/test2')
 
         self.assertTrue(mock.called)
         self.assertEqual(ret, result2)
