@@ -64,6 +64,8 @@ class Client(object):
         Returns:
             dict: json dict or raw string
         """
+        if path.startswith('/'):
+            path = path[1:]
         url = os.path.join(self.address, path)
         kwargs = {
             'timeout': self.timeout,

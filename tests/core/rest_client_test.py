@@ -78,6 +78,16 @@ class rest_client_test(unittest.TestCase):
         self.assertTrue(mock.called)
         self.assertEqual(ret, result)
 
+        result2 = {'result2':'the result 2'}
+        def response(req, ctx):
+            body = iceprod.core.jsonUtil.json_decode(req.body)
+            return iceprod.core.jsonUtil.json_encode(result2).encode('utf-8')
+        mock.post('/test2', content=response)
+        ret = await rpc.request('POST','/test2',{})
+
+        self.assertTrue(mock.called)
+        self.assertEqual(ret, result2)
+
     @requests_mock.mock()
     @unittest_reporter(name='Client.request() - empty string')
     async def test_11_request(self, mock):
