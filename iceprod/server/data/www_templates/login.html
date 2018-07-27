@@ -10,7 +10,8 @@
 {% module xsrf_form_html() %}
   <input type="hidden" name="next" value="{{ next }}" />
   <div style="margin: 1em 0">
-    <div>Password: <input type="password" name="pwd" /></div>
+    <div>Username: <input type="text" name="username" /></div>
+    <div>Password: <input type="password" name="password" /></div>
     <div style="margin: .2em 0"><input type="submit" value="Sign in" /></div>
     {% if status == 'failed' %}
     <h4>Failed to login</h4>
