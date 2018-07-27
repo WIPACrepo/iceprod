@@ -284,7 +284,7 @@ class Default(PublicHandler):
     @tornado.web.authenticated
     async def get(self):
         self.statsd.incr('default')
-        ret = await self.rest_client.request('POST','/dataset_summaries/status')
+        ret = await self.rest_client.request('GET','/dataset_summaries/status')
         datasets = {k:len(ret[k]) for k in ret}
         self.render('main.html',datasets=datasets)
 
