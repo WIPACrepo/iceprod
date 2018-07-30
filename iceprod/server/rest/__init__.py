@@ -126,8 +126,6 @@ def catch_error(method):
             except Exception:
                 pass
             message = 'Error in '+self.__class__.__name__
-            if self.debug:
-                message = message + '\n' + str(e)
             self.send_error(500, reason=message)
     return wrapper
 
