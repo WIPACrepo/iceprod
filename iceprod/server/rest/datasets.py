@@ -127,6 +127,7 @@ class MultiDatasetHandler(BaseHandler):
             'read_groups':[data['group_id']],
             'write_groups':[data['group_id']],
         }
+        logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
         await to_asyncio_future(http_client.fetch(url,
                 method='PUT', body=json.dumps(auth_data),
                 headers={'Authorization': 'bearer '+self.module_auth_key}))
