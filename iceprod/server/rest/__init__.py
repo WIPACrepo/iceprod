@@ -76,6 +76,8 @@ class RESTHandler(tornado.web.RequestHandler):
             self.auth_key = token
             return data['sub']
         except Exception:
+            if self.debug and 'Authorization' in self.request.headers:
+                logger.info('Authorization: %r', self.request.headers['Authorization'])
             logger.info('failed auth', exc_info=True)
         return None
 
