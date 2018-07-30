@@ -25,6 +25,7 @@ def RESTHandlerSetup(config):
     debug = True if 'debug' in config and config['debug'] else False
     auth = None
     auth_url = ''
+    module_auth_key = ''
     if 'auth' in config:
         kwargs = {
             'secret': config['auth'].get('secret')
@@ -36,21 +37,25 @@ def RESTHandlerSetup(config):
         auth = Auth(**kwargs)
         if 'url' in config['auth']:
             auth_url = config['auth']['url']
+    if 'rest_api' in config and 'auth_key' in config['rest_api']:
+        module_auth_key = config['rest_api']['auth_key']
     return {
         'debug': debug,
         'auth': auth,
-        'auth_url': auth_url
+        'auth_url': auth_url,
+        'module_auth_key': module_auth_key,
     }
 
 class RESTHandler(tornado.web.RequestHandler):
     """Default REST handler"""
-    def initialize(self, debug=False, auth=None, auth_url=None, **kwargs):
+    def initialize(self, debug=False, auth=None, auth_url=None, module_auth_key=None, **kwargs):
         super(RESTHandler, self).initialize(**kwargs)
         self.debug = debug
         self.auth = auth
         self.auth_url = auth_url
         self.auth_data = {}
         self.auth_key = None
+        self.module_auth_key = ''
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__

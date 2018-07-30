@@ -37,7 +37,6 @@ def setup(config):
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).datasets,
-        'system_token': config.get('rest',{}).get('system_token',None)
     })
 
     return [
@@ -52,10 +51,9 @@ class BaseHandler(RESTHandler):
     """
     Base handler for Dataset REST API. 
     """
-    def initialize(self, database=None, system_token=None, **kwargs):
+    def initialize(self, database=None, **kwargs):
         super(BaseHandler, self).initialize(**kwargs)
         self.db = database
-        self.system_token = system_token
 
 class MultiDatasetHandler(BaseHandler):
     """
@@ -131,7 +129,7 @@ class MultiDatasetHandler(BaseHandler):
         }
         await to_asyncio_future(http_client.fetch(url,
                 method='PUT', body=json.dumps(auth_data),
-                headers={'Authorization': 'bearer '+self.auth_key}))
+                headers={'Authorization': 'bearer '+self.module_auth_key}))
 
         # return success
         self.set_status(201)

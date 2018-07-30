@@ -114,7 +114,7 @@ var Submission = (function( $ ) {
         // XXX gridspec is not used
         submit : async function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            response = await fetch_json('POST', data.rest_api + '/datasets/',
+            response = await fetch_json('POST', data.rest_api + '/datasets',
                             {'description': description,
                                 'jobs_submitted': num_jobs,
                                 'tasks_submitted': num_jobs * data.submit_data['tasks'].length, // XXX is this right?

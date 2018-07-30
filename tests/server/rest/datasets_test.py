@@ -54,6 +54,7 @@ class rest_datasets_test(AsyncTestCase):
             self.addCleanup(partial(time.sleep, 0.05))
             self.addCleanup(m.terminate)
 
+            self.module_auth_token = Auth('secret').create_token('foo', type='system', payload={'role':'system','username':'admin'})
             config = {
                 'auth': {
                     'secret': 'secret'
@@ -62,6 +63,9 @@ class rest_datasets_test(AsyncTestCase):
                     'datasets': {
                         'database': {'port':self.mongo_port},
                     },
+                },
+                'rest_api': {
+                    'auth_key': self.module_auth_token,
                 },
             }
             self.app = iceprod.server.tornado.setup_rest(config)
