@@ -65,7 +65,7 @@ class rest_datasets_test(AsyncTestCase):
                     },
                 },
                 'rest_api': {
-                    'auth_key': self.module_auth_token,
+                    'auth_key': self.module_auth_token.decode('utf-8'),
                 },
             }
             self.app = iceprod.server.tornado.setup_rest(config)

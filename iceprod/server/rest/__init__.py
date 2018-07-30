@@ -48,14 +48,14 @@ def RESTHandlerSetup(config):
 
 class RESTHandler(tornado.web.RequestHandler):
     """Default REST handler"""
-    def initialize(self, debug=False, auth=None, auth_url=None, module_auth_key=None, **kwargs):
+    def initialize(self, debug=False, auth=None, auth_url=None, module_auth_key='', **kwargs):
         super(RESTHandler, self).initialize(**kwargs)
         self.debug = debug
         self.auth = auth
         self.auth_url = auth_url
         self.auth_data = {}
         self.auth_key = None
-        self.module_auth_key = ''
+        self.module_auth_key = module_auth_key
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__
