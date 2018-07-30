@@ -10,7 +10,8 @@ var Submission = (function( $ ) {
         passkey : null,
         edit : false,
         dataset : null,
-        submit_data : {}
+        submit_data : {},
+        rest_api : ''
     };
 
     function pluralize(value) {
@@ -111,22 +112,22 @@ var Submission = (function( $ ) {
                 return json;
         },
         // XXX gridspec is not used
-        submit : function(num_jobs, gridspec, description) {
+        submit : async function(num_jobs, gridspec, description) {
             private_methods.clean_json();
-            response = fetch_json('POST', '/datasets/',
+            response = await fetch_json('POST', data.rest_api + '/datasets/',
                             {'description': description,
                                 'jobs_submitted': num_jobs,
                                 'tasks_submitted': num_jobs * data.submit_data['tasks'].length, // XXX is this right?
                                 'group_id': 'NOT IMPLEMENTED YET',
                             }, data.passkey);
             data.dataset.dataset_id = response['result'].split('/')[2];
-            fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
+            await fetch_json('PUT', data.rest_api + '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
             window.location = '/dataset/' + data.dataset.dataset_id;
         },
         update : function(description) {
             private_methods.clean_json();
-            fetch_json('PUT', '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
-            fetch_json('PUT', '/datasets/' + data.dataset.dataset_id + '/description', description, data.passkey);
+            fetch_json('PUT', data.rest_api + '/config/' + data.dataset.dataset_id, data.submit_data, data.passkey);
+            fetch_json('PUT', data.rest_api + '/datasets/' + data.dataset.dataset_id + '/description', description, data.passkey);
         },
         build_advanced : function( ) {
             private_methods.json_type_markup();
@@ -502,6 +503,10 @@ var Submission = (function( $ ) {
                 data.submit_data = args.config;
             else
                 data.submit_data = private_methods.new_dataclass('Job')
+            if ('rest_api' in args)
+                data.rest_api = args.rest_api;
+            else
+                data.rest_api = 'https://iceprod2-api.icecube.wisc.edu'
             private_methods.clean_json();
 
             
