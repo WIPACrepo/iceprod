@@ -181,52 +181,44 @@ class rest_auth_test(AsyncTestCase):
         self.assertIn('results', data)
         self.assertEqual(data['results'], [])
 
-    @unittest_reporter(name='REST POST   /groups')
+    @unittest_reporter(name='REST PUT    /groups/<group_name>')
     def test_210_group(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
         r = yield client.fetch('http://localhost:%d/groups'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
         self.assertIn('results', data)
-        self.assertEqual(data['results'], [{'group_id':group_id, 'name': '/foo/bar'}])
+        self.assertEqual(data['results'], [{'name': 'foo/bar'}])
 
-    @unittest_reporter(name='REST GET    /groups/<group_id>')
+    @unittest_reporter(name='REST GET    /groups/<group_name>')
     def test_220_group(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
-        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'group_id':group_id, 'name': '/foo/bar'})
+        self.assertEqual(data, {'name': 'foo/bar'})
 
     @unittest_reporter(name='REST DELETE /groups/<group_id>')
     def test_230_group(self):
@@ -234,30 +226,26 @@ class rest_auth_test(AsyncTestCase):
 
         client = AsyncHTTPClient()
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
-        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'group_id':group_id, 'name': '/foo/bar'})
+        self.assertEqual(data, {'name': 'foo/bar'})
 
-        r = yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                 method='DELETE',
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
 
         with self.assertRaises(Exception):
-            yield client.fetch('http://localhost:%d/groups/%s'%(self.port, group_id),
+            yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
                     headers={'Authorization': b'bearer '+self.token})
         
         r = yield client.fetch('http://localhost:%d/groups'%self.port,
@@ -267,7 +255,7 @@ class rest_auth_test(AsyncTestCase):
         self.assertIn('results', data)
         self.assertEqual(data['results'], [])
 
-    @unittest_reporter(name='REST bad access to POST /groups')
+    @unittest_reporter(name='REST bad access to PUT /groups')
     def test_240_group(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
 
@@ -277,8 +265,8 @@ class rest_auth_test(AsyncTestCase):
         }
         user_token = Auth('secret').create_token('foo', type='user', payload={'role':'user'})
         with self.assertRaises(Exception):
-            r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                    method='POST', body=json.dumps(data),
+            yield client.fetch('http://localhost:{}/groups/{}'.format(self.port, data['name']),
+                    method='PUT', body=json.dumps(data),
                     headers={'Authorization': b'bearer '+user_token})
 
     @unittest_reporter(name='REST GET    /users')
@@ -428,16 +416,12 @@ class rest_auth_test(AsyncTestCase):
         data = {
             'name': 'baz'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
-        data = {'group': group_id}
+        data = {'group': data['name']}
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
@@ -447,7 +431,7 @@ class rest_auth_test(AsyncTestCase):
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'results': ['bar',group_id]})
+        self.assertEqual(data, {'results': ['bar','baz']})
 
     @unittest_reporter(name='REST PUT    /users/<user_id>/groups')
     def test_420_user(self):
@@ -477,28 +461,20 @@ class rest_auth_test(AsyncTestCase):
         data = {
             'name': 'baz'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
         data = {
             'name': 'blah'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id2 = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
-        data = {'groups': [group_id, group_id2]}
+        data = {'groups': ['baz', 'blah']}
         r = yield client.fetch('http://localhost:%d/users/%s/groups'%(self.port, user_id),
                 method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
@@ -508,7 +484,7 @@ class rest_auth_test(AsyncTestCase):
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         data = json.loads(r.body)
-        self.assertEqual(data, {'results': [group_id, group_id2]})
+        self.assertEqual(data, {'results': ['baz', 'blah']})
 
     @unittest_reporter(name='REST PUT    /users/<user_id>/roles')
     def test_500_user(self):
@@ -672,20 +648,16 @@ class rest_auth_test(AsyncTestCase):
 
         # add group
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
         # add dataset auth
         data = {
-            'read_groups': [group_id],
+            'read_groups': ['foo/bar'],
             'write_groups': []
         }
         dataset_id = '123'
@@ -703,20 +675,16 @@ class rest_auth_test(AsyncTestCase):
 
         # add group
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
 
         # add dataset auth
         data = {
-            'read_groups': [group_id],
+            'read_groups': ['foo/bar'],
             'write_groups': []
         }
         dataset_id = '123'
@@ -742,23 +710,19 @@ class rest_auth_test(AsyncTestCase):
 
         # add group
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
         
         token2 = Auth('secret').create_token('foo', type='user',
-                payload={'role':'user','groups':[group_id]})
+                payload={'role':'user','groups':['foo/bar']})
 
         # add dataset auth
         data = {
-            'read_groups': [group_id],
+            'read_groups': ['foo/bar'],
             'write_groups': []
         }
         dataset_id = '123'
@@ -777,7 +741,7 @@ class rest_auth_test(AsyncTestCase):
         # add bad dataset auth
         data = {
             'read_groups': [],
-            'write_groups': [group_id]
+            'write_groups': ['foo/bar']
         }
         dataset_id = '456'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
@@ -801,24 +765,20 @@ class rest_auth_test(AsyncTestCase):
 
         # add group
         data = {
-            'name': '/foo/bar'
+            'name': 'foo/bar'
         }
-        r = yield client.fetch('http://localhost:%d/groups'%self.port,
-                method='POST', body=json.dumps(data),
+        r = yield client.fetch('http://localhost:{}/groups/{}'.format(self.port,data['name']),
+                method='PUT', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        data = json.loads(r.body)
-        self.assertIn('result', data)
-        self.assertEqual(data['result'], r.headers['Location'])
-        group_id = data['result'].rsplit('/')[-1]
+        self.assertEqual(r.code, 200)
         
         token2 = Auth('secret').create_token('foo', type='user',
-                payload={'role':'user','groups':[group_id]})
+                payload={'role':'user','groups':['foo/bar']})
 
         # add dataset auth
         data = {
             'read_groups': [],
-            'write_groups': [group_id]
+            'write_groups': ['foo/bar']
         }
         dataset_id = '123'
         r = yield client.fetch('http://localhost:%d/auths/%s'%(self.port,dataset_id),
@@ -835,7 +795,7 @@ class rest_auth_test(AsyncTestCase):
 
         # add bad dataset auth
         data = {
-            'read_groups': [group_id],
+            'read_groups': ['foo/bar'],
             'write_groups': []
         }
         dataset_id = '456'

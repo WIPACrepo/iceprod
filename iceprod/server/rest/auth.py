@@ -31,8 +31,8 @@ def setup(config):
     db = pymongo.MongoClient(**db_cfg).auth
     if 'name_index' not in db.roles.index_information():
         db.roles.create_index('name', name='name_index', unique=True)
-    if 'group_id_index' not in db.groups.index_information():
-        db.groups.create_index('group_id', name='group_id_index', unique=True)
+    if 'name_index' not in db.groups.index_information():
+        db.groups.create_index('name', name='name_index', unique=True)
     if 'user_id_index' not in db.users.index_information():
         db.users.create_index('user_id', name='user_id_index', unique=True)
     if 'username_index' not in db.users.index_information():
@@ -54,7 +54,7 @@ def setup(config):
         (r'/roles', MultiRoleHandler, handler_cfg),
         (r'/roles/(?P<role_name>\w+)', RoleHandler, handler_cfg),
         (r'/groups', MultiGroupHandler, handler_cfg),
-        (r'/groups/(?P<group_id>\w+)', GroupHandler, handler_cfg),
+        (r'/groups/(?P<group_name>.*)', GroupHandler, handler_cfg),
         (r'/users', MultiUserHandler, handler_cfg),
         (r'/users/(?P<user_id>\w+)', UserHandler, handler_cfg),
         (r'/users/(?P<user_id>\w+)/roles', UserRolesHandler, handler_cfg),
@@ -163,23 +163,8 @@ class MultiGroupHandler(AuthHandler):
         Returns:
             dict: {'results': list of groups}
         """
-        ret = await self.db.groups.find(projection={'_id':False}).to_list(length=1000)
+        ret = await self.db.groups.find(projection={'_id':False}).to_list(length=10000)
         self.write({'results':ret})
-        self.finish()
-
-    @authorization(roles=['admin'])
-    async def post(self):
-        """
-        Add a group.
-
-        Body should contain all necessary fields for a group.
-        """
-        data = json.loads(self.request.body)
-        data['group_id'] = uuid.uuid1().hex
-        ret = await self.db.groups.insert_one(data)
-        self.set_status(201)
-        self.set_header('Location', '/groups/'+data['group_id'])
-        self.write({'result': '/groups/'+data['group_id']})
         self.finish()
 
 class GroupHandler(AuthHandler):
@@ -187,17 +172,41 @@ class GroupHandler(AuthHandler):
     Handle individual group requests.
     """
     @authorization(roles=['admin'])
-    async def get(self, group_id):
+    async def put(self, group_name):
+        """
+        Add/modify a group.
+
+        Body should contain all necessary fields for a group.
+
+        Args:
+            group_name (str): the group to add/modify
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if 'name' not in data:
+            data['name'] = group_name
+        elif data['name'] != group_name:
+            raise tornado.web.HTTPError(400, 'group name mismatch')
+        ret = await self.db.groups.find_one_and_replace({'name':group_name},
+                data, upsert=True)
+        logger.info('%r', ret)
+        self.write({})
+        self.finish()
+
+    @authorization(roles=['admin'])
+    async def get(self, group_name):
         """
         Get a group.
 
         Args:
-            group_id (str): the group to get
+            group_name (str): the group to get
 
         Returns:
             dict: group info
         """
-        ret = await self.db.groups.find_one({'group_id':group_id},
+        ret = await self.db.groups.find_one({'name':group_name},
                 projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Group not found")
@@ -206,17 +215,17 @@ class GroupHandler(AuthHandler):
             self.finish()
 
     @authorization(roles=['admin'])
-    async def delete(self, group_id):
+    async def delete(self, group_name):
         """
         Delete a group.
 
         Args:
-            group_id (str): the group to delete
+            group_name (str): the group to delete
 
         Returns:
             dict: empty dict
         """
-        await self.db.groups.delete_one({'group_id':group_id})
+        await self.db.groups.delete_one({'name':group_name})
         self.write({})
         self.finish()
 
@@ -339,7 +348,7 @@ class UserGroupsHandler(AuthHandler):
         Get the groups for a user.
 
         Args:
-            user_id (str): the user
+            user_name (str): the user
 
         Returns:
             dict: {results: list of groups}
@@ -371,7 +380,7 @@ class UserGroupsHandler(AuthHandler):
         data = json.loads(self.request.body)
         if 'group' not in data:
             raise tornado.web.HTTPError(400, reason='missing group')
-        ret = await self.db.groups.find_one({'group_id': data['group']},
+        ret = await self.db.groups.find_one({'name': data['group']},
                 projection=['_id'])
         if not ret:
             raise tornado.web.HTTPError(400, reason='invalid group')
@@ -397,7 +406,7 @@ class UserGroupsHandler(AuthHandler):
         if 'groups' not in data:
             raise tornado.web.HTTPError(400, 'missing groups')
         for g in data['groups']:
-            ret = await self.db.groups.find_one({'group_id': g},
+            ret = await self.db.groups.find_one({'name': g},
                     projection=['_id'])
             if not ret:
                 raise tornado.web.HTTPError(400, 'invalid group')
@@ -579,7 +588,7 @@ class AuthDatasetHandler(AuthHandler):
         """
         Set the authorization rules for a dataset.
 
-        Body should contain `{'read_groups': [ <group_id> ], 'write_groups': [ <group_id> ] }`
+        Body should contain `{'read_groups': [ <group_name> ], 'write_groups': [ <group_name> ] }`
 
         Args:
             dataset_id (str): the dataset
@@ -593,10 +602,10 @@ class AuthDatasetHandler(AuthHandler):
         if 'write_groups' not in data:
             raise tornado.web.HTTPError(400, reason='missing write_groups')
         for group in set(data['read_groups'])|set(data['write_groups']):
-            ret = await self.db.groups.find_one({'group_id': group},
+            ret = await self.db.groups.find_one({'name': group},
                     projection=['_id'])
             if not ret:
-                raise tornado.web.HTTPError(400, reason='invalid group id')
+                raise tornado.web.HTTPError(400, reason='invalid group name')
         ret = await self.db.auths_dataset.find_one_and_update({'dataset_id':dataset_id},
                 {'$set': {'read_groups': data['read_groups'], 'write_groups': data['write_groups']}},
                 upsert=True)
