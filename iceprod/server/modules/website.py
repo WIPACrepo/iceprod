@@ -298,11 +298,15 @@ class Submit(PublicHandler):
         url = self.request.uri[1:]
         ret = await self.rest_client.request('POST','/create_token')
         token = ret['result']
+        groups = []
+        if self.current_user_data and 'groups' in self.current_user_data:
+            groups = self.current_user_data['groups']
         render_args = {
             'passkey':token,
             'edit':False,
             'dataset':None,
             'config':None,
+            'groups':groups,
         }
         self.render('submit.html',**render_args)
 
