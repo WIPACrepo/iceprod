@@ -108,7 +108,6 @@ div.page {
 }
 header {
     width: 100%;
-    height: 44px;
     z-index: 100;
     background: #333;
     background: #189cc4;
@@ -118,8 +117,11 @@ header .title {
     font: 40px Helvetica, sans-serif;
     color: #189cc4;
     color:  #fff;
-    padding: .2em .6em 0 .2em;
-    line-height: 40px;
+    padding: 0 .6em 0 .2em;
+    line-height: 1em;
+}
+header .title img {
+    padding: .1em 0 0;
 }
 header a:hover
 {

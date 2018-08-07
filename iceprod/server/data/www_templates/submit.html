@@ -47,7 +47,7 @@
 <div id="submit_area">
     <textarea id="submit_box" style="min-height: 400px">{{ json_encode(config) }}</textarea>
     <textarea id="description" placeholder="Description"></textarea>
-    <div>
+    <div class="submit_contents">
         {% if dataset_id %}
         <button id="submit_action" onclick="update()">Update</button>
         {% else %}

@@ -184,7 +184,7 @@ span.hide {
     background-color: #fff;
     border: solid #777 1px;
     border: none;
-    border-radius: 5px;
+    border-radius: .4em;
 }
 #submit_area button, #submit_area input
 {
@@ -208,10 +208,11 @@ span.hide {
 
 #submit_area textarea
 {
-    width:100%;
+    width: 100%;
     resize: vertical;
     height: 4em;
-    margin-bottom: 10px;
+    margin: .5em auto;
+    display: block;
 }
 #submit_area select
 {
@@ -231,7 +232,8 @@ form
 #submit_area
 {
     background-color: #dddfe5;
-    border-radius: 5px;
+    border-radius: .4em;
+    padding: .1em .5em .2em;
 
     background: #dddfe5; /* Old browsers */
     background: -moz-linear-gradient(-45deg, #dddfe5 0%, #c3cadd 100%); /* FF3.6-15 */
@@ -240,7 +242,7 @@ form
 }
 #submit_area .submit_contents
 {
-    padding: 10px;
+    padding: .2em .5em;
 }
 
 .tab_bar
@@ -271,3 +273,11 @@ form
 {
     background-color: #dddfe5;
 }
+
+#error {
+    background: #ff9999;
+    margin: .5em 0;
+    text-align: center;
+    line-height: 1.3em;
+}
+
