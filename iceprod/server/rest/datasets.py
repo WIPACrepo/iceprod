@@ -88,7 +88,7 @@ class MultiDatasetHandler(BaseHandler):
             'description': str,
             'jobs_submitted': int,
             'tasks_submitted': int,
-            'group_id': str
+            'group': str
         }
         for k in req_fields:
             if k not in data:
@@ -124,8 +124,8 @@ class MultiDatasetHandler(BaseHandler):
         url = self.auth_url+'/auths/'+data['dataset_id']
         http_client = tornado.httpclient.AsyncHTTPClient()
         auth_data = {
-            'read_groups':[data['group_id']],
-            'write_groups':[data['group_id']],
+            'read_groups':[data['group']],
+            'write_groups':[data['group']],
         }
         logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
         await to_asyncio_future(http_client.fetch(url,
