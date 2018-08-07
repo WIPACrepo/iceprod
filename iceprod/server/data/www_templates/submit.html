@@ -44,129 +44,98 @@
 {% end %}
 
 {% block body %}
-<div id="submit_area">Enable javsascript to submit datasets.</div>
-
+<div id="submit_area">
+    <textarea id="submit_box" style="min-height: 400px">{{ json_encode(config) }}</textarea>
+    <textarea id="description" placeholder="Description"></textarea>
+    <div>
+        {% if dataset_id %}
+        <button id="submit_action" onclick="update()">Update</button>
+        {% else %}
+        Number of jobs:
+        <input id="number_jobs" value="1" min="1" step="1", type="number">
+        <select id="group">
+            {% for g in groups %}
+                <option value="{{ g }}">{{ g }}</option>
+            {% end %}
+        </select>
+        <button id="submit_action" onclick="submit()">Submit</button>
+        {% end %}
+    </div>
+</div>
 <div id="error"></div>
-
 {% end %}
 
 {% block body_scripts %}
-<script id="LoopTmpl" type="text/x-jsrender">
-<div class="indent {{!:~key}}">
-    <span class="path">{{!:~concat(~path,#index,~key)}}</span>
-    <span class="delete" title="Delete {{!singular:~key}}">x</span>
-    {^{props ~path=~concat(~path,#index,~key) tmpl="#EditTmpl" /}}
-</div>
-</script>
-<script id="LoopTmplBasic" type="text/x-jsrender">
-<div class="indent {{!:~key}}">
-    <span class="path">{{!:~concat(~path,#index,~key)}}</span><span class="delete">x</span>
-    <div>
-    {^{if ~editable(~concat(~path,#index,~key))}}
-        <span class="editing"><span class="key hide"></span><input type="text" data-link="{intToStr:#data:strToInt}" /></span>
-    {{!else}}
-        <span class="editable"><span class="key hide"></span><span class="val">{{!:#data}}</span></span>
-    {{!/if}}
-    <span class="delete">x</span></div>
-</div>
-</script>
-<script id="EditTmpl" type="text/x-jsrender">
-{{!if ~isNull(prop,~path,key)}}
-    <div class="key">{{!keyToHtml:key}}: 
-        <span class="add null"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span>
-    </div>
-{{!else ~isArray(prop)}}
-    {{!if ~isDocumented(~path,key) }}
-    <a href="#{{!singular:key}}" class="header key">{{!keyToHtml:key}}</a>
-    {{!else}}
-        <div class="header key">{{!keyToHtml:key}}</div>
-    {{!/if}}
-    {{!if ~isBasicArray(prop)}}
-        {^{for prop ~key=key tmpl="#LoopTmplBasic" /}}
-    {{!else}}
-        {^{for prop ~key=key tmpl="#LoopTmpl" /}}
-    {{!/if}}
-    <div class="indent"><span class="add array"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span></div>
-{{!else ~isObject(prop)}}
-    {{!if ~canEditObjectName(~path,key) }}
-        {{!if ~editable(key+'_key',~path) }}
-            <div><span class="editing"><span class="key hide">{{!:key}}</span><input type="text" data-link="{intToStr:key:strToInt}" /></span><span class="delete">x</span></div>
-        {{!else}}
-            <div class="header"><span class="editable key_editable"><span class="key">{{!keyToHtml:key}}</span></span><span class="delete">x</span></div>
-        {{!/if}}
-    {{!else}}
-        <div class="header key">{{!keyToHtml:key}}</div>
-    {{!/if}}
-    <div class="indent">
-        <span class="path">{{!:~concat(~path,key)}}</span>
-        {^{props prop ~path=~concat(~path,key) ~keyeditable=true tmpl="#EditTmpl" }}
-        {{!else}}
-          <div class="empty"></div>
-        {{!/props}}
-    </div>
-    {{!if ~canAddToObject(~path,key)}}
-    <div class="indent"><span class="add object"><span class="key hide">{{!:key}}</span>Add {{!singular:~get_class(~path,key)}}</span></div>
-    {{!/if}}
-{{!else ~isNotPrivate(key) }}
-    <div>
-    {{!if (~keyeditable && ~editable(key+"_key",~path)) }}
-        <span class="editing"><span class="key hide">{{!:key}}</span><input class="key" type="text" data-link="key" />: {{!:prop}}</span>
-    {^{else ~editable(key,~path)}}
-        <span class="editing"><span class="key">{{!keyToHtml:key}}</span>: 
-        {{!if ~isEnum(~path,key)}}
-            <select required="true">
-            {{!for ~getEnums(~path,key) ~enumVal=prop}}
-                {{!if ~equal(~enumVal,#data)}}
-                <option selected>{{!:#data}}</option>
-                {{!else}}
-                <option>{{!:#data}}</option>
-                {{!/if}}
-            {{!/for}}
-            </select>
-        {{!else}}
-            <input type="text" data-link="{intToStr:prop:strToInt}" />
-        {{!/if}}
-        </span>
-    {{!else}}
-        {{!if ~keyeditable}}
-        <span class="editable key_editable">
-        {{!else}}
-        <span class="editable">
-        {{!/if}}
-        <span class="key">{{!keyToHtml:key}}</span>: <span class="val">{{!:prop}}</span></span>
-    {{!/if}}
-    <span class="delete">x</span></div>
-{{!/if}}
-</script>
-<script id="AdvTmpl" type="text/x-jsrender">
-<a href="#job" class="header key">Job</a>
-<div class="indent">
-    {^{props ~path="" tmpl="#EditTmpl" }}
-    {{!else}}
-      <div class="empty"></div>
-    {{!/props}}
-</div>
-</script>
-
-<div id="overlay"></div><div id="popup">Loading...</div>
-
 <script src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
-<script type="text/javascript" src="/static/dataclasses.js"></script>
+<!--<script type="text/javascript" src="/static/dataclasses.js"></script>
 <script type="text/javascript" src="/static/jsviews.min.js"></script>
-<script type="text/javascript" src="/static/submit.js"></script>
 <script type="text/javascript" src="/static/documentation.js"></script>
-<script type="text/javascript" src="/static/jsonlint.js"></script>
+<script type="text/javascript" src="/static/jsonlint.js"></script>-->
 <script type="text/javascript">
-jQuery(document).ready(function() {
-    // initalize the submission form
-    Submission("init",{
-                     edit:{% if edit %} true {% else %} false {% end %},
-    {% if passkey %} passkey:"{{ passkey }}", {% end %}
-    {% if dataset %} dataset:{{ json_encode(dataset) }}, {% end %}
-    {% if config %} config:{{ config }}, {% end %}
-                       element:"#submit_area"
-                      });
-});
+var passkey = '{{ passkey }}';
+var edit = {{ json_encode(edit) }};
+var dataset_id = '{{ dataset_id }}';
+var rest_api = 'https://iceprod2-api.icecube.wisc.edu';
+function get_num_tasks(config_str){
+    var config = null;
+    try {
+        config = JSON.parse(config_str);
+    } catch (err) {
+        $('#error').text(err);
+        return -1;
+    }
+    if (!("tasks" in config)) {
+        $('#error').text("'tasks' not in config");
+        return -1;
+    }
+    try {
+        return config["tasks"].length;
+    } catch (err) {
+        $('#error').text(err);
+        return -1;
+    }
+}
+async function submit() {
+    var description = $('#description').val();
+    var njobs = parseInt($('#number_jobs').val());
+    if ( njobs == null || njobs == undefined || isNaN(njobs)) {
+        $('#error').text('Must specify integer number of jobs');
+        return;
+    }
+    var group = $("#group").val();
+    var submit_data = $("#submit_box").val();
+    var ntasks = get_num_tasks(submit_data) * njobs;
+    if (ntasks < 0)
+        return;
+    var response = await fetch_json('POST', rest_api + '/datasets',
+        {'description': description,
+         'jobs_submitted': njobs,
+         'tasks_submitted': ntasks,
+         'group': group,
+        },
+        passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error creating dataset: '+response['error']);
+        return;
+    }
+    dataset_id = response['result'].split('/')[2];
+    response = await fetch_json('PUT', rest_api + '/config/' + dataset_id,
+        submit_data, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error uploading config: '+response['error']);
+        return;
+    }
+    window.location = '/dataset/' + dataset_id;
+}
+async function update() {
+    var description = $('#description').val();
+    var submit_data = $("#submit_box").val();
+    await fetch_json('PUT', rest_api + '/config/' + dataset_id, submit_data, passkey);
+    await fetch_json('PUT', rest_api + '/datasets/' + dataset_id + '/description', description, passkey);
+    window.location = '/dataset/' + dataset_id;
+}
 </script>
 {% end %}

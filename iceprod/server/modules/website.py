@@ -99,10 +99,14 @@ class website(module.module):
                 logger.info('template path: %r',template_path)
                 raise Exception('bad template path')
 
-            rest_address = 'http://{}:{}'.format(
-                    self.cfg['rest_api']['address'],
-                    self.cfg['rest_api']['port'],
-            )
+            if 'url' in self.cfg['rest_api']:
+                rest_address = self.cfg['rest_api']['url']
+            else:
+                # for local systems
+                rest_address = 'http://{}:{}'.format(
+                        self.cfg['rest_api']['address'],
+                        self.cfg['rest_api']['port'],
+                )
 
             handler_args = {
                 'cfg':self.cfg,
@@ -147,6 +151,7 @@ class website(module.module):
                 xsrf_cookies=True,
                 cookie_secret=binascii.unhexlify(cookie_secret),
                 login_url='/login',
+                debug=True
             )
 
             # start tornado
@@ -301,11 +306,23 @@ class Submit(PublicHandler):
         groups = []
         if self.current_user_data and 'groups' in self.current_user_data:
             groups = self.current_user_data['groups']
+        default_config = {
+          "categories": [],
+          "dataset": 0,
+          "description": "",
+          "difplus": None,
+          "options": {
+          },
+          "parent_id": 0,
+          "steering": None,
+          "tasks": [],
+          "version": 3
+        }
         render_args = {
             'passkey':token,
             'edit':False,
-            'dataset':None,
-            'config':None,
+            'dataset_id':'',
+            'config':default_config,
             'groups':groups,
         }
         self.render('submit.html',**render_args)
@@ -320,7 +337,7 @@ class Config(PublicHandler):
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
             return
-        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+        #dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
             ret = await self.rest_client.request('POST','/create_token')
@@ -331,8 +348,7 @@ class Config(PublicHandler):
         render_args = {
             'edit':edit,
             'passkey':passkey,
-            'grids':None,
-            'dataset':dataset,
+            'dataset_id':dataset_id,
             'config':config,
         }
         self.render('submit.html',**render_args)
