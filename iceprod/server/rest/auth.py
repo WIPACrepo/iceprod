@@ -467,6 +467,7 @@ class LDAPHandler(AuthHandler):
                 'username': username,
                 'roles': ret['roles'],
                 'current_role': data['role'],
+                'groups': data['groups'],
             })
             self.finish()
 
