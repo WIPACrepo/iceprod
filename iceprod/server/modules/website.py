@@ -326,6 +326,7 @@ class Submit(PublicHandler):
             'dataset_id':'',
             'config':default_config,
             'groups':groups,
+            'description':'',
         }
         self.render('submit.html',**render_args)
 
@@ -339,7 +340,7 @@ class Config(PublicHandler):
         if not dataset_id:
             self.write_error(400,message='must provide dataset_id')
             return
-        #dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+        dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
         edit = self.get_argument('edit',default=False)
         if edit:
             ret = await self.rest_client.request('POST','/create_token')
@@ -352,6 +353,7 @@ class Config(PublicHandler):
             'passkey':passkey,
             'dataset_id':dataset_id,
             'config':config,
+            'description':dataset['description'],
         }
         self.render('submit.html',**render_args)
 
@@ -380,22 +382,21 @@ class Dataset(PublicHandler):
         filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
-        dataset = None
         if dataset_id.isdigit():
             try:
                 if int(dataset_id) < 10000000:
-                    try_dataset_id = GlobalID.globalID_gen(int(dataset_id),self.cfg['site_id'])
-                    dataset = await self.rest_client.request('GET','/datasets/{}'.format(try_dataset_id))
-                    dataset_num = dataset_id
-                    dataset_id = try_dataset_id
+                    all_datasets = await self.rest_client.request('GET','/datasets')
+                    for d in all_datasets.values():
+                        if d['dataset'] == dataset_id:
+                            dataset_id = d['dataset_id']
+                            break
             except Exception:
                 pass
-        if not dataset:
-            try:
-                dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
-            except Exception:
-                raise tornado.web.HTTPError(404, reason='Dataset not found')
-            dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+        try:
+            dataset = await self.rest_client.request('GET','/datasets/{}'.format(dataset_id))
+        except Exception:
+            raise tornado.web.HTTPError(404, reason='Dataset not found')
+        dataset_num = dataset['dataset']
 
         ret = await self.rest_client.request('POST','/create_token')
         passkey = ret['result']

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
 {% end %}
 
-{% block page_title %}Submit{% end %}
+{% block page_title %}{% if dataset_id %}{% if edit %}Edit{% else %}View{% end %} Config{% else %}Submit{% end %}{% end %}
 
 {% block sidebar %}
 <div class="section macro_box">
@@ -46,10 +46,12 @@
 {% block body %}
 <div id="submit_area">
     <textarea id="submit_box" style="min-height: 400px">{{ json_encode(config) }}</textarea>
-    <textarea id="description" placeholder="Description"></textarea>
+    <textarea id="description" placeholder="Description">{{ description }}</textarea>
     <div class="submit_contents">
         {% if dataset_id %}
+            {% if edit %}
         <button id="submit_action" onclick="update()">Update</button>
+            {% end %}
         {% else %}
         Number of jobs:
         <input id="number_jobs" value="1" min="1" step="1", type="number">
@@ -77,7 +79,6 @@
 var passkey = '{{ passkey }}';
 var edit = {{ json_encode(edit) }};
 var dataset_id = '{{ dataset_id }}';
-var rest_api = 'https://iceprod2-api.icecube.wisc.edu';
 function parse_json(config){
     try {
         return JSON.parse(config);
@@ -112,7 +113,7 @@ async function submit() {
     var ntasks = get_num_tasks(submit_data) * njobs;
     if (ntasks < 0)
         return;
-    var response = await fetch_json('POST', rest_api + '/datasets',
+    var response = await fetch_json('POST', '/datasets',
         {'description': description,
          'jobs_submitted': njobs,
          'tasks_submitted': ntasks,
@@ -125,7 +126,7 @@ async function submit() {
         return;
     }
     dataset_id = response['result'].split('/')[2];
-    response = await fetch_json('PUT', rest_api + '/config/' + dataset_id,
+    response = await fetch_json('PUT', '/config/' + dataset_id,
         submit_data, passkey
     );
     if ('error' in response) {
@@ -136,9 +137,23 @@ async function submit() {
 }
 async function update() {
     var description = $('#description').val();
-    var submit_data = $("#submit_box").val();
-    await fetch_json('PUT', rest_api + '/config/' + dataset_id, submit_data, passkey);
-    await fetch_json('PUT', rest_api + '/datasets/' + dataset_id + '/description', description, passkey);
+    var submit_data = parse_json($("#submit_box").val());
+    if (submit_data == null)
+        return;
+    var response = await fetch_json('PUT', '/config/' + dataset_id,
+        submit_data, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error uploading config: '+response['error']);
+        return;
+    }
+    response = await fetch_json('PUT', '/datasets/' + dataset_id + '/description',
+        {'description':description}, passkey
+    );
+    if ('error' in response) {
+        $('#error').text('error setting description: '+response['error']);
+        return;
+    }
     window.location = '/dataset/' + dataset_id;
 }
 </script>
