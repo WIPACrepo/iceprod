@@ -304,6 +304,8 @@ class Submit(PublicHandler):
         ret = await self.rest_client.request('POST','/create_token')
         token = ret['result']
         groups = []
+        logger.info('user_data: %r', self.current_user_data)
+        logger.info('token: %r', token)
         if self.current_user_data and 'groups' in self.current_user_data:
             groups = self.current_user_data['groups']
         default_config = {
