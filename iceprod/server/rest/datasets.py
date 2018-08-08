@@ -209,7 +209,7 @@ class DatasetStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if 'status' not in data:
             raise tornado.web.HTTPError(400, reason='missing status')
-        elif data['status'] not in ('processing','suspended','errors','complete'):
+        elif data['status'] not in ('processing','suspended','errors','truncated','complete'):
             raise tornado.web.HTTPError(400, reason='bad status')
 
         ret = await self.db.datasets.find_one_and_update({'dataset_id':dataset_id},
