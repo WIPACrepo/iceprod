@@ -384,10 +384,11 @@ class Dataset(PublicHandler):
 
         if dataset_id.isdigit():
             try:
-                if int(dataset_id) < 10000000:
+                d_num = int(dataset_id)
+                if d_num < 10000000:
                     all_datasets = await self.rest_client.request('GET','/datasets')
                     for d in all_datasets.values():
-                        if d['dataset'] == dataset_id:
+                        if d['dataset'] == d_num:
                             dataset_id = d['dataset_id']
                             break
             except Exception:
