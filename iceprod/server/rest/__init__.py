@@ -170,12 +170,18 @@ def authorization(**_auth):
                     raise tornado.web.HTTPError(403, reason="authorization failed")
                 url = self.auth_url+'/auths/'+dataset_id+'/actions/'
                 http_client = tornado.httpclient.AsyncHTTPClient()
+                if isinstance(self.auth_key, bytes):
+                    auth_header = b'bearer '+self.auth_key
+                else:
+                    auth_header = 'bearer '+self.auth_key
                 if 'dataset_id:read' in attrs:
                     await to_asyncio_future(http_client.fetch(url+'read',
-                            headers={'Authorization': b'bearer '+self.auth_key}))
-                if 'dataset_id:write' in attrs:
+                            headers={'Authorization': auth_header}))
+                    authorized = True
+                elif 'dataset_id:write' in attrs:
                     await to_asyncio_future(http_client.fetch(url+'write',
-                            headers={'Authorization': b'bearer '+self.auth_key}))
+                            headers={'Authorization': auth_header}))
+                    authorized = True
 
             if authorized:
                 return await method(self, *args, **kwargs)
