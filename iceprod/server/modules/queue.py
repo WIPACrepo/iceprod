@@ -182,11 +182,9 @@ class queue(module.module):
             logger.error('error checking proxy',exc_info=True)
 
         # queue tasks to grids
-        num_queued = 0
         for p in self.plugins:
             try:
                 await p.queue()
-                num_queued += p.tasks_queued + p.tasks_processing
             except Exception:
                 logger.error('plugin %s.queue() raised exception',
                              p.__class__.__name__,exc_info=True)
