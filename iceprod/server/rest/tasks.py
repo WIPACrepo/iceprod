@@ -263,7 +263,7 @@ class DatasetTasksHandler(BaseHandler):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, task_id):
         """
         Get a task entry.
@@ -323,7 +323,7 @@ class DatasetTaskSummaryStatusHandler(BaseHandler):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the task summary for all tasks in a dataset, group by status.
@@ -346,7 +346,7 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
     """
     Handle task summary grouping by status.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the task counts for all tasks in a dataset, group by status.
@@ -371,7 +371,7 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
     """
     Handle task summary grouping by name and status.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the task counts for all tasks in a dataset, group by name,status.
@@ -396,7 +396,7 @@ class TasksActionsQueueHandler(BaseHandler):
     """
     Handle task action for waiting -> queued.
     """
-    @authorization(roles=['admin','system'])
+    @authorization(roles=['admin','client'])
     async def post(self):
         """
         Take a number of waiting tasks and queue them.
@@ -497,7 +497,7 @@ class DatasetTaskStatsHandler(BaseHandler):
     """
     Handle task stats
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the task statistics for all tasks in a dataset, group by name.
