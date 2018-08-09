@@ -172,7 +172,7 @@ class DatasetJobsHandler(BaseHandler):
     """
     Handle single job requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, job_id):
         """
         Get a job entry.
@@ -196,7 +196,7 @@ class DatasetJobsStatusHandler(BaseHandler):
     """
     Handle single job requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
     async def put(self, dataset_id, job_id):
         """
         Set a job status.

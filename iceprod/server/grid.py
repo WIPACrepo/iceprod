@@ -88,7 +88,7 @@ class BaseGrid(object):
                      'error': all_time,
                      'unknown': all_time}
         for t in time_dict:
-            logger.debug("time limit: %s - %r",t,time_dict[t])
+            logger.debug("time limit: %s - %s",t,time_dict[t])
         now = datetime.utcnow()
 
         # get pilots from iceprod

@@ -287,7 +287,7 @@ class DatasetTasksStatusHandler(BaseHandler):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
     async def put(self, dataset_id, task_id):
         """
         Set a task status.
