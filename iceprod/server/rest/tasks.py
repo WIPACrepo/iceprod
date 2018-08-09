@@ -63,7 +63,7 @@ class MultiTasksHandler(BaseHandler):
     """
     Handle multi tasks requests.
     """
-    @authorization(roles=['admin','system'])
+    @authorization(roles=['admin','system','client'])
     async def get(self):
         """
         Get task entries.
@@ -89,7 +89,7 @@ class MultiTasksHandler(BaseHandler):
             ret.append(row)
         self.write({'tasks': ret})
 
-    @authorization(roles=['admin','system'])
+    @authorization(roles=['admin','system','client'])
     async def post(self):
         """
         Create a task entry.

@@ -58,7 +58,7 @@ class MultiJobsHandler(BaseHandler):
     """
     Handle multi jobs requests.
     """
-    @authorization(roles=['admin','system'])
+    @authorization(roles=['admin','system','client'])
     async def post(self):
         """
         Create a job entry.
@@ -232,7 +232,7 @@ class DatasetJobSummariesStatusHandler(BaseHandler):
     """
     Handle job summary grouping by status.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the job summary for all jobs in a dataset, group by status.
@@ -255,7 +255,7 @@ class DatasetJobCountsStatusHandler(BaseHandler):
     """
     Handle job counts by status.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get the job counts for all jobs in a dataset, group by status.
