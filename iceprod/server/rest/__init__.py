@@ -154,34 +154,40 @@ def authorization(**_auth):
 
             roles = _auth.get('roles', [])
             attrs = _auth.get('attrs', {})
-            logger.debug('roles: %r    attrs: %r', roles, attrs)
 
             authorized = False
 
             auth_role = self.auth_data.get('role',None)
-            logger.debug('token_role: %r', auth_role)
             if roles and auth_role in roles:
                 authorized = True
+            else:
+                logger.info('roles: %r    attrs: %r', roles, attrs)
+                logger.info('token_role: %r', auth_role)
+                logger.info('role mismatch')
 
             if (not authorized) and ('dataset_id:read' in attrs or 'dataset_id:write' in attrs):
                 # we need to ask /auths about this
-                dataset_id = kwargs.get('dataset_id', None)
-                if (not dataset_id) or not isinstance(dataset_id,str):
-                    raise tornado.web.HTTPError(403, reason="authorization failed")
-                url = self.auth_url+'/auths/'+dataset_id+'/actions/'
-                http_client = tornado.httpclient.AsyncHTTPClient()
-                if isinstance(self.auth_key, bytes):
-                    auth_header = b'bearer '+self.auth_key
-                else:
-                    auth_header = 'bearer '+self.auth_key
-                if 'dataset_id:read' in attrs:
-                    await to_asyncio_future(http_client.fetch(url+'read',
-                            headers={'Authorization': auth_header}))
-                    authorized = True
-                elif 'dataset_id:write' in attrs:
-                    await to_asyncio_future(http_client.fetch(url+'write',
-                            headers={'Authorization': auth_header}))
-                    authorized = True
+                try:
+                    dataset_id = kwargs.get('dataset_id', None)
+                    if (not dataset_id) or not isinstance(dataset_id,str):
+                        raise tornado.web.HTTPError(403, reason="authorization failed")
+                    url = self.auth_url+'/auths/'+dataset_id+'/actions/'
+                    http_client = tornado.httpclient.AsyncHTTPClient()
+                    if isinstance(self.auth_key, bytes):
+                        auth_header = b'bearer '+self.auth_key
+                    else:
+                        auth_header = 'bearer '+self.auth_key
+                    if 'dataset_id:read' in attrs:
+                        await to_asyncio_future(http_client.fetch(url+'read',
+                                headers={'Authorization': auth_header}))
+                        authorized = True
+                    elif 'dataset_id:write' in attrs:
+                        await to_asyncio_future(http_client.fetch(url+'write',
+                                headers={'Authorization': auth_header}))
+                        authorized = True
+                except Exception:
+                    logger.info('/auths failure', exc_info=True)
+                    raise
 
             if authorized:
                 return await method(self, *args, **kwargs)
