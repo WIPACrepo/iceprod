@@ -96,5 +96,4 @@ class Client(object):
         """Sequential version of `request`."""
         loop = asyncio.get_event_loop()
         ret = loop.run_until_complete(self.request(*args, **kwargs))
-        loop.close()
         return ret        
