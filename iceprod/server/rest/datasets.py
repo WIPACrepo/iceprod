@@ -142,7 +142,7 @@ class DatasetHandler(BaseHandler):
     """
     Handle dataset requests.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:read'])
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
     async def get(self, dataset_id):
         """
         Get a dataset.
