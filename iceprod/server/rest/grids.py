@@ -50,7 +50,7 @@ class MultiGridsHandler(BaseHandler):
     """
     Handle multi grids requests.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','system'])
     async def get(self):
         """
         Get grid entries.
@@ -62,7 +62,7 @@ class MultiGridsHandler(BaseHandler):
         self.write({row['grid_id']:row for row in ret})
         self.finish()
 
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','system'])
     async def post(self):
         """
         Create a grid entry.
@@ -104,7 +104,7 @@ class GridsHandler(BaseHandler):
     """
     Handle single grid requests.
     """
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','system'])
     async def get(self, grid_id):
         """
         Get a grid entry.
@@ -123,7 +123,7 @@ class GridsHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin'])
+    @authorization(roles=['admin','system'])
     async def patch(self, grid_id):
         """
         Update a grid entry.
