@@ -45,7 +45,7 @@ async def run(rest_client, debug=False):
         try:
             dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
             jobs = await rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
-            if sum(jobs[s] for s in jobs) >= dataset['jobs_to_queue']:
+            if sum(jobs[s] for s in jobs) >= dataset['jobs_submitted']:
                 # jobs are all buffered / materialized
                 job_statuses = set(jobs)
                 if job_statuses == set(['complete']):

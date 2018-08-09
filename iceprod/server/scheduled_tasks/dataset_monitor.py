@@ -42,7 +42,8 @@ async def run(rest_client, statsd, debug=False):
         datasets = await rest_client.request('GET', '/dataset_summaries/status')
         for status in datasets:
             for dataset_id in datasets[status]:
-                dataset_num = GlobalID.localID_ret(dataset_id,type='int')
+                dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
+                dataset_num = dataset['dataset']
                 jobs = await rest_client.request('GET', '/datasets/{}/job_counts/status'.format(dataset_id))
                 for status in jobs:
                     statsd.gauge('datasets.{}.jobs.{}'.format(dataset_num,status), jobs[status])
