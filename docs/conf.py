@@ -7,8 +7,8 @@ import iceprod
 # so turn the decorator off
 def nodecorate(func):
     return func
-import iceprod.server.dbmethods
-iceprod.server.dbmethods.dbmethod = nodecorate
+#import iceprod.server.dbmethods
+#iceprod.server.dbmethods.dbmethod = nodecorate
 
 master_doc = "index"
 

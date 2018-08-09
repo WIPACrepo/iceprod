@@ -31,19 +31,19 @@ Authorization Implementation
 A decorator for RPC methods is used.  For example, a public access::
 
     # public method
-    def rpc_public_foo(self):
+    async def rpc_public_foo(self):
         pass
 
 If you only need a logged in user, access is set up as::
 
     @authorization(roles=['user'])
-    def rpc_logged_in(self):
+    async def rpc_logged_in(self):
         pass
 
 Other role based access is similarly easy::
 
     @authorization(roles=['admin']):
-    def rpc_admin_func(self):
+    async def rpc_admin_func(self):
         pass
 
 Internal IceProd access can be enabled with a role.  Note that
@@ -53,26 +53,11 @@ while `pilot` is for pilot workers.
 ::
 
     @authorization(roles=['client','pilot'])
-    def rpc_site_foo(self):
+    async def rpc_site_foo(self):
         pass
 
 For dataset attributes, access is like::
 
-    @authorization(attrs=['dataset_id'])
-    def rpc_get_task(self, dataset_id, task_id):
+    @authorization(attrs=['dataset_id:read'])
+    async def rpc_get_task(self, dataset_id, task_id):
         pass
-
-
-Coroutines
-""""""""""
-
-Note in the above examples that we have occasionally used
-:ref:`tornado.gen.coroutine` as a decorator.  Authorization can handle
-either normal functions or coroutines.  One key point is when the function
-to be authorized is a couroutine.  The coroutine decorator must go below
-the authorization decorator::
-
-    @authorization(roles=['admin'])
-    @tornado.gen.coroutine
-    def rpc_edit_dataset(self, dataset_id, config):
-        # edit dataset config

@@ -47,18 +47,7 @@ Note that Apache can also be used separately, while Nginx config is built-in.
 Security
 --------
 
-User Accounts
-"""""""""""""
-
-The default account is a username and password.
-
-`LDAP <https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol>`_
-functionality can be enabled to authenticate supplied passwords against
-LDAP.  This removes the ability to create new accounts or change passwords
-from IceProd, as this needs to be done on the LDAP server.
-
-An X509 (gridftp) proxy certificate can also be linked to an account for
-use with datasets submitted by that user.
+Details about user accounts are in :ref:`user_accounts`.
 
 CSRF
 """"
