@@ -355,7 +355,7 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
             dataset_id (str): dataset id
 
         Returns:
-            dict: {<status>: [<task_id>,]}
+            dict: {<status>: num}
         """
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
@@ -380,7 +380,7 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
             dataset_id (str): dataset id
 
         Returns:
-            dict: {<name>: {<status>: [<task_id>,]}}
+            dict: {<name>: {<status>: num}}
         """
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
