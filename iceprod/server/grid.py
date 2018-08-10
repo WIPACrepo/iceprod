@@ -380,6 +380,7 @@ class BaseGrid(object):
             'exp': expiration,
         }
         passkey = await self.rest_client.request('POST', '/create_token', data)
+        passkey = passkey['result']
 
         # write cfg
         cfg, filelist = self.write_cfg(task)
@@ -466,8 +467,9 @@ class BaseGrid(object):
     def get_submit_args(self,task,cfg=None,passkey=None):
         """Get the submit arguments to start the loader script."""
         # get website address
-        if 'rest_api' in self.cfg and self.cfg['rest_api']:
-            web_address = self.cfg['rest_api']
+        if ('rest_api' in self.cfg and self.cfg['rest_api'] and
+            'url' in self.cfg['rest_api'] and self.cfg['rest_api']['url']):
+            web_address = self.cfg['rest_api']['url']
         else:
             raise Exception('no web address for rest calls')
 
