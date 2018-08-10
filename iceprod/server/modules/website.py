@@ -250,6 +250,7 @@ class PublicHandler(tornado.web.RequestHandler):
         namespace['sites'] = (self.cfg['webserver']['sites'] if (
                               'webserver' in self.cfg and
                               'sites' in self.cfg['webserver']) else None)
+        namespace['json_encode'] = json_encode
         return namespace
 
     def prepare(self):
