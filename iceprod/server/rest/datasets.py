@@ -195,7 +195,7 @@ class DatasetStatusHandler(BaseHandler):
     """
     Handle dataset status updates.
     """
-    @authorization(roles=['admin'], attrs=['dataset_id:write'])
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
     async def put(self, dataset_id):
         """
         Set a dataset status.
