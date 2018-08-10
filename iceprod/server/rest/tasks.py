@@ -120,7 +120,7 @@ class MultiTasksHandler(BaseHandler):
         # set some fields
         data.update({
             'task_id': uuid.uuid1().hex,
-            'status': 'idle',
+            'status': 'waiting',
             'status_changed': nowstr(),
             'failures': 0,
             'evictions': 0,
