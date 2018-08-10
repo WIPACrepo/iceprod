@@ -64,7 +64,7 @@ async def run(rest_client, debug=False):
                                                             task_index, task_ids)
                                 args = {
                                     'dataset_id': dataset_id,
-                                    'job_id': job_id,
+                                    'job_id': job_id['result'],
                                     'task_index': task_index,
                                     'name': name,
                                     'depends': depends,
