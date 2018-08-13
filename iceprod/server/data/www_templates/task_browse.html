@@ -8,58 +8,29 @@
 
 <table class='task_table'>
     <tr>
-        <th>ID</th>
+        <th>Job / Task Index</th>
         <th>Name</th>
         <th>Failures</th>
-        <th>Job Index</th>
         {% if (current_user) %}
-        <th><a href='javascript:set_tasks_and_jobs_status(task_ids_on_page, "reset", "{{ passkey }}");'>Reset All</a></th>
-        <th><a href='javascript:set_tasks_and_jobs_status(task_ids_on_page, "processing", "{{ passkey }}");'>Resume All</a></th>
-        <th><a href='javascript:set_tasks_status(task_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</a></th>
+        <th><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, task_ids_on_page, "reset", "{{ passkey }}");'>Reset All</button></th>
+        <th><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, task_ids_on_page, "processing", "{{ passkey }}");'>Resume All</button></th>
+        <th><button class="set_status" onclick='set_tasks_status(dataset_id, task_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</button></th>
         {% end %}
     </tr>
     {% for t in tasks %}
     <tr>
-        <td><a href="/task/{{ t }}">{{ tasks[t]['task_id'] }}</a></td>
+        <td><a href="/dataset/{{ url_escape(tasks[t]['dataset_id']) }}/task/{{ url_escape(t) }}">{{ tasks[t]['job_index'] }} / {{ tasks[t]['task_index'] }}</a></td>
         <td>{{ tasks[t]['name'] }}</td>
         <td>{{ tasks[t]['failures'] }}</td>
-        <td>{{ tasks[t]['job_index'] }}</td>
         {% if (current_user) %}
-        <td><a href='javascript:set_tasks_and_jobs_status(["{{ tasks[t]['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</a></td>
-        <td><a href='javascript:set_tasks_and_jobs_status(["{{ tasks[t]['task_id'] }}"], "processing", "{{ passkey }}");'>Resume</a></td>
-        <td><a href='javascript:set_tasks_status(["{{ tasks[t]['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</a></td>
+        <td><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</button></td>
+        <td><button class="set_status" onclick='set_tasks_and_jobs_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "processing", "{{ passkey }}");'>Resume</button></td>
+        <td><button class="set_status" onclick='set_tasks_status(dataset_id, ["{{ tasks[t]['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
         {% end %}
     </tr>
     {% end %}
 </table>
 
-
-<!--
-<table>
-<tr>
-{% if tasks %}
-  {%for k in list(tasks.values())[0] %}
-    <th>{{ k }}</th>
-  {% end %}
-{% end %}
-</tr>
-{% for t in tasks %}
-<tr>
-  {% for k in tasks[t] %}
-    <td>
-    {% if k == 'task_id' %}
-        <a href="/task/{{ t }}">{{ tasks[t][k] }}</a>
-    {% elif k == 'dataset_id' %}
-        <a href="/dataset/{{ t }}">{{ tasks[t][k] }}</a>
-    {% else %}
-        {{ tasks[t][k] }}
-    {% end %}
-    </td>
-  {% end %}
-</tr>
-{% end %}
-</table>
--->
 {% end %}
 
 {% block body_scripts %}
@@ -68,10 +39,12 @@
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
 <script type="text/javascript">
+var dataset_id = "{{ list(tasks.values())[0]['dataset_id'] if tasks else '' }}";
 var task_ids_on_page = [
     {% for t in tasks %}
         "{{tasks[t]['task_id']}}",
     {% end %}
 ];
+{% end %}
 </script>
 {% end %}

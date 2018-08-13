@@ -2,7 +2,7 @@
 
 {% autoescape None %}
 
-{% block title %}IceProd{% end %}
+{% block title %}Task {{ task['task_index'] }}, Dataset {{ dataset['dataset'] }} - IceProd{% end %}
 
 {% block page_title %}Task Details{% end %}
 
@@ -18,7 +18,7 @@
   {% elif k == 'job_id' %}
     <a href="/dataset/{{ url_escape(task['dataset_id']) }}/job/{{ url_escape(task[k]) }}">{{ escape(task[k]) }}</a>
   {% elif k == 'depends' %}
-    {% for t in task[k].split(',') %}
+    {% for t in task[k] %}
         <a href="/dataset/{{ url_escape(task['dataset_id']) }}/task/{{ t }}">{{ escape(t) }}</a>&nbsp;&nbsp;
     {% end %}
   {% else %}
@@ -29,10 +29,10 @@
 {% end %}
 
 {% if (current_user) %}
-<div style="padding:10px;">
-    <a href='javascript:set_tasks_and_jobs_status(["{{ task['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</a></td>
-    <a href='javascript:set_tasks_and_jobs_status(["{{ task['task_id'] }}"], "processing", "{{ passkey }}");'>Resume</a></td>
-    <a href='javascript:set_tasks_status(["{{ task['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</a></td>
+<div class="action">
+    <button onclick='set_tasks_and_jobs_status(dataset_id, ["{{ task['task_id'] }}"], "reset", "{{ passkey }}");'>Reset</button></td>
+    <button onclick='set_tasks_and_jobs_status(dataset_id, ["{{ task['task_id'] }}"], "processing", "{{ passkey }}");'>Resume</button></td>
+    <button onclick='set_tasks_status(dataset_id, ["{{ task['task_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
 </div>
 {% end %}
 
@@ -52,6 +52,9 @@
 {% if (current_user) %}
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
+<script>
+var dataset_id = "{{ task['dataset_id'] if task else '' }}";
+</script>
 {% end %}
 
 {% end %}

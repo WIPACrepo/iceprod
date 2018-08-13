@@ -407,3 +407,10 @@ div.action {
 div.action button {
     margin: .1em .5em;
 }
+
+button.set_status {
+    border: none;
+    background: none;
+    color: #2229ff;
+    cursor: pointer;
+}

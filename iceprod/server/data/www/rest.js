@@ -51,49 +51,66 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
     }
 }
 
-async function set_jobs_status(job_ids, stat, passkey, task_status_filters=['']) {
-    for (jid in job_ids) {
-        var job = await fetch_json('GET', '/jobs/' + jid, null, passkey);
-        if ('error' in job) {
-            alert('error - '+job['error']);
-            return;
-        }
+async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=['']) {
+    var task_status = stat;
+    if (stat == 'processing')
+        task_status = 'waiting';
+    for (var i=0;i<job_ids.length;i++) {
+        let jid = job_ids[i];
         for (status_filter in task_status_filters) {
             let filter = status_filter ? '&task_status=' + status_filter : '';
             let tasks = await fetch_json('GET',
-                            '/datasets/' + job['dataset_id'] + '/tasks?job_id=' + job['job_id'] + filter,
+                            '/datasets/' + dataset_id + '/tasks?job_id=' + jid + filter,
                             null, passkey);
             var task_ids = Object.keys(tasks);
             if (task_ids.length > 0) {
-                set_tasks_status(task_ids, stat, passkey);
+                set_tasks_status(dataset_id, task_ids, task_status, passkey);
             }
         }
-        fetch_json('PUT', '/datasets/' + job['dataset_id'] + '/jobs/' + jid + '/status', {'status':stat}, passkey);
+        let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/jobs/' + jid + '/status', {'status':stat}, passkey);
+        if ('error' in ret) {
+            alert('error - '+ret['error']);
+            return;
+        }
     }
 }
 
-async function set_tasks_status(task_ids, stat, passkey) {
-    for (tid in task_ids) {
-        let task = await fetch_json('GET', '/tasks/' + tid, null, passkey);
-        if ('error' in task) {
-            alert('error - '+task['error']);
-            return;
-        }
-        fetch_json('PUT', '/datasets/' + task['dataset_id'] + '/tasks/' + task['task_id'] + '/status',
+async function set_tasks_status(dataset_id, task_ids, stat, passkey) {
+    for (var i=0;i<task_ids.length;i++) {
+        let tid = task_ids[i];
+        let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/tasks/' + tid + '/status',
                         {'status':stat}, passkey);
+        if ('error' in ret) {
+            alert('error - '+ret['error']);
+            return;
+        }
     }
 }
 
-async function set_tasks_and_jobs_status(task_ids, stat, passkey) {
-    for (tid in task_ids) {
-        let task = await fetch_json('GET', '/tasks/' + tid, null, passkey);
+async function set_tasks_and_jobs_status(dataset_id, task_ids, stat, passkey) {
+    var job_status = stat;
+    if (stat == "idle" || stat == "waiting" || stat == "queued" || stat == "processing" || stat == "reset")
+        job_status = "processing";
+    for (var i=0;i<task_ids.length;i++) {
+        let tid = task_ids[i];
+        let task = await fetch_json('GET', '/datasets/' + dataset_id + '/tasks/' + tid, null, passkey);
         if ('error' in task) {
             alert('error - '+task['error']);
             return;
         }
-        fetch_json('PUT', '/datasets/' + task['dataset_id'] + '/tasks/' + task['task_id'] + '/status',
+        let fut = fetch_json('PUT', '/datasets/' + dataset_id + '/tasks/' + tid + '/status',
                     {'status':stat}, passkey);
-        fetch_json('PUT', '/datasets/' + task['dataset_id'] + '/jobs/' + task['job_id'] + '/status',
-                    {'status':stat}, passkey);
+        let fut2 = fetch_json('PUT', '/datasets/' + dataset_id + '/jobs/' + task['job_id'] + '/status',
+                    {'status':job_status}, passkey);
+        let ret = await fut;
+        if ('error' in ret) {
+            alert('error - '+ret['error']);
+            return;
+        }
+        ret = await fut2;
+        if ('error' in ret) {
+            alert('error - '+ret['error']);
+            return;
+        }
     }
 }

@@ -8,26 +8,24 @@
 
 <table class='task_table'>
     <tr>
-        <th>ID</th>
-        <th>Status</th>
         <th>Job Index</th>
+        <th>Status</th>
         <th>Status Changed</th>
         {% if (current_user) %}
-        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset All</a></th>
-        <th><a href='javascript:set_jobs_status(job_ids_on_page, "reset", "{{ passkey }}");'>Hard Reset All</a></th>
-        <th><a href='javascript:set_jobs_status(job_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</a></th>
+        <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "processing", "{{ passkey }}", filter=["&task_status=failed", "&task_status=suspended"]);'>Reset All</button></th>
+        <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "processing", "{{ passkey }}");'>Hard Reset All</button></th>
+        <th><button class="set_status" onclick='set_jobs_status(dataset_id, job_ids_on_page, "suspended", "{{ passkey }}");'>Suspend All</button></th>
         {% end %}
     </tr>
     {% for j in jobs %}
     <tr>
-        <td><a href="/dataset/{{ url_escape(jobs[j]['dataset_id']) }}/job/{{ url_escape(jobs[j]['job_id']) }}">{{ escape(jobs[j]['job_id']) }}</a></td>
+        <td><a href="/dataset/{{ url_escape(jobs[j]['dataset_id']) }}/job/{{ url_escape(jobs[j]['job_id']) }}">{{ jobs[j]['job_index'] }}</a></td>
         <td>{{ jobs[j]['status'] }}</td>
-        <td>{{ jobs[j]['job_index'] }}</td>
         <td>{{ jobs[j]['status_changed'] }}</td>
         {% if (current_user) %}
-        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "reset", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset", "failed", "suspended"]);'>Reset</a></td>
-        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "reset", "{{ passkey }}");'>Hard Reset</a></td>
-        <td><a href='set_jobs_status(["{{ jobs[j]['job_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</a></td>
+        <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "processing", "{{ passkey }}", ["waiting", "queued", "processing", "reset", "failed", "suspended"]);'>Reset</button></td>
+        <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "processing", "{{ passkey }}");'>Hard Reset</button></td>
+        <td><button class="set_status" onclick='set_jobs_status(dataset_id, ["{{ jobs[j]['job_id'] }}"], "suspended", "{{ passkey }}");'>Suspend</button></td>
         {% end %}
     </tr>
     {% end %}
@@ -42,6 +40,7 @@
 <script type="text/javascript" src="/static/fetch.js"></script>
 <script type="text/javascript" src="/static/rest.js"></script>
 <script type="text/javascript">
+var dataset_id = "{{ list(jobs.values())[0]['dataset_id'] if jobs else '' }}";
 var job_ids_on_page = [
     {% for j in jobs %}
         "{{ jobs[j]['job_id'] }}", 

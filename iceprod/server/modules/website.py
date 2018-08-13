@@ -452,10 +452,14 @@ class Task(PublicHandler):
         ret = await self.rest_client.request('POST','/create_token')
         passkey = ret['result']
 
+        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
-        ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
-        logs = ret['logs']
-        self.render('task_detail.html',task=task_details,logs=logs,passkey=passkey)
+        try:
+            ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
+            logs = ret['logs']
+        except Exception:
+            logs = []
+        self.render('task_detail.html', dataset=dataset, task=task_details, logs=logs, passkey=passkey)
 
 class JobBrowse(PublicHandler):
     """Handle /job urls"""
@@ -487,11 +491,12 @@ class Job(PublicHandler):
         ret = await self.rest_client.request('POST','/create_token')
         passkey = ret['result']
 
+        dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         job = await self.rest_client.request('GET', '/datasets/{}/jobs/{}'.format(dataset_id,job_id))
         tasks = await self.rest_client.request('GET','/datasets/{}/tasks?job_id={}'.format(dataset_id,job_id))
         job['tasks'] = list(tasks.values())
         job['tasks'].sort(key=lambda x:x['task_index'])
-        self.render('job_detail.html', job=job, passkey=passkey)
+        self.render('job_detail.html', dataset=dataset, job=job, passkey=passkey)
 
 class Documentation(PublicHandler):
     @catch_error
