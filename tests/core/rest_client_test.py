@@ -170,6 +170,24 @@ class rest_client_test(unittest.TestCase):
         self.assertTrue(mock.called)
         self.assertEqual(ret, result)
 
+    @requests_mock.mock()
+    @unittest_reporter(name='Client.request_seq() - error')
+    async def test_91_request(self, mock):
+        """Test request"""
+        address = 'http://test'
+        auth_key = 'passkey'
+        result = {'result':'the result'}
+
+        rpc = iceprod.core.rest_client.Client(address, auth_key, timeout=0.1)
+
+        def response(req, ctx):
+            body = iceprod.core.jsonUtil.json_decode(req.body)
+            return iceprod.core.jsonUtil.json_encode(result).encode('utf-8')
+        mock.post('/test', content=response)
+
+        with self.assertRaises(Exception):
+            rpc.request_seq('POST','test',{})
+
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     alltests = glob_tests(loader.getTestCaseNames(rest_client_test))
