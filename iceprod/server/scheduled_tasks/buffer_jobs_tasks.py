@@ -71,7 +71,7 @@ async def run(rest_client, debug=False):
                                     'requirements': get_reqs(config, task_index),
                                 }
                                 task_id = await rest_client.request('POST', '/tasks', args)
-                                task_ids.append(task_id)
+                                task_ids.append(task_id['result'])
             except Exception:
                 logger.error('error buffering dataset %s', dataset_id, exc_info=True)
                 if debug:
