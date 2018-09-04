@@ -188,7 +188,7 @@ class condor(grid.BaseGrid):
             if 'cluster' in line:
                 qid = line.split()[-1]
                 if task['task_id'] == 'pilot' and 'pilot_ids' in task:
-                    qid = qid.split('.')[0]
+                    qid = qid #.split('.')[0]
                 elif qid.endswith('.'):
                     qid += '0'
                 grid_queue_id.append(qid)
