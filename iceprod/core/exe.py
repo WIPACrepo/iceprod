@@ -41,6 +41,8 @@ from datetime import datetime
 from functools import partial
 from collections import Container
 from contextlib import contextmanager
+import subprocess
+import asyncio
 
 try:
     import cPickle as pickle
@@ -48,13 +50,7 @@ except Exception:
     import pickle
 
 import logging
-logger = logging.getLogger('exe')
 
-# make sure we have subprocess with timeout support
-if os.name == 'posix' and sys.version_info[0] < 3:
-    import subprocess32 as subprocess
-else:
-    import subprocess
 
 from iceprod.core import to_log,constants
 from iceprod.core import util
@@ -67,10 +63,11 @@ from iceprod.core.jsonUtil import json_encode,json_decode
 
 class Config:
     """Contain the configuration and related methods"""
-    def __init__(self, config=None, parser=None, rpc=None):
+    def __init__(self, config=None, parser=None, rpc=None, logger=None):
         self.config = config if config else dataclasses.Job()
         self.parser = parser if parser else iceprod.core.parser.ExpParser()
         self.rpc = rpc
+        self.logger = logger if logger else logging
 
     def parseValue(self, value, env={}):
         """
@@ -84,11 +81,11 @@ class Config:
         :returns: The parsed value
         """
         if isinstance(value,dataclasses.String):
-            logger.debug('parse before:%r| env=%r',value,env)
+            self.logger.debug('parse before:%r| env=%r',value,env)
             value = self.parser.parse(value,self.config,env)
             if isinstance(value,dataclasses.String):
                 value = os.path.expandvars(value)
-            logger.debug('parse after:%r',value)
+            self.logger.debug('parse after:%r',value)
         return value
 
     def parseObject(self,obj,env):
@@ -105,8 +102,7 @@ class Config:
         else:
             return obj
 
-@contextmanager
-def setupenv(cfg, obj, oldenv={}):
+class SetupEnv:
     """
     The internal environment (env) is a dictionary composed of several objects:
 
@@ -157,114 +153,130 @@ def setupenv(cfg, obj, oldenv={}):
                     such as :py:class:`iceprod.core.dataclasses.Steering`.
         oldenv (dict): (optional) env that we are running inside
     """
-    try:
-        # start with empty env
-        env = {}
-        # attempt to do depth=2 copying
-        for key in oldenv:
-            if key not in ('deletions','uploads','environment','pythonpath','stats'):
-                env[key] = copy.copy(oldenv[key])
-
-        if not obj:
+    def __init__(self, cfg, obj, oldenv={}, logger=None):
+        self.cfg = cfg
+        self.obj = obj
+        self.oldenv = oldenv
+        self.env = {}
+        self.logger = logger if logger else logging
+        
+        # validation of input
+        if not self.obj:
             raise util.NoncriticalError('object to load environment from is empty')
-        if isinstance(obj,dataclasses.Steering) and not obj.valid():
+        if isinstance(self.obj, dataclasses.Steering) and not self.obj.valid():
             raise Exception('object is not valid Steering')
 
-        # make sure things for this env are clear (don't inherit)
-        env['deletions'] = []
-        env['uploads'] = []
+    async def __aenter__(self):
+        try:
+            # attempt to do depth=2 copying
+            for key in self.oldenv:
+                if key not in ('deletions','uploads','environment','pythonpath','stats'):
+                    self.env[key] = copy.copy(self.oldenv[key])
 
-        # get clear environment variables
-        env['environment'] = os.environ.copy()
-        env['pythonpath'] = copy.copy(sys.path)
+            # make sure things for this env are clear (don't inherit)
+            self.env['deletions'] = []
+            self.env['uploads'] = []
 
-        # inherit statistics
-        if 'stats' in oldenv:
-            env['stats'] = oldenv['stats']
-        else:
-            env['stats'] = {'upload':[], 'download':[], 'tasks':[]}
+            # get clear environment variables
+            self.env['environment'] = os.environ.copy()
+            self.env['pythonpath'] = copy.copy(sys.path)
 
-        # copy parameters
-        if 'parameters' not in env:
-            env['parameters'] = {}
-        if 'parameters' in obj:
-            # copy new parameters to env first so local referrals work
-            env['parameters'].update(obj['parameters'])
-            # parse parameter values and update if necessary
-            for p in obj['parameters']:
-                newval = cfg.parseValue(obj['parameters'][p],env)
-                if newval != obj['parameters'][p]:
-                    env['parameters'][p] = newval
+            # inherit statistics
+            if 'stats' in self.oldenv:
+                self.env['stats'] = self.oldenv['stats']
+            else:
+                self.env['stats'] = {'upload':[], 'download':[], 'tasks':[]}
 
-        if 'resources' not in env:
-            env['resources'] = {}
-        if 'resources' in obj:
-            # download resources
-            for resource in obj['resources']:
-                downloadResource(env, cfg.parseObject(resource,env))
+            # copy parameters
+            if 'parameters' not in self.env:
+                self.env['parameters'] = {}
+            if 'parameters' in self.obj:
+                # copy new parameters to env first so local referrals work
+                self.env['parameters'].update(self.obj['parameters'])
+                # parse parameter values and update if necessary
+                for p in self.obj['parameters']:
+                    newval = self.cfg.parseValue(self.obj['parameters'][p], self.env)
+                    if newval != self.obj['parameters'][p]:
+                        self.env['parameters'][p] = newval
 
-        if 'data' not in env:
-            env['data'] = {}
-        if 'data' in obj:
-            # download data
-            for data in obj['data']:
-                d = cfg.parseObject(data,env)
-                if d['movement'] in ('input','both'):
-                    downloadData(env,d)
-                if d['movement'] in ('output','both'):
-                    env['uploads'].append(d)
+            if 'resources' not in self.env:
+                self.env['resources'] = {}
+            if 'resources' in self.obj:
+                # download resources
+                for resource in self.obj['resources']:
+                    await downloadResource(self.env, self.cfg.parseObject(resource, self.env), logger=self.logger)
 
-        if 'classes' not in env:
-            env['classes'] = {}
-        if 'classes' in obj:
-            # set up classes
-            for c in obj['classes']:
-                setupClass(env, cfg.parseObject(c,env))
+            if 'data' not in self.env:
+                self.env['data'] = {}
+            if 'data' in self.obj:
+                # download data
+                for data in self.obj['data']:
+                    d = self.cfg.parseObject(data, self.env)
+                    if d['movement'] in ('input','both'):
+                        await downloadData(self.env, d, logger=self.logger)
+                    if d['movement'] in ('output','both'):
+                        self.env['uploads'].append(d)
 
-    except util.NoncriticalError as e:
-        logger.warning('Noncritical error when setting up environment',exc_info=True)
-    except Exception as e:
-        logger.critical('Serious error when setting up environment',exc_info=True)
-        raise
+            if 'classes' not in self.env:
+                self.env['classes'] = {}
+            if 'classes' in self.obj:
+                # set up classes
+                for c in self.obj['classes']:
+                    await setupClass(self.env, self.cfg.parseObject(c, self.env), logger=self.logger)
 
-    try:
-        yield env
-        
-        # upload data
-        if 'uploads' in env and ('offline' not in cfg.config['options']
-                or (not cfg.config['options']['offline'])
-                or (cfg.config['options']['offline']
-                    and 'offline_transfer' in cfg.config['options']
-                    and cfg.config['options']['offline_transfer'])):
-            for d in env['uploads']:
-                try:
-                    uploadData(env, d)
-                except util.NoncriticalError as e:
-                    logger.error('failed when uploading file %s - %s' % (str(d),str(e)), exc_info=True)
-                    if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
-                        raise
-    finally:
-        # delete any files
-        if 'deletions' in env and len(env['deletions']) > 0:
-            for f in reversed(env['deletions']):
-                try:
-                    os.remove(f)
-                    base = os.path.basename(f)
-                except OSError as e:
-                    logger.error('failed to delete file %s - %s',(str(f),str(e)))
-                    if 'options' in env and 'debug' in env['options'] and env['options']['debug']:
-                        raise
+        except util.NoncriticalError as e:
+            self.logger.warning('Noncritical error when setting up environment', exc_info=True)
+        except Exception as e:
+            self.logger.critical('Serious error when setting up environment', exc_info=True)
+            raise
 
-        # reset environment
-        if 'environment' in env:
-            for e in list(os.environ.keys()):
-                if e not in env['environment']:
-                    del os.environ[e]
-            for e in env['environment'].keys():
-                os.environ[e] = env['environment'][e]
+        return self.env
 
-def downloadResource(env, resource, remote_base=None,
-                     local_base=None, checksum=None):
+    async def __aexit__(self, exc_type, exc, tb):
+        try:
+            if not exc_type:
+                # upload data if there was no exception
+                if 'uploads' in self.env and ('offline' not in self.cfg.config['options']
+                        or (not self.cfg.config['options']['offline'])
+                        or (self.cfg.config['options']['offline']
+                            and 'offline_transfer' in self.cfg.config['options']
+                            and self.cfg.config['options']['offline_transfer'])):
+                    for d in self.env['uploads']:
+                        try:
+                            await uploadData(self.env, d, logger=self.logger)
+                        except util.NoncriticalError as e:
+                            self.logger.error('failed when uploading file %s - %s' % (str(d),str(e)), exc_info=True)
+                            if ('options' in self.env and
+                                'debug' in self.env['options'] and
+                                self.env['options']['debug']):
+                                raise
+        finally:
+            # delete any files
+            if 'deletions' in self.env and len(self.env['deletions']) > 0:
+                for f in reversed(self.env['deletions']):
+                    try:
+                        os.remove(f)
+                        base = os.path.basename(f)
+                    except OSError as e:
+                        self.logger.error('failed to delete file %s - %s',(str(f),str(e)))
+                        if ('options' in self.env and
+                            'debug' in self.env['options'] and
+                            self.env['options']['debug']):
+                            raise
+
+            # reset environment
+            if 'environment' in self.env:
+                for e in list(os.environ.keys()):
+                    if e not in self.env['environment']:
+                        del os.environ[e]
+                for e in self.env['environment'].keys():
+                    os.environ[e] = self.env['environment'][e]
+
+
+async def downloadResource(env, resource, remote_base=None,
+                           local_base=None, checksum=None, logger=None):
+    if not logger:
+        logger = logging
     """Download a resource and put location in the env"""
     if not remote_base:
         remote_base = env['options']['resource_url']
@@ -307,7 +319,7 @@ def downloadResource(env, resource, remote_base=None,
         failed = False
         try:
             start_time = time.time()
-            functions.download(url, local, options=download_options)
+            await functions.download(url, local, options=download_options)
             if not os.path.exists(local):
                 raise Exception('file does not exist')
             if checksum:
@@ -344,8 +356,10 @@ def downloadResource(env, resource, remote_base=None,
         env['files'][resource['local']] = local
     logger.warning('resource %s added to env',resource['local'])
 
-def downloadData(env, data):
+async def downloadData(env, data, logger=None):
     """Download data and put location in the env"""
+    if not logger:
+        logger = logging
     remote_base = data.storage_location(env)
     if 'options' in env and 'data_directory' in env['options']:
         local_base = env['options']['data_directory']
@@ -358,10 +372,13 @@ def downloadData(env, data):
     except Exception:
         # no filecatalog available
         checksum = None
-    downloadResource(env, data, remote_base, local_base, checksum=checksum)
+    await downloadResource(env, data, remote_base, local_base,
+                           checksum=checksum, logger=logger)
 
-def uploadData(env, data):
+async def uploadData(env, data, logger=None):
     """Upload data"""
+    if not logger:
+        logger = logging
     remote_base = data.storage_location(env)
     if 'options' in env and 'data_directory' in env['options']:
         local_base = env['options']['data_directory']
@@ -404,7 +421,7 @@ def uploadData(env, data):
     failed = False
     try:
         start_time = time.time()
-        functions.upload(local, url, options=upload_options)
+        await functions.upload(local, url, options=upload_options)
     except Exception:
         failed = True
         logger.critical('failed to upload %s to %s', local, url, exc_info=True)
@@ -444,8 +461,10 @@ def uploadData(env, data):
         except Exception:
             logger.warning('failed to add %r to filecatalog', url, exc_info=True)
 
-def setupClass(env, class_obj):
+async def setupClass(env, class_obj, logger=None):
     """Set up a class for use in modules, and put it in the env"""
+    if not logger:
+        logger = logging
     if not 'classes' in env:
         env['classes'] = {}
     if not class_obj:
@@ -514,8 +533,8 @@ def setupClass(env, class_obj):
             # download class
             logger.warning('attempting to download class %s to %s',url,local_temp)
             try:
-                download_local = functions.download(url, local_temp,
-                                                    options=download_options)
+                download_local = await functions.download(url, local_temp,
+                        options=download_options)
             except Exception:
                 logger.info('failed to download', exc_info=True)
                 if i < 10:
@@ -617,10 +636,12 @@ def setupClass(env, class_obj):
 
 ### Run Functions ###
 
-def runtask(cfg, globalenv, task):
+async def runtask(cfg, globalenv, task, logger=None):
     """Run the specified task"""
     if not task:
         raise Exception('No task provided')
+    if not logger:
+        logger = logging
 
     # set up task_temp
     if not os.path.exists('task_temp'):
@@ -632,11 +653,12 @@ def runtask(cfg, globalenv, task):
 
     try:
         # set up local env
-        with setupenv(cfg, task, globalenv) as env:
+        async with SetupEnv(cfg, task, globalenv, logger=logger) as env:
             # run trays
             for tray in task['trays']:
                 tmpstat = {}
-                runtray(cfg, env, tray, stats=tmpstat)
+                async for proc in runtray(cfg, env, tray, stats=tmpstat, logger=logger):
+                    yield proc
                 if len(tmpstat) > 1:
                     stats[tray['name']] = tmpstat
                 elif len(tmpstat) == 1:
@@ -651,10 +673,12 @@ def runtask(cfg, globalenv, task):
 
     globalenv['stats']['tasks'].append(stats)
 
-def runtray(cfg, globalenv,tray,stats={}):
+async def runtray(cfg, globalenv,tray,stats={}, logger=None):
     """Run the specified tray"""
     if not tray:
         raise Exception('No tray provided')
+    if not logger:
+        logger = logging
 
     # set up tray_temp
     if not os.path.exists('tray_temp'):
@@ -668,10 +692,11 @@ def runtray(cfg, globalenv,tray,stats={}):
             # set up local env
             cfg.config['options']['iter'] = i
             tmpstat = {}
-            with setupenv(cfg, tray, tmpenv) as env:
+            async with SetupEnv(cfg, tray, tmpenv, logger=logger) as env:
                 # run modules
                 for module in tray['modules']:
-                    runmodule(cfg, env, module, stats=tmpstat)
+                    async for proc in runmodule(cfg, env, module, stats=tmpstat, logger=logger):
+                        yield proc
             stats[i] = tmpstat
 
     finally:
@@ -682,13 +707,15 @@ def runtray(cfg, globalenv,tray,stats={}):
             logger.warning('error removing tray_temp directory: %s',
                            str(e), exc_info=True)
 
-def runmodule(cfg, globalenv, module, stats={}):
+async def runmodule(cfg, globalenv, module, stats={}, logger=None):
     """Run the specified module"""
     if not module:
         raise Exception('No module provided')
+    if not logger:
+        logger = logging
 
     # set up local env
-    with setupenv(cfg, module, globalenv) as env:
+    async with SetupEnv(cfg, module, globalenv, logger=logger) as env:
         if module['running_class']:
             module['running_class'] = cfg.parseValue(module['running_class'],env)
         if module['args']:
@@ -701,29 +728,12 @@ def runmodule(cfg, globalenv, module, stats={}):
         # make subprocess to run the module
         if os.path.exists(constants['task_exception']):
             os.remove(constants['task_exception'])
-        process = fork_module(cfg, env, module)
-        try:
-            interval = float(cfg.config['options']['stillrunninginterval'])
-        except Exception:
-            interval = 0
-        if interval < 60:
-            interval = 60
-        while process.poll() is None:
-            if ('offline' in cfg.config['options'] and
-                not cfg.config['options']['offline']):
-                # check for DB kill
-                try:
-                    cfg.rpc.still_running()
-                except Exception:
-                    if process.poll() is None:
-                        process.kill()
-                        time.sleep(1)
-                    logger.critical('DB kill')
-                    raise
-            try:
-                process.wait(interval)
-            except subprocess.TimeoutExpired:
-                pass
+        process = await fork_module(cfg, env, module, logger=logger)
+
+        # yield process back to pilot or driver, so it can be killed
+        yield process
+
+        # now clean up after process
         if process.returncode:
             try:
                 with open(constants['task_exception'],'rb') as f:
@@ -744,7 +754,7 @@ def runmodule(cfg, globalenv, module, stats={}):
             else:
                 stats.update(new_stats)
 
-def fork_module(cfg, env, module):
+async def fork_module(cfg, env, module, logger=None):
     """
     Modules are run in a forked process to prevent segfaults from killing IceProd.
     Their stdout and stderr is dumped into the log file with prefixes on each
@@ -761,6 +771,8 @@ def fork_module(cfg, env, module):
     * An executable of some type (this is run in a subprocess with shell
       execution disabled)
     """
+    if not logger:
+        logger = logging
     module_src = None
     if module['src']:
         # get script to run
@@ -771,7 +783,7 @@ def fork_module(cfg, env, module):
             c['name'] = c['name'][:c['name'].find('?')]
         elif '#' in c['name']:
             c['name'] = c['name'][:c['name'].find('#')]
-        setupClass(env,c)
+        await setupClass(env,c,logger=logger)
         if c['name'] not in env['classes']:
             raise Exception('Failed to install class %s'%c['name'])
         module_src = env['classes'][c['name']]
@@ -793,7 +805,7 @@ def fork_module(cfg, env, module):
                 c = dataclasses.Class()
                 c['src'] = env_shell[0]
                 c['name'] = os.path.basename(c['src'])
-                setupClass(env,c)
+                await setupClass(env,c,logger=logger)
                 if c['name'] not in env['classes']:
                     raise Exception('Failed to install class %s'%c['name'])
                 env_shell[0] = env['classes'][c['name']]
@@ -884,6 +896,11 @@ def fork_module(cfg, env, module):
         raise Exception('error running module')
 
     logger.warning('subprocess cmd=%r',cmd)
+    kwargs = {}
+    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
+        if not os.path.exists(cfg.config['options']['subprocess_dir']):
+            os.makedirs(cfg.config['options']['subprocess_dir'])
+        kwargs['cwd'] = cfg.config['options']['subprocess_dir']
     if module['env_clear']:
         # must be on cvmfs-like environ for this to apply
         env = {'PYTHONNOUSERSITE':'1'}
@@ -906,6 +923,6 @@ def fork_module(cfg, env, module):
                 if ret:
                     env[k] = ':'.join(ret)
         logger.warning('env = %r', env)
-        return subprocess.Popen(cmd, env=env)
-    else:
-        return subprocess.Popen(cmd)
+        kwargs['env'] = env
+
+    return await asyncio.create_subprocess_exec(*cmd, **kwargs)

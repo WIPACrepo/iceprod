@@ -24,7 +24,7 @@ host = os.uname()[1].split(".")[0]
 
 def set_logger(loglevel='INFO', logfile=None, logsize=2**28, lognum=4):
     """Add an output to the root logger"""
-    logformat='%(asctime)s %(levelname)s %(name)s : %(message)s'
+    logformat='%(asctime)s %(levelname)s %(name)s %(module)s:%(lineno)s - %(message)s'
 
     rootLogger = logging.getLogger()
 

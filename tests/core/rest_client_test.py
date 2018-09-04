@@ -57,6 +57,7 @@ class rest_client_test(unittest.TestCase):
         address = 'http://test'
         auth_key = 'passkey'
         rpc = iceprod.core.rest_client.Client(address, auth_key)
+        rpc.close()
 
     @requests_mock.mock()
     @unittest_reporter(name='Client.request()')
@@ -171,7 +172,7 @@ class rest_client_test(unittest.TestCase):
         self.assertEqual(ret, result)
 
     @requests_mock.mock()
-    @unittest_reporter(name='Client.request_seq() - error')
+    @unittest_reporter(name='Client.request_seq() - from async')
     async def test_91_request(self, mock):
         """Test request"""
         address = 'http://test'
@@ -183,6 +184,25 @@ class rest_client_test(unittest.TestCase):
         def response(req, ctx):
             body = iceprod.core.jsonUtil.json_decode(req.body)
             return iceprod.core.jsonUtil.json_encode(result).encode('utf-8')
+        mock.post('/test', content=response)
+
+        ret = rpc.request_seq('POST','test',{})
+
+        self.assertTrue(mock.called)
+        self.assertEqual(ret, result)
+
+    @requests_mock.mock()
+    @unittest_reporter(name='Client.request_seq() - raise error')
+    async def test_92_request(self, mock):
+        """Test request"""
+        address = 'http://test'
+        auth_key = 'passkey'
+        result = {'result':'the result'}
+
+        rpc = iceprod.core.rest_client.Client(address, auth_key, timeout=0.1)
+
+        def response(req, ctx):
+            raise Exception()
         mock.post('/test', content=response)
 
         with self.assertRaises(Exception):

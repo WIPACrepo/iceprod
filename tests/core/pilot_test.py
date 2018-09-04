@@ -22,11 +22,10 @@ import multiprocessing
 from copy import deepcopy
 from functools import partial
 from collections import namedtuple
+from unittest import mock
+import asyncio
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from tornado.testing import AsyncTestCase
 
 from iceprod.core import to_log,constants
 from iceprod.core import pilot
@@ -37,7 +36,7 @@ try:
 except ImportError:
     normal_psutil = None
 
-class TestBase(unittest.TestCase):
+class TestBase(AsyncTestCase):
     def setUp(self):
         super(TestBase,self).setUp()
 
@@ -48,11 +47,6 @@ class TestBase(unittest.TestCase):
             os.chdir(maindir)
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
-
-        # mock iceprod.core.logger.new_file
-        patcher = mock.patch('iceprod.core.logger.new_file')
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         # clean up environment
         base_env = dict(os.environ)
@@ -70,62 +64,77 @@ class pilot_test(TestBase):
     def setUp(self):
         super(pilot_test,self).setUp()
 
-        # convert multiprocessing to direct calls
-        patcher = mock.patch('iceprod.core.pilot.Process')
-        self.process = patcher.start()
-        def run(target):
-            logger.warn('Process()')
-            target()
-            ret = mock.MagicMock()
-            ret.pid = os.getpid()
-            ret.is_alive.return_value = False
-            return ret
-        self.process.side_effect = run
-        self.addCleanup(patcher.stop)
-
         # disable psutil
         pilot.psutil = None
         def c():
             pilot.psutil = normal_psutil
         self.addCleanup(c)
 
-    @mock.patch('iceprod.core.pilot.Pilot.run')
     @unittest_reporter(name='Pilot.__init__()')
-    def test_001_pilot_init(self, run):
-        run.return_value = None
+    def test_001_pilot_init(self):
         cfg = {'options':{'gridspec':'a'}}
         runner = None
         p = pilot.Pilot(cfg, runner, pilot_id='a')
-        run.assert_called_once_with()
 
     @unittest_reporter(name='Pilot.run()')
-    def test_012_pilot_run(self):
+    async def test_012_pilot_run(self):
         task_cfg = {'options':{'task_id':'a'}}
         cfg = {'options':{'gridspec':'a'}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.once:
+                download_task.once = False
+                return [task_cfg]
+            return None
+        download_task.once = True
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], end_value=None)
-        runner = mock.MagicMock()
-        runner.return_value = 0
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
-        runner.assert_called_once_with(task_cfg)
-        update_args = rpc.update_pilot.call_args_list
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+            await p.run()
+        self.assertTrue(runner.called)
         self.assertEqual(update_args[0][0], ('a',))
         self.assertEqual(update_args[0][1]['tasks'], ['a'])
         self.assertEqual(update_args[1][0], ('a',))
         self.assertEqual(update_args[1][1]['tasks'], [])
 
     @unittest_reporter(name='Pilot.run() split resources')
-    def test_013_pilot_resources(self):
+    async def test_013_pilot_resources(self):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
         task_cfg2 = {'options':{'task_id':'b','resources':{'cpu':1,'memory':1,'disk':1}}}
         cfg = {'options':{'gridspec':'a','resources':{'cpu':2,'memory':2.2,'disk':2.2}}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.items:
+                return download_task.items.pop(0)
+            return None
+        download_task.items = [[task_cfg], [task_cfg2]]
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], [task_cfg2], end_value=None)
-        runner = mock.MagicMock()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
-        runner.assert_has_calls([mock.call(task_cfg), mock.call(task_cfg2)])
-        self.assertGreaterEqual(rpc.update_pilot.call_count, 3)
-        update_args = rpc.update_pilot.call_args_list
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+            await p.run()
+        self.assertTrue(runner.called)
         for call in update_args:
             if call[1]['tasks'] == ['a','b']:
                 break
@@ -133,18 +142,34 @@ class pilot_test(TestBase):
             raise Exception('did not update_pilot with both tasks running')
 
     @unittest_reporter(name='Pilot.run() error downloading')
-    def test_014_pilot_resources(self):
+    async def test_014_pilot(self):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
         task_cfg2 = {'options':{'task_id':'b','resources':{'cpu':1,'memory':1,'disk':1}}}
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.items:
+                return download_task.items.pop(0)
+            raise Exception('failed download')
+        download_task.items = [[task_cfg], [task_cfg2]]
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], [task_cfg2])
-        runner = mock.MagicMock()
-        with self.assertRaises(Exception):
-            p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
-        runner.assert_has_calls([mock.call(task_cfg), mock.call(task_cfg2)])
-        self.assertGreaterEqual(rpc.update_pilot.call_count, 3)
-        update_args = rpc.update_pilot.call_args_list
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+            with self.assertRaises(Exception):
+                await p.run()
+        self.assertTrue(runner.called)
+        self.assertGreaterEqual(len(update_args), 3)
         for call in update_args:
             if call[1]['tasks'] == ['a','b']:
                 break
@@ -152,77 +177,121 @@ class pilot_test(TestBase):
             raise Exception('did not update_pilot with both tasks running')
 
     @unittest_reporter(name='Pilot.create() error')
-    def test_020_pilot_create_error(self):
+    async def test_020_pilot_create_error(self):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':3,'memory':1,'disk':1}}}
         cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1.1,'disk':1.1}}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.items:
+                return download_task.items.pop(0)
+            return None
+        download_task.items = [[task_cfg]]
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], end_value=None)
-        runner = mock.MagicMock()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001)
-        runner.assert_not_called()
-        rpc.task_kill.assert_called()
-
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        runner = None
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+            await p.run()
 
 class pilot_multi_test(TestBase):
     @unittest_reporter(name='Pilot.monitor()')
-    def test_100_pilot_monitoring(self):
+    async def test_100_pilot_monitoring(self):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.once:
+                download_task.once = False
+                return [task_cfg]
+            return None
+        download_task.once = True
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], end_value=None)
-        runner = lambda x:time.sleep(0.2)
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=1.1, debug=True)
-        update_args = rpc.update_pilot.call_args_list
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','2.0')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=2.1, debug=True) as p:
+            await p.run()
+        self.assertTrue(runner.called)
         self.assertEqual(update_args[0][0], ('a',))
         self.assertEqual(update_args[0][1]['tasks'], ['a'])
         self.assertEqual(update_args[1][0], ('a',))
         self.assertEqual(update_args[1][1]['tasks'], [])
 
     @unittest_reporter(name='Pilot.monitor() over limit')
-    def test_102_pilot_monitor_over_limit(self):
+    async def test_102_pilot_monitor_over_limit(self):
         task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':0.00001,'disk':1,'time':0.001}}}
         cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3,'time':0.102}}}
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.once:
+                download_task.once = False
+                return [task_cfg]
+            return None
+        download_task.once = True
         rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg], end_value=None)
-        def runner(cfg):
-            time.sleep(1)
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.1, debug=True)
-        rpc.task_kill.assert_called()
-
-    @unittest_reporter(name='Pilot.run() multiprocess error downloading')
-    def test_104_pilot_multiprocess_error_downloading(self):
-        task_cfg = {'options':{'task_id':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
-        task_cfg2 = {'options':{'task_id':'b','resources':{'cpu':1,'memory':1,'disk':1}}}
-        rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([task_cfg])
-        cfg = {'options':{'gridspec':'a','resources':{'cpu':3,'memory':3,'disk':3}}}
-        runner = lambda x:time.sleep(random.random())
-        with self.assertRaises(Exception):
-            p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01, debug=True)
-        update_args = rpc.update_pilot.call_args_list
-        self.assertEqual(update_args[0][0], ('a',))
-        self.assertEqual(update_args[0][1]['tasks'], ['a'])
-        self.assertEqual(update_args[1][0], ('a',))
-        self.assertEqual(update_args[1][1]['tasks'], [])
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def task_kill(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            task_kill.called = True
+        task_kill.called = True
+        rpc.task_kill.side_effect = task_kill
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','1.1')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=1.2) as p:
+            await p.run()
+        self.assertTrue(task_kill.called)
 
     @unittest_reporter(name='Pilot.run() no resource specified, sequential')
-    def test_110_pilot_sequential(self):
+    async def test_110_pilot_sequential(self):
         task_cfg = {'options':{'task_id':'a'}}
         task_cfg2 = {'options':{'task_id':'b'}}
-        rpc = mock.MagicMock()
-        rpc.download_task.side_effect = return_once([deepcopy(task_cfg)], end_value=None)
         cfg = {'options':{'gridspec':'a','resources':{'cpu':1,'memory':1,'disk':1}}}
-        runner = lambda x:time.sleep(0.1)
+        async def download_task(*args, **kwargs):
+            logging.debug('download_task')
+            if download_task.items:
+                return download_task.items.pop(0)
+            return None
+        download_task.items = [[task_cfg], [task_cfg2]]
+        rpc = mock.MagicMock()
+        rpc.download_task.side_effect = download_task
+        update_args = []
+        async def update_pilot(*args, **kwargs):
+            logging.debug('update_pilot %r %r', args, kwargs)
+            update_args.append((args,kwargs))
+        rpc.update_pilot.side_effect = update_pilot
+        async def runner(*args, **kwargs):
+            logging.debug('runner - before')
+            yield await asyncio.create_subprocess_exec('sleep','0.5')
+            logging.debug('runner - after')
+            runner.called = True
+        runner.called = False
         start_time = time.time()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01, debug=True)
-        duration_single = time.time() - start_time
-        
-        rpc.download_task.side_effect = return_once([task_cfg], [task_cfg2], end_value=None)
-        start_time = time.time()
-        p = pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01, debug=True)
-        duration_double = time.time() - start_time
-        logger.info('single: %f - double: %f', duration_single, duration_double)
-        self.assertGreater(duration_double, duration_single+0.05)
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01) as p:
+            await p.run()
+        self.assertTrue(runner.called)
+        self.assertGreater(time.time()-start_time, 1.0)
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

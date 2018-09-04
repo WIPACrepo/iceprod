@@ -35,6 +35,8 @@ except ImportError:
     from mock import patch
 import requests_mock
 
+from tornado.testing import AsyncTestCase
+
 from iceprod.core import to_log
 import iceprod.core.dataclasses
 import iceprod.core.util
@@ -43,7 +45,7 @@ import iceprod.core.functions
 from iceprod.core.jsonUtil import json_encode,json_decode
 
 
-class functions_test(unittest.TestCase):
+class functions_test(AsyncTestCase):
     def setUp(self):
         super(functions_test,self).setUp()
 
@@ -675,7 +677,7 @@ class functions_test(unittest.TestCase):
 
     @requests_mock.mock()
     @unittest_reporter(name='download() http')
-    def test_303_download(self, http_mock):
+    async def test_303_download(self, http_mock):
         """Test the download function"""
         download_options = {'username': 'user',
                             'password': 'pass',}
@@ -686,7 +688,7 @@ class functions_test(unittest.TestCase):
         # download file from resources
         http_mock.get('/globus.tar.gz', content=data)
         http_mock.get('/globus.tar.gz.md5sum', content=md5sum+b' globus.tar.gz')
-        iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
+        await iceprod.core.functions.download('http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                 self.test_dir,options=download_options)
         if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
             raise Exception('downloaded file does not exist')
@@ -695,7 +697,7 @@ class functions_test(unittest.TestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @unittest_reporter(name='download() file')
-    def test_304_download(self):
+    async def test_304_download(self):
         """Test the download function"""
         data = 'the data'
         md5sum = '3d5f3303ed6ce28c2d5ac1192118f0e2'
@@ -704,7 +706,7 @@ class functions_test(unittest.TestCase):
         filename = os.path.join(self.test_dir,'generators.py')
         with open(filename, 'w') as f:
             f.write(data)
-        iceprod.core.functions.download(filename,
+        await iceprod.core.functions.download(filename,
                 os.path.join(self.test_dir,'generators2.py'))
         if not os.path.isfile(os.path.join(self.test_dir,'generators2.py')):
             raise Exception('local cp: copied file does not exist')
@@ -713,7 +715,7 @@ class functions_test(unittest.TestCase):
 
     @patch('iceprod.core.functions.GridFTP')
     @unittest_reporter(name='download() gridftp')
-    def test_305_download(self, gridftp):
+    async def test_305_download(self, gridftp):
         """Test the download function"""
         # download file from gsiftp
         data = 'the data'
@@ -728,7 +730,7 @@ class functions_test(unittest.TestCase):
         get.url = None
         gridftp.get = get
 
-        iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
+        await iceprod.core.functions.download('gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz',
                 self.test_dir)
         if not os.path.isfile(os.path.join(self.test_dir,'globus.tar.gz')):
             raise Exception('gsiftp: downloaded file does not exist')
@@ -738,7 +740,7 @@ class functions_test(unittest.TestCase):
 
     @requests_mock.mock()
     @unittest_reporter(name='download() http - query params')
-    def test_306_download(self, http_mock):
+    async def test_306_download(self, http_mock):
         """Test the download function"""
         data = b'the data'
         md5sum = b'3d5f3303ed6ce28c2d5ac1192118f0e2'
@@ -747,7 +749,7 @@ class functions_test(unittest.TestCase):
         url = 'http://prod-exe.icecube.wisc.edu/globus.tar.gz?a=1'
         http_mock.get('/globus.tar.gz?a=1', content=data)
         http_mock.get('/globus.tar.gz.md5sum', content=md5sum+b' globus.tar.gz')
-        out_file = iceprod.core.functions.download(url, self.test_dir)
+        out_file = await iceprod.core.functions.download(url, self.test_dir)
         self.assertEqual(out_file, os.path.join(self.test_dir,'globus.tar.gz'))
         if not os.path.isfile(out_file):
             raise Exception('downloaded file does not exist')
@@ -756,7 +758,7 @@ class functions_test(unittest.TestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @unittest_reporter(name='download() errors')
-    def test_320_download(self):
+    async def test_320_download(self):
         """Test the download function"""
         data = b'the data'
         md5sum = b'3d5f3303ed6ce28c2d5ac1192118f0e2'
@@ -772,16 +774,12 @@ class functions_test(unittest.TestCase):
             f.write(md5sum+b' generators.py')
 
         # bad url
-        try:
-            iceprod.core.functions.download(filename+'blah', out_dir)
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.download(filename+'blah', out_dir)
 
     @requests_mock.mock()
     @unittest_reporter(name='upload() http')
-    def test_403_upload(self, http_mock):
+    async def test_403_upload(self, http_mock):
         """Test the upload function"""
         download_options = {'username': 'user',
                             'password': 'pass',}
@@ -793,7 +791,7 @@ class functions_test(unittest.TestCase):
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
         with open(filename, 'wb') as f:
             f.write(data)
-        iceprod.core.functions.upload(filename,
+        await iceprod.core.functions.upload(filename,
                 'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                 options=download_options)
         self.assertTrue(http_mock.called)
@@ -804,12 +802,12 @@ class functions_test(unittest.TestCase):
         # test bad upload
         http_mock.get('/globus.tar.gz', content=b'blah')
         with self.assertRaises(Exception):
-            iceprod.core.functions.upload(filename,
+            await iceprod.core.functions.upload(filename,
                     'http://prod-exe.icecube.wisc.edu/globus.tar.gz',
                     options=download_options)
 
     @unittest_reporter(name='upload() file')
-    def test_404_upload(self):
+    async def test_404_upload(self):
         """Test the upload function"""
         data = 'the data'
 
@@ -820,7 +818,7 @@ class functions_test(unittest.TestCase):
         output_file = os.path.join(out_dir, 'generators.py')
         with open(filename, 'w') as f:
             f.write(data)
-        iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
+        await iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
         if not os.path.isfile(output_file):
             raise Exception('copied file does not exist')
         data2 = open(output_file).read()
@@ -829,7 +827,7 @@ class functions_test(unittest.TestCase):
         # test overwriting dest
         with open(output_file, 'w') as f:
             f.write('other data')
-        iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
+        await iceprod.core.functions.upload('file:'+filename, 'file:'+output_file)
         if not os.path.isfile(output_file):
             raise Exception('copied file does not exist')
         data2 = open(output_file).read()
@@ -837,7 +835,7 @@ class functions_test(unittest.TestCase):
 
     @patch('iceprod.core.functions.GridFTP')
     @unittest_reporter(name='upload() gridftp')
-    def test_405_upload(self, gridftp):
+    async def test_405_upload(self, gridftp):
         """Test the upload function"""
         data = 'the data'
         sha512sum = '8580e83fc859a2786430406fd41c7c6a0d3ac77b7eff07bc94c880f5b6e86b87320ea25cb3f3c5a3881236cf8bda92cb8f61c2a813881fee1d8f8331565ce98a'
@@ -859,32 +857,24 @@ class functions_test(unittest.TestCase):
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
         with open(filename, 'w') as f:
             f.write(data)
-        iceprod.core.functions.upload(filename,
+        await iceprod.core.functions.upload(filename,
                 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
         self.assertEqual(put.url, 'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
         self.assertEqual(put.filename, filename)
 
         # test gridftp error
-        try:
-            iceprod.core.functions.upload(filename,
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
                     'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
 
         # test checksum error
         gridftp.sha512sum.return_value = 'blah'
-        try:
-            iceprod.core.functions.upload(filename,
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
                     'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus.tar.gz')
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
 
     @unittest_reporter(name='upload() dir')
-    def test_410_upload(self):
+    async def test_410_upload(self):
         """Test the upload function"""
         data = 'the data'
 
@@ -897,7 +887,7 @@ class functions_test(unittest.TestCase):
         output_file = os.path.join(out_dir, 'generators')
         with open(filename, 'w') as f:
             f.write(data)
-        iceprod.core.functions.upload(in_dir, 'file:'+output_file)
+        await iceprod.core.functions.upload(in_dir, 'file:'+output_file)
         if not os.path.isfile(output_file):
             raise Exception('tar file does not exist')
         os.chdir(out_dir)
@@ -909,26 +899,18 @@ class functions_test(unittest.TestCase):
         self.assertEqual(data2, data, msg='data not equal')
 
     @unittest_reporter(name='upload() errors')
-    def test_420_upload(self):
+    async def test_420_upload(self):
         # bad request type
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
-        try:
-            iceprod.core.functions.upload(filename,
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
                     'foobar://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
 
         # src doesn't exist
         filename = os.path.join(self.test_dir, 'globus.tar.gz')
-        try:
-            iceprod.core.functions.upload(filename,
+        with self.assertRaises(Exception):
+            await iceprod.core.functions.upload(filename,
                     'gsiftp://data.icecube.wisc.edu/data/sim/sim-new/downloads/globus2.tar.gz')
-        except:
-            pass
-        else:
-            raise Exception('did not raise Exception')
 
     @requests_mock.mock()
     @unittest_reporter(name='delete() http')

@@ -18,6 +18,7 @@ import tempfile
 import hashlib
 from functools import partial
 from contextlib import contextmanager
+import asyncio
 
 try:
     import cPickle as pickle
@@ -37,8 +38,7 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder
 from iceprod.core import util
 from iceprod.core.gridftp import GridFTP
 from iceprod.core.jsonUtil import json_encode,json_decode
-
-logger = logging.getLogger('functions')
+from iceprod.core.session import Session, AsyncSession
 
 
 ### Compression Functions ###
@@ -54,7 +54,7 @@ def uncompress(infile, out_dir=None):
     try:
         if out_dir:
             os.chdir(out_dir)
-        logger.info('uncompressing %s',infile)
+        logging.info('uncompressing %s',infile)
         if istarred(infile):
             # handle tarfile
             output = subprocess.check_output(['tar','-atf',infile]).decode('utf-8')
@@ -74,14 +74,14 @@ def uncompress(infile, out_dir=None):
             elif any(infile.endswith(s) for s in ('.xz','.lzma')):
                 cmd = 'xz'
             else:
-                logger.info('unknown format: %s',infile)
+                logging.info('unknown format: %s',infile)
                 raise Exception('unknown format')
             subprocess.call([cmd,'-kdf',infile])
             files.append(infile.rsplit('.',1)[0])
     finally:
         os.chdir(cur_dir)
 
-    logger.info('files: %r', files)
+    logging.info('files: %r', files)
     if len(files) == 1:
         return files[0]
     else:
@@ -107,7 +107,7 @@ def compress(infile,compression='lzma'):
         elif outfile.endswith('.lzma'):
             cmd = ['xz','-F','lzma']
         else:
-            logger.info('unknown format: %s',infile)
+            logging.info('unknown format: %s',infile)
             raise Exception('unknown format')
         subprocess.call(cmd+['-kf',infile])
     return outfile
@@ -178,8 +178,8 @@ def check_cksm(file,type,sum):
     else:
         sum_cksm = sum
     # check sum
-    logger.debug('file_cksm: %r', file_cksm)
-    logger.debug('sum_cksm:  %r', sum_cksm)
+    logging.debug('file_cksm: %r', file_cksm)
+    logging.debug('sum_cksm:  %r', sum_cksm)
     return (file_cksm == sum_cksm)
 
 def check_md5sum(file,sum):
@@ -213,17 +213,17 @@ def removedirs(path):
 def copy(src,dest):
     parent_dir = os.path.dirname(dest)
     if not os.path.exists(parent_dir):
-        logger.info('attempting to make parent dest dir %s',parent_dir)
+        logging.info('attempting to make parent dest dir %s',parent_dir)
         try:
             os.makedirs(parent_dir)
         except Exception:
-            logger.error('failed to make dest directory for copy',exc_info=True)
+            logging.error('failed to make dest directory for copy',exc_info=True)
             raise
     if os.path.isdir(src):
-        logger.info('dircopy: %s to %s',src,dest)
+        logging.info('dircopy: %s to %s',src,dest)
         shutil.copytree(src,dest,symlinks=True)
     else:
-        logger.info('filecopy: %s to %s',src,dest)
+        logging.info('filecopy: %s to %s',src,dest)
         shutil.copy2(src,dest)
 
 
@@ -268,18 +268,22 @@ def gethostname():
     try:
         resp = requests.get('http://simprod.icecube.wisc.edu/downloads/getip.php')
         resp.raise_for_status()
-        logger.info('getip: %r', resp.text)
+        logging.info('getip: %r', resp.text)
         ret2 = resp.text.split(' ')[-1]
         if len(ret2.split('.')) > 1:
             ret = '.'.join(ret.split('.')[:1]+ret2.split('.')[1:])
     except Exception:
-        logger.info('error getting global ip', exc_info=True)
+        logging.info('error getting global ip', exc_info=True)
     return ret
 
 @contextmanager
-def _http_helper(options={}):
+def _http_helper(options={}, sync=True):
     """Set up an http session using requests"""
-    with requests.Session() as s:
+    if sync:
+        session = Session
+    else:
+        session = AsyncSession
+    with session() as s:
         if 'username' in options and 'password' in options:
             s.auth = (options['username'], options['password'])
         if 'sslcert' in options:
@@ -289,14 +293,9 @@ def _http_helper(options={}):
                 s.cert = options['sslcert']
         if 'cacert' in options:
             s.verify = options['cacert']
-        retries = Retry(total=5,
-                backoff_factor=0.5,
-                status_forcelist=[ 408, 500, 502, 503, 504 ])
-        s.mount('http://', HTTPAdapter(max_retries=retries))
-        s.mount('https://', HTTPAdapter(max_retries=retries))
         yield s
 
-def download(url, local, options={}):
+async def download(url, local, options={}):
     """Download a file, checksumming if possible"""
     local = os.path.expanduser(os.path.expandvars(local))
     url  = os.path.expanduser(os.path.expandvars(url))
@@ -320,38 +319,42 @@ def download(url, local, options={}):
     if os.path.isdir(local):
         local = os.path.join(local, os.path.basename(clean_url))
 
-    logger.warning('wget(): src: %s, local: %s', url, local)
+    logging.warning('wget(): src: %s, local: %s', url, local)
 
     # actually download the file
     try:
         if url.startswith('http'):
-            logger.info('http from %s to %s', url, local)
-            with _http_helper(options) as s:
-                r = s.get(url, stream=True, timeout=300)
-                with open(local, 'wb') as f:
-                    for chunk in r.iter_content(65536):
-                        f.write(chunk)
-                r.raise_for_status()
+            logging.info('http from %s to %s', url, local)
+            def _d():
+                with _http_helper(options) as s:
+                    r = s.get(url, stream=True, timeout=300)
+                    with open(local, 'wb') as f:
+                        for chunk in r.iter_content(65536):
+                            f.write(chunk)
+                    r.raise_for_status()
+            await asyncio.get_event_loop().run_in_executor(None, _d)
         elif url.startswith('file:'):
             url = url[5:]
-            logger.info('copy from %s to %s', url, local)
+            logging.info('copy from %s to %s', url, local)
             if os.path.exists(url):
-                copy(url, local)
+                await asyncio.get_event_loop().run_in_executor(None,
+                        partial(copy, url, local))
         elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-            logger.info('gsiftp from %s to %s', url, local)
-            GridFTP.get(url, filename=local)
+            logging.info('gsiftp from %s to %s', url, local)
+            await asyncio.get_event_loop().run_in_executor(None,
+                    partial(GridFTP.get, url, filename=local))
         else:
             raise Exception("unsupported protocol %s" % url)
 
         if not os.path.exists(local):
             raise Exception('download failed - file does not exist')
     except Exception:
-        removedirs(local)
+        await asyncio.get_event_loop().run_in_executor(None, removedirs, local)
         raise
 
     return local
 
-def upload(local, url, options={}):
+async def upload(local, url, options={}):
     """Upload a file, checksumming if possible"""
     local = os.path.expandvars(local)
     url  = os.path.expandvars(url)
@@ -366,10 +369,10 @@ def upload(local, url, options={}):
         compress(local, 'tar')
         local += '.tar'
 
-    logger.warning('wput(): local: %s, url: %s', local, url)
+    logging.warning('wput(): local: %s, url: %s', local, url)
 
     if not os.path.exists(local):
-        logger.warning('upload: local path, %s, does not exist', local)
+        logging.warning('upload: local path, %s, does not exist', local)
         raise Exception('local file does not exist')
 
     chksum = sha512sum(local)
@@ -377,45 +380,51 @@ def upload(local, url, options={}):
 
     # actually upload the file
     if url.startswith('http'):
-        logger.info('http from %s to %s', local, url)
-        with _http_helper(options) as s:
-            with open(local, 'rb') as f:
-                m = MultipartEncoder(
-                    fields={'field0': ('filename', f, 'text/plain')}
-                    )
-                r = s.post(url, timeout=300, data=m,
-                           headers={'Content-Type': m.content_type})
-                r.raise_for_status()
-                # get checksum
-                r = s.get(url, stream=True, timeout=300)
-                try:
-                    with open(local+'.tmp', 'wb') as f:
-                        for chunk in r.iter_content(65536):
-                            f.write(chunk)
+        logging.info('http from %s to %s', local, url)
+        def _d():
+            with _http_helper(options) as s:
+                with open(local, 'rb') as f:
+                    m = MultipartEncoder(
+                        fields={'field0': ('filename', f, 'text/plain')}
+                        )
+                    r = s.post(url, timeout=300, data=m,
+                               headers={'Content-Type': m.content_type})
                     r.raise_for_status()
-                    if sha512sum(local+'.tmp') != chksum:
-                        raise Exception('http checksum error')
-                finally:
-                    removedirs(local+'.tmp')
+                    # get checksum
+                    r = s.get(url, stream=True, timeout=300)
+                    try:
+                        with open(local+'.tmp', 'wb') as f:
+                            for chunk in r.iter_content(65536):
+                                f.write(chunk)
+                        r.raise_for_status()
+                        if sha512sum(local+'.tmp') != chksum:
+                            raise Exception('http checksum error')
+                    finally:
+                        removedirs(local+'.tmp')
+        await asyncio.get_event_loop().run_in_executor(None, _d)
     elif url.startswith('file:'):
         # use copy command
         url = url[5:]
-        if os.path.exists(url):
-            logger.warning('put: file already exists. overwriting!')
-            removedirs(url)
-        copy(local, url)
-        if sha512sum(url) != chksum:
-            raise Exception('file checksum error')
+        def _c():
+            if os.path.exists(url):
+                logging.warning('put: file already exists. overwriting!')
+                removedirs(url)
+            copy(local, url)
+            if sha512sum(url) != chksum:
+                raise Exception('file checksum error')
+        await asyncio.get_event_loop().run_in_executor(None, _c)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-        try:
-            GridFTP.put(url, filename=local)
-        except Exception:
-            # because d-cache doesn't allow overwriting, try deletion
-            GridFTP.delete(url)
-            GridFTP.put(url, filename=local)
-        ret = GridFTP.sha512sum(url)
-        if ret != chksum:
-            raise Exception('gridftp checksum error')
+        def _g():
+            try:
+                GridFTP.put(url, filename=local)
+            except Exception:
+                # because d-cache doesn't allow overwriting, try deletion
+                GridFTP.delete(url)
+                GridFTP.put(url, filename=local)
+            ret = GridFTP.sha512sum(url)
+            if ret != chksum:
+                raise Exception('gridftp checksum error')
+        await asyncio.get_event_loop().run_in_executor(None, _g)
     else:
         raise Exception("unsupported protocol %s" % url)
 
@@ -426,17 +435,17 @@ def delete(url, options={}):
         url = 'file:'+url
 
     if url.startswith('http'):
-        logger.info('delete http: %s', url)
+        logging.info('delete http: %s', url)
         with _http_helper(options) as s:
             r = s.delete(url, timeout=300)
             r.raise_for_status()
     elif url.startswith('file:'):
         url = url[5:]
-        logger.info('delete file: %r', url)
+        logging.info('delete file: %r', url)
         if os.path.exists(url):
             removedirs(url)
     elif url.startswith('gsiftp:') or url.startswith('ftp:'):
-        logger.info('delete gsiftp: %r', url)
+        logging.info('delete gsiftp: %r', url)
         GridFTP.rmtree(url)
     else:
         raise Exception("unsupported protocol %s" % url)

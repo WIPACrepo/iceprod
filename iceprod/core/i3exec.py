@@ -13,6 +13,8 @@ optional arguments:
   --pilot_id PILOTID    ID of the pilot (if this is a pilot)
   -d, --debug           Enable debug actions and logging
   --offline             Enable offline mode (don't talk with server)
+  --offline_transfer True/False
+                        Enable offline file transfer
   --logfile LOGFILE     Specify the logfile to use
   --job JOB             Index of the job to run
   --task TASK           Name of the task to run
@@ -30,6 +32,9 @@ from functools import partial
 import tempfile
 import shutil
 import threading
+import asyncio
+
+from tornado.ioloop import IOLoop
 
 from iceprod.core import to_file, constants
 import iceprod.core.dataclasses
@@ -40,12 +45,6 @@ import iceprod.core.pilot
 import iceprod.core.resources
 
 import iceprod.core.logger
-
-def handler(signum, frame):
-    """Signal handler. Exit on SIGQUIT or SIGINT."""
-    logging.warning('Signal handler called with signal %s' % signum)
-    logging.warning('Exiting...')
-    os._exit(0)
 
 def load_config(cfgfile):
     """Load a config from file, serialized string, dictionary, etc"""
@@ -87,77 +86,77 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
                                    logfile=logf,
                                    logsize=67108864,
                                    lognum=1)
-    logger = logging.getLogger('i3exec')
-    logger.warning('starting...%s ' % logger.name)
-
-    signal.signal(signal.SIGQUIT, handler)
-    signal.signal(signal.SIGINT, handler)
+    logging.warning('starting IceProd core')
 
     if cfgfile is None:
-        logger.critical('There is no cfgfile')
+        logging.critical('There is no cfgfile')
         raise Exception('missing cfgfile')
     elif isinstance(cfgfile, str):
         config = load_config(cfgfile)
     else:
         config = cfgfile
-    logger.info('config: %r',config)
+    logging.info('config: %r',config)
 
-    if offline:
-        # run in offline mode
-        runner(config, url, debug=debug, offline=offline,
-               offline_transfer=offline_transfer)
-        return
+    if not offline:
+        # if we are not in offline mode, we need a url
+        if not url:
+            logging.critical('url missing')
+            raise Exception('url missing')
 
-    # if we are not in offline mode, we need a url
-    if not url:
-        logger.critical('url missing')
-        raise Exception('url missing')
+        # setup jsonRPC
+        kwargs = {}
+        if 'username' in config['options']:
+            kwargs['username'] = config['options']['username']
+        if 'password' in config['options']:
+            kwargs['password'] = config['options']['password']
+        if 'ssl' in config['options'] and config['options']['ssl']:
+            kwargs.update(config['options']['ssl'])
+        rpc = ServerComms(url+'/jsonrpc', passkey, None, **kwargs)
 
-    # setup jsonRPC
-    kwargs = {}
-    if 'username' in config['options']:
-        kwargs['username'] = config['options']['username']
-    if 'password' in config['options']:
-        kwargs['password'] = config['options']['password']
-    if 'ssl' in config['options'] and config['options']['ssl']:
-        kwargs.update(config['options']['ssl'])
-    rpc = ServerComms(url+'/jsonrpc', passkey, None, **kwargs)
-
-    if 'tasks' in config and config['tasks']:
-        logger.info('default configuration - a single task')
-        if not offline:
+    async def run():
+        if offline:
+            logging.info('offline mode')
+            async for proc in runner(config, url, debug=debug,
+                    offline=offline, offline_transfer=offline_transfer):
+                await proc.wait()
+        elif 'tasks' in config and config['tasks']:
+            logging.info('online mode - single task')
             # tell the server that we are processing this task
+            if 'task_id' not in config['options']:
+                raise Exception('config["options"]["task_id"] not specified')
             try:
-                if 'task_id' not in config['options']:
-                    raise Exception('config["options"]["task_id"] not specified, '
-                                    'so cannot update status')
-                rpc.processing(config['options']['task_id'])
+                await rpc.processing(config['options']['task_id'])
             except Exception:
-                logger.error('json error', exc_info=True)
+                logging.error('json error', exc_info=True)
 
-        # set up stdout and stderr
-        stdout = partial(to_file,sys.stdout,constants['stdout'])
-        stderr = partial(to_file,sys.stderr,constants['stderr'])
-        with stdout(), stderr():
-            runner(config, url, rpc=rpc, debug=debug)
-    else:
-        logger.info('pilot mode - get many tasks from server')
-        if 'gridspec' not in config['options']:
-            logger.critical('gridspec missing')
-            raise Exception('gridspec missing')
-        if not pilot_id:
-            logger.critical('pilot_id missing')
-            raise Exception('pilot_id missing')
-        pilot_kwargs = {}
-        if 'run_timeout' in config['options']:
-            pilot_kwargs['run_timeout'] = config['options']['run_timeout']
-        iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
-                                 runner=partial(runner, rpc=rpc, url=url, debug=debug),
-                                 pilot_id=pilot_id, **pilot_kwargs)
+            # set up stdout and stderr
+            stdout = partial(to_file,sys.stdout,constants['stdout'])
+            stderr = partial(to_file,sys.stderr,constants['stderr'])
+            with stdout(), stderr():
+                async for proc in runner(config, url, rpc=rpc, debug=debug):
+                    await proc.wait()
+        else:
+            logging.info('pilot mode - get many tasks from server')
+            if 'gridspec' not in config['options']:
+                logging.critical('gridspec missing')
+                raise Exception('gridspec missing')
+            if not pilot_id:
+                logging.critical('pilot_id missing')
+                raise Exception('pilot_id missing')
+            pilot_kwargs = {}
+            if 'run_timeout' in config['options']:
+                pilot_kwargs['run_timeout'] = config['options']['run_timeout']
+            async with iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
+                                     runner=partial(runner, rpc=rpc, url=url, debug=debug),
+                                     pilot_id=pilot_id, **pilot_kwargs) as p:
+                await p.run()
 
-    logger.warning('finished running normally; exiting...')
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run())
 
-def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=False):
+    logging.warning('finished running normally; exiting...')
+
+async def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=False):
     """Run a config.
 
     #. Set some default options if not set in configuration.
@@ -183,9 +182,13 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
         offline (bool): (optional) enable offline mode
         offline_transfer (bool): (optional) enable/disable offline data transfers
     """
-    logger = logging.getLogger('i3exec_runner')
-    
-    # set logging verbosity
+    # set logging
+    if offline:
+        logger = logging.getLogger('task')
+    else:
+        if 'task_id' not in config['options']:
+            raise Exception('task_id not set in config options')
+        logger = logging.getLogger(config['options']['task_id'])
     if 'debug' not in config['options']:
         config['options']['debug'] = debug
     if ('debug' in config['options'] and config['options']['debug'] and
@@ -194,7 +197,7 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
     if ('loglevel' in config['options'] and
         config['options']['loglevel'].upper() in iceprod.core.logger.setlevel):
         try:
-            iceprod.core.logger.set_log_level(config['options']['loglevel'])
+            logger.set_log_level(config['options']['loglevel'])
         except Exception:
             logger.warning('failed to set a new log level', exc_info=True)
 
@@ -219,12 +222,14 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
         config['options']['dataset_temp'] = os.path.join(config['options']['site_temp'],'$(dataset)')
     if 'job_temp' not in config['options']:
         config['options']['job_temp'] = os.path.join(config['options']['dataset_temp'],'$(job)')
+    if 'subprocess_dir' not in config['options']:
+        config['options']['subprocess_dir'] = os.getcwd()
     if 'task_temp' not in config['options']:
-        config['options']['task_temp'] = 'file:'+os.path.join(os.getcwd(),'task_temp')
+        config['options']['task_temp'] = 'file:'+os.path.join(config['options']['subprocess_dir'],'task_temp')
     if 'tray_temp' not in config['options']:
-        config['options']['tray_temp'] = 'file:'+os.path.join(os.getcwd(),'tray_temp')
+        config['options']['tray_temp'] = 'file:'+os.path.join(config['options']['subprocess_dir'],'tray_temp')
     if 'local_temp' not in config['options']:
-        config['options']['local_temp'] = os.path.join(os.getcwd(),'local_temp')
+        config['options']['local_temp'] = os.path.join(config['options']['subprocess_dir'],'local_temp')
     if 'stillrunninginterval' not in config['options']:
         config['options']['stillrunninginterval'] = 60
     if 'upload' not in config['options']:
@@ -253,9 +258,7 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
             resource_thread.start()
 
     # make exe Config
-    cfg = iceprod.core.exe.Config(config=config,rpc=rpc)
-    if rpc:
-        rpc.cfg = cfg
+    cfg = iceprod.core.exe.Config(config=config, rpc=rpc, logger=logger)
 
     # set up global env, based on config['options'] and config.steering
     env_opts = cfg.parseObject(config['options'], {})
@@ -265,7 +268,7 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
             # keep track of the start time
             start_time = time.time()
 
-            with iceprod.core.exe.setupenv(cfg, config['steering'], {'options':env_opts}) as env:
+            async with iceprod.core.exe.SetupEnv(cfg, config['steering'], {'options':env_opts}, logger=logger) as env:
                 logger.warning("config options: %r",config['options'])
 
                 # find tasks to run
@@ -279,7 +282,8 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
                         # find task by name
                         for task in config['tasks']:
                             if task['name'] == name:
-                                iceprod.core.exe.runtask(cfg, env, task)
+                                async for proc in iceprod.core.exe.runtask(cfg, env, task, logger=logger):
+                                    yield proc
                                 break
                         else:
                             logger.critical('cannot find task named %r', name)
@@ -288,7 +292,8 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
                         # find task by index
                         if (name >= 0 and
                             name < len(config['tasks'])):
-                            iceprod.core.exe.runtask(cfg, env, config['tasks'][name])
+                            async for proc in iceprod.core.exe.runtask(cfg, env, config['tasks'][name], logger=logger):
+                                yield proc
                         else:
                             logger.critical('cannot find task index %d', name)
                             raise Exception('cannot find specified task')
@@ -299,11 +304,14 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
                         raise Exception('cannot find specified task')
                     # finish task
                     if not offline:
-                        rpc.finish_task(env['stats'], start_time=start_time)
+                        await rpc.finish_task(config['options']['task_id'],
+                                dataset_id=config['options']['dataset_id'],
+                                stats=env['stats'], start_time=start_time)
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
-                        iceprod.core.exe.runtask(cfg, env, task)
+                        async for proc in iceprod.core.exe.runtask(cfg, env, task):
+                            yield proc
                 else:
                     raise Exception('task to run not specified')
 
@@ -313,8 +321,10 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
             # set task status on server
             if not offline:
                 try:
-                    rpc.task_error(stats=env['stats'],
-                                   start_time=start_time, reason=str(e))
+                    await rpc.task_error(config['options']['task_id'],
+                            dataset_id=config['options']['dataset_id'],
+                            stats=env['stats'], start_time=start_time,
+                            reason=str(e))
                 except Exception as e:
                     logger.error(e)
                 # forcibly turn on logging, so we can see the error
@@ -346,19 +356,19 @@ def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=F
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        rpc.uploadLog()
-                        rpc.uploadErr()
-                        rpc.uploadOut()
+                        await rpc.uploadLog()
+                        await rpc.uploadErr()
+                        await rpc.uploadOut()
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        rpc.uploadLog()
+                        await rpc.uploadLog()
                     elif up.startswith('err'):
                         # upload err files
-                        rpc.uploadErr()
+                        await rpc.uploadErr()
                     elif up.startswith('out'):
                         # upload out files
-                        rpc.uploadOut()
+                        await rpc.uploadOut()
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 

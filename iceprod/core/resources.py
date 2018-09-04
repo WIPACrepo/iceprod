@@ -21,8 +21,6 @@ try:
 except ImportError:
     psutil = None
 
-logger = logging.getLogger('resources')
-
 class Resources:
     """
     Task (and node) resource definition and tracking.
@@ -89,7 +87,6 @@ class Resources:
                 'disk':30,
                 'time':1,
             }
-            logger.setLevel(logging.DEBUG)
         else:
             #: time intervals when to check resources, vs using cached values
             self.lookup_intervals = {
@@ -100,7 +97,6 @@ class Resources:
                 'disk':180,
                 'time':1,
             }
-            logger.setLevel(logging.INFO)
 
         #: start time for resource tracking
         self.start_time = time.time()/3600
@@ -121,7 +117,7 @@ class Resources:
                     or (isinstance(self.defaults[r], list)
                         and not isinstance(raw[r], list))
                     ):
-                    logger.error('bad type of supplied resource: %s=%r', r, raw[r])
+                    logging.error('bad type of supplied resource: %s=%r', r, raw[r])
                 else:
                     v = raw[r]
                     if isinstance(self.defaults[r], int):
@@ -132,9 +128,9 @@ class Resources:
                         v = deepcopy(v)
                     if r == 'time':
                         v = time.time()/3600+v-0.1
-                    logger.info('setting %s to %r', r, v)
+                    logging.info('setting %s to %r', r, v)
                     self.total[r] = v
-        logger.warning('total resources: %r', self.total)
+        logging.warning('total resources: %r', self.total)
 
         #: available resources that are unclaimed
         self.available = deepcopy(self.total)
@@ -210,10 +206,10 @@ class Resources:
             'time':self.total['time'],
         }
         if not resources:
-            logger.info('claiming all avaialble resources for %s', task_id)
+            logging.info('claiming all avaialble resources for %s', task_id)
             claim = deepcopy(self.available)
         else:
-            logger.info('asking for %r', resources)
+            logging.info('asking for %r', resources)
             for r in resources:
                 if r not in self.available:
                     raise Exception('bad resource type: %r'%r)
@@ -257,7 +253,7 @@ class Resources:
 
         # now send back to user
         claim['time'] -= now
-        logger.info('granted %r', claim)
+        logging.info('granted %r', claim)
         return claim
 
     def release(self, task_id):
@@ -268,7 +264,7 @@ class Resources:
             task_id (str): the task_id
         """
         if task_id not in self.claimed:
-            logger.warning('release: task_id %s not in claimed', task_id)
+            logging.warning('release: task_id %s not in claimed', task_id)
             return
         claim = self.claimed[task_id]
         for r in claim['resources']:
@@ -294,7 +290,7 @@ class Resources:
             tmpdir (str): temporary directory in use by process
         """
         if task_id not in self.claimed:
-            logger.warning('register: task_id %s not in claimed', task_id)
+            logging.warning('register: task_id %s not in claimed', task_id)
             return
         self.claimed[task_id].update({
             'process': process,
@@ -316,9 +312,9 @@ class Resources:
             claim = self.claimed[task_id]
             try:
                 usage = self.get_usage(task_id, force=force)
-                logger.debug('%s is using %r', task_id, usage)
+                logging.debug('%s is using %r', task_id, usage)
             except Exception:
-                logger.warning('error getting usage for %r', task_id,
+                logging.warning('error getting usage for %r', task_id,
                             exc_info=True)
                 continue
             usage_time = usage['time'] - self.history[task_id]['create_time']
@@ -334,12 +330,12 @@ class Resources:
                     overusage_percent = usage[r]*1.0/claim_r
                     limit = self.overusage_limits[r]
                     if overusage_percent < limit['ignore']:
-                        logger.info('ignoring overusage of %s for %s', r, task_id)
+                        logging.info('ignoring overusage of %s for %s', r, task_id)
                     elif (r == 'time' and usage[r] < avail_r):
-                        logger.info('managable overusage of time for %s', task_id)
+                        logging.info('managable overusage of time for %s', task_id)
                     elif (r != 'time' and overusage < avail_r
                           and overusage_percent < limit['allowed']):
-                        logger.info('managable overusage of %s for %s', r, task_id)
+                        logging.info('managable overusage of %s for %s', r, task_id)
                     else:
                         ret[task_id] = 'Resource overusage for {}: {}'.format(r,
                                 usage_time if r == 'time' else usage[r])
@@ -405,7 +401,7 @@ class Resources:
         if force or now - task['children_last_lookup'] > self.lookup_intervals['children']:
             task['children_last_lookup'] = now
             task['children'][:] = process.children(recursive=True)
-            logger.debug('children_lookup')
+            logging.debug('children_lookup')
 
         lookups = {}
         for r in ('cpu','memory','disk','gpu'):
@@ -442,7 +438,7 @@ class Resources:
             'gpu':  gpu/100.0 if lookups['gpu'] else None,
             'time': now/3600,
         }
-        logger.debug('used_resources: %r', used_resources)
+        logging.debug('used_resources: %r', used_resources)
 
         # now average for those that need it
         ret = {}
@@ -455,7 +451,7 @@ class Resources:
                 if used_resources[r] is not None:
                     task[r] = used_resources[r]
                 ret[r] = task[r]
-        logger.debug('ret: %r', ret)
+        logging.debug('ret: %r', ret)
         return ret
 
     def get_peak(self, task_id):
@@ -518,14 +514,14 @@ def get_cpus():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totalcpus':
                     ret = int(float(line.split('=')[1]))
-                    logger.info('got cpus from machine ad: %r',ret)
+                    logging.info('got cpus from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if (not ret) and 'NUM_CPUS' in os.environ:
         try:
             ret = int(float(os.environ['NUM_CPUS']))
-            logger.info('got cpus from NUM_CPUS: %r',ret)
+            logging.info('got cpus from NUM_CPUS: %r',ret)
         except Exception:
             pass
     if not ret:
@@ -546,32 +542,32 @@ def get_gpus():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'assignedgpus':
                     ret = line.split('=')[1].strip(' "').split(',')
-                    logger.info('got gpus from machine ad: %r',ret)
+                    logging.info('got gpus from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if (not ret) and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
             ret = [x.strip() for x in os.environ['CUDA_VISIBLE_DEVICES'].split(',') if x.strip()]
-            logger.info('got gpus from CUDA_VISIBLE_DEVICES: %r',ret)
+            logging.info('got gpus from CUDA_VISIBLE_DEVICES: %r',ret)
         except Exception:
             pass
     if (not ret) and 'GPU_DEVICE_ORDINAL' in os.environ:
         try:
             ret = [x.strip() for x in os.environ['GPU_DEVICE_ORDINAL'].split(',') if x.strip()]
-            logger.info('got gpus from GPU_DEVICE_ORDINAL: %r',ret)
+            logging.info('got gpus from GPU_DEVICE_ORDINAL: %r',ret)
         except Exception:
             pass
     if (not ret) and '_CONDOR_AssignedGPUs' in os.environ:
         try:
             ret = [x.strip() for x in os.environ['_CONDOR_AssignedGPUs'].split(',') if x.strip()]
-            logger.info('got gpus from _CONDOR_AssignedGPUs: %r',ret)
+            logging.info('got gpus from _CONDOR_AssignedGPUs: %r',ret)
         except Exception:
             pass
     if (not ret) and 'NUM_GPUS' in os.environ:
         try:
             ret = [str(x) for x in range(int(os.environ['NUM_GPUS']))]
-            logger.info('got gpus from NUM_GPUS: %r',ret)
+            logging.info('got gpus from NUM_GPUS: %r',ret)
         except Exception:
             pass
     if not ret:
@@ -588,14 +584,14 @@ def get_memory():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totalmemory':
                     ret = float(line.split('=')[1])/1000.
-                    logger.info('got memory from machine ad: %r',ret)
+                    logging.info('got memory from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if (not ret) and 'NUM_MEMORY' in os.environ:
         try:
             ret = float(os.environ['NUM_MEMORY'])
-            logger.info('got memory from NUM_MEMORY: %r',ret)
+            logging.info('got memory from NUM_MEMORY: %r',ret)
         except Exception:
             pass
     if not ret:
@@ -612,14 +608,14 @@ def get_disk():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'totaldisk':
                     ret = float(line.split('=')[1])/1000000.
-                    logger.info('got disk from machine ad: %r',ret)
+                    logging.info('got disk from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if (not ret) and 'NUM_DISK' in os.environ:
         try:
             ret = float(os.environ['NUM_DISK'])
-            logger.info('got disk from NUM_DISK: %r',ret)
+            logging.info('got disk from NUM_DISK: %r',ret)
         except Exception:
             pass
     if not ret:
@@ -636,14 +632,14 @@ def get_time():
                 line = line.strip()
                 if line and line.split('=')[0].strip().lower() == 'timetolive':
                     ret = float(line.split('=')[1])/3600
-                    logger.info('got time from machine ad: %r',ret)
+                    logging.info('got time from machine ad: %r',ret)
                     break
         except Exception:
             pass
     if (not ret)and 'NUM_TIME' in os.environ:
         try:
             ret = float(os.environ['NUM_TIME'])
-            logger.info('got time from NUM_TIME: %r',ret)
+            logging.info('got time from NUM_TIME: %r',ret)
         except Exception:
             pass
     if not ret:
@@ -666,7 +662,7 @@ def get_gpu_utilization_by_id(gpu_id):
             elif k == 'Power Draw':
                 ret['power'] = float(v.replace('W','').strip())
     except Exception:
-        logger.info('nvidia-smi failed for gpu %s', gpu_id, exc_info=True)
+        logging.info('nvidia-smi failed for gpu %s', gpu_id, exc_info=True)
     return ret
 
 def du(path):
@@ -679,7 +675,7 @@ def du(path):
     Returns:
         int: bytes used
     """
-    logger.info('du of %s', path)
+    logging.info('du of %s', path)
     total = 0
     for root,dirs,files in os.walk(path):
         for d in list(dirs):
@@ -690,7 +686,7 @@ def du(path):
             p = os.path.join(root,f)
             if not os.path.islink(p):
                 total += os.path.getsize(p)
-    logger.info('du of %s finished: %r', path, total)
+    logging.info('du of %s finished: %r', path, total)
     return total
 
 def group_hasher(resources):

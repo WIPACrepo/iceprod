@@ -9,16 +9,13 @@ import logging
 import tempfile
 import shutil
 from functools import partial
-from multiprocessing import Process, active_children
-try:
-    from multiprocessing import SimpleQueue
-except ImportError:
-    from multiprocessing.queues import SimpleQueue
 from collections import namedtuple
 from datetime import timedelta
 from glob import glob
 import signal
 import traceback
+import asyncio
+import concurrent.futures
 
 from iceprod.core.functions import gethostname
 from iceprod.core import to_file, constants
@@ -29,10 +26,6 @@ from iceprod.core.dataclasses import Number, String
 import iceprod.core.logger
 
 logger = logging.getLogger('pilot')
-
-from tornado import gen
-from tornado.ioloop import IOLoop
-from tornado.locks import Condition
 
 try:
     import psutil
@@ -45,43 +38,18 @@ except ImportError:
     def setproctitle(name):
         pass
 
-
-def process_wrapper(func, title, pilot_id='', hostname='', resources={}):
-    """
-    Set process title. Set log file, stdout, stderr. Then go on to call func.
-
-    Args:
-        func (callable): The function that we really want to run
-        title (str): The new process title
-        pilot_id (str): The pilot id
-        hostname (str): The hostname
-        resources (dict): The resources of this process
-    """
-    try:
-        setproctitle(title)
-    except Exception:
-        pass
-
-    Resources.set_env(resources)
-
-    iceprod.core.logger.new_file(constants['stdlog'])
-    logger.warning('pilot_id: %s', pilot_id)
-    logger.warning('hostname: %s', hostname)
-    env_str = '\n'.join('    '+k+' = '+os.environ[k] for k in os.environ)
-    logger.warning('environment: \n%s', env_str)
-
-    stdout = partial(to_file,sys.stdout,constants['stdout'])
-    stderr = partial(to_file,sys.stderr,constants['stderr'])
-    with stdout(), stderr():
-        func()
-
-class Pilot(object):
+class Pilot:
     """
     A pilot task runner.
 
     The pilot allows multiple tasks to run in sequence or parallel.
     It keeps track of resource usage, killing anything that goes over
     requested amounts.
+
+    Use as an async context manager::
+
+        async with Pilot(*args) as p:
+            await p.run()
 
     Args:
         config (dict): the configuration dictionary
@@ -99,22 +67,17 @@ class Pilot(object):
         self.hostname = gethostname()
         self.rpc = rpc
         self.debug = debug
-        self.run_timeout = timedelta(seconds=run_timeout)
-        self.message_queue = SimpleQueue()
+        self.run_timeout = run_timeout
         self.errors = 10
+        self.resource_interval = 1.0 # seconds between resouce measurements
 
-        if self.debug:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+        self.running = True
+        self.tasks = {}
 
         try:
             setproctitle('iceprod2_pilot({})'.format(pilot_id))
         except Exception:
             pass
-
-        self.running = True
-        self.lock = Condition()
 
         logger.warning('pilot_id: %s', self.pilot_id)
         logger.warning('hostname: %s', self.hostname)
@@ -130,17 +93,13 @@ class Pilot(object):
                 os.environ[name] = str(v)
         self.resources = Resources(debug=self.debug)
 
-        self.start_time = time.time()
-
-        self.ioloop = IOLoop.current()
-
-        # set up jsonrpc forwarder
-        self.ioloop.add_callback(self.message_queue_monitor)
-
+        self.start_time = time.time()      
+        
+    async def __aenter__(self):
+        loop = asyncio.get_event_loop()
         # set up resource monitor
-        self.tasks = {}
         if psutil:
-            self.ioloop.add_callback(self.resource_monitor)
+            loop.create_task(self.resource_monitor())
         else:
             logger.warning('no psutil. not checking resource usage')
 
@@ -148,12 +107,12 @@ class Pilot(object):
         def handler(signum, frame):
             logger.critical('termination signal received')
             self.running = False
-            self.ioloop.add_callback_from_signal(self.term_handler)
-        signal.signal(signal.SIGTERM, handler)
+            self.term_handler()
+        self.prev_signal = signal.signal(signal.SIGTERM, handler)
 
-        # run the loop
-        self.ioloop.run_sync(self.run)
+        return self
 
+    async def __aexit__(self, exc_type, exc, tb):
         # make sure any child processes are dead
         self.hard_kill()
 
@@ -169,8 +128,8 @@ class Pilot(object):
                             with open(os.path.join(dirs,filename)) as f2:
                                 print(f2.read(), file=f)
 
-        if self.errors <= 0:
-            raise RuntimeError('too many errors')
+        # restore previous signal handler
+        signal.signal(signal.SIGTERM, self.prev_signal)
 
     def term_handler(self):
         """Handle a SIGTERM gracefully"""
@@ -189,14 +148,11 @@ class Pilot(object):
             message = reason
             message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
             message += '\nhostname: {}'.format(self.hostname)
-            self.rpc.task_kill(task_id, resources=used_resources,
-                               reason=reason, message=message)
+            self.rpc.task_kill_sync(task_id, resources=used_resources,
+                                    reason=reason, message=message)
 
         # stop the pilot
-        self.rpc.update_pilot(self.pilot_id, tasks=[],
-                              available=self.resources.get_available(),
-                              claimed=self.resources.get_claimed())
-        self.ioloop.stop()
+        self.rpc.update_pilot_sync(self.pilot_id, tasks=[])
         sys.exit(1)
 
     def hard_kill(self):
@@ -213,42 +169,17 @@ class Pilot(object):
                 except Exception:
                     logger.warning('error killing process',
                                 exc_info=True)
-        processes = active_children()
-        for p in processes:
-            p.terminate()
+        for task in self.tasks.values():
+            task['p'].kill()
 
-    def message_queue_monitor(self):
-        """Forward JSONRPC messages from tasks"""
-        sleep_time = 0.1
-        try:
-            if not self.message_queue.empty():
-                task_id,func_name,cfg,args,kwargs = self.message_queue.get()
-                logger.info('forwarding message for %s to %s', task_id, func_name)
-                self.rpc.cfg = Config(cfg)
-                if func_name in ('finishtask','taskerror'):
-                    kwargs['resources'] = self.resources.get_final(task_id)
-                try:
-                    ret = getattr(self.rpc, func_name)(*args,**kwargs)
-                except Exception as e:
-                    logger.info('exception returned from forward', exc_info=True)
-                    ret = e
-                if task_id not in self.tasks:
-                    logger.warning('cannot forward return value')
-                else:
-                    self.tasks[task_id]['recv_queue'].put(ret)
-        except Exception:
-            logger.info('error forwarding message', exc_info=True)
-        self.ioloop.call_later(sleep_time, self.message_queue_monitor)
-
-    @gen.coroutine
-    def resource_monitor(self):
+    async def resource_monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""
         try:
-            sleep_time = 0.5 # check every X seconds
+            sleep_time = self.resource_interval # check every X seconds
             while self.running or self.tasks:
                 logger.debug('pilot monitor - checking resource usage')
                 start_time = time.time()
-                
+
                 overages = self.resources.check_claims()
                 for task_id in overages:
                     used_resources = self.resources.get_peak(task_id)
@@ -258,34 +189,32 @@ class Pilot(object):
                     message = overages[task_id]
                     message += '\n\npilot_id: {}'.format(self.pilot_id)
                     message += '\nhostname: {}'.format(self.hostname)
-                    self.rpc.task_kill(task_id, resources=used_resources,
-                                       reason=overages[task_id], message=message)
-                    # try to queue another task
-                    logger.info('killed, so notify')
-                    self.lock.notify()
+                    await self.rpc.task_kill(task_id, resources=used_resources,
+                            reason=overages[task_id], message=message)
 
                 duration = time.time()-start_time
                 logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
                 if duration < sleep_time:
-                    yield self.lock.wait(timeout=timedelta(seconds=sleep_time-duration))
+                    await asyncio.sleep(sleep_time-duration)
         except Exception:
             logger.error('pilot monitor died', exc_info=True)
             raise
         logger.warning('pilot monitor exiting')
 
-    @gen.coroutine
-    def run(self):
+    async def run(self):
         """Run the pilot"""
         self.errors = max_errors = int(self.resources.total['cpu'])*10
         tasks_running = 0
-        while self.running:
+        while self.running or self.tasks:
             while self.running:
+                # retrieve new task(s)
                 if self.resources.total['gpu'] and not self.resources.available['gpu']:
                     logger.info('gpu pilot with no gpus left - not queueing')
                     break
                 try:
-                    task_configs = self.rpc.download_task(self.config['options']['gridspec'],
-                                                         resources=self.resources.get_available())
+                    task_configs = await self.rpc.download_task(
+                            self.config['options']['gridspec'],
+                            resources=self.resources.get_available())
                 except Exception:
                     self.errors -= 1
                     if self.errors < 1:
@@ -303,6 +232,7 @@ class Pilot(object):
                         logger.warning('no task available, draining')
                     break
                 else:
+                    # start up new task(s)
                     for task_config in task_configs:
                         try:
                             task_id = task_config['options']['task_id']
@@ -331,7 +261,10 @@ class Pilot(object):
                                                message=message)
                             break
                         try:
-                            self.create_task(task_config)
+                            f = self.create_task(task_config)
+                            task = await f.__anext__()
+                            task['iter'] = f
+                            self.tasks[task_id] = task
                         except Exception:
                             self.errors -= 1
                             if self.errors < 1:
@@ -345,11 +278,11 @@ class Pilot(object):
                                                message=message)
                             self.clean_task(task_id)
                             break
-                    else:
-                        tasks_running += len(task_configs)
-                        self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
-                                              resources_available=self.resources.get_available(),
-                                              resources_claimed=self.resources.get_claimed())
+
+                    # update pilot status
+                    await self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
+                                          resources_available=self.resources.get_available(),
+                                          resources_claimed=self.resources.get_claimed())
 
                 if (self.resources.available['cpu'] < 1
                     or self.resources.available['memory'] < 1
@@ -360,23 +293,49 @@ class Pilot(object):
             # wait until we can queue more tasks
             while self.running or self.tasks:
                 logger.info('wait while tasks are running. timeout=%r',self.run_timeout)
-                ret = yield self.lock.wait(timeout=self.run_timeout)
-                logger.debug('yield returned %r',ret)
-                # check if any processes have died
+                start_time = time.time()
+                while self.tasks and time.time()-self.run_timeout < start_time:
+                    done,pending = await asyncio.wait([task['p'].wait() for task in self.tasks.values()],
+                                                      timeout=self.resource_interval,
+                                                      return_when=concurrent.futures.FIRST_COMPLETED)
+                    if done:
+                        break
+
+                tasks_running = len(self.tasks)
                 for task_id in list(self.tasks):
-                    if not self.tasks[task_id]['p'].is_alive():
-                        if self.tasks[task_id]['p'].exitcode != 0:
+                    # check if any processes have died
+                    proc = self.tasks[task_id]['p']
+                    clean = False
+                    if proc.returncode is not None:
+                        if proc.returncode != 0:
                             logger.info('task %s exited with bad code: %r',
-                                        task_id, self.tasks[task_id]['p'].exitcode)
+                                        task_id, proc.returncode)
                             self.errors -= 1
-                            if self.errors < 1:
-                                self.running = False
-                                logger.warning('errors over limit, draining')
-                        self.clean_task(task_id)
-                if len(self.tasks) < tasks_running:
+                        clean = True
+                    else:
+                        # check if the DB has killed a task
+                        try:
+                            await self.rpc.still_running(task_id)
+                        except Exception:
+                            # task is killed
+                            clean = True
+                    if clean:
+                        # attempt to get next yielded task, or clean task
+                        try:
+                            task = await f.__anext__()
+                        except StopAsyncIteration:
+                            self.clean_task(task_id)
+                        else:
+                            self.tasks[task_id] = task
+                if self.errors < 1:
+                    self.running = False
+                    logger.warning('errors over limit, draining')
+
+                # update pilot status
+                if (not self.tasks) or len(self.tasks) < tasks_running:
                     logger.info('%d tasks removed', tasks_running-len(self.tasks))
                     tasks_running = len(self.tasks)
-                    self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
+                    await self.rpc.update_pilot(self.pilot_id, tasks=list(self.tasks),
                                           resources_available=self.resources.get_available(),
                                           resources_claimed=self.resources.get_claimed())
                     if self.running:
@@ -388,16 +347,17 @@ class Pilot(object):
                     break
 
         # last update for pilot state
-        self.rpc.update_pilot(self.pilot_id, tasks=[],
+        await self.rpc.update_pilot(self.pilot_id, tasks=[],
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
 
         if self.errors < 1:
             logger.critical('too many errors when running tasks')
+            raise RuntimeError('too many errors')
         else:
             logger.warning('cleanly stopping pilot')
 
-    def create_task(self, config):
+    async def create_task(self, config):
         """
         Create a new Task and start running it
 
@@ -413,42 +373,20 @@ class Pilot(object):
             elif k not in config['options']:
                 config['options'][k] = self.config['options'][k]
 
-        # add message queue
-        send_queue = SimpleQueue()
-        config['options']['message_queue'] = [self.message_queue, send_queue]
+        tmpdir = tempfile.mkdtemp(suffix='.{}'.format(task_id), dir=os.getcwd())
+        config['options']['subprocess_dir'] = tmpdir
 
-        # run task in tmp dir
-        main_dir = os.getcwd()
-        try:
-            tmpdir = tempfile.mkdtemp(dir=main_dir)
-
-            # symlink important files
-            if 'ssl' in config['options']:
-                for f in config['options']['ssl']:
-                    os.symlink(os.path.join(main_dir,config['options']['ssl'][f]),
-                               os.path.join(tmpdir,config['options']['ssl'][f]))
-
-            # start the task
-            os.chdir(tmpdir)
-            r = config['options']['resources']
-            p = Process(target=partial(process_wrapper, partial(self.runner, config),
-                                       'iceprod_task_{}'.format(task_id),
-                                       hostname=self.hostname,
-                                       pilot_id=self.pilot_id, resources=r))
-            p.start()
-            if psutil:
-                ps = psutil.Process(p.pid)
-                ps.nice(psutil.Process().nice()+1)
-            else:
-                ps = None
-            ur = {k:0 for k in r}
-            self.tasks[task_id] = {'p':p, 'process':ps, 'tmpdir':tmpdir,
-                                   'recv_queue':send_queue}
+        # start the task
+        r = config['options']['resources']
+        async for proc in self.runner(config, 'iceprod_task_{}'.format(task_id),
+                hostname=self.hostname, pilot_id=self.pilot_id, resources=r):
+            ps = psutil.Process(proc.pid) if psutil else None
             self.resources.register_process(task_id, ps, tmpdir)
-        except Exception:
-            logger.error('error creating task', exc_info=True)
-        finally:
-            os.chdir(main_dir)
+            yield {
+                'p': proc,
+                'process': ps,
+                'tmpdir': tmpdir,
+            }
 
     def clean_task(self, task_id):
         """Clean up a Task.
@@ -468,36 +406,42 @@ class Pilot(object):
             try:
                 if psutil:
                     # kill children correctly
-                    processes = task['process'].children(recursive=True)
-                    processes.reverse()
-                    processes.append(task['process'])
-                    for p in processes:
-                        try:
-                            p.terminate()
-                        except psutil.NoSuchProcess:
-                            pass
-                        except Exception:
-                            logger.warning('error terminating process',
-                                        exc_info=True)
-
-                    def on_terminate(proc):
-                        logger.info("process %r terminated with exit code %r",
-                                    proc, proc.returncode)
                     try:
-                        gone, alive = psutil.wait_procs(processes, timeout=0.1,
-                                                        callback=on_terminate)
-                        for p in alive:
+                        processes = task['process'].children(recursive=True)
+                    except psutil.NoSuchProcess:
+                        pass # process already died
+                    else:
+                        processes.reverse()
+                        processes.append(task['process'])
+                        for p in processes:
                             try:
-                                p.kill()
+                                p.terminate()
                             except psutil.NoSuchProcess:
                                 pass
                             except Exception:
-                                logger.warning('error killing process',
+                                logger.warning('error terminating process',
                                             exc_info=True)
-                    except Exception:
-                        logger.warning('failed to kill processes',
-                                    exc_info=True)
-                task['p'].terminate()
+
+                        def on_terminate(proc):
+                            logger.info("process %r terminated with exit code %r",
+                                        proc, proc.returncode)
+                        try:
+                            gone, alive = psutil.wait_procs(processes, timeout=0.1,
+                                                            callback=on_terminate)
+                            for p in alive:
+                                try:
+                                    p.kill()
+                                except psutil.NoSuchProcess:
+                                    pass
+                                except Exception:
+                                    logger.warning('error killing process',
+                                                exc_info=True)
+                        except Exception:
+                            logger.warning('failed to kill processes',
+                                        exc_info=True)
+                task['p'].kill()
+            except ProcessLookupError:
+                pass # process already died
             except Exception:
                 logger.warning('error deleting process', exc_info=True)
 

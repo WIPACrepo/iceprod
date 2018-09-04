@@ -10,7 +10,6 @@ from functools import wraps
 from datetime import datetime
 
 import logging
-logger = logging.getLogger('exe_json')
 
 from iceprod.core import constants
 from iceprod.core import functions
@@ -18,43 +17,6 @@ from iceprod.core import dataclasses
 from .serialization import dict_to_dataclasses
 from .jsonUtil import json_compressor,json_decode
 from .rest_client import Client
-
-
-def send_through_pilot(func):
-    """
-    Decorator to route communication through the pilot
-    """
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if 'task_id' not in self.cfg.config['options']:
-            raise Exception('config["options"]["task_id"] not specified')
-        if 'DBkill' in self.cfg.config['options'] and self.cfg.config['options']['DBkill']:
-            raise Exception('DBKill')
-        if 'message_queue' in self.cfg.config['options']:
-            logger.info('send_through_pilot(%s)',func.__name__)
-            send,recv = self.cfg.config['options']['message_queue']
-            task_id = self.cfg.config['options']['task_id']
-            # mq can't be pickled, so remove temporarily
-            mq = self.cfg.config['options']['message_queue']
-            del self.cfg.config['options']['message_queue']
-            logger.info('config: %r', dict(self.cfg.config))
-            logger.info('args: %r', args)
-            logger.info('kwargs: %r', kwargs)
-            try:
-                send.put((task_id,func.__name__,self.cfg.config,args,kwargs))
-                ret = recv.get()
-                if ret:
-                    if isinstance(ret, Exception):
-                        raise ret
-                    elif len(ret) == 2:
-                        new_options, ret = ret
-                        self.cfg.config['options'] = new_options
-            finally:
-                self.cfg.config['options']['message_queue'] = mq
-            return ret
-        else:
-            return func(self, *args, **kwargs)
-    return wrapper
 
 
 class ServerComms:
@@ -72,7 +34,7 @@ class ServerComms:
         self.cfg = config
         self.rest = Client(address=url,auth_key=passkey,**kwargs)
 
-    def download_task(self, gridspec, resources={}):
+    async def download_task(self, gridspec, resources={}):
         """
         Download new task(s) from the server.
 
@@ -95,7 +57,7 @@ class ServerComms:
         os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
         if os_type:
             resources['os'] = os_type
-        task = self.rest.request_seq('GET', '/task_actions/process',
+        task = await self.rest.request('GET', '/task_actions/process',
                 {'gridspec': gridspec,
                  'hostname': hostname, 
                  'domain': domain,
@@ -113,13 +75,13 @@ class ServerComms:
                 try:
                     ret.append(dict_to_dataclasses(t))
                 except Exception:
-                    logger.warning('not a Job: %r',t)
+                    logging.warning('not a Job: %r',t)
                     raise
             else:
                 ret.append(t)
         return ret
 
-    def processing(self, task_id):
+    async def processing(self, task_id):
         """
         Tell the server that we are processing this task.
 
@@ -128,13 +90,19 @@ class ServerComms:
         Args:
             task_id (str): task_id to mark as processing
         """
-        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'processing'})
 
-    @send_through_pilot
-    def finish_task(self, stats={}, start_time=None, resources=None):
+    async def finish_task(self, task_id, dataset_id=None, stats={}, start_time=None, resources=None):
         """
         Finish a task.
+
+        Args:
+            task_id (str): task_id of task
+            dataset_id (str): (optional) dataset_id of task
+            stats (dict): (optional) task statistics
+            start_time (float): (optional) task start time in unix seconds
+            resources (dict): (optional) task resource usage
         """
         if 'stats' in self.cfg.config['options']:
             # filter task stats
@@ -156,34 +124,36 @@ class ServerComms:
         }
         if resources:
             iceprod_stats['resources'] = resources
-        if 'dataset_id' in self.cfg.config['options']:
-            iceprod_stats['dataset_id'] = self.cfg.config['options']['dataset_id']
+        if dataset_id:
+            iceprod_stats['dataset_id'] = dataset_id
 
-        task_id = self.cfg.config['options']['task_id']
-        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+        await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                               iceprod_stats)
-        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'complete'})
 
-    @send_through_pilot
-    def still_running(self):
-        """Check if the task should still be running according to the DB"""
-        task_id = self.cfg.config['options']['task_id']
-        ret = self.rest.request_seq('GET', '/tasks/{}'.format(task_id))
+    async def still_running(self, task_id):
+        """
+        Check if the task should still be running according to the DB.
+
+        Args:
+            task_id (str): task_id of task
+        """
+        ret = await self.rest.request('GET', '/tasks/{}'.format(task_id))
         if (not ret) or 'status' not in ret or ret['status'] != 'processing':
-            self.cfg.config['options']['DBkill'] = True
             raise Exception('task should be stopped')
 
-    @send_through_pilot
-    def task_error(self, stats={}, start_time=None, reason=None, resources=None):
+    async def task_error(self, task_id, dataset_id=None, stats={}, start_time=None, reason=None, resources=None):
         """
         Tell the server about the error experienced
 
         Args:
-            stats (dict): task statistics
-            start_time (float): task start time in unix seconds
-            reason (str): one-line summary of error
-            resources (dict): task resource usage
+            task_id (str): task_id of task
+            dataset_id (str): (optional) dataset_id of task
+            stats (dict): (optional) task statistics
+            start_time (float): (optional) task start time in unix seconds
+            reason (str): (optional) one-line summary of error
+            resources (dict): (optional) task resource usage
         """
         iceprod_stats = {}
         try:
@@ -203,26 +173,26 @@ class ServerComms:
             }
             if resources:
                 iceprod_stats['resources'] = resources
-            if 'dataset_id' in self.cfg.config['options']:
-                iceprod_stats['dataset_id'] = self.cfg.config['options']['dataset_id']
+            if dataset_id:
+                iceprod_stats['dataset_id'] = dataset_id
         except Exception:
-            logger.warning('failed to collect error info', exc_info=True)
+            logging.warning('failed to collect error info', exc_info=True)
 
-        task_id = self.cfg.config['options']['task_id']
-        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+        await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                               iceprod_stats)
-        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'reset'})
 
-    def task_kill(self, task_id, resources=None, reason=None, message=None):
+    async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
         """
-        Tell the server that we killed a task
+        Tell the server that we killed a task.
 
         Args:
-            task_id (str): the task_id
-            resources (dict): used resources
-            reason (str): short summary for kill
-            message (str): long message to replace log upload
+            task_id (str): task_id of task
+            dataset_id (str): (optional) dataset_id of task
+            resources (dict): (optional) used resources
+            reason (str): (optional) short summary for kill
+            message (str): (optional) long message to replace log upload
         """
         if not reason:
             reason = 'killed'
@@ -240,67 +210,121 @@ class ServerComms:
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
-            logger.warning('failed to collect error info', exc_info=True)
+            logging.warning('failed to collect error info', exc_info=True)
             iceprod_stats = {}
-        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
+        await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                               iceprod_stats)
-        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
+        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'reset'})
 
         data = {'name': 'stdlog', 'task_id': task_id}
-        try:
-            data['dataset_id'] = self.cfg.config['options']['dataset_id']
-        except Exception:
-            pass
+        if dataset_id:
+            data['dataset_id'] = dataset_id
         try:
             data['data'] = json_compressor.compress(message)
         except Exception as e:
             data['data'] = str(e)
-        self.rest.request_seq('POST', '/logs', data)
+        await self.rest.request('POST', '/logs', data)
         data.update({'name':'stdout', 'data': ''})
-        self.rest.request_seq('POST', '/logs', data)
+        await self.rest.request('POST', '/logs', data)
         data.update({'name':'stderr', 'data': ''})
-        self.rest.request_seq('POST', '/logs', data)
+        await self.rest.request('POST', '/logs', data)
 
-    @send_through_pilot
-    def _upload_logfile(self, name, filename):
+    async def _upload_logfile(self, name, filename, task_id=None, dataset_id=None):
         """Upload a log file"""
         data = {'name': name}
-        try:
-            data['task_id'] = self.cfg.config['options']['task_id']
-        except Exception:
-            pass
-        try:
-            data['dataset_id'] = self.cfg.config['options']['dataset_id']
-        except Exception:
-            pass
+        if task_id:
+            data['task_id'] = task_id
+        if dataset_id:
+            data['dataset_id'] = dataset_id
         try:
             data['data'] = json_compressor.compress(open(filename,'rb').read())
         except Exception as e:
             data['data'] = str(e)
-        self.rest.request_seq('POST', '/logs', data)
+        await self.rest.request('POST', '/logs', data)
 
-    def uploadLog(self):
+    async def uploadLog(self, **kwargs):
         """Upload log file"""
         logging.getLogger().handlers[0].flush()
-        self._upload_logfile('stdlog', os.path.abspath(constants['stdlog']))
+        await self._upload_logfile('stdlog', os.path.abspath(constants['stdlog']), **kwargs)
 
-    def uploadErr(self):
+    async def uploadErr(self, **kwargs):
         """Upload stderr file"""
         sys.stderr.flush()
-        self._upload_logfile('stderr', os.path.abspath(constants['stderr']))
+        await self._upload_logfile('stderr', os.path.abspath(constants['stderr']), **kwargs)
 
-    def uploadOut(self):
+    async def uploadOut(self, **kwargs):
         """Upload stdout file"""
-        sys.stderr.flush()
-        self._upload_logfile('stdout', os.path.abspath(constants['stdout']))
+        sys.stdout.flush()
+        await self._upload_logfile('stdout', os.path.abspath(constants['stdout']), **kwargs)
 
-    def update_pilot(self, pilot_id, **kwargs):
+    async def update_pilot(self, pilot_id, **kwargs):
         """
-        Update the pilot table
+        Update the pilot table.
 
         Args:
             pilot_id (str): pilot id
             **kwargs: passed through to rpc function
         """
-        self.rest.request_seq('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
+        await self.rest.request('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
+
+
+    # --- synchronous versions to be used from a signal handler
+    # --- or other non-async code
+
+    def task_kill_sync(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
+        """
+        Tell the server that we killed a task (synchronous version).
+
+        Args:
+            task_id (str): task_id of task
+            dataset_id (str): (optional) dataset_id of task
+            resources (dict): (optional) used resources
+            reason (str): (optional) short summary for kill
+            message (str): (optional) long message to replace log upload
+        """
+        if not reason:
+            reason = 'killed'
+        if not message:
+            message = reason
+        try:
+            hostname = functions.gethostname()
+            domain = '.'.join(hostname.split('.')[-2:])
+            iceprod_stats = {
+                'hostname': hostname,
+                'domain': domain,
+                'time': datetime.utcnow().isoformat(),
+                'error_summary': reason if reason else '',
+            }
+            if resources:
+                iceprod_stats['resources'] = resources
+        except Exception:
+            logging.warning('failed to collect error info', exc_info=True)
+            iceprod_stats = {}
+        self.rest.request_sync('POST', '/tasks/{}/task_stats'.format(task_id),
+                               iceprod_stats)
+        self.rest.request_sync('PUT', '/tasks/{}/status'.format(task_id),
+                               {'status': 'reset'})
+
+        data = {'name': 'stdlog', 'task_id': task_id}
+        if dataset_id:
+            data['dataset_id'] = dataset_id
+        try:
+            data['data'] = json_compressor.compress(message)
+        except Exception as e:
+            data['data'] = str(e)
+        self.rest.request_sync('POST', '/logs', data)
+        data.update({'name':'stdout', 'data': ''})
+        self.rest.request_sync('POST', '/logs', data)
+        data.update({'name':'stderr', 'data': ''})
+        self.rest.request_sync('POST', '/logs', data)
+
+    def update_pilot_sync(self, pilot_id, **kwargs):
+        """
+        Update the pilot table (synchronous version).
+
+        Args:
+            pilot_id (str): pilot id
+            **kwargs: passed through to rpc function
+        """
+        self.rest.request_sync('PATCH', '/pilots/{}'.format(pilot_id), kwargs)

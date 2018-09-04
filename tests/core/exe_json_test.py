@@ -25,10 +25,9 @@ except:
     import pickle
 
 import unittest
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch
+
+from tornado.testing import AsyncTestCase
 
 from iceprod.core import to_log,constants
 import iceprod.core.functions
@@ -37,7 +36,7 @@ import iceprod.core.exe_json
 from iceprod.core.jsonUtil import json_encode,json_decode,json_compressor
 
 
-class exe_json_test(unittest.TestCase):
+class exe_json_test(AsyncTestCase):
     def setUp(self):
         super(exe_json_test,self).setUp()
 
@@ -79,152 +78,215 @@ class exe_json_test(unittest.TestCase):
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_10_download_task(self, Client):
+    async def test_10_download_task(self, Client):
         """Test download_task"""
         task = {'dataset':10}
         c = Client.return_value
-        c.request_seq.return_value = {'task':'foo'}
+        async def req(*args,**kwargs):
+            return {'task':'foo'}
+        c.request.side_effect = req
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        ret = rpc.download_task('gridspec')[0]
+        ret = (await rpc.download_task('gridspec'))[0]
         self.assertIn('task', ret)
         self.assertEqual(ret['task'], 'foo')
 
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args[0])
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args[0])
         self.assertTrue({'gridspec','hostname','ifaces'}.issubset(
-                            c.request_seq.call_args[0][-1]))
+                            c.request.call_args[0][-1]))
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_15_processing(self, Client):
+    async def test_15_processing(self, Client):
         """Test processing"""
         c = Client.return_value
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
 
         self.config.config['options']['task_id'] = 'task'
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        rpc.processing('task')
+        await rpc.processing('task')
 
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args[0])
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args[0])
         self.assertTrue({'status'}.issubset(
-                        c.request_seq.call_args[0][-1]))
+                        c.request.call_args[0][-1]))
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_20_finish_task(self, Client):
+    async def test_20_finish_task(self, Client):
         """Test finish_task"""
         c = Client.return_value
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
 
         self.config.config['options']['task_id'] = 'task'
         stats = {'test':True}
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        rpc.finish_task(stats)
+        await rpc.finish_task('task', stats=stats)
 
-        self.assertEqual(c.request_seq.call_count, 2)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('task_stats', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_count, 2)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('task_stats', c.request.call_args_list[0][0][-1])
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_30_still_running(self, Client):
+    async def test_30_still_running(self, Client):
         """Test still_running"""
         c = Client.return_value
         
         self.config.config['options']['task_id'] = 'task'
 
-        c.request_seq.return_value = {'status':'processing'}
+        async def req(*args,**kwargs):
+            return {'status':'processing'}
+        c.request.side_effect = req
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        rpc.still_running()
-        self.assertTrue(c.request_seq.called)
+        await rpc.still_running('task')
+        self.assertTrue(c.request.called)
 
-        c.request_seq.return_value = {'status':'reset'}
+        async def req(*args,**kwargs):
+            return {'status':'reset'}
+        c.request.side_effect = req
         with self.assertRaises(Exception):
-            rpc.still_running()
-        self.assertIn('DBkill', self.config.config['options'])
+            await rpc.still_running('task')
 
-        c.request_seq.side_effect = Exception('request error')
+        c.request.side_effect = Exception('request error')
         with self.assertRaises(Exception):
-            rpc.still_running()
+            await rpc.still_running('task')
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_40_task_error(self, Client):
+    async def test_40_task_error(self, Client):
         """Test task_error"""
         c = Client.return_value
         self.config.config['options']['task_id'] = 'task'
+        
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        rpc.task_error()
+        await rpc.task_error('task')
 
-        self.assertEqual(c.request_seq.call_count, 2)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('task_stats', c.request_seq.call_args_list[0][0][-1])
-        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_count, 2)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('task_stats', c.request.call_args_list[0][0][-1])
+        self.assertIn('error_summary', c.request.call_args_list[0][0][-1])
 
-        c.request_seq.reset_mock()
+        c.request.reset_mock()
         data = ''.join(random.choice(string.ascii_letters) for _ in range(10000))
-        rpc.task_error(reason=data, start_time=time.time()-200)
+        await rpc.task_error('task', reason=data, start_time=time.time()-200)
 
-        self.assertEqual(c.request_seq.call_count, 2)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('task_stats', c.request_seq.call_args_list[0][0][-1])
-        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(data, c.request_seq.call_args_list[0][0][-1]['error_summary'])
-        self.assertGreaterEqual(c.request_seq.call_args_list[0][0][-1]['time_used'], 200)
+        self.assertEqual(c.request.call_count, 2)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('task_stats', c.request.call_args_list[0][0][-1])
+        self.assertIn('error_summary', c.request.call_args_list[0][0][-1])
+        self.assertEqual(data, c.request.call_args_list[0][0][-1]['error_summary'])
+        self.assertGreaterEqual(c.request.call_args_list[0][0][-1]['time_used'], 200)
         
-        c.request_seq.side_effect = Exception('request error')
+        c.request.side_effect = Exception('request error')
         with self.assertRaises(Exception):
-            rpc.task_error()
+            await rpc.task_error('task')
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_41_task_kill(self, Client):
+    async def test_41_task_kill(self, Client):
+        """Test task_kill"""
+        c = Client.return_value
+        task_id = 'task'
+
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
+
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
+        await rpc.task_kill(task_id)
+
+        self.assertEqual(c.request.call_count, 5)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('error_summary', c.request.call_args_list[0][0][-1])
+
+        c.request.reset_mock()
+        resources = {'cpu': 1, 'memory': 3.4, 'disk': 0.2}
+        await rpc.task_kill(task_id, resources=resources)
+        
+        self.assertEqual(c.request.call_count, 5)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('error_summary', c.request.call_args_list[0][0][-1])
+        self.assertIn('resources', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['resources'], resources)
+
+        c.request.reset_mock()
+        resources = {'time': 34.2}
+        reason = 'testing'
+        await rpc.task_kill(task_id, resources=resources, reason=reason)
+        
+        self.assertEqual(c.request.call_count, 5)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('error_summary', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['error_summary'], reason)
+        self.assertIn('resources', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['resources'], resources)
+
+        c.request.side_effect = Exception('request error')
+        with self.assertRaises(Exception):
+            await rpc.task_kill(task_id)
+
+    @patch('iceprod.core.exe_json.Client')
+    @unittest_reporter
+    async def test_42_task_kill_sync(self, Client):
         """Test task_kill"""
         c = Client.return_value
         task_id = 'task'
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
-        rpc.task_kill(task_id)
+        rpc.task_kill_sync(task_id)
 
-        self.assertEqual(c.request_seq.call_count, 5)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request_sync.call_count, 5)
+        logger.info(c.request_sync.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
 
-        c.request_seq.reset_mock()
+        c.request_sync.reset_mock()
         resources = {'cpu': 1, 'memory': 3.4, 'disk': 0.2}
-        rpc.task_kill(task_id, resources)
+        rpc.task_kill_sync(task_id, resources=resources)
         
-        self.assertEqual(c.request_seq.call_count, 5)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
-        self.assertIn('resources', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['resources'], resources)
+        self.assertEqual(c.request_sync.call_count, 5)
+        logger.info(c.request_sync.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
+        self.assertIn('resources', c.request_sync.call_args_list[0][0][-1])
+        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['resources'], resources)
 
-        c.request_seq.reset_mock()
+        c.request_sync.reset_mock()
         resources = {'time': 34.2}
         reason = 'testing'
-        rpc.task_kill(task_id, resources, reason=reason)
+        rpc.task_kill_sync(task_id, resources=resources, reason=reason)
         
-        self.assertEqual(c.request_seq.call_count, 5)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['error_summary'], reason)
-        self.assertIn('resources', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['resources'], resources)
+        self.assertEqual(c.request_sync.call_count, 5)
+        logger.info(c.request_sync.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
+        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['error_summary'], reason)
+        self.assertIn('resources', c.request_sync.call_args_list[0][0][-1])
+        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['resources'], resources)
 
-        c.request_seq.side_effect = Exception('request error')
+        c.request_sync.side_effect = Exception('request error')
         with self.assertRaises(Exception):
-            rpc.task_kill(task_id)
+            rpc.task_kill_sync(task_id)
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_50_uploadLogging(self, Client):
+    async def test_50_uploadLogging(self, Client):
         """Test uploading logfiles"""
         c = Client.return_value
         self.config.config['options']['task_id'] = 'task'
+
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
 
         data = ''.join([str(random.randint(0,10000)) for _ in range(100)])
 
@@ -234,14 +296,14 @@ class exe_json_test(unittest.TestCase):
         name = 'testing'
         
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
-        rpc._upload_logfile(name, filename)
+        await rpc._upload_logfile(name, filename)
         
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('name', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['name'], name)
-        self.assertIn('data', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['data'],
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('name', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['name'], name)
+        self.assertIn('data', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
                          json_compressor.compress(data.encode('utf-8')))
 
         for f in constants.keys():
@@ -250,68 +312,91 @@ class exe_json_test(unittest.TestCase):
                     f.write(''.join([str(random.randint(0,10000))
                                      for _ in range(100)]))
 
-        c.request_seq.reset_mock()
-        rpc.uploadLog()
+        c.request.reset_mock()
+        await rpc.uploadLog()
         
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('name', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['name'], 'stdlog')
-        self.assertIn('data', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['data'],
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('name', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stdlog')
+        self.assertIn('data', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
                          json_compressor.compress(open(constants['stdlog'],'rb').read()))
 
-        c.request_seq.reset_mock()
-        rpc.uploadErr()
+        c.request.reset_mock()
+        await rpc.uploadErr()
         
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('name', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['name'], 'stderr')
-        self.assertIn('data', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['data'],
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('name', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stderr')
+        self.assertIn('data', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
                          json_compressor.compress(open(constants['stderr'],'rb').read()))
 
-        c.request_seq.reset_mock()
-        rpc.uploadOut()
+        c.request.reset_mock()
+        await rpc.uploadOut()
         
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args_list[0][0])
-        self.assertIn('name', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['name'], 'stdout')
-        self.assertIn('data', c.request_seq.call_args_list[0][0][-1])
-        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['data'],
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args_list[0][0])
+        self.assertIn('name', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stdout')
+        self.assertIn('data', c.request.call_args_list[0][0][-1])
+        self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
                         json_compressor.compress( open(constants['stdout'],'rb').read()))
 
 
-        c.request_seq.side_effect = Exception('request error')
+        c.request.side_effect = Exception('request error')
         with self.assertRaises(Exception):
-            rpc._upload_logfile(name, filename)
+            await rpc._upload_logfile(name, filename)
         with self.assertRaises(Exception):
-            rpc.uploadLog()
+            await rpc.uploadLog()
         with self.assertRaises(Exception):
-            rpc.uploadErr()
+            await rpc.uploadErr()
         with self.assertRaises(Exception):
-            rpc.uploadOut()
+            await rpc.uploadOut()
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
-    def test_60_update_pilot(self, Client):
+    async def test_60_update_pilot(self, Client):
+        """Test update_pilot"""
+        c = Client.return_value
+        pilot_id = 'pilot'
+        args = {'a': 1, 'b': 2}
+
+        async def req(*args,**kwargs):
+            return {}
+        c.request.side_effect = req
+        
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
+        await rpc.update_pilot(pilot_id, **args)
+
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args[0])
+        self.assertTrue({'a','b'}.issubset(c.request.call_args[0][-1]))
+
+        c.request.side_effect = Exception('request error')
+        with self.assertRaises(Exception):
+            await rpc.update_pilot(pilot_id, **args)
+
+    @patch('iceprod.core.exe_json.Client')
+    @unittest_reporter
+    def test_61_update_pilot_sync(self, Client):
         """Test update_pilot"""
         c = Client.return_value
         pilot_id = 'pilot'
         args = {'a': 1, 'b': 2}
         
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
-        rpc.update_pilot(pilot_id, **args)
+        rpc.update_pilot_sync(pilot_id, **args)
 
-        self.assertTrue(c.request_seq.called)
-        logger.info(c.request_seq.call_args[0])
-        self.assertTrue({'a','b'}.issubset(c.request_seq.call_args[0][-1]))
+        self.assertTrue(c.request_sync.called)
+        logger.info(c.request_sync.call_args[0])
+        self.assertTrue({'a','b'}.issubset(c.request_sync.call_args[0][-1]))
 
-        c.request_seq.side_effect = Exception('request error')
+        c.request_sync.side_effect = Exception('request error')
         with self.assertRaises(Exception):
-            rpc.update_pilot(pilot_id, **args)
+            rpc.update_pilot_sync(pilot_id, **args)
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

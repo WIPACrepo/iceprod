@@ -11,10 +11,10 @@ import os
 import logging
 import asyncio
 
-from .session import Session
-from .jsonUtil import json_encode,json_decode
+import requests
 
-logger = logging.getLogger('rest_client')
+from .session import AsyncSession,Session
+from .jsonUtil import json_encode,json_decode
 
 class Client(object):
     def __init__(self, address, auth_key, timeout=60.0, backoff=True, **kwargs):
@@ -27,10 +27,13 @@ class Client(object):
 
         self.open() # start session
 
-    def open(self):
+    def open(self, sync=False):
         """Open the http session"""
-        logger.warning('establish REST http session')
-        self.session = Session()
+        logging.warning('establish REST http session')
+        if sync:
+            self.session = Session()
+        else:
+            self.session = AsyncSession()
         self.session.headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer '+self.auth_key,
@@ -47,8 +50,37 @@ class Client(object):
 
     def close(self):
         """Close the http session"""
-        logger.warning('close REST http session')
-        self.session.close()
+        logging.warning('close REST http session')
+        if self.session:
+            self.session.close()
+
+    def _prepare(self, method, path, args=None):
+        """Internal method for preparing requests"""
+        if not args:
+            args = {}
+        if path.startswith('/'):
+            path = path[1:]
+        url = os.path.join(self.address, path)
+        kwargs = {
+            'timeout': self.timeout,
+        }
+        if method in ('GET','HEAD'):
+            # args should be urlencoded
+            kwargs['params'] = args
+        else:
+            kwargs['json'] = args
+        return (url, kwargs)
+
+    def _decode(self, content):
+        """Internal method for translating response from json"""
+        if not content:
+            logging.warning('request returned empty string')
+            return None
+        try:
+           return json_decode(content)
+        except Exception:
+            logging.info('json data: %r', content)
+            raise
 
     async def request(self, method, path, args=None):
         """
@@ -64,36 +96,31 @@ class Client(object):
         Returns:
             dict: json dict or raw string
         """
-        if not args:
-            args = {}
-        if path.startswith('/'):
-            path = path[1:]
-        url = os.path.join(self.address, path)
-        kwargs = {
-            'timeout': self.timeout,
-        }
-        if method in ('GET','HEAD'):
-            # args should be urlencoded
-            kwargs['params'] = args
-        else:
-            kwargs['json'] = args
-
-        # make request to server
+        url, kwargs = self._prepare(method, path, args)
         r = await asyncio.wrap_future(self.session.request(method, url, **kwargs))
         r.raise_for_status()
+        return self._decode(r.content)
 
-        # translate response from json
-        if not r.content:
-            logger.warning('request returned empty string')
-            return None
+    def request_seq(self, method, path, args=None):
+        """
+        Send request to REST Server.
+
+        Sequential version of `request`.
+
+        Args:
+            method (str): the http method
+            path (str): the url path on the server
+            args (dict): any arguments to pass
+
+        Returns:
+            dict: json dict or raw string
+        """
+        url, kwargs = self._prepare(method, path, args)
+        s = self.session
         try:
-           return json_decode(r.content)
-        except Exception:
-            logger.info('json data: %r', r.content)
-            raise
-
-    def request_seq(self, *args, **kwargs):
-        """Sequential version of `request`."""
-        loop = asyncio.get_event_loop()
-        ret = loop.run_until_complete(self.request(*args, **kwargs))
-        return ret        
+            self.open(sync=True)
+            r = self.session.request(method, url, **kwargs)
+            r.raise_for_status()
+            return self._decode(r.content)
+        finally:
+            self.session = s

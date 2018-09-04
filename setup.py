@@ -56,7 +56,7 @@ if setuptools is not None:
                         'psutil>=5.0.0', 'cryptography', 'requests',
                         'requests_toolbelt', 'requests-futures', 'statsd',
                         'cachetools>=2.0.0', 'sphinx>=1.4',
-                        'coverage', 'flexmock', 'requests-mock','boto3',
+                        'coverage>=4.4.2', 'flexmock', 'requests-mock','boto3',
                         'pymongo','PyJWT','motor','ldap3',
                        ]
     kwargs['install_requires'] = install_requires

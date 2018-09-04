@@ -16,11 +16,11 @@ import random
 import string
 import subprocess
 import threading
+from functools import partial
+import asyncio
 import unittest
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch
+from contextlib import contextmanager
 
 from iceprod.core import to_log
 import iceprod.core.dataclasses
@@ -28,12 +28,6 @@ import iceprod.core.functions
 import iceprod.core.serialization
 import iceprod.core.logger
 from iceprod.core import jsonUtil
-
-# mock the logger methods so we don't overwrite the root logger
-def log2(*args,**kwargs):
-    pass
-iceprod.core.logger.set_logger = log2
-iceprod.core.logger.remove_stdout = log2
 from iceprod.core import i3exec
 
 
@@ -53,14 +47,14 @@ class i3exec_test(DownloadTestCase):
         config['options']['task_id'] = 'a'
         config['options']['dataset_id'] = 'a'
         config['options']['job'] = 0
+        config['options']['gridspec'] = 'foo.bar'
         config['steering'] = iceprod.core.dataclasses.Steering()
         return config
 
     @patch('iceprod.core.functions.download')
-    @unittest_reporter(name='main() basic')
-    def test_01(self, download):
-        # create basic config file
-        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+    @unittest_reporter(name='runner() basic')
+    async def test_01(self, download):
+        # create basic config
         config = self.make_config()
         task = iceprod.core.dataclasses.Task()
         task['name'] = 'task'
@@ -74,7 +68,7 @@ class i3exec_test(DownloadTestCase):
         mod['src'] = 'mytest.py'
         tray['modules'].append(mod)
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(config['options']['local_temp'], mod['src'])
             self.mk_files(path, """
 class IPBaseClass:
@@ -95,41 +89,27 @@ class MyTest(IPBaseClass):
             return path
         download.side_effect = create
 
-        # write configuration to file
-        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
-
-        # set some default values
-        logfile = logging.getLogger().handlers[0].stream.name
-        url = 'http://foo/'
-        debug = False
-        passkey = 'pass'
-        offline = True
-
         # try to run the config
-        i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                    passkey=passkey, offline=offline)
+        url = 'http://foo/'
+        run = partial(i3exec.runner, config, url, debug=True,
+                      offline=True)
+        async for proc in run():
+            await proc.wait()
 
-    @unittest_reporter(name='main() bad config')
-    def test_02(self):
+    @unittest_reporter(name='runner() bad config')
+    async def test_02(self):
         """Test not providing a steering file"""
-        # set some default values
-        cfgfile = None
-        logfile = logging.getLogger().handlers[0].stream.name
         url = 'http://foo/'
-        debug = True
-        passkey = 'pass'
-        offline = True
-
-        # try to run the config
+        run = partial(i3exec.runner, None, url, debug=True,
+                      offline=True)
         with self.assertRaises(Exception):
-            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                        passkey=passkey, offline=offline)
+            async for proc in run():
+                await proc.wait()
 
     @patch('iceprod.core.functions.download')
-    @unittest_reporter(name='main() debug')
-    def test_03(self, download):
+    @unittest_reporter(name='runner() specific task')
+    async def test_10(self, download):
         # create basic config file
-        cfgfile = os.path.join(self.test_dir,'test_steering.json')
         config = self.make_config()
         task = iceprod.core.dataclasses.Task()
         task['name'] = 'task'
@@ -143,7 +123,7 @@ class MyTest(IPBaseClass):
         mod['src'] = 'mytest.py'
         tray['modules'].append(mod)
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(config['options']['local_temp'], mod['src'])
             self.mk_files(path, """
 class IPBaseClass:
@@ -164,79 +144,18 @@ class MyTest(IPBaseClass):
             return path
         download.side_effect = create
 
-        # write configuration to file
-        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
-
-        # set some default values
-        logfile = logging.getLogger().handlers[0].stream.name
-        url = 'http://foo/'
-        debug = True
-        passkey = 'pass'
-        offline = True
-
         # try to run the config
-        i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                    passkey=passkey, offline=offline)
+        url = 'http://foo/'
+        run = partial(i3exec.runner, config, url, debug=True,
+                      offline=True)
+        async for proc in run():
+            await proc.wait()
 
     @patch('iceprod.core.functions.download')
-    @unittest_reporter(name='main() specific task')
-    def test_10(self, download):
-        # create basic config file
-        cfgfile = os.path.join(self.test_dir,'test_steering.json')
-        config = self.make_config()
-        task = iceprod.core.dataclasses.Task()
-        task['name'] = 'task'
-        config['tasks'].append(task)
-        tray = iceprod.core.dataclasses.Tray()
-        tray['name'] = 'tray'
-        task['trays'].append(tray)
-        mod = iceprod.core.dataclasses.Module()
-        mod['name'] = 'mod'
-        mod['running_class'] = 'MyTest'
-        mod['src'] = 'mytest.py'
-        tray['modules'].append(mod)
-
-        def create(*args, **kwargs):
-            path = os.path.join(config['options']['local_temp'], mod['src'])
-            self.mk_files(path, """
-class IPBaseClass:
-    def __init__(self):
-        self.params = {}
-    def AddParameter(self,p,h,d):
-        self.params[p] = d
-    def GetParameter(self,p):
-        return self.params[p]
-    def SetParameter(self,p,v):
-        self.params[p] = v
-class MyTest(IPBaseClass):
-    def __init__(self):
-        IPBaseClass.__init__(self)
-    def Execute(self,stats):
-        return 0
-""", ext=True)
-            return path
-        download.side_effect = create
-
-        # write configuration to file
-        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
-
-        # set some default values
-        logfile = logging.getLogger().handlers[0].stream.name
-        url = 'http://foo/'
-        debug = False
-        passkey = 'pass'
-        offline = True
-
-        # try to run the config
-        i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                    passkey=passkey, offline=offline)
-
-    @patch('iceprod.core.functions.download')
-    @unittest_reporter(name='main() .so lib')
-    def test_11(self, download):
+    @unittest_reporter(name='runner() .so lib')
+    async def test_11(self, download):
         """Test multiple tasks"""
         # create basic config file
-        cfgfile = os.path.join(self.test_dir,'test_steering.json')
         config = self.make_config()
 
         # create the task object
@@ -253,6 +172,7 @@ class MyTest(IPBaseClass):
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -279,6 +199,7 @@ class MyTest(IPBaseClass):
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -299,7 +220,7 @@ class MyTest(IPBaseClass):
         # make .so file
         so = self.make_shared_lib()
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(config['options']['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -316,26 +237,17 @@ def Test():
             return path
         download.side_effect = create
 
-        # write configuration to file
-        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
-
-
-        # set some default values
-        logfile = logging.getLogger().handlers[0].stream.name
-        url = 'http://foo'
-        debug = False
-        passkey = 'pass'
-        offline = True
-
         # try to run the config
-        i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                    passkey=passkey, offline=offline)
+        url = 'http://foo/'
+        run = partial(i3exec.runner, config, url, debug=True,
+                      offline=True)
+        async for proc in run():
+            await proc.wait()
 
     @patch('iceprod.core.functions.download')
-    @unittest_reporter(name='main() failing task')
-    def test_20(self, download):
+    @unittest_reporter(name='runner() failing task')
+    async def test_20(self, download):
         # create basic config file
-        cfgfile = os.path.join(self.test_dir,'test_steering.json')
         config = self.make_config()
         task = iceprod.core.dataclasses.Task()
         task['name'] = 'task'
@@ -349,7 +261,7 @@ def Test():
         mod['src'] = 'mytest.py'
         tray['modules'].append(mod)
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(config['options']['local_temp'], mod['src'])
             self.mk_files(path, """
 class IPBaseClass:
@@ -370,22 +282,162 @@ class MyTest(IPBaseClass):
             return path
         download.side_effect = create
 
-        # write configuration to file
-        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
-
-        # set some default values
-        logfile = logging.getLogger().handlers[0].stream.name
+        # try to run the config
         url = 'http://foo/'
-        debug = True
-        passkey = 'pass'
-        offline = True
+        run = partial(i3exec.runner, config, url, debug=True,
+                      offline=True)
 
         # try to run the config
         with self.assertRaises(Exception):
-            i3exec.main(cfgfile, logfile=logfile, url=url, debug=debug,
-                        passkey=passkey, offline=offline)
+            async for proc in run():
+                await proc.wait()
 
 
+    @patch('iceprod.core.i3exec.runner')
+    @patch('iceprod.core.logger.set_logger')
+    @unittest_reporter(name='main() offline')
+    def test_90(self, logger, runner):
+        async def run(*args, **kwargs):
+            run.called = True
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+        run.called = False
+        runner.side_effect = run
+
+        config = self.make_config()
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+
+        i3exec.main(cfgfile, offline=True, debug=False)
+
+        self.assertTrue(run.called)
+
+        with self.assertRaises(Exception):
+            i3exec.main(None, offline=True, debug=True)
+
+    @patch('iceprod.core.i3exec.runner')
+    @patch('iceprod.core.logger.set_logger')
+    @unittest_reporter(name='main() error')
+    def test_91(self, logger, runner):
+        async def run(*args, **kwargs):
+            run.called = True
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+            raise Exception()
+        run.called = False
+        runner.side_effect = run
+
+        config = self.make_config()
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+
+        with self.assertRaises(Exception):
+            i3exec.main(cfgfile, offline=True, logfile='foo', debug=True)
+
+        self.assertTrue(run.called)
+        self.assertEqual(logger.call_args[1]['logfile'], os.path.join(self.test_dir,'foo'))
+
+    @patch('iceprod.core.i3exec.runner')
+    @patch('iceprod.core.i3exec.ServerComms')
+    @patch('iceprod.core.logger.set_logger')
+    @patch('iceprod.core.i3exec.to_file')
+    @unittest_reporter(name='main() online')
+    def test_92(self, to_file, logger, comms, runner):
+        async def run(*args, **kwargs):
+            run.called = True
+            yield await asyncio.create_subprocess_exec('sleep','0.1')
+        run.called = False
+        runner.side_effect = run
+        async def processing(*args, **kwargs):
+            pass
+        comms.return_value.processing.side_effect = processing
+        @contextmanager
+        def to_file2(*args,**kwargs):
+            yield
+        to_file.side_effect = to_file2
+
+        config = self.make_config()
+        task = iceprod.core.dataclasses.Task()
+        task['name'] = 'task'
+        config['tasks'].append(task)
+        tray = iceprod.core.dataclasses.Tray()
+        tray['name'] = 'tray'
+        task['trays'].append(tray)
+        mod = iceprod.core.dataclasses.Module()
+        mod['name'] = 'mod'
+        mod['running_class'] = 'MyTest'
+        mod['src'] = 'mytest.py'
+        tray['modules'].append(mod)
+
+        i3exec.main(config, url='http://foo')
+
+        self.assertTrue(run.called)
+
+        # test Comms
+        run.called = False
+        config['options']['username'] = 'u'
+        config['options']['password'] = 'p'
+        config['options']['ssl'] = {'key': 'k'}
+        comms.return_value.processing.side_effect = Exception()
+
+        i3exec.main(config, url='http://foo', passkey='pk')
+        self.assertTrue(run.called)
+        comms.assert_any_call('http://foo/jsonrpc', 'pk', None,
+                username='u', password='p', key='k')
+
+        # test errors
+        del config['options']['task_id']
+
+        with self.assertRaises(Exception):
+            i3exec.main(config, url='http://foo')
+            
+        with self.assertRaises(Exception):
+            i3exec.main(config)
+
+    @patch('iceprod.core.pilot.Pilot')
+    @patch('iceprod.core.i3exec.ServerComms')
+    @patch('iceprod.core.logger.set_logger')
+    @unittest_reporter(name='main() pilot')
+    def test_93(self, logger, comms, pilot):
+        class Run:
+            def __init__(self,*args, **kwargs):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, exc_type, exc, tb):
+                pass
+            async def run(self, *args, **kwargs):
+                Run.called = True
+        Run.called = False
+        pilot.side_effect = Run
+
+        config = self.make_config()
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+
+        i3exec.main(cfgfile, url='http://foo', pilot_id='p')
+
+        self.assertTrue(Run.called)
+        
+        # test run timeout
+        config = self.make_config()
+        config['options']['run_timeout'] = 20
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+
+        Run.called = False
+        i3exec.main(cfgfile, url='http://foo', pilot_id='p')
+        self.assertTrue(Run.called)
+
+        # now test errors
+        with self.assertRaises(Exception):
+            i3exec.main(cfgfile, url='http://foo')
+            
+        config = self.make_config()
+        del config['options']['gridspec']
+        cfgfile = os.path.join(self.test_dir,'test_steering.json')
+        iceprod.core.serialization.serialize_json.dump(config,cfgfile)
+        
+        with self.assertRaises(Exception):
+            i3exec.main(cfgfile, url='http://foo', pilot_id='p')
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

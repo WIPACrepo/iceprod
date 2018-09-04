@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 from tests.util import unittest_reporter, glob_tests
 
 import logging
-logger = logging.getLogger('exe')
+logger = logging.getLogger('exe_test')
 
 import os
 import sys
@@ -23,13 +23,11 @@ try:
     import cPickle as pickle
 except:
     import pickle
-
-
 import unittest
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch
+
+from tornado.testing import AsyncTestCase
+
 from iceprod.core import to_log,constants
 import iceprod.core.dataclasses
 import iceprod.core.functions
@@ -37,7 +35,7 @@ import iceprod.core.exe
 from iceprod.core.jsonUtil import json_encode,json_decode
 
 
-class DownloadTestCase(unittest.TestCase):
+class DownloadTestCase(AsyncTestCase):
     def setUp(self):
         super(DownloadTestCase,self).setUp()
 
@@ -50,6 +48,15 @@ class DownloadTestCase(unittest.TestCase):
             os.chdir(curdir)
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
+
+        # clean up environment
+        base_env = dict(os.environ)
+        def reset_env():
+            for k in set(os.environ).difference(base_env):
+                del os.environ[k]
+            for k in base_env:
+                os.environ[k] = base_env[k]
+        self.addCleanup(reset_env)
 
     def mk_files(self, path, data, compress=None, ext=False):
         orig_path = path
@@ -161,7 +168,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource')
-    def test_001_downloadResource(self, download):
+    async def test_001_downloadResource(self, download):
         # create an environment
         options = {'resource_url': 'http://blah/downloads',
                    'resource_directory': self.test_dir}
@@ -173,14 +180,14 @@ class exe_test(DownloadTestCase):
         r['local'] = 'localstuff'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, 'the data')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadResource(env,r)
+        await iceprod.core.exe.downloadResource(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('downloadResource did not add the file '
@@ -191,7 +198,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource - gz')
-    def test_002_downloadResource(self, download):
+    async def test_002_downloadResource(self, download):
         # create an environment
         options = {'resource_url': 'http://blah/downloads',
                    'resource_directory': self.test_dir}
@@ -204,14 +211,14 @@ class exe_test(DownloadTestCase):
         r['compression'] = True
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, 'the data', compress='gz')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadResource(env,r)
+        await iceprod.core.exe.downloadResource(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -225,7 +232,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource - tar')
-    def test_003_downloadResource(self, download):
+    async def test_003_downloadResource(self, download):
         # create an environment
         options = {'resource_url': 'http://blah/downloads',
                    'resource_directory': self.test_dir}
@@ -238,14 +245,14 @@ class exe_test(DownloadTestCase):
         r['compression'] = True
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='tar')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadResource(env,r)
+        await iceprod.core.exe.downloadResource(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -259,7 +266,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource - tar.bz2')
-    def test_004_downloadResource(self, download):
+    async def test_004_downloadResource(self, download):
         # create an environment
         options = {'resource_url': 'http://blah/downloads',
                    'resource_directory': self.test_dir}
@@ -272,14 +279,14 @@ class exe_test(DownloadTestCase):
         r['compression'] = True
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='bz2')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadResource(env,r)
+        await iceprod.core.exe.downloadResource(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -293,7 +300,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource - tgz')
-    def test_005_downloadResource(self, download):
+    async def test_005_downloadResource(self, download):
         # create an environment
         options = {'resource_url': 'http://blah/downloads',
                    'resource_directory': self.test_dir}
@@ -306,14 +313,14 @@ class exe_test(DownloadTestCase):
         r['compression'] = True
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='gz')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadResource(env,r)
+        await iceprod.core.exe.downloadResource(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -327,21 +334,23 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadResource - invalid env')
-    def test_006_downloadResource(self, download):
-        path = os.path.join(self.test_dir, 'localstuff5')
-        self.mk_files(path, 'the data')
-        download.return_value = path
+    async def test_006_downloadResource(self, download):
+        async def create(*args,**kwargs):
+            path = os.path.join(self.test_dir, 'localstuff5')
+            self.mk_files(path, 'the data')
+            return path
+        download.return_value = create
 
         r = iceprod.core.dataclasses.Resource()
         r['remote'] = 'stuff5.tgz'
         r['local'] = 'localstuff5.tgz'
         r['compression'] = None
         with self.assertRaises(Exception):
-            iceprod.core.exe.downloadResource({},r)
+            await iceprod.core.exe.downloadResource({},r)
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData')
-    def test_010_downloadData(self, download):
+    async def test_010_downloadData(self, download):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -355,14 +364,14 @@ class exe_test(DownloadTestCase):
         r['movement'] = 'input'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, 'the data')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadData(env,r)
+        await iceprod.core.exe.downloadData(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('downloadResource did not add the file '
@@ -373,7 +382,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData - gz')
-    def test_011_downloadData(self, download):
+    async def test_011_downloadData(self, download):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -388,14 +397,14 @@ class exe_test(DownloadTestCase):
         r['movement'] = 'input'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, 'the data', compress='gz')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadData(env,r)
+        await iceprod.core.exe.downloadData(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -409,7 +418,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData - tar')
-    def test_012_downloadData(self, download):
+    async def test_012_downloadData(self, download):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -424,14 +433,14 @@ class exe_test(DownloadTestCase):
         r['movement'] = 'input'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='tar')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadData(env,r)
+        await iceprod.core.exe.downloadData(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -445,7 +454,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData - tar.bz2')
-    def test_013_downloadData(self, download):
+    async def test_013_downloadData(self, download):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -460,14 +469,14 @@ class exe_test(DownloadTestCase):
         r['movement'] = 'input'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='bz2')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadData(env,r)
+        await iceprod.core.exe.downloadData(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -481,7 +490,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData - tgz')
-    def test_014_downloadData(self, download):
+    async def test_014_downloadData(self, download):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -496,14 +505,14 @@ class exe_test(DownloadTestCase):
         r['movement'] = 'input'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(self.test_dir, r['local'])
             self.mk_files(path, {'f':'the data'}, compress='gz')
             return path
         download.side_effect = create
 
         # try downloading the resource
-        iceprod.core.exe.downloadData(env,r)
+        await iceprod.core.exe.downloadData(env,r)
         # check for record of file in env
         if r['local'] not in env['files']:
             raise Exception('did not add the file '
@@ -517,7 +526,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData - invalid env')
-    def test_015_downloadData(self, download):
+    async def test_015_downloadData(self, download):
         # create a resource object
         r = iceprod.core.dataclasses.Data()
         r['remote'] = 'stuff4'
@@ -528,11 +537,11 @@ class exe_test(DownloadTestCase):
 
         # try supplying invalid env
         with self.assertRaises(Exception):
-            iceprod.core.exe.downloadData({},r)
+            await iceprod.core.exe.downloadData({},r)
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData')
-    def test_020_uploadData(self, upload):
+    async def test_020_uploadData(self, upload):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -549,8 +558,12 @@ class exe_test(DownloadTestCase):
         path = os.path.join(self.test_dir, r['local'])
         self.mk_files(path, 'the data')
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         # try uploading the data
-        iceprod.core.exe.uploadData(env,r)
+        await iceprod.core.exe.uploadData(env,r)
         self.assertTrue(upload.called)
         self.assertEqual(upload.call_args[0][0],
             os.path.join(options['data_directory'],r['local']))
@@ -559,7 +572,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData - gz')
-    def test_021_uploadData(self, upload):
+    async def test_021_uploadData(self, upload):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -573,12 +586,16 @@ class exe_test(DownloadTestCase):
         r['type'] = 'permanent'
         r['movement'] = 'both'
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         # create the downloaded file
         path = os.path.join(self.test_dir, r['local'])
         self.mk_files(path, 'the data')
 
         # try uploading the data
-        iceprod.core.exe.uploadData(env,r)
+        await iceprod.core.exe.uploadData(env,r)
         self.assertTrue(upload.called)
         self.assertEqual(upload.call_args[0][0],
             os.path.join(options['data_directory'],r['local']+'.gz'))
@@ -587,7 +604,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData - tar')
-    def test_022_uploadData(self, upload):
+    async def test_022_uploadData(self, upload):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -605,8 +622,12 @@ class exe_test(DownloadTestCase):
         path = os.path.join(self.test_dir, r['local'])
         self.mk_files(path, {'f':'the data'})
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         # try uploading the data
-        iceprod.core.exe.uploadData(env,r)
+        await iceprod.core.exe.uploadData(env,r)
         self.assertTrue(upload.called)
         self.assertEqual(upload.call_args[0][0],
             os.path.join(options['data_directory'],r['local']+'.tar'))
@@ -615,7 +636,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData - tar.bz2')
-    def test_023_uploadData(self, upload):
+    async def test_023_uploadData(self, upload):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -633,8 +654,12 @@ class exe_test(DownloadTestCase):
         path = os.path.join(self.test_dir, r['local'])
         self.mk_files(path, {'f':'the data'})
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         # try uploading the data
-        iceprod.core.exe.uploadData(env,r)
+        await iceprod.core.exe.uploadData(env,r)
         self.assertTrue(upload.called)
         self.assertEqual(upload.call_args[0][0],
             os.path.join(options['data_directory'],r['local']+'.tar.bz2'))
@@ -643,7 +668,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData - tgz')
-    def test_024_uploadData(self, upload):
+    async def test_024_uploadData(self, upload):
         # create an environment
         options = {'data_url': 'http://blah/downloads',
                    'data_directory': self.test_dir}
@@ -661,8 +686,12 @@ class exe_test(DownloadTestCase):
         path = os.path.join(self.test_dir, r['local'])
         self.mk_files(path, {'f':'the data'})
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         # try uploading the data
-        iceprod.core.exe.uploadData(env,r)
+        await iceprod.core.exe.uploadData(env,r)
         self.assertTrue(upload.called)
         self.assertEqual(upload.call_args[0][0],
             os.path.join(options['data_directory'],r['local']+'.tgz'))
@@ -671,7 +700,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData - invalid env')
-    def test_025_uploadData(self, upload):
+    async def test_025_uploadData(self, upload):
         # create a resource object
         r = iceprod.core.dataclasses.Data()
         r['remote'] = 'stuff5.tgz'
@@ -679,12 +708,16 @@ class exe_test(DownloadTestCase):
         r['type'] = 'permanent'
         r['movement'] = 'both'
 
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
         with self.assertRaises(Exception):
-            iceprod.core.exe.uploadData({},r)
+            await iceprod.core.exe.uploadData({},r)
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupClass')
-    def test_030_setupClass(self, download):
+    async def test_030_setupClass(self, download):
         # create an env
         env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
         os.mkdir(env['options']['local_temp'])
@@ -695,14 +728,14 @@ class exe_test(DownloadTestCase):
         r['src'] = 'datatransfer.py'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(env['options']['local_temp'], r['name'])
             self.mk_files(path, 'class GridFTP(): pass', ext=True)
             return path
         download.side_effect = create
 
         # try setting up the class
-        iceprod.core.exe.setupClass(env,r)
+        await iceprod.core.exe.setupClass(env,r)
 
         self.assertIn(r['name'], env['classes'])
         self.assertIn(os.path.dirname(env['classes'][r['name']]),
@@ -710,7 +743,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupClass - env $CLASS')
-    def test_031_setupClass(self, download):
+    async def test_031_setupClass(self, download):
         # create an env
         env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
         os.mkdir(env['options']['local_temp'])
@@ -722,14 +755,14 @@ class exe_test(DownloadTestCase):
         r['env_vars'] = 'I3_BUILD=$CLASS'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(env['options']['local_temp'], r['name'])
             self.mk_files(path, 'class GridFTP(): pass', ext=True)
             return path
         download.side_effect = create
 
         # try setting up the class
-        iceprod.core.exe.setupClass(env,r)
+        await iceprod.core.exe.setupClass(env,r)
 
         self.assertIn(r['name'], env['classes'])
         self.assertIn(os.path.dirname(env['classes'][r['name']]),
@@ -739,7 +772,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupClass - env overload')
-    def test_032_setupClass(self, download):
+    async def test_032_setupClass(self, download):
         # create an env
         env = {'options':{'local_temp':os.path.join(self.test_dir,'classes')}}
         os.mkdir(env['options']['local_temp'])
@@ -751,14 +784,14 @@ class exe_test(DownloadTestCase):
         r['env_vars'] = 'tester=1:2:3;PATH=$PWD;PYTHONPATH=$PWD/test'
 
         # create the downloaded file
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(env['options']['local_temp'], r['name'])
             self.mk_files(path, 'class GridFTP(): pass', ext=True)
             return path
         download.side_effect = create
 
         # try setting up the class
-        iceprod.core.exe.setupClass(env,r)
+        await iceprod.core.exe.setupClass(env,r)
 
         self.assertIn(r['name'], env['classes'])
         self.assertIn(os.path.dirname(env['classes'][r['name']]),
@@ -771,19 +804,19 @@ class exe_test(DownloadTestCase):
         self.assertIn('$PWD/test', os.environ['PYTHONPATH'].split(':'))
 
     @unittest_reporter(name='setupenv - basic')
-    def test_100_setupenv_basic(self):
+    async def test_100_setupenv_basic(self):
         """Test basic setupenv functionality"""
         obj = iceprod.core.dataclasses.Steering()
         # create an empty env
-        with iceprod.core.exe.setupenv(self.config, obj) as empty_env:
+        async with iceprod.core.exe.SetupEnv(self.config, obj) as empty_env:
             # create secondary env
-            with iceprod.core.exe.setupenv(self.config, obj, empty_env) as env2:
+            async with iceprod.core.exe.SetupEnv(self.config, obj, empty_env) as env2:
                 # create something in env2, and check it's not in empty_env
                 env2['test'] = 'testing'
                 self.assertNotIn('test', empty_env, 'env2 is a direct link to empty_env')
 
                 # make new env from env2, and check it has that value
-                with iceprod.core.exe.setupenv(self.config, obj, env2) as env3:
+                async with iceprod.core.exe.SetupEnv(self.config, obj, env2) as env3:
                     self.assertIn('test', env3, 'env3 does not have test value')
                     self.assertEqual(env3['test'], 'testing', 'env3 does not have test value')
 
@@ -797,19 +830,19 @@ class exe_test(DownloadTestCase):
 
                     # do second level checks, like dealing with parameters
                     obj.parameters = {}
-                    with iceprod.core.exe.setupenv(self.config, obj) as env4:
-                        with iceprod.core.exe.setupenv(self.config, obj, env4) as env5:
+                    async with iceprod.core.exe.SetupEnv(self.config, obj) as env4:
+                        async with iceprod.core.exe.SetupEnv(self.config, obj, env4) as env5:
                             env5['parameters']['test'] = 1
                             self.assertNotIn('test', env4['parameters'],
                                 'adding a parameter in env5 adds it to env4')
-                            with iceprod.core.exe.setupenv(self.config, obj, env5) as env6:
+                            async with iceprod.core.exe.SetupEnv(self.config, obj, env5) as env6:
                                 env6['parameters']['test'] = 2
                                 self.assertNotEqual(env5['parameters']['test'], 2,
                                     'modifying a parameter in env6 modifies it in env5')
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupenv - steering')
-    def test_101_setupenv_steering(self, download):
+    async def test_101_setupenv_steering(self, download):
         """Test setupenv with steering object"""
         # create the steering object
         steering = iceprod.core.dataclasses.Steering()
@@ -846,14 +879,14 @@ class exe_test(DownloadTestCase):
         options['resource_directory'] = os.path.join(self.test_dir,'resources')
 
         # set download() return value
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(options['resource_directory'],r['local'])
             self.mk_files(path, {'f':'blah'}, compress='gz')
             return path
         download.side_effect = create
 
         # create the env
-        with iceprod.core.exe.setupenv(self.config, steering,
+        async with iceprod.core.exe.SetupEnv(self.config, steering,
                                             {'options':options}) as env:
 
             # test parameters
@@ -886,7 +919,7 @@ class exe_test(DownloadTestCase):
     @patch('iceprod.core.exe.functions.upload')
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='destroyenv - steering')
-    def test_102_destroyenv_steering(self, download, upload):
+    async def test_102_destroyenv_steering(self, download, upload):
         """Test destroyenv with steering object"""
         # create the steering object
         steering = iceprod.core.dataclasses.Steering()
@@ -925,11 +958,14 @@ class exe_test(DownloadTestCase):
         options['data_directory'] = os.path.join(self.test_dir,'data')
 
         # set download() return value
-        def create(*args,**kwargs):
+        async def create(*args,**kwargs):
             path = os.path.join(options['data_directory'],r['local'])
             self.mk_files(path, {'f':'blah'}, compress='gz')
             return path
         download.side_effect = create
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
 
         # try a file deletion
         filename = os.path.join(self.test_dir,'test_file')
@@ -937,7 +973,7 @@ class exe_test(DownloadTestCase):
             f.write('this is a test')
 
         # create the env
-        with iceprod.core.exe.setupenv(self.config, steering, {'options':options}) as env:
+        async with iceprod.core.exe.SetupEnv(self.config, steering, {'options':options}) as env:
             env['deletions'] = [filename]
 
         if os.path.exists(filename):
@@ -946,7 +982,7 @@ class exe_test(DownloadTestCase):
         # try environment reset
 
         # create the env
-        with iceprod.core.exe.setupenv(self.config, steering,
+        async with iceprod.core.exe.SetupEnv(self.config, steering,
                                             {'options':options,
                                              'deletions':[filename]}) as env:
             os.environ['MyTestVar'] = 'testing'
@@ -959,7 +995,7 @@ class exe_test(DownloadTestCase):
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - iceprod module (from src)')
-    def test_200_runmodule_iceprod_src(self, download):
+    async def test_200_runmodule_iceprod_src(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -988,7 +1024,7 @@ class exe_test(DownloadTestCase):
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 class IPBaseClass:
@@ -1015,14 +1051,15 @@ class Test(IPBaseClass):
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - iceprod module (clear env)')
-    def test_201_runmodule_iceprod_env(self, download):
+    async def test_201_runmodule_iceprod_env(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -1052,7 +1089,7 @@ class Test(IPBaseClass):
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 class IPBaseClass:
@@ -1079,14 +1116,15 @@ class Test(IPBaseClass):
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - simple module from src')
-    def test_210_runmodule_simple(self, download):
+    async def test_210_runmodule_simple(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -1112,7 +1150,7 @@ class Test(IPBaseClass):
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 def Test():
@@ -1127,7 +1165,8 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
@@ -1138,14 +1177,15 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed (short)')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - python script')
-    def test_211_runmodule_script(self, download):
+    async def test_211_runmodule_script(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -1170,7 +1210,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 def Test():
@@ -1187,14 +1227,15 @@ if __name__ == '__main__':
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - shell script')
-    def test_212_runmodule_script(self, download):
+    async def test_212_runmodule_script(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -1219,7 +1260,7 @@ if __name__ == '__main__':
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 uname -a
@@ -1234,14 +1275,15 @@ echo "test"
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - python script (clear env)')
-    def test_220_runmodule_script(self, download):
+    async def test_220_runmodule_script(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
@@ -1267,7 +1309,7 @@ echo "test"
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 def Test():
@@ -1284,14 +1326,15 @@ if __name__ == '__main__':
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - python script (env_shell)')
-    def test_221_runmodule_script(self, download):
+    async def test_221_runmodule_script(self, download):
         # create env_shell
         env_shell = os.path.join(self.test_dir,'env_shell.sh')
         with open(env_shell,'w') as f:
@@ -1323,7 +1366,7 @@ if __name__ == '__main__':
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(*args, **kwargs):
+        async def create(*args, **kwargs):
             path = os.path.join(options['local_temp'], module['src'])
             self.mk_files(path, """
 import os
@@ -1342,18 +1385,20 @@ if __name__ == '__main__':
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runmodule - with linked libraries')
-    def test_230_runmodule_icetray(self, download):
+    async def test_230_runmodule_icetray(self, download):
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1382,7 +1427,7 @@ if __name__ == '__main__':
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             path = os.path.join(options['local_temp'], c['src'])
             self.mk_files(path, {'test.py':"""
 import hello
@@ -1398,23 +1443,25 @@ def Test():
         # run the module
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runmodule(self.config, env, module)
+                async for mod in iceprod.core.exe.runmodule(self.config, env, module):
+                    await mod.wait()
             except:
                 logger.error('running the module failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtray')
-    def test_300_runtray(self, download):
+    async def test_300_runtray(self, download):
         """Test runtray"""
         # create the tray object
         tray = iceprod.core.dataclasses.Tray()
-        tray.name = 'tray'
+        tray['name'] = 'tray'
 
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1451,7 +1498,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(options['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -1474,14 +1521,15 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runtray(self.config, env, tray)
+                async for mod in iceprod.core.exe.runtray(self.config, env, tray):
+                    await mod.wait()
             except:
                 logger.error('running the tray failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtray - iterations')
-    def test_310_runtray_iter(self, download):
+    async def test_310_runtray_iter(self, download):
         """Test runtray iterations"""
         # create the tray object
         tray = iceprod.core.dataclasses.Tray()
@@ -1492,6 +1540,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1528,7 +1577,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(options['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -1551,26 +1600,28 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runtray(self.config, env, tray)
+                async for mod in iceprod.core.exe.runtray(self.config, env, tray):
+                    await mod.wait()
             except:
                 logger.error('running the tray failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtask')
-    def test_400_runtask(self, download):
+    async def test_400_runtask(self, download):
         # create the task object
         task = iceprod.core.dataclasses.Task()
-        task.name = 'task'
+        task['name'] = 'task'
 
         # create the tray object
         tray = iceprod.core.dataclasses.Tray()
-        tray.name = 'tray'
+        tray['name'] = 'tray'
 
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1610,7 +1661,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(options['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -1633,26 +1684,28 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runtask(self.config, env, task)
+                async for mod in iceprod.core.exe.runtask(self.config, env, task):
+                    await mod.wait()
             except:
                 logger.error('running the tray failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtask - multiple trays')
-    def test_410_runtask_multi(self, download):
+    async def test_410_runtask_multi(self, download):
         # create the task object
         task = iceprod.core.dataclasses.Task()
-        task.name = 'task'
+        task['name'] = 'task'
 
         # create the tray object
         tray = iceprod.core.dataclasses.Tray()
-        tray.name = 'tray'
+        tray['name'] = 'tray'
 
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1678,6 +1731,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1717,7 +1771,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(options['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -1740,27 +1794,29 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runtask(self.config, env, task)
+                async for mod in iceprod.core.exe.runtask(self.config, env, task):
+                    await mod.wait()
             except:
                 logger.error('running the tray failed')
                 raise
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtask - multiple trays with iterations')
-    def test_420_runtask_multi_iter(self, download):
+    async def test_420_runtask_multi_iter(self, download):
         """Test runtask with multiple trays and iterations"""
         # create the task object
         task = iceprod.core.dataclasses.Task()
-        task.name = 'task'
+        task['name'] = 'task'
 
         # create the tray object
         tray = iceprod.core.dataclasses.Tray()
-        tray.name = 'tray'
+        tray['name'] = 'tray'
 
         # create the module object
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1787,6 +1843,7 @@ def Test():
         module = iceprod.core.dataclasses.Module()
         module['name'] = 'module'
         module['running_class'] = 'test.Test'
+        module['env_clear'] = False
 
         c = iceprod.core.dataclasses.Class()
         c['name'] = 'test'
@@ -1826,7 +1883,7 @@ def Test():
         if 'local_temp' not in options:
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
-        def create(url, *args, **kwargs):
+        async def create(url, *args, **kwargs):
             if url.endswith(c['src']):
                 path = os.path.join(options['local_temp'], c['src'])
                 self.mk_files(path, {'test.py':"""
@@ -1849,7 +1906,8 @@ def Test():
         # run the tray
         with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
             try:
-                iceprod.core.exe.runtask(self.config, env, task)
+                async for mod in iceprod.core.exe.runtask(self.config, env, task):
+                    await mod.wait()
             except:
                 logger.error('running the tray failed')
                 raise
