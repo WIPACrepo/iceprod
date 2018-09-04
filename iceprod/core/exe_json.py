@@ -57,7 +57,7 @@ class ServerComms:
         os_type = os.environ['OS_ARCH'] if 'OS_ARCH' in os.environ else None
         if os_type:
             resources['os'] = os_type
-        task = await self.rest.request('GET', '/task_actions/process',
+        task = await self.rest.request('POST', '/task_actions/process',
                 {'gridspec': gridspec,
                  'hostname': hostname, 
                  'domain': domain,
