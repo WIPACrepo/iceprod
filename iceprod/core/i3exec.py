@@ -111,7 +111,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             kwargs['password'] = config['options']['password']
         if 'ssl' in config['options'] and config['options']['ssl']:
             kwargs.update(config['options']['ssl'])
-        rpc = ServerComms(url+'/jsonrpc', passkey, None, **kwargs)
+        rpc = ServerComms(url, passkey, None, **kwargs)
 
     async def run():
         if offline:
