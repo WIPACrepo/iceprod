@@ -121,9 +121,9 @@ class BaseGrid(object):
             status = grid_jobs[grid_queue_id]['status']
             submit_time = pilots[grid_queue_id]['submit_time']
             if '.' in submit_time:
-                submit_time = datetime.strptime('%Y-%m-%dT%H:%M:%S.%f', submit_time)
+                submit_time = datetime.strptime(submit_time, '%Y-%m-%dT%H:%M:%S.%f')
             else:
-                submit_time = datetime.strptime('%Y-%m-%dT%H:%M:%S', submit_time)
+                submit_time = datetime.strptime(submit_time, '%Y-%m-%dT%H:%M:%S')
 
             if now - submit_time > time_dict[status]:
                 logger.info('pilot over time: %r', pilots[grid_queue_id]['pilot_id'])
