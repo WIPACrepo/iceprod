@@ -98,6 +98,8 @@ def get_reqs(config, index):
     for k in Resources.defaults:
         if k not in req or not req[k]:
             req[k] = Resources.defaults[k]
+            if k == 'gpu':
+                req[k] = len(req[k])
     return req
 
 async def get_depends(rest_client, config, job_index, task_index, task_ids):
