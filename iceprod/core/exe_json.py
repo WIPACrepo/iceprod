@@ -95,9 +95,20 @@ class ServerComms:
             job = await self.rest.request('GET', '/jobs/{}'.format(task['job_id']))
             config['options']['job'] = job['job_index']
         except Exception:
-            logging.warn('failed to get dataset config for dataset %s', task['dataset_id'])
+            logging.warn('failed to get job %s', task['job_id'])
             await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
-                                  reason='failed to download dataset config')
+                                  reason='failed to download job')
+            raise
+        try:
+            dataset = await self.rest.request('GET', '/datasets/{}'.format(task['dataset_id']))
+            config['options']['dataset'] = dataset['dataset']
+            config['options']['jobs_submitted'] = dataset['jobs_submitted']
+            config['options']['tasks_submitted'] = dataset['tasks_submitted']
+            config['options']['debug'] = dataset['debug']
+        except Exception:
+            logging.warn('failed to get dataset %s', task['dataset_id'])
+            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
+                                  reason='failed to download dataset')
             raise
         return [config]
 
@@ -258,7 +269,8 @@ class ServerComms:
         if dataset_id:
             data['dataset_id'] = dataset_id
         try:
-            data['data'] = json_compressor.compress(open(filename,'rb').read())
+            with open(filename) as f:
+                data['data'] = f.read()
         except Exception as e:
             data['data'] = str(e)
         await self.rest.request('POST', '/logs', data)
