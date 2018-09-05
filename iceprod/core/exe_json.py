@@ -124,7 +124,8 @@ class ServerComms:
         await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'processing'})
 
-    async def finish_task(self, task_id, dataset_id=None, stats={}, start_time=None, resources=None):
+    async def finish_task(self, task_id, dataset_id=None, stats={},
+                          stat_filter=None, start_time=None, resources=None):
         """
         Finish a task.
 
@@ -132,13 +133,13 @@ class ServerComms:
             task_id (str): task_id of task
             dataset_id (str): (optional) dataset_id of task
             stats (dict): (optional) task statistics
+            stat_filter (iterable): (optional) stat filter by keywords
             start_time (float): (optional) task start time in unix seconds
             resources (dict): (optional) task resource usage
         """
-        if 'stats' in self.cfg.config['options']:
+        if stat_filter:
             # filter task stats
-            stat_keys = set(json_decode(self.cfg.config['options']['stats']))
-            stats = {k:stats[k] for k in stats if k in stat_keys}
+            stats = {k:stats[k] for k in stats if k in stat_filter}
 
         hostname = functions.gethostname()
         domain = '.'.join(hostname.split('.')[-2:])
