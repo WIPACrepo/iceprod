@@ -66,20 +66,40 @@ class ServerComms:
                 })
         if not task:
             return None
-        if task and not isinstance(task,list):
-            task = [task]
+
+        # get config
+        try:
+            config = await self.rest.request('GET', '/config/{}'.format(task['dataset_id']))
+        except Exception:
+            logging.warn('failed to get dataset config for dataset %s', task['dataset_id'])
+            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
+                                  reason='failed to download dataset config')
+            raise
+
         # convert dict to Job
-        ret = []
-        for t in task:
-            if not isinstance(t, dataclasses.Job):
-                try:
-                    ret.append(dict_to_dataclasses(t))
-                except Exception:
-                    logging.warning('not a Job: %r',t)
-                    raise
-            else:
-                ret.append(t)
-        return ret
+        if not isinstance(config, dataclasses.Job):
+            try:
+                config = dict_to_dataclasses(config)
+            except Exception:
+                logging.warning('not a Job: %r', config)
+                raise
+
+        # fill in options
+        if 'options' not in config:
+            config['options'] = {}
+        config['options']['task_id'] = task['task_id']
+        config['options']['job_id'] = task['job_id']
+        config['options']['dataset_id'] = task['dataset_id']
+        config['options']['task'] = task['task_index']
+        try:
+            job = await self.rest.request('GET', '/jobs/{}'.format(task['job_id']))
+            config['options']['job'] = job['job_index']
+        except Exception:
+            logging.warn('failed to get dataset config for dataset %s', task['dataset_id'])
+            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
+                                  reason='failed to download dataset config')
+            raise
+        return [config]
 
     async def processing(self, task_id):
         """
