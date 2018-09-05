@@ -82,19 +82,24 @@ class exe_json_test(AsyncTestCase):
         """Test download_task"""
         task = {'dataset':10}
         c = Client.return_value
-        async def req(*args,**kwargs):
-            return {'task':'foo'}
+        async def req(method, path, args=None):
+            if path.startswith('/task_actions/process'):
+                return {'task':'foo', 'task_id':'foo', 'job_id':'bar', 'dataset_id':'bar', 'task_index':1}
+            elif path.startswith('/config'):
+                return {'dataset_id':'bar'}
+            elif path.startswith('/jobs'):
+                return {'job_index':1}
+            elif path.startswith('/datasets'):
+                return {'dataset':1, 'jobs_submitted':10, 'tasks_submitted':1, 'debug':True}
         c.request.side_effect = req
 
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
         ret = (await rpc.download_task('gridspec'))[0]
-        self.assertIn('task', ret)
-        self.assertEqual(ret['task'], 'foo')
-
-        self.assertTrue(c.request.called)
-        logger.info(c.request.call_args[0])
-        self.assertTrue({'gridspec','hostname','ifaces'}.issubset(
-                            c.request.call_args[0][-1]))
+        self.assertIn('options', ret)
+        self.assertIn('task', ret['options'])
+        self.assertEqual(ret['options']['task'], 1)
+        self.assertIn('jobs_submitted', ret['options'])
+        self.assertEqual(ret['options']['jobs_submitted'], 10)
 
     @patch('iceprod.core.exe_json.Client')
     @unittest_reporter
@@ -304,7 +309,7 @@ class exe_json_test(AsyncTestCase):
         self.assertEqual(c.request.call_args_list[0][0][-1]['name'], name)
         self.assertIn('data', c.request.call_args_list[0][0][-1])
         self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
-                         json_compressor.compress(data.encode('utf-8')))
+                         data)
 
         for f in constants.keys():
             if f in ('stderr','stdout','stdlog'):
@@ -321,7 +326,7 @@ class exe_json_test(AsyncTestCase):
         self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stdlog')
         self.assertIn('data', c.request.call_args_list[0][0][-1])
         self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
-                         json_compressor.compress(open(constants['stdlog'],'rb').read()))
+                         open(constants['stdlog']).read())
 
         c.request.reset_mock()
         await rpc.uploadErr()
@@ -332,7 +337,7 @@ class exe_json_test(AsyncTestCase):
         self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stderr')
         self.assertIn('data', c.request.call_args_list[0][0][-1])
         self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
-                         json_compressor.compress(open(constants['stderr'],'rb').read()))
+                         open(constants['stderr']).read())
 
         c.request.reset_mock()
         await rpc.uploadOut()
@@ -343,7 +348,7 @@ class exe_json_test(AsyncTestCase):
         self.assertEqual(c.request.call_args_list[0][0][-1]['name'], 'stdout')
         self.assertIn('data', c.request.call_args_list[0][0][-1])
         self.assertEqual(c.request.call_args_list[0][0][-1]['data'],
-                        json_compressor.compress( open(constants['stdout'],'rb').read()))
+                        open(constants['stdout']).read())
 
 
         c.request.side_effect = Exception('request error')

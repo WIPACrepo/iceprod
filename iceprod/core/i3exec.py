@@ -352,22 +352,34 @@ async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=
                     upload = [x.lower() for x in config['options']['upload']]
                 else:
                     raise Exception('upload config is not a valid type')
+                errfile = constants['stderr']
+                outfile = constants['stdout']
+                if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
+                    subdir = cfg.config['options']['subprocess_dir']
+                    errfile = os.path.join(subdir, errfile)
+                    outfile = os.path.join(subdir, outfile)
                 for up in upload:
                     if up.startswith('logging'):
                         # upload err,log,out files
-                        await rpc.uploadLog()
-                        await rpc.uploadErr()
-                        await rpc.uploadOut()
+                        await rpc.uploadLog(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
+                        await rpc.uploadErr(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
+                        await rpc.uploadOut(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
                         break
                     elif up.startswith('log'):
                         # upload log files
-                        await rpc.uploadLog()
+                        await rpc.uploadLog(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
                     elif up.startswith('err'):
                         # upload err files
-                        await rpc.uploadErr()
+                        await rpc.uploadErr(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
                     elif up.startswith('out'):
                         # upload out files
-                        await rpc.uploadOut()
+                        await rpc.uploadOut(task_id=config['options']['task_id'],
+                                            dataset_id=config['options']['dataset_id'])
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)
 

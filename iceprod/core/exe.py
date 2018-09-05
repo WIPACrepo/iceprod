@@ -707,13 +707,6 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
     if not logger:
         logger = logging
 
-    error_filename = constants['task_exception']
-    stats_filename = constants['stats']
-    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
-        subdir = cfg.config['options']['subprocess_dir']
-        error_filename = os.path.join(subdir, error_filename)
-        stats_filename = os.path.join(subdir, stats_filename)
-
     # set up local env
     async with SetupEnv(cfg, module, globalenv, logger=logger) as env:
         if module['running_class']:
@@ -726,38 +719,11 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
             module['env_shell'] = cfg.parseValue(module['env_shell'],env)
 
         # make subprocess to run the module
-        if os.path.exists(error_filename):
-            os.remove(error_filename)
-        process = await fork_module(cfg, env, module, logger=logger)
+        async with ForkModule(cfg, env, module, logger=logger, stats=stats) as process:
+            # yield process back to pilot or driver, so it can be killed
+            yield process
 
-        # yield process back to pilot or driver, so it can be killed
-        yield process
-
-        # now clean up after process
-        if process.returncode:
-            try:
-                with open(error_filename, 'rb') as f:
-                    e = pickle.load(f)
-                    if isinstance(e, Exception):
-                        raise e
-                    else:
-                        raise Exception(str(e))
-            except Exception:
-                logger.warning('cannot load exception info from failed module')
-                raise Exception('module failed')
-
-        # get stats, if available
-        if os.path.exists(stats_filename):
-            try:
-                new_stats = pickle.load(open(stats_filename, 'rb'))
-                if module['name']:
-                    stats[module['name']] = new_stats
-                else:
-                    stats.update(new_stats)
-            except Exception:
-                logger.warning('cannot load stats info from module')
-
-async def fork_module(cfg, env, module, logger=None):
+class ForkModule:
     """
     Modules are run in a forked process to prevent segfaults from killing IceProd.
     Their stdout and stderr is dumped into the log file with prefixes on each
@@ -774,162 +740,221 @@ async def fork_module(cfg, env, module, logger=None):
     * An executable of some type (this is run in a subprocess with shell
       execution disabled)
     """
-    if not logger:
-        logger = logging
-    module_src = None
-    if module['src']:
-        # get script to run
-        c = dataclasses.Class()
-        c['src'] = module['src']
-        c['name'] = os.path.basename(c['src'])
-        if '?' in c['name']:
-            c['name'] = c['name'][:c['name'].find('?')]
-        elif '#' in c['name']:
-            c['name'] = c['name'][:c['name'].find('#')]
-        await setupClass(env,c,logger=logger)
-        if c['name'] not in env['classes']:
-            raise Exception('Failed to install class %s'%c['name'])
-        module_src = env['classes'][c['name']]
-
-    # set up env_shell
-    env_shell = None
-    if module['env_shell']:
-        env_shell = module['env_shell'].split()
-        logger.info('searching for env_shell at %r', env_shell[0])
-        if not os.path.exists(env_shell[0]):
-            env_class = env_shell[0].split('/')[0]
-            logger.info('searching for env_shell as %r class', env_class)
-            if env_class in env['classes']:
-                env_tmp = env_shell[0].split('/')
-                env_tmp[0] = env['classes'][env_class]
-                env_shell[0] = '/'.join(env_tmp)
-            else:
-                logger.info('attempting to download env_shell')
-                c = dataclasses.Class()
-                c['src'] = env_shell[0]
-                c['name'] = os.path.basename(c['src'])
-                await setupClass(env,c,logger=logger)
-                if c['name'] not in env['classes']:
-                    raise Exception('Failed to install class %s'%c['name'])
-                env_shell[0] = env['classes'][c['name']]
-
-    logger.warning('running module \'%s\' with class %s',module['name'],
-                module['running_class'])
-
-    # set up the args
-    args = module['args']
-    if args:
-        logger.warning('args=%s',args)
-        if (args and isinstance(args,dataclasses.String) and
-            args[0] in ('{','[')):
-            args = json_decode(args)
-        if isinstance(args,dataclasses.String):
-            args = {"args":[cfg.parseValue(x,env) for x in args.split()],"kwargs":{}}
-        elif isinstance(args,list):
-            args = {"args":[cfg.parseValue(x,env) for x in args],"kwargs":{}}
-        elif isinstance(args,dict):
-            args = {"args":[],"kwargs":cfg.parseObject(args,env)}
-        else:
-            raise Exception('args is unknown type')
-
-    # set up the environment
-    cmd = []
-    if env_shell:
-        cmd.extend(env_shell)
+    def __init__(self, cfg, env, module, logger=None, stats=None):
+        self.cfg = cfg
+        self.env = env
+        self.module = module
+        if not logger:
+            logger = logging
+        self.logger = logger
+        self.stats = stats if stats else {}
+        self.proc = None
         
-    kwargs = {}
-    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
-        if not os.path.exists(cfg.config['options']['subprocess_dir']):
-            os.makedirs(cfg.config['options']['subprocess_dir'])
-        kwargs['cwd'] = cfg.config['options']['subprocess_dir']
+        self.error_filename = constants['task_exception']
+        self.stats_filename = constants['stats']
+        if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
+            subdir = cfg.config['options']['subprocess_dir']
+            self.error_filename = os.path.join(subdir, self.error_filename)
+            self.stats_filename = os.path.join(subdir, self.stats_filename)
 
-    # run the module
-    if module['running_class']:
-        logger.info('run as a class using the helper script')
-        exe_helper = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                  'exe_helper.py')
-        cmd.extend(['python', exe_helper, '--classname',
-                    module['running_class']])
-        if env['options']['debug']:
-            cmd.append('--debug')
-        if module_src:
-            cmd.extend(['--filename', module_src])
-        if args:
-            args_filename = constants['args']
-            if 'cwd' in kwargs:
-                args_filename = os.path.join(kwargs['cwd'], args_filename)
-            with open(args_filename,'w') as f:
-                f.write(json_encode(args))
-            cmd.append('--args')
-    elif module_src:
-        logger.info('run as a script directly')
-        if args:
-            def splitter(a,b):
-                ret = ('-%s' if len(str(a)) <= 1 else '--%s')%str(a)
-                if b is None:
-                    return ret
+        if os.path.exists(self.error_filename):
+            os.remove(self.error_filename)
+
+    async def __aenter__(self):
+        module_src = None
+        if self.module['src']:
+            # get script to run
+            c = dataclasses.Class()
+            c['src'] = self.module['src']
+            c['name'] = os.path.basename(c['src'])
+            if '?' in c['name']:
+                c['name'] = c['name'][:c['name'].find('?')]
+            elif '#' in c['name']:
+                c['name'] = c['name'][:c['name'].find('#')]
+            await setupClass(self.env,c,logger=self.logger)
+            if c['name'] not in self.env['classes']:
+                raise Exception('Failed to install class %s'%c['name'])
+            module_src = self.env['classes'][c['name']]
+
+        # set up env_shell
+        env_shell = None
+        if self.module['env_shell']:
+            env_shell = self.module['env_shell'].split()
+            self.logger.info('searching for env_shell at %r', env_shell[0])
+            if not os.path.exists(env_shell[0]):
+                env_class = env_shell[0].split('/')[0]
+                self.logger.info('searching for env_shell as %r class', env_class)
+                if env_class in self.env['classes']:
+                    env_tmp = env_shell[0].split('/')
+                    env_tmp[0] = self.env['classes'][env_class]
+                    env_shell[0] = '/'.join(env_tmp)
                 else:
-                    return ret+'='+str(b)
-            args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
-            # force args to string
-            def toStr(a):
-                if isinstance(a,(bytes,str)):
-                    return a
-                else:
-                    return str(a)
-            args = [toStr(a) for a in args]
-        else:
-            args = []
+                    self.logger.info('attempting to download env_shell')
+                    c = dataclasses.Class()
+                    c['src'] = env_shell[0]
+                    c['name'] = os.path.basename(c['src'])
+                    await setupClass(self.env,c,logger=self.logger)
+                    if c['name'] not in self.env['classes']:
+                        raise Exception('Failed to install class %s'%c['name'])
+                    env_shell[0] = self.env['classes'][c['name']]
 
-        shebang = False
-        with open(module_src) as f:
-            if f.read(10).startswith('#!'):
-                # shebang found
-                try:
-                    mode = os.stat(module_src).st_mode
-                    if not (mode & stat.S_IXUSR):
-                        os.chmod(module_src, mode | stat.S_IXUSR)
-                    shebang = True
-                except Exception:
-                    logger.warning('cannot get shebang for %s', module_src,
-                                   exc_info=True)
+        self.logger.warning('running module \'%s\' with class %s',self.module['name'],
+                    self.module['running_class'])
 
-        if (not shebang) and module_src[-3:] == '.py':
-            # call as python script
-            cmd.extend(['python', module_src]+args)
-        elif (not shebang) and module_src[-3:] == '.sh':
-            # call as shell script
-            cmd.extend(['/bin/sh', module_src]+args)
-        else:
-            # call as regular executable
-            cmd.extend([module_src]+args)
-    else:
-        logger.error('module is missing class and src')
-        raise Exception('error running module')
-
-    logger.warning('subprocess cmd=%r',cmd)
-    if module['env_clear']:
-        # must be on cvmfs-like environ for this to apply
-        env = {'PYTHONNOUSERSITE':'1'}
-        if 'SROOT' in os.environ:
-            prefix = os.environ['SROOT']
-        elif 'ICEPRODROOT' in os.environ:
-            prefix = os.environ['ICEPRODROOT']
-        else:
-            prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        for k in os.environ:
-            if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
-                # pass through unchanged
-                env[k] = os.environ[k]
-            elif 'sroot' in k.lower() or 'iceprod' in k.lower():
-                # don't pass these at all
-                pass
+        # set up the args
+        args = self.module['args']
+        if args:
+            self.logger.warning('args=%s',args)
+            if (args and isinstance(args,dataclasses.String) and
+                args[0] in ('{','[')):
+                args = json_decode(args)
+            if isinstance(args,dataclasses.String):
+                args = {"args":[self.cfg.parseValue(x,self.env) for x in args.split()],"kwargs":{}}
+            elif isinstance(args,list):
+                args = {"args":[self.cfg.parseValue(x,self.env) for x in args],"kwargs":{}}
+            elif isinstance(args,dict):
+                args = {"args":[],"kwargs":self.cfg.parseObject(args,self.env)}
             else:
-                # filter SROOT out of environ
-                ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
-                if ret:
-                    env[k] = ':'.join(ret)
-        logger.warning('env = %r', env)
-        kwargs['env'] = env
+                raise Exception('args is unknown type')
 
-    return await asyncio.create_subprocess_exec(*cmd, **kwargs)
+        # set up the environment
+        cmd = []
+        if env_shell:
+            cmd.extend(env_shell)
+
+        kwargs = {'close_fds': True}
+        if 'subprocess_dir' in self.cfg.config['options'] and self.cfg.config['options']['subprocess_dir']:
+            subdir = self.cfg.config['options']['subprocess_dir']
+            if not os.path.exists(subdir):
+                os.makedirs(subdir)
+            kwargs['cwd'] = subdir
+            self.stdout = open(os.path.join(subdir, constants['stdout']), 'wb')
+            self.stderr = open(os.path.join(subdir, constants['stderr']), 'wb')
+        else:
+            self.stdout = open(os.path.join(os.getcwd(), constants['stdout']), 'wb')
+            self.stderr = open(os.path.join(os.getcwd(), constants['stderr']), 'wb')
+        kwargs['stdout'] = self.stdout
+        kwargs['stderr'] = self.stderr
+
+        # run the module
+        if self.module['running_class']:
+            self.logger.info('run as a class using the helper script')
+            exe_helper = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      'exe_helper.py')
+            cmd.extend(['python', exe_helper, '--classname',
+                        self.module['running_class']])
+            if self.env['options']['debug']:
+                cmd.append('--debug')
+            if module_src:
+                cmd.extend(['--filename', module_src])
+            if args:
+                args_filename = constants['args']
+                if 'cwd' in kwargs:
+                    args_filename = os.path.join(kwargs['cwd'], args_filename)
+                with open(args_filename,'w') as f:
+                    f.write(json_encode(args))
+                cmd.append('--args')
+        elif module_src:
+            self.logger.info('run as a script directly')
+            if args:
+                def splitter(a,b):
+                    ret = ('-%s' if len(str(a)) <= 1 else '--%s')%str(a)
+                    if b is None:
+                        return ret
+                    else:
+                        return ret+'='+str(b)
+                args = args['args']+[splitter(a,args['kwargs'][a]) for a in args['kwargs']]
+                # force args to string
+                def toStr(a):
+                    if isinstance(a,(bytes,str)):
+                        return a
+                    else:
+                        return str(a)
+                args = [toStr(a) for a in args]
+            else:
+                args = []
+
+            shebang = False
+            with open(module_src) as f:
+                if f.read(10).startswith('#!'):
+                    # shebang found
+                    try:
+                        mode = os.stat(module_src).st_mode
+                        if not (mode & stat.S_IXUSR):
+                            os.chmod(module_src, mode | stat.S_IXUSR)
+                        shebang = True
+                    except Exception:
+                        self.logger.warning('cannot get shebang for %s', module_src,
+                                       exc_info=True)
+
+            if (not shebang) and module_src[-3:] == '.py':
+                # call as python script
+                cmd.extend(['python', module_src]+args)
+            elif (not shebang) and module_src[-3:] == '.sh':
+                # call as shell script
+                cmd.extend(['/bin/sh', module_src]+args)
+            else:
+                # call as regular executable
+                cmd.extend([module_src]+args)
+        else:
+            self.logger.error('module is missing class and src')
+            raise Exception('error running module')
+
+        self.logger.warning('subprocess cmd=%r',cmd)
+        if self.module['env_clear']:
+            # must be on cvmfs-like environ for this to apply
+            env = {'PYTHONNOUSERSITE':'1'}
+            if 'SROOT' in os.environ:
+                prefix = os.environ['SROOT']
+            elif 'ICEPRODROOT' in os.environ:
+                prefix = os.environ['ICEPRODROOT']
+            else:
+                prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            for k in os.environ:
+                if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
+                    # pass through unchanged
+                    env[k] = os.environ[k]
+                elif 'sroot' in k.lower() or 'iceprod' in k.lower():
+                    # don't pass these at all
+                    pass
+                else:
+                    # filter SROOT out of environ
+                    ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
+                    if ret:
+                        env[k] = ':'.join(ret)
+            self.logger.warning('env = %r', env)
+            kwargs['env'] = env
+
+        self.proc = await asyncio.create_subprocess_exec(*cmd, **kwargs)
+        return self.proc
+
+    async def __aexit__(self, exc_type, exc, tb):
+        try:
+            self.stdout.close()
+            self.stderr.close()
+        except Exception:
+            pass
+        if not exc_type:
+            # now clean up after process
+            if self.proc and self.proc.returncode:
+                try:
+                    with open(self.error_filename, 'rb') as f:
+                        e = pickle.load(f)
+                        if isinstance(e, Exception):
+                            raise e
+                        else:
+                            raise Exception(str(e))
+                except Exception:
+                    self.logger.warning('cannot load exception info from failed module')
+                    raise Exception('module failed')
+
+            # get stats, if available
+            if os.path.exists(self.stats_filename):
+                try:
+                    new_stats = pickle.load(open(self.stats_filename, 'rb'))
+                    if self.module['name']:
+                        self.stats[module['name']] = new_stats
+                    else:
+                        self.stats.update(new_stats)
+                except Exception:
+                    self.logger.warning('cannot load stats info from module')

@@ -277,15 +277,19 @@ class ServerComms:
         logging.getLogger().handlers[0].flush()
         await self._upload_logfile('stdlog', os.path.abspath(constants['stdlog']), **kwargs)
 
-    async def uploadErr(self, **kwargs):
+    async def uploadErr(self, filename=None, **kwargs):
         """Upload stderr file"""
         sys.stderr.flush()
-        await self._upload_logfile('stderr', os.path.abspath(constants['stderr']), **kwargs)
+        if not filename:
+            filename = os.path.abspath(constants['stderr'])
+        await self._upload_logfile('stderr', filename, **kwargs)
 
-    async def uploadOut(self, **kwargs):
+    async def uploadOut(self, filename=None, **kwargs):
         """Upload stdout file"""
         sys.stdout.flush()
-        await self._upload_logfile('stdout', os.path.abspath(constants['stdout']), **kwargs)
+        if not filename:
+            filename = os.path.abspath(constants['stdout'])
+        await self._upload_logfile('stdout', filename, **kwargs)
 
     async def update_pilot(self, pilot_id, **kwargs):
         """
@@ -338,10 +342,12 @@ class ServerComms:
         data = {'name': 'stdlog', 'task_id': task_id}
         if dataset_id:
             data['dataset_id'] = dataset_id
-        try:
-            data['data'] = json_compressor.compress(message)
-        except Exception as e:
-            data['data'] = str(e)
+        if message:
+            data['data'] = message
+        elif reason:
+            data['data'] = reason
+        else:
+            data['data'] = 'task killed'
         self.rest.request_sync('POST', '/logs', data)
         data.update({'name':'stdout', 'data': ''})
         self.rest.request_sync('POST', '/logs', data)
