@@ -242,14 +242,7 @@ class SetupEnv:
                             and 'offline_transfer' in self.cfg.config['options']
                             and self.cfg.config['options']['offline_transfer'])):
                     for d in self.env['uploads']:
-                        try:
-                            await uploadData(self.env, d, logger=self.logger)
-                        except util.NoncriticalError as e:
-                            self.logger.error('failed when uploading file %s - %s' % (str(d),str(e)), exc_info=True)
-                            if ('options' in self.env and
-                                'debug' in self.env['options'] and
-                                self.env['options']['debug']):
-                                raise
+                        await uploadData(self.env, d, logger=self.logger)
         finally:
             # delete any files
             if 'deletions' in self.env and len(self.env['deletions']) > 0:
@@ -392,7 +385,7 @@ async def uploadData(env, data, logger=None):
         url = data['remote']
     local = os.path.join(local_base,data['local'])
     if not os.path.exists(local):
-        raise util.NoncriticalError('file %s does not exist'%local)
+        raise Exception('file {} does not exist'.format(local))
 
     # check compression
     if data['compression']:
