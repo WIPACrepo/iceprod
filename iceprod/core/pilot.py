@@ -259,8 +259,8 @@ class Pilot:
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            self.rpc.task_kill(task_id, reason='failed to claim resources',
-                                               message=message)
+                            await self.rpc.task_kill(task_id, reason='failed to claim resources',
+                                                     message=message)
                             break
                         try:
                             f = self.create_task(task_config)
@@ -276,8 +276,8 @@ class Pilot:
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            self.rpc.task_kill(task_id, reason='failed to create task',
-                                               message=message)
+                            await self.rpc.task_kill(task_id, reason='failed to create task',
+                                                     message=message)
                             self.clean_task(task_id)
                             break
 
@@ -293,6 +293,7 @@ class Pilot:
                     break
 
                 # backoff request for rate limiting
+                logger.info('backoff %d', backoff_time)
                 await asyncio.sleep(backoff_time+backoff_time*random.random())
                 backoff_time *= 2
 
@@ -384,8 +385,7 @@ class Pilot:
 
         # start the task
         r = config['options']['resources']
-        async for proc in self.runner(config, 'iceprod_task_{}'.format(task_id),
-                hostname=self.hostname, pilot_id=self.pilot_id, resources=r):
+        async for proc in self.runner(config):
             ps = psutil.Process(proc.pid) if psutil else None
             self.resources.register_process(task_id, ps, tmpdir)
             yield {

@@ -147,7 +147,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             if 'run_timeout' in config['options']:
                 pilot_kwargs['run_timeout'] = config['options']['run_timeout']
             async with iceprod.core.pilot.Pilot(config, rpc=rpc, debug=debug,
-                                     runner=partial(runner, rpc=rpc, url=url, debug=debug),
+                                     runner=partial(runner, rpc=rpc, debug=debug),
                                      pilot_id=pilot_id, **pilot_kwargs) as p:
                 await p.run()
 
