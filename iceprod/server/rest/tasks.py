@@ -189,7 +189,7 @@ class TasksStatusHandler(BaseHandler):
     """
     Handle single task requests.
     """
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin','client','system', 'pilot'])
     async def put(self, task_id):
         """
         Set a task status.
