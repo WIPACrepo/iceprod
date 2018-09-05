@@ -169,9 +169,13 @@ class Pilot:
                     pass
                 except Exception:
                     logger.warning('error killing process',
-                                exc_info=True)
+                                   exc_info=True)
         for task in self.tasks.values():
-            task['p'].kill()
+            try:
+                task['p'].kill()
+            except Exception:
+                logger.warning('error killing process',
+                               exc_info=True)
 
     async def resource_monitor(self):
         """Monitor the tasks, killing any that go over resource limits"""

@@ -714,6 +714,13 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
     if not logger:
         logger = logging
 
+    error_filename = constants['task_exception']
+    stats_filename = constants['stats']
+    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
+        subdir = cfg.config['options']['subprocess_dir']
+        error_filename = os.path.join(subdir, error_filename)
+        stats_filename = os.path.join(subdir, stats_filename)
+
     # set up local env
     async with SetupEnv(cfg, module, globalenv, logger=logger) as env:
         if module['running_class']:
@@ -726,8 +733,8 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
             module['env_shell'] = cfg.parseValue(module['env_shell'],env)
 
         # make subprocess to run the module
-        if os.path.exists(constants['task_exception']):
-            os.remove(constants['task_exception'])
+        if os.path.exists(error_filename):
+            os.remove(error_filename)
         process = await fork_module(cfg, env, module, logger=logger)
 
         # yield process back to pilot or driver, so it can be killed
@@ -736,7 +743,7 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
         # now clean up after process
         if process.returncode:
             try:
-                with open(constants['task_exception'],'rb') as f:
+                with open(error_filename, 'rb') as f:
                     e = pickle.load(f)
                     if isinstance(e, Exception):
                         raise e
@@ -747,12 +754,15 @@ async def runmodule(cfg, globalenv, module, stats={}, logger=None):
                 raise Exception('module failed')
 
         # get stats, if available
-        if os.path.exists(constants['stats']):
-            new_stats = pickle.load(open(constants['stats'],'rb'))
-            if module['name']:
-                stats[module['name']] = new_stats
-            else:
-                stats.update(new_stats)
+        if os.path.exists(stats_filename):
+            try:
+                new_stats = pickle.load(open(stats_filename, 'rb'))
+                if module['name']:
+                    stats[module['name']] = new_stats
+                else:
+                    stats.update(new_stats)
+            except Exception:
+                logger.warning('cannot load stats info from module')
 
 async def fork_module(cfg, env, module, logger=None):
     """
@@ -833,6 +843,12 @@ async def fork_module(cfg, env, module, logger=None):
     cmd = []
     if env_shell:
         cmd.extend(env_shell)
+        
+    kwargs = {}
+    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
+        if not os.path.exists(cfg.config['options']['subprocess_dir']):
+            os.makedirs(cfg.config['options']['subprocess_dir'])
+        kwargs['cwd'] = cfg.config['options']['subprocess_dir']
 
     # run the module
     if module['running_class']:
@@ -846,7 +862,10 @@ async def fork_module(cfg, env, module, logger=None):
         if module_src:
             cmd.extend(['--filename', module_src])
         if args:
-            with open(constants['args'],'w') as f:
+            args_filename = constants['args']
+            if 'cwd' in kwargs:
+                args_filename = os.path.join(kwargs['cwd'], args_filename)
+            with open(args_filename,'w') as f:
                 f.write(json_encode(args))
             cmd.append('--args')
     elif module_src:
@@ -896,11 +915,6 @@ async def fork_module(cfg, env, module, logger=None):
         raise Exception('error running module')
 
     logger.warning('subprocess cmd=%r',cmd)
-    kwargs = {}
-    if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
-        if not os.path.exists(cfg.config['options']['subprocess_dir']):
-            os.makedirs(cfg.config['options']['subprocess_dir'])
-        kwargs['cwd'] = cfg.config['options']['subprocess_dir']
     if module['env_clear']:
         # must be on cvmfs-like environ for this to apply
         env = {'PYTHONNOUSERSITE':'1'}
