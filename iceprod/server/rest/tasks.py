@@ -488,6 +488,7 @@ class TasksActionsProcessingHandler(BaseHandler):
                 projection={'_id':False},
                 return_document=pymongo.ReturnDocument.AFTER)
         if not ret:
+            logger.info('filter_query: %r', filter_query)
             self.send_error(404, reason="Task not found")
         else:
             self.write(ret)
