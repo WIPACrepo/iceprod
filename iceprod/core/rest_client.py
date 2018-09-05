@@ -101,7 +101,7 @@ class Client(object):
             r = await asyncio.wrap_future(self.session.request(method, url, **kwargs))
             r.raise_for_status()
             return self._decode(r.content)
-        except Exception:
+        except requests.exceptions.HTTPError:
             logging.info('bad request: %s %s %r', method, path, args, exc_info=True)
             raise
 
