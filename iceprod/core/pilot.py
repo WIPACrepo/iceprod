@@ -173,7 +173,7 @@ class Pilot:
         for task in self.tasks.values():
             try:
                 task['p'].kill()
-            except Exception:
+            except ProcessLookupError:
                 logger.warning('error killing process',
                                exc_info=True)
 
@@ -335,6 +335,10 @@ class Pilot:
                         try:
                             task = await f.__anext__()
                         except StopAsyncIteration:
+                            self.clean_task(task_id)
+                        except Exception:
+                            logger.warning('failed to get next yielded task',
+                                           exc_info=True)
                             self.clean_task(task_id)
                         else:
                             self.tasks[task_id] = task
