@@ -70,19 +70,13 @@ class ServerComms:
         # get config
         try:
             config = await self.rest.request('GET', '/config/{}'.format(task['dataset_id']))
+            if not isinstance(config, dataclasses.Job):
+                config = dict_to_dataclasses(config)
         except Exception:
             logging.warn('failed to get dataset config for dataset %s', task['dataset_id'])
-            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
-                                  reason='failed to download dataset config')
+            await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
+                                 reason='failed to download dataset config')
             raise
-
-        # convert dict to Job
-        if not isinstance(config, dataclasses.Job):
-            try:
-                config = dict_to_dataclasses(config)
-            except Exception:
-                logging.warning('not a Job: %r', config)
-                raise
 
         # fill in options
         if 'options' not in config:
@@ -96,8 +90,8 @@ class ServerComms:
             config['options']['job'] = job['job_index']
         except Exception:
             logging.warn('failed to get job %s', task['job_id'])
-            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
-                                  reason='failed to download job')
+            await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
+                                 reason='failed to download job')
             raise
         try:
             dataset = await self.rest.request('GET', '/datasets/{}'.format(task['dataset_id']))
@@ -107,8 +101,8 @@ class ServerComms:
             config['options']['debug'] = dataset['debug']
         except Exception:
             logging.warn('failed to get dataset %s', task['dataset_id'])
-            await self.task_error(task['task_id'], dataset_id=task['dataset_id'],
-                                  reason='failed to download dataset')
+            await self.task_kill(task['task_id'], dataset_id=task['dataset_id'],
+                                 reason='failed to download dataset')
             raise
         return [config]
 
@@ -252,10 +246,12 @@ class ServerComms:
         data = {'name': 'stdlog', 'task_id': task_id}
         if dataset_id:
             data['dataset_id'] = dataset_id
-        try:
-            data['data'] = json_compressor.compress(message)
-        except Exception as e:
-            data['data'] = str(e)
+        if message:
+            data['data'] = message
+        elif reason:
+            data['data'] = reason
+        else:
+            data['data'] = 'task killed'
         await self.rest.request('POST', '/logs', data)
         data.update({'name':'stdout', 'data': ''})
         await self.rest.request('POST', '/logs', data)
