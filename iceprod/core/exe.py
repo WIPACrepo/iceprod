@@ -828,11 +828,11 @@ class ForkModule:
             if not os.path.exists(subdir):
                 os.makedirs(subdir)
             kwargs['cwd'] = subdir
-            self.stdout = open(os.path.join(subdir, constants['stdout']), 'wb')
-            self.stderr = open(os.path.join(subdir, constants['stderr']), 'wb')
+            self.stdout = open(os.path.join(subdir, constants['stdout']), 'ab')
+            self.stderr = open(os.path.join(subdir, constants['stderr']), 'ab')
         else:
-            self.stdout = open(os.path.join(os.getcwd(), constants['stdout']), 'wb')
-            self.stderr = open(os.path.join(os.getcwd(), constants['stderr']), 'wb')
+            self.stdout = open(os.path.join(os.getcwd(), constants['stdout']), 'ab')
+            self.stderr = open(os.path.join(os.getcwd(), constants['stderr']), 'ab')
         kwargs['stdout'] = self.stdout
         kwargs['stderr'] = self.stderr
 
