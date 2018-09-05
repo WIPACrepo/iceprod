@@ -479,7 +479,12 @@ class TasksActionsProcessingHandler(BaseHandler):
             data = json.loads(self.request.body)
             reqs = data.get('requirements', {})
             for k in reqs:
-                if isinstance(reqs[k], (int,float)):
+                if k == 'os':
+                    filter_query['$or'] = [
+                        {'requirements.os': {'$exists': False}},
+                        {'requirements.os': reqs[k]},
+                    ]
+                elif isinstance(reqs[k], (int,float)):
                     filter_query['requirements.'+k] = {'$lte': reqs[k]}
                 else:
                     filter_query['requirements.'+k] = reqs[k]
