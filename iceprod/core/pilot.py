@@ -205,6 +205,7 @@ class Pilot:
         """Run the pilot"""
         self.errors = max_errors = int(self.resources.total['cpu'])*10
         tasks_running = 0
+        backoff_time = 1
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)
@@ -222,6 +223,9 @@ class Pilot:
                         logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
                                  max_errors-self.errors, exc_info=True)
+                    # backoff request
+                    await asyncio.sleep(backoff_time+backoff_time*random.random())
+                    backoff_time *= 2
                     continue
                 logger.info('task configs: %r', task_configs)
 
