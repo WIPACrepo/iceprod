@@ -97,9 +97,13 @@ class Client(object):
             dict: json dict or raw string
         """
         url, kwargs = self._prepare(method, path, args)
-        r = await asyncio.wrap_future(self.session.request(method, url, **kwargs))
-        r.raise_for_status()
-        return self._decode(r.content)
+        try:
+            r = await asyncio.wrap_future(self.session.request(method, url, **kwargs))
+            r.raise_for_status()
+            return self._decode(r.content)
+        except Exception:
+            logging.info('bad request: %s %s %r', method, path, args, exc_info=True)
+            raise
 
     def request_seq(self, method, path, args=None):
         """
