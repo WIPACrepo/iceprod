@@ -223,9 +223,6 @@ class Pilot:
                         logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
                                  max_errors-self.errors, exc_info=True)
-                    # backoff request
-                    await asyncio.sleep(backoff_time+backoff_time*random.random())
-                    backoff_time *= 2
                     continue
                 logger.info('task configs: %r', task_configs)
 
@@ -293,6 +290,10 @@ class Pilot:
                     or (self.resources.total['gpu'] and not self.resources.available['gpu'])):
                     logger.info('no resources left, so wait for tasks to finish')
                     break
+
+                # backoff request for rate limiting
+                await asyncio.sleep(backoff_time+backoff_time*random.random())
+                backoff_time *= 2
 
             # wait until we can queue more tasks
             while self.running or self.tasks:

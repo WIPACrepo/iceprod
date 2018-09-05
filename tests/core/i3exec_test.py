@@ -380,7 +380,7 @@ class MyTest(IPBaseClass):
 
         i3exec.main(config, url='http://foo', passkey='pk')
         self.assertTrue(run.called)
-        comms.assert_any_call('http://foo/jsonrpc', 'pk', None,
+        comms.assert_any_call('http://foo', 'pk', None,
                 username='u', password='p', key='k')
 
         # test errors

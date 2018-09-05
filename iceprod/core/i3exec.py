@@ -116,7 +116,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
     async def run():
         if offline:
             logging.info('offline mode')
-            async for proc in runner(config, url, debug=debug,
+            async for proc in runner(config, debug=debug,
                     offline=offline, offline_transfer=offline_transfer):
                 await proc.wait()
         elif 'tasks' in config and config['tasks']:
@@ -133,7 +133,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
             stdout = partial(to_file,sys.stdout,constants['stdout'])
             stderr = partial(to_file,sys.stderr,constants['stderr'])
             with stdout(), stderr():
-                async for proc in runner(config, url, rpc=rpc, debug=debug):
+                async for proc in runner(config, rpc=rpc, debug=debug):
                     await proc.wait()
         else:
             logging.info('pilot mode - get many tasks from server')
@@ -156,7 +156,7 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logging.warning('finished running normally; exiting...')
 
-async def runner(config, url, rpc=None, debug=False, offline=False, offline_transfer=False):
+async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=False):
     """Run a config.
 
     #. Set some default options if not set in configuration.
@@ -176,7 +176,6 @@ async def runner(config, url, rpc=None, debug=False, offline=False, offline_tran
 
     Args:
         config (`iceprod.core.dataclasses.Job`): Dataset configuration
-        url (str): URL to server
         rpc (:py:class:`iceprod.core.exe_json.ServerComms`): RPC object
         debug (bool): (optional) turn on debug logging
         offline (bool): (optional) enable offline mode
@@ -207,7 +206,7 @@ async def runner(config, url, rpc=None, debug=False, offline=False, offline_tran
     if 'jobs_submitted' not in config['options']:
         config['options']['jobs_submitted'] = 1
     if 'resource_url' not in config['options']:
-        config['options']['resource_url'] = str(url)+'/download'
+        config['options']['resource_url'] = 'http://prod-exe.icecube.wisc.edu/'
     if 'offline' not in config['options']:
         config['options']['offline'] = offline
     if 'offline_transfer' not in config['options']:
