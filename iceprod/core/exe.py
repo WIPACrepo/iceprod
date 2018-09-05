@@ -289,8 +289,8 @@ async def downloadResource(env, resource, remote_base=None,
     else:
         url = os.path.join(remote_base,resource['remote'])
     if not local_base:
-        if 'resource_directory' in env['options']:
-            local_base = env['options']['resource_directory']
+        if 'subprocess_dir' in env['options']:
+            local_base = env['options']['subprocess_dir']
         else:
             local_base = os.getcwd()
     if not resource['local']:
@@ -361,8 +361,8 @@ async def downloadData(env, data, logger=None):
     if not logger:
         logger = logging
     remote_base = data.storage_location(env)
-    if 'options' in env and 'data_directory' in env['options']:
-        local_base = env['options']['data_directory']
+    if 'options' in env and 'subprocess_dir' in env['options']:
+        local_base = env['options']['subprocess_dir']
     else:
         local_base = os.getcwd()
 
@@ -380,8 +380,8 @@ async def uploadData(env, data, logger=None):
     if not logger:
         logger = logging
     remote_base = data.storage_location(env)
-    if 'options' in env and 'data_directory' in env['options']:
-        local_base = env['options']['data_directory']
+    if 'options' in env and 'subprocess_dir' in env['options']:
+        local_base = env['options']['subprocess_dir']
     else:
         local_base = os.getcwd()
     if not data['remote']:

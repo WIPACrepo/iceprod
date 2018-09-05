@@ -876,11 +876,11 @@ class exe_test(DownloadTestCase):
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         # set testing resource directory
-        options['resource_directory'] = os.path.join(self.test_dir,'resources')
+        options['subprocess_dir'] = os.path.join(self.test_dir,'resources')
 
         # set download() return value
         async def create(*args,**kwargs):
-            path = os.path.join(options['resource_directory'],r['local'])
+            path = os.path.join(options['subprocess_dir'],r['local'])
             self.mk_files(path, {'f':'blah'}, compress='gz')
             return path
         download.side_effect = create
@@ -955,11 +955,11 @@ class exe_test(DownloadTestCase):
             options['local_temp'] = os.path.join(self.test_dir,'local_temp')
 
         # set testing data directory
-        options['data_directory'] = os.path.join(self.test_dir,'data')
+        options['subprocess_dir'] = os.path.join(self.test_dir,'data')
 
         # set download() return value
         async def create(*args,**kwargs):
-            path = os.path.join(options['data_directory'],r['local'])
+            path = os.path.join(options['subprocess_dir'],r['local'])
             self.mk_files(path, {'f':'blah'}, compress='gz')
             return path
         download.side_effect = create
