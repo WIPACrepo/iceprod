@@ -190,6 +190,7 @@ class ServerComms:
             else:
                 t = None
             iceprod_stats = {
+                'task_id': task_id,
                 'hostname': hostname,
                 'domain': domain,
                 'time_used': t,
@@ -197,10 +198,10 @@ class ServerComms:
                 'time': datetime.utcnow().isoformat(),
                 'error_summary': reason if reason else '',
             }
+            if dataset_id:
+                iceprod_stats['dataset_id']
             if resources:
                 iceprod_stats['resources'] = resources
-            if dataset_id:
-                iceprod_stats['dataset_id'] = dataset_id
         except Exception:
             logging.warning('failed to collect error info', exc_info=True)
 
@@ -232,11 +233,14 @@ class ServerComms:
             hostname = functions.gethostname()
             domain = '.'.join(hostname.split('.')[-2:])
             iceprod_stats = {
+                'task_id': task_id,
                 'hostname': hostname,
                 'domain': domain,
                 'time': datetime.utcnow().isoformat(),
                 'error_summary': reason if reason else '',
             }
+            if dataset_id:
+                iceprod_stats['dataset_id']
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
@@ -332,11 +336,14 @@ class ServerComms:
             hostname = functions.gethostname()
             domain = '.'.join(hostname.split('.')[-2:])
             iceprod_stats = {
+                'task_id': task_id,
                 'hostname': hostname,
                 'domain': domain,
                 'time': datetime.utcnow().isoformat(),
                 'error_summary': reason if reason else '',
             }
+            if dataset_id:
+                iceprod_stats['dataset_id']
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
