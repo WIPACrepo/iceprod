@@ -6,6 +6,7 @@ import tornado.web
 import pymongo
 import motor
 
+from iceprod.server.util import nowstr
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
 
 logger = logging.getLogger('rest.logs')
@@ -71,7 +72,10 @@ class MultiLogsHandler(BaseHandler):
         data = json.loads(self.request.body)
         if 'data' not in data:
             raise tornado.web.HTTPError(400, reason='data field not in body')
+        if 'name' not in data:
+            data['name'] = 'log'
         data['log_id'] = uuid.uuid1().hex
+        data['timestamp'] = nowstr()
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': data['log_id']})

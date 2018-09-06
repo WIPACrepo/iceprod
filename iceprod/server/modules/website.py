@@ -457,6 +457,23 @@ class Task(PublicHandler):
         try:
             ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
             logs = ret['logs']
+            try:
+                names = {}
+                for log in sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else 0,reverse=True):
+                    if log['name'] in names:
+                        continue
+                    names[log['name']] = log
+                def namesort(n):
+                    if 'log' in n:
+                        return (-1, n)
+                    elif 'err' in n:
+                        return (0, n)
+                    elif 'out' in n:
+                        return (1, n)
+                    return (2, n)
+                logs = [names[n] for n in sorted(names, key=namesort)]
+            except Exception:
+                logger.info('error sorting logs', exc_info=True)
         except Exception:
             logs = []
         self.render('task_detail.html', dataset=dataset, task=task_details, logs=logs, passkey=passkey)
