@@ -199,7 +199,7 @@ class ServerComms:
                 'error_summary': reason if reason else '',
             }
             if dataset_id:
-                iceprod_stats['dataset_id']
+                iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
@@ -240,7 +240,7 @@ class ServerComms:
                 'error_summary': reason if reason else '',
             }
             if dataset_id:
-                iceprod_stats['dataset_id']
+                iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
@@ -343,7 +343,7 @@ class ServerComms:
                 'error_summary': reason if reason else '',
             }
             if dataset_id:
-                iceprod_stats['dataset_id']
+                iceprod_stats['dataset_id'] = dataset_id
             if resources:
                 iceprod_stats['resources'] = resources
         except Exception:
