@@ -334,9 +334,9 @@ class ServerComms:
         except Exception:
             logging.warning('failed to collect error info', exc_info=True)
             iceprod_stats = {}
-        self.rest.request_sync('POST', '/tasks/{}/task_stats'.format(task_id),
+        self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
                                iceprod_stats)
-        self.rest.request_sync('PUT', '/tasks/{}/status'.format(task_id),
+        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
                                {'status': 'reset'})
 
         data = {'name': 'stdlog', 'task_id': task_id}
@@ -348,11 +348,11 @@ class ServerComms:
             data['data'] = reason
         else:
             data['data'] = 'task killed'
-        self.rest.request_sync('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
         data.update({'name':'stdout', 'data': ''})
-        self.rest.request_sync('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
         data.update({'name':'stderr', 'data': ''})
-        self.rest.request_sync('POST', '/logs', data)
+        self.rest.request_seq('POST', '/logs', data)
 
     def update_pilot_sync(self, pilot_id, **kwargs):
         """
@@ -362,4 +362,4 @@ class ServerComms:
             pilot_id (str): pilot id
             **kwargs: passed through to rpc function
         """
-        self.rest.request_sync('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
+        self.rest.request_seq('PATCH', '/pilots/{}'.format(pilot_id), kwargs)
