@@ -157,7 +157,7 @@ class Pilot:
                     'message': message,
                 }
                 if 'dataset_id' in task['config']['options']:
-                    kwargs['dataset_id'] = task['config']['options']
+                    kwargs['dataset_id'] = task['config']['options']['dataset_id']
                 self.rpc.task_kill_sync(task_id, **kwargs)
             except Exception:
                 pass
@@ -213,7 +213,7 @@ class Pilot:
                         'message': message,
                     }
                     if 'dataset_id' in self.tasks[task_id]['config']['options']:
-                        kwargs['dataset_id'] = self.tasks[task_id]['config']['options']
+                        kwargs['dataset_id'] = self.tasks[task_id]['config']['options']['dataset_id']
                     await self.rpc.task_kill(task_id, **kwargs)
 
                 duration = time.time()-start_time
@@ -287,7 +287,7 @@ class Pilot:
                                 'message': message,
                             }
                             if 'dataset_id' in task_config['options']:
-                                kwargs['dataset_id'] = task_config['options']
+                                kwargs['dataset_id'] = task_config['options']['dataset_id']
                             await self.rpc.task_kill(task_id, **kwargs)
                             break
                         try:
@@ -309,7 +309,7 @@ class Pilot:
                                 'message': message,
                             }
                             if 'dataset_id' in task_config['options']:
-                                kwargs['dataset_id'] = task_config['options']
+                                kwargs['dataset_id'] = task_config['options']['dataset_id']
                             await self.rpc.task_kill(task_id, **kwargs)
                             self.clean_task(task_id)
                             break
@@ -377,7 +377,7 @@ class Pilot:
                                 'message': 'The server has marked the task as no longer running',
                             }
                             if 'dataset_id' in self.tasks[task_id]['config']['options']:
-                                kwargs['dataset_id'] = self.tasks[task_id]['config']['options']
+                                kwargs['dataset_id'] = self.tasks[task_id]['config']['options']['dataset_id']
                             await self.rpc.task_kill(task_id, **kwargs)
                             clean = True
                     if clean:
