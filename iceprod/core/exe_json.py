@@ -208,7 +208,7 @@ class ServerComms:
             await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                                     iceprod_stats)
         except Exception:
-            logging.warning('failed to post task_stats for %r', task_id)
+            logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
         await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'reset'})
@@ -246,7 +246,7 @@ class ServerComms:
             await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                                     iceprod_stats)
         except Exception:
-            logging.warning('failed to post task_stats for %r', task_id)
+            logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
         await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
                               {'status': 'reset'})
@@ -346,7 +346,7 @@ class ServerComms:
             self.rest.request_seq('POST', '/tasks/{}/task_stats'.format(task_id),
                                   iceprod_stats)
         except Exception:
-            logging.warning('failed to post task_stats for %r', task_id)
+            logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
         self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
                                {'status': 'reset'})
