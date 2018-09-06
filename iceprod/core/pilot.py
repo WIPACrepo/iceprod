@@ -138,22 +138,35 @@ class Pilot:
         start_time = time.time()
         overages = self.resources.check_claims()
         for task_id in list(self.tasks):
-            if task_id in overages:
-                reason = overages[task_id]
-            else:
-                reason = 'pilot SIGTERM'
+            task = self.tasks[task_id]
+            try:
+                if task_id in overages:
+                    reason = overages[task_id]
+                else:
+                    reason = 'pilot SIGTERM'
 
-            # clean up task
-            used_resources = self.resources.get_final(task_id)
-            self.clean_task(task_id)
-            message = reason
-            message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
-            message += '\nhostname: {}'.format(self.hostname)
-            self.rpc.task_kill_sync(task_id, resources=used_resources,
-                                    reason=reason, message=message)
+                # clean up task
+                used_resources = self.resources.get_final(task_id)
+                self.clean_task(task_id)
+                message = reason
+                message += '\n\npilot SIGTERM\npilot_id: {}'.format(self.pilot_id)
+                message += '\nhostname: {}'.format(self.hostname)
+                kwargs = {
+                    'resources': used_resources,
+                    'reason': reason,
+                    'message': message,
+                }
+                if 'dataset_id' in task['config']['options']:
+                    kwargs['dataset_id'] = task['config']['options']
+                self.rpc.task_kill_sync(task_id, **kwargs)
+            except Exception:
+                pass
 
         # stop the pilot
-        self.rpc.update_pilot_sync(self.pilot_id, tasks=[])
+        try:
+            self.rpc.update_pilot_sync(self.pilot_id, tasks=[])
+        except Exception:
+            pass
         sys.exit(1)
 
     def hard_kill(self):
@@ -194,8 +207,14 @@ class Pilot:
                     message = overages[task_id]
                     message += '\n\npilot_id: {}'.format(self.pilot_id)
                     message += '\nhostname: {}'.format(self.hostname)
-                    await self.rpc.task_kill(task_id, resources=used_resources,
-                            reason=overages[task_id], message=message)
+                    kwargs = {
+                        'resources': used_resources,
+                        'reason': overages[task_id],
+                        'message': message,
+                    }
+                    if 'dataset_id' in self.tasks[task_id]['config']['options']:
+                        kwargs['dataset_id'] = self.tasks[task_id]['config']['options']
+                    await self.rpc.task_kill(task_id, **kwargs)
 
                 duration = time.time()-start_time
                 logger.debug('sleep_time %.2f, duration %.2f',sleep_time,duration)
@@ -263,8 +282,13 @@ class Pilot:
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            await self.rpc.task_kill(task_id, reason='failed to claim resources',
-                                                     message=message)
+                            kwargs = {
+                                'reason': 'failed to claim resources',
+                                'message': message,
+                            }
+                            if 'dataset_id' in task_config['options']:
+                                kwargs['dataset_id'] = task_config['options']
+                            await self.rpc.task_kill(task_id, **kwargs)
                             break
                         try:
                             f = self.create_task(task_config)
@@ -280,8 +304,13 @@ class Pilot:
                                         exc_info=True)
                             message = 'pilot_id: {}\nhostname: {}\n\n'.format(self.pilot_id, self.hostname)
                             message += traceback.format_exc()
-                            await self.rpc.task_kill(task_id, reason='failed to create task',
-                                                     message=message)
+                            kwargs = {
+                                'reason': 'failed to create task',
+                                'message': message,
+                            }
+                            if 'dataset_id' in task_config['options']:
+                                kwargs['dataset_id'] = task_config['options']
+                            await self.rpc.task_kill(task_id, **kwargs)
                             self.clean_task(task_id)
                             break
 
@@ -322,26 +351,37 @@ class Pilot:
                             logger.info('task %s exited with bad code: %r',
                                         task_id, proc.returncode)
                             self.errors -= 1
-                        clean = True
+                            clean = True
+                        else:
+                            try:
+                                task = await f.__anext__()
+                            except StopAsyncIteration:
+                                # the normal exit for a successful task
+                                clean = True
+                            except Exception:
+                                # an internal iceprod error, but should be
+                                # caught by i3exec runner
+                                logger.warning('failed to get next yielded task',
+                                               exc_info=True)
+                                clean = True
+                            else:
+                                self.tasks[task_id] = task
                     else:
                         # check if the DB has killed a task
                         try:
                             await self.rpc.still_running(task_id)
                         except Exception:
                             # task is killed
+                            kwargs = {
+                                'reason': 'server kill',
+                                'message': 'The server has marked the task as no longer running',
+                            }
+                            if 'dataset_id' in self.tasks[task_id]['config']['options']:
+                                kwargs['dataset_id'] = self.tasks[task_id]['config']['options']
+                            await self.rpc.task_kill(task_id, **kwargs)
                             clean = True
                     if clean:
-                        # attempt to get next yielded task, or clean task
-                        try:
-                            task = await f.__anext__()
-                        except StopAsyncIteration:
-                            self.clean_task(task_id)
-                        except Exception:
-                            logger.warning('failed to get next yielded task',
-                                           exc_info=True)
-                            self.clean_task(task_id)
-                        else:
-                            self.tasks[task_id] = task
+                        self.clean_task(task_id)
                 if self.errors < 1:
                     self.running = False
                     logger.warning('errors over limit, draining')
@@ -396,11 +436,13 @@ class Pilot:
         async for proc in self.runner(config):
             ps = psutil.Process(proc.pid) if psutil else None
             self.resources.register_process(task_id, ps, tmpdir)
-            yield {
+            data = {
                 'p': proc,
                 'process': ps,
                 'tmpdir': tmpdir,
+                'config': config,
             }
+            yield data
 
     def clean_task(self, task_id):
         """Clean up a Task.

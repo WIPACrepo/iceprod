@@ -126,6 +126,9 @@ class pilot_test(TestBase):
             logging.debug('update_pilot %r %r', args, kwargs)
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
+        async def still_running(*args, **kwargs):
+            return True
+        rpc.still_running.side_effect = still_running
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -159,6 +162,9 @@ class pilot_test(TestBase):
             logging.debug('update_pilot %r %r', args, kwargs)
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
+        async def still_running(*args, **kwargs):
+            return True
+        rpc.still_running.side_effect = still_running
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','0.1')
@@ -188,6 +194,9 @@ class pilot_test(TestBase):
         download_task.items = [[task_cfg]]
         rpc = mock.MagicMock()
         rpc.download_task.side_effect = download_task
+        async def task_kill(*args, **kwargs):
+            return True
+        rpc.task_kill.side_effect = task_kill
         update_args = []
         async def update_pilot(*args, **kwargs):
             logging.debug('update_pilot %r %r', args, kwargs)
@@ -216,6 +225,9 @@ class pilot_multi_test(TestBase):
             logging.debug('update_pilot %r %r', args, kwargs)
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
+        async def still_running(*args, **kwargs):
+            return True
+        rpc.still_running.side_effect = still_running
         async def runner(*args, **kwargs):
             logging.debug('runner - before')
             yield await asyncio.create_subprocess_exec('sleep','2.0')
@@ -248,6 +260,9 @@ class pilot_multi_test(TestBase):
             logging.debug('update_pilot %r %r', args, kwargs)
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
+        async def still_running(*args, **kwargs):
+            return True
+        rpc.still_running.side_effect = still_running
         async def task_kill(*args, **kwargs):
             logging.debug('update_pilot %r %r', args, kwargs)
             task_kill.called = True
@@ -276,6 +291,9 @@ class pilot_multi_test(TestBase):
         download_task.items = [[task_cfg], [task_cfg2]]
         rpc = mock.MagicMock()
         rpc.download_task.side_effect = download_task
+        async def still_running(*args, **kwargs):
+            return True
+        rpc.still_running.side_effect = still_running
         update_args = []
         async def update_pilot(*args, **kwargs):
             logging.debug('update_pilot %r %r', args, kwargs)

@@ -252,33 +252,33 @@ class exe_json_test(AsyncTestCase):
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
         rpc.task_kill_sync(task_id)
 
-        self.assertEqual(c.request_sync.call_count, 5)
-        logger.info(c.request_sync.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
+        self.assertEqual(c.request_seq.call_count, 5)
+        logger.info(c.request_seq.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
 
-        c.request_sync.reset_mock()
+        c.request_seq.reset_mock()
         resources = {'cpu': 1, 'memory': 3.4, 'disk': 0.2}
         rpc.task_kill_sync(task_id, resources=resources)
         
-        self.assertEqual(c.request_sync.call_count, 5)
-        logger.info(c.request_sync.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
-        self.assertIn('resources', c.request_sync.call_args_list[0][0][-1])
-        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['resources'], resources)
+        self.assertEqual(c.request_seq.call_count, 5)
+        logger.info(c.request_seq.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
+        self.assertIn('resources', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['resources'], resources)
 
-        c.request_sync.reset_mock()
+        c.request_seq.reset_mock()
         resources = {'time': 34.2}
         reason = 'testing'
         rpc.task_kill_sync(task_id, resources=resources, reason=reason)
         
-        self.assertEqual(c.request_sync.call_count, 5)
-        logger.info(c.request_sync.call_args_list[0][0])
-        self.assertIn('error_summary', c.request_sync.call_args_list[0][0][-1])
-        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['error_summary'], reason)
-        self.assertIn('resources', c.request_sync.call_args_list[0][0][-1])
-        self.assertEqual(c.request_sync.call_args_list[0][0][-1]['resources'], resources)
+        self.assertEqual(c.request_seq.call_count, 5)
+        logger.info(c.request_seq.call_args_list[0][0])
+        self.assertIn('error_summary', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['error_summary'], reason)
+        self.assertIn('resources', c.request_seq.call_args_list[0][0][-1])
+        self.assertEqual(c.request_seq.call_args_list[0][0][-1]['resources'], resources)
 
-        c.request_sync.side_effect = Exception('request error')
+        c.request_seq.side_effect = Exception('request error')
         with self.assertRaises(Exception):
             rpc.task_kill_sync(task_id)
 
@@ -395,11 +395,11 @@ class exe_json_test(AsyncTestCase):
         rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=None)
         rpc.update_pilot_sync(pilot_id, **args)
 
-        self.assertTrue(c.request_sync.called)
-        logger.info(c.request_sync.call_args[0])
-        self.assertTrue({'a','b'}.issubset(c.request_sync.call_args[0][-1]))
+        self.assertTrue(c.request_seq.called)
+        logger.info(c.request_seq.call_args[0])
+        self.assertTrue({'a','b'}.issubset(c.request_seq.call_args[0][-1]))
 
-        c.request_sync.side_effect = Exception('request error')
+        c.request_seq.side_effect = Exception('request error')
         with self.assertRaises(Exception):
             rpc.update_pilot_sync(pilot_id, **args)
 
