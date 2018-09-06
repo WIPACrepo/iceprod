@@ -281,6 +281,12 @@ async def downloadResource(env, resource, remote_base=None,
         url = resource['remote']
     else:
         url = os.path.join(remote_base,resource['remote'])
+
+    execute = resource.do_transfer()
+    if execute is False:
+        logger.info('not transferring file %s', url)
+        return
+        
     if not local_base:
         if 'subprocess_dir' in env['options']:
             local_base = env['options']['subprocess_dir']
@@ -321,11 +327,14 @@ async def downloadResource(env, resource, remote_base=None,
                 if cksm != checksum:
                     raise Exception('checksum validation failed')
         except Exception:
+            if execute is False or execute == 'maybe':
+                logger.info('not transferring file %s', url)
+                return
             failed = True
             logger.critical('failed to download %s to %s', url, local, exc_info=True)
             raise Exception('failed to download {} to {}'.format(url, local))
         finally:
-            if 'stats' in env:
+            if 'stats' in env and (execute is True or (execute == 'maybe' and not failed)):
                 stats = {
                     'name': url,
                     'error': failed,
@@ -358,13 +367,16 @@ async def downloadData(env, data, logger=None):
         local_base = env['options']['subprocess_dir']
     else:
         local_base = os.getcwd()
-
-    try:
-        filecatalog = data.filecatalog(env)
-        path, checksum = filecatalog.get(data['local'])
-    except Exception:
-        # no filecatalog available
-        checksum = None
+    
+    execute = data.do_transfer()
+    checksum = None
+    if execute is not False:
+        try:
+            filecatalog = data.filecatalog(env)
+            path, checksum = filecatalog.get(data['local'])
+        except Exception:
+            # no filecatalog available
+            pass
     await downloadResource(env, data, remote_base, local_base,
                            checksum=checksum, logger=logger)
 
@@ -384,7 +396,13 @@ async def uploadData(env, data, logger=None):
     else:
         url = data['remote']
     local = os.path.join(local_base,data['local'])
-    if not os.path.exists(local):
+
+    execute = data.do_transfer()
+    exists = os.path.exists(local)
+    if execute is False or (execute == 'maybe' and not exists):
+        logger.info('not transferring file %s', local)
+        return
+    elif not exists:
         raise Exception('file {} does not exist'.format(local))
 
     # check compression

@@ -510,6 +510,7 @@ class _ResourceCommon(dict):
         self['remote']      = ''
         self['local']       = ''
         self['compression'] = False
+        self['transfer']    = True
         super(_ResourceCommon,self).__init__(*args,**kwargs)
 
     def convert(self):
@@ -519,10 +520,29 @@ class _ResourceCommon(dict):
         try:
             return (isinstance(self['remote'],String) and
                     isinstance(self['local'],String) and
-                    self['compression'] in self.compression_options
+                    self['compression'] in self.compression_options and
+                    isinstance(self['transfer'],(String,Number,bool))
                    )
         except Exception:
             return False
+
+    def do_transfer(self):
+        """
+        Test if we should actually transfer the file.
+        """
+        ret = True
+        if isinstance(self['transfer'], bool):
+            ret = self['transfer']
+        elif isinstance(self['transfer'], String):
+            t = self['transfer'].lower()
+            if t in ('n','no','not','f','false'):
+                ret = False
+            elif t in ('m','maybe','exists') or t.startswith('if'):
+                ret = 'maybe'
+        elif isinstance(self['transfer'], Number):
+            if self['transfer'] == 0:
+                ret = False
+        return ret
 
 class Resource(_ResourceCommon):
     """
@@ -546,7 +566,7 @@ class Resource(_ResourceCommon):
         return ret
 
     def convert(self):
-        pass
+        super(Resource,self).convert()
 
     def valid(self):
         try:
@@ -588,7 +608,7 @@ class Data(_ResourceCommon):
         return ret
 
     def convert(self):
-        pass
+        super(Data,self).convert()
 
     def valid(self):
         try:

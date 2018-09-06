@@ -349,6 +349,63 @@ class exe_test(DownloadTestCase):
             await iceprod.core.exe.downloadResource({},r)
 
     @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='downloadResource - maybe transfer')
+    async def test_007_downloadResource(self, download):
+        # create an environment
+        options = {'resource_url': 'http://blah/downloads',
+                   'resource_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Resource()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['transfer'] = 'maybe'
+
+        # don't create the downloaded file
+        async def create(*args,**kwargs):
+            raise Exception('no file')
+        download.side_effect = create
+
+        # try downloading the resource
+        await iceprod.core.exe.downloadResource(env,r)
+        # check for record of file in env
+        download.assert_called()
+        self.assertNotIn(r['local'], env['files'])
+        if os.path.isfile(os.path.join(self.test_dir,r['local'])):
+            raise Exception('downloadResource wrote to the '
+                            'expected filename of %s'%r['local'])
+
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='downloadResource - no transfer')
+    async def test_008_downloadResource(self, download):
+        # create an environment
+        options = {'resource_url': 'http://blah/downloads',
+                   'resource_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Resource()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['transfer'] = 0
+
+        # don't create the downloaded file
+        async def create(*args,**kwargs):
+            raise Exception('no file')
+        download.side_effect = create
+
+        # try downloading the resource
+        await iceprod.core.exe.downloadResource(env,r)
+        # check for record of file in env
+        download.assert_not_called()
+        if 'files' in env:
+            self.assertNotIn(r['local'], env['files'])
+        if os.path.isfile(os.path.join(self.test_dir,r['local'])):
+            raise Exception('downloadResource wrote to the '
+                            'expected filename of %s'%r['local'])
+
+    @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='downloadData')
     async def test_010_downloadData(self, download):
         # create an environment
@@ -539,6 +596,68 @@ class exe_test(DownloadTestCase):
         with self.assertRaises(Exception):
             await iceprod.core.exe.downloadData({},r)
 
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='downloadData - maybe transfer')
+    async def test_016_downloadData(self, download):
+        # create an environment
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'input'
+        r['transfer'] = 'maybe'
+
+        # create the downloaded file
+        async def create(*args,**kwargs):
+            raise Exception()
+        download.side_effect = create
+
+        # try downloading the resource
+        await iceprod.core.exe.downloadData(env,r)
+        # check for record of file in env
+        download.assert_called()
+        if 'files' in env:
+            self.assertNotIn(r['local'], env['files'])
+        if os.path.isfile(os.path.join(self.test_dir,r['local'])):
+            raise Exception('downloadResource wrote to the '
+                            'expected filename of %s'%r['local'])
+
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='downloadData - no transfer')
+    async def test_017_downloadData(self, download):
+        # create an environment
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'input'
+        r['transfer'] = False
+
+        # create the downloaded file
+        async def create(*args,**kwargs):
+            raise Exception()
+        download.side_effect = create
+
+        # try downloading the resource
+        await iceprod.core.exe.downloadData(env,r)
+        # check for record of file in env
+        download.assert_not_called()
+        if 'files' in env:
+            self.assertNotIn(r['local'], env['files'])
+        if os.path.isfile(os.path.join(self.test_dir,r['local'])):
+            raise Exception('downloadResource wrote to the '
+                            'expected filename of %s'%r['local'])
+
     @patch('iceprod.core.exe.functions.upload')
     @unittest_reporter(name='uploadData')
     async def test_020_uploadData(self, upload):
@@ -714,6 +833,66 @@ class exe_test(DownloadTestCase):
 
         with self.assertRaises(Exception):
             await iceprod.core.exe.uploadData({},r)
+
+    @patch('iceprod.core.exe.functions.upload')
+    @unittest_reporter(name='uploadData - maybe transfer')
+    async def test_026_uploadData(self, upload):
+        # create an environment
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'both'
+        r['transfer'] = 'maybe'
+        
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
+        # test that no file means no upload
+        await iceprod.core.exe.uploadData(env,r)
+        upload.assert_not_called()
+
+        # create the downloaded file
+        path = os.path.join(self.test_dir, r['local'])
+        self.mk_files(path, 'the data')
+
+        # try uploading the data
+        await iceprod.core.exe.uploadData(env,r)
+        self.assertTrue(upload.called)
+        self.assertEqual(upload.call_args[0][0],
+            os.path.join(options['data_directory'],r['local']))
+        self.assertEqual(upload.call_args[0][1],
+            os.path.join(options['data_url'],r['remote']))
+
+    @patch('iceprod.core.exe.functions.upload')
+    @unittest_reporter(name='uploadData - no transfer')
+    async def test_027_uploadData(self, upload):
+        # create an environment
+        options = {'data_url': 'http://blah/downloads',
+                   'data_directory': self.test_dir}
+        env = {'options':options}
+
+        # create a resource object
+        r = iceprod.core.dataclasses.Data()
+        r['remote'] = 'stuff'
+        r['local'] = 'localstuff'
+        r['type'] = 'permanent'
+        r['movement'] = 'both'
+        r['transfer'] = 'not'
+        
+        async def up(*args,**kwargs):
+            pass
+        upload.side_effect = up
+
+        # test that no file means no upload
+        await iceprod.core.exe.uploadData(env,r)
+        upload.assert_not_called()
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='setupClass')

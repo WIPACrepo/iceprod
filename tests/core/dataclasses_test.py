@@ -121,6 +121,37 @@ class dataclasses_test(unittest.TestCase):
         if not r.valid():
             raise Exception('converted empty resource not valid')
 
+        r['transfer'] = False
+        self.assertIs(r.do_transfer(), False)
+        r['transfer'] = 'f'
+        self.assertIs(r.do_transfer(), False)
+        r['transfer'] = 'N'
+        self.assertIs(r.do_transfer(), False)
+        r['transfer'] = 0
+        self.assertIs(r.do_transfer(), False)
+        r['transfer'] = True
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = 'T'
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = 'Yes'
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = 1
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = 'maybe'
+        self.assertEqual(r.do_transfer(), 'maybe')
+        r['transfer'] = 'If'
+        self.assertEqual(r.do_transfer(), 'maybe')
+        r['transfer'] = 'if needed'
+        self.assertEqual(r.do_transfer(), 'maybe')
+        r['transfer'] = 'exists'
+        self.assertEqual(r.do_transfer(), 'maybe')
+        r['transfer'] = 'blah'
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = 1234
+        self.assertIs(r.do_transfer(), True)
+        r['transfer'] = [1,2,3]
+        self.assertIs(r.do_transfer(), True)
+
     @unittest_reporter
     def test_09_Data(self):
         """Test the Data class"""
