@@ -313,6 +313,8 @@ class Resources:
             try:
                 usage = self.get_usage(task_id, force=force)
                 logging.debug('%s is using %r', task_id, usage)
+            except psutil.NoSuchProcess:
+                logging.warning('process has exited for %r', task_id)
             except Exception:
                 logging.warning('error getting usage for %r', task_id,
                             exc_info=True)
