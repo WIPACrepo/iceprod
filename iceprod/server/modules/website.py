@@ -459,7 +459,7 @@ class Task(PublicHandler):
             logs = ret['logs']
             try:
                 names = {}
-                for log in sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else 0,reverse=True):
+                for log in sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
                     if log['name'] in names:
                         continue
                     names[log['name']] = log

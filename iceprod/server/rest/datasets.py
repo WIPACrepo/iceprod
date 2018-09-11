@@ -32,7 +32,7 @@ def setup(config):
     # add indexes
     db = pymongo.MongoClient(**db_cfg).datasets
     if 'dataset_id_index' not in db.datasets.index_information():
-        db.dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
+        db.datasets.create_index('dataset_id', name='dataset_id_index', unique=True)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
