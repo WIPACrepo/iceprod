@@ -16,3 +16,11 @@ def str2datetime(st):
         return datetime.strptime( st, "%Y-%m-%dT%H:%M:%S.%f")
     else:
         return datetime.strptime( st, "%Y-%m-%dT%H:%M:%S")
+
+def status_sort(st):
+    statuses = ['idle', 'waiting', 'queued', 'processing', 'reset',
+                'suspended', 'failed', 'complete']
+    try:
+        return statuses.index(st)
+    except ValueError:
+        return len(statuses)

@@ -103,7 +103,7 @@ class rest_datasets_test(AsyncTestCase):
             'description': 'blah',
             'jobs_submitted': 1,
             'tasks_submitted': 4,
-            'group_id': 'foo',
+            'group': 'foo',
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
@@ -158,7 +158,7 @@ class rest_datasets_test(AsyncTestCase):
             'description': 'blah',
             'jobs_submitted': 1,
             'tasks_submitted': 4,
-            'group_id': 'foo',
+            'group': 'foo',
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
@@ -200,7 +200,7 @@ class rest_datasets_test(AsyncTestCase):
             'description': 'blah',
             'jobs_submitted': 1,
             'tasks_submitted': 4,
-            'group_id': 'foo',
+            'group': 'foo',
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),
@@ -242,7 +242,7 @@ class rest_datasets_test(AsyncTestCase):
             'description': 'blah',
             'jobs_submitted': 1,
             'tasks_submitted': 4,
-            'group_id': 'foo',
+            'group': 'foo',
         }
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 method='POST', body=json.dumps(data),

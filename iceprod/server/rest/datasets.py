@@ -10,7 +10,7 @@ import pymongo
 import motor
 
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
-from iceprod.server.util import nowstr
+from iceprod.server.util import nowstr, status_sort
 
 logger = logging.getLogger('rest.datasets')
 
@@ -238,5 +238,8 @@ class DatasetSummariesStatusHandler(BaseHandler):
         ret = defaultdict(list)
         async for row in cursor:
             ret[row['status']].append(row['dataset_id'])
-        self.write(ret)
+        ret2 = {}
+        for k in sorted(ret, key=status_sort):
+            ret2[k] = ret[k]
+        self.write(ret2)
         self.finish()
