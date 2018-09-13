@@ -384,13 +384,17 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         """
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
-            {'$group':{'_id':{'name':'$name','status':'$status','task_index':'$task_index'}, 'total': {'$sum':1}}},
+            {'$group':{
+                '_id':{'name':'$name','status':'$status'},
+                'ordering':{'$first':'task_index'},
+                'total': {'$sum':1}
+            }},
         ])
         ret = defaultdict(dict)
         ordering = {}
         async for row in cursor:
             ret[row['_id']['name']][row['_id']['status']] = row['total']
-            ordering[row['_id']['name']] = row['_id']['task_index']
+            ordering[row['_id']['name']] = row['ordering']
         ret2 = {}
         for k in sorted(ordering, key=lambda n:ordering[n]):
             ret2[k] = ret[k]
@@ -530,14 +534,19 @@ class DatasetTaskStatsHandler(BaseHandler):
                 'stddev_hrs': {'$stdDevSamp': '$walltime'},
                 'min_hrs': {'$min': '$walltime'},
                 'max_hrs': {'$max': '$walltime'},
+                'ordering': {'$first': 'task_index'},
             }},
-            {'$sort':{'task_index':1}},
         ])
         ret = {}
+        ordering = {}
         async for row in cursor:
             denom = row['total_hrs'] + row['total_err_hrs']
             row['efficiency'] = row['total_hrs']/denom if denom > 0 else 0.0
             name = row.pop('_id')
+            ordering[name] = row.pop('ordering')
             ret[name] = row
-        self.write(ret)
+        ret2 = {}
+        for k in sorted(ordering, key=lambda n:ordering[n]):
+            ret2[k] = ret[k]
+        self.write(ret2)
         self.finish()
