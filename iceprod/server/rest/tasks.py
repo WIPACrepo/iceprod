@@ -360,6 +360,7 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
             {'$group':{'_id':'$status', 'total': {'$sum':1}}},
+            {'$sort':{'task_index':1}},
         ])
         ret = {}
         async for row in cursor:
@@ -385,6 +386,7 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
             {'$group':{'_id':{'name':'$name','status':'$status'}, 'total': {'$sum':1}}},
+            {'$sort':{'task_index':1}},
         ])
         ret = defaultdict(dict)
         async for row in cursor:
@@ -526,6 +528,7 @@ class DatasetTaskStatsHandler(BaseHandler):
                 'min_hrs': {'$min': '$walltime'},
                 'max_hrs': {'$max': '$walltime'},
             }},
+            {'$sort':{'task_index':1}},
         ])
         ret = {}
         async for row in cursor:
