@@ -390,7 +390,7 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         ordering = {}
         async for row in cursor:
             ret[row['_id']['name']][row['_id']['status']] = row['total']
-            ordering[row['_id']['name']] = row['task_index']
+            ordering[row['_id']['name']] = row['_id']['task_index']
         ret2 = {}
         for k in sorted(ordering, key=lambda n:ordering[n]):
             ret2[k] = ret[k]
