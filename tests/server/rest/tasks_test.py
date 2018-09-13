@@ -561,7 +561,6 @@ class rest_tasks_test(AsyncTestCase):
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'queued')
 
-
     @unittest_reporter(name='REST POST   /task_actions/process')
     def test_600_tasks(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
@@ -647,6 +646,143 @@ class rest_tasks_test(AsyncTestCase):
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)
         self.assertEqual(ret['status'], 'processing')
+
+    @unittest_reporter(name='REST POST   /tasks/<task_id>/task_actions/reset')
+    def test_700_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        data2 = {'status':'queued'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
+                method='POST', body=json.dumps({}),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['status'], 'reset')
+
+        # now try with time_used
+        data2 = {'status':'queued'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
+                method='POST', body=json.dumps({'time_used':7200}),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['status'], 'reset')
+        self.assertEqual(ret['walltime_err_n'], 1)
+        self.assertEqual(ret['walltime_err'], 2.0)
+
+        # now try with a bad status
+        data2 = {'status':'complete'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        with self.assertRaises(Exception):
+            r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
+                    method='POST', body=json.dumps({}),
+                    headers={'Authorization': b'bearer '+self.token})
+
+    @unittest_reporter(name='REST POST   /tasks/<task_id>/task_actions/complete')
+    def test_710_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        data2 = {'status':'processing'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
+                method='POST', body=json.dumps({}),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['status'], 'complete')
+
+        # now try with time_used
+        data2 = {'status':'processing'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
+                method='POST', body=json.dumps({'time_used':7200}),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['status'], 'complete')
+        self.assertEqual(ret['walltime'], 2.0)
+
+        # now try with a bad status
+        data2 = {'status':'idle'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        with self.assertRaises(Exception):
+            r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
+                    method='POST', body=json.dumps({}),
+                    headers={'Authorization': b'bearer '+self.token})
         
 
 def load_tests(loader, tests, pattern):

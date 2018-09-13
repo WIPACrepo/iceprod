@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import time
+import json
 from copy import deepcopy
 from functools import wraps
 from datetime import datetime
@@ -155,8 +156,11 @@ class ServerComms:
 
         await self.rest.request('POST', '/tasks/{}/task_stats'.format(task_id),
                               iceprod_stats)
-        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                              {'status': 'complete'})
+
+        data = {}
+        if t:
+            data['time_used'] =  t/3600.
+        await self.rest.request('POST', '/tasks/{}/task_actions/complete'.format(task_id), data)
 
     async def still_running(self, task_id):
         """
@@ -211,8 +215,10 @@ class ServerComms:
         except Exception:
             logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
-        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                              {'status': 'reset'})
+        data = {}
+        if t:
+            data['time_used'] =  t/3600.
+        await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
     async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
         """
@@ -252,8 +258,10 @@ class ServerComms:
         except Exception:
             logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
-        await self.rest.request('PUT', '/tasks/{}/status'.format(task_id),
-                              {'status': 'reset'})
+        data = {}
+        if resources and 'time' in resources and resources['time']:
+            data['time_used'] =  resources['time']
+        await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}
         if dataset_id:
@@ -355,8 +363,10 @@ class ServerComms:
         except Exception:
             logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
-        self.rest.request_seq('PUT', '/tasks/{}/status'.format(task_id),
-                               {'status': 'reset'})
+        data = {}
+        if resources and 'time' in resources and resources['time']:
+            data['time_used'] =  resources['time']
+        self.rest.request_seq('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}
         if dataset_id:

@@ -45,6 +45,8 @@ def setup(config):
         (r'/tasks/(?P<task_id>\w+)/status', TasksStatusHandler, handler_cfg),
         (r'/task_actions/queue', TasksActionsQueueHandler, handler_cfg),
         (r'/task_actions/process', TasksActionsProcessingHandler, handler_cfg),
+        (r'/tasks/(?P<task_id>\w+)/task_actions/reset', TasksActionsErrorHandler, handler_cfg),
+        (r'/tasks/(?P<task_id>\w+)/task_actions/complete', TasksActionsCompleteHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
@@ -157,7 +159,7 @@ class TasksHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-    @authorization(roles=['admin','client','system'])
+    @authorization(roles=['admin','client','system','pilot'])
     async def patch(self, task_id):
         """
         Update a task entry.
@@ -304,7 +306,7 @@ class DatasetTasksStatusHandler(BaseHandler):
         data = json.loads(self.request.body)
         if (not data) or 'status' not in data:
             raise tornado.web.HTTPError(400, reason='Missing status in body')
-        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended'):
+        if data['status'] not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
             raise tornado.web.HTTPError(400, reason='Bad status')
         update_data = {
             'status': data['status'],
@@ -401,6 +403,49 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         async for row in cursor:
             ret[row['_id']['name']][row['_id']['status']] = row['total']
             ordering[row['_id']['name']] = row['ordering']
+        ret2 = {}
+        for k in sorted(ordering, key=lambda n:ordering[n]):
+            ret2[k] = ret[k]
+        self.write(ret2)
+        self.finish()
+
+class DatasetTaskStatsHandler(BaseHandler):
+    """
+    Handle task stats
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get the task statistics for all tasks in a dataset, group by name.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {<name>: {<stat>: <value>}}
+        """
+        cursor = self.db.tasks.aggregate([
+            {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
+            {'$group':{'_id':'$name',
+                'count': {'$sum': 1},
+                'gpu': {'$sum': '$requirements.gpu'},
+                'total_hrs': {'$sum': '$walltime'},
+                'total_err_hrs': {'$sum': '$walltime_err'},
+                'avg_hrs': {'$avg': '$walltime'},
+                'stddev_hrs': {'$stdDevSamp': '$walltime'},
+                'min_hrs': {'$min': '$walltime'},
+                'max_hrs': {'$max': '$walltime'},
+                'ordering': {'$first': '$task_index'},
+            }},
+        ])
+        ret = {}
+        ordering = {}
+        async for row in cursor:
+            denom = row['total_hrs'] + row['total_err_hrs']
+            row['efficiency'] = row['total_hrs']/denom if denom > 0 else 0.0
+            name = row.pop('_id')
+            ordering[name] = row.pop('ordering')
+            ret[name] = row
         ret2 = {}
         for k in sorted(ordering, key=lambda n:ordering[n]):
             ret2[k] = ret[k]
@@ -514,45 +559,84 @@ class TasksActionsProcessingHandler(BaseHandler):
             self.write(ret)
             self.finish()
 
-class DatasetTaskStatsHandler(BaseHandler):
+class TasksActionsErrorHandler(BaseHandler):
     """
-    Handle task stats
+    Handle task action on error (* -> reset).
     """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:read'])
-    async def get(self, dataset_id):
+    @authorization(roles=['admin','pilot'])
+    async def post(self, task_id):
         """
-        Get the task statistics for all tasks in a dataset, group by name.
+        Take one task, set its status to reset.
 
         Args:
-            dataset_id (str): dataset id
+            task_id (str): task id
+
+        Body args (json):
+            time_used (int): (optional) time used to run task, in seconds
 
         Returns:
-            dict: {<name>: {<stat>: <value>}}
+            dict: {}  empty dict
         """
-        cursor = self.db.tasks.aggregate([
-            {'$match':{'dataset_id':dataset_id, 'status':'complete'}},
-            {'$group':{'_id':'$name',
-                'count': {'$sum': 1},
-                'gpu': {'$sum': '$requirements.gpu'},
-                'total_hrs': {'$sum': '$walltime'},
-                'total_err_hrs': {'$sum': '$walltime_err'},
-                'avg_hrs': {'$avg': '$walltime'},
-                'stddev_hrs': {'$stdDevSamp': '$walltime'},
-                'min_hrs': {'$min': '$walltime'},
-                'max_hrs': {'$max': '$walltime'},
-                'ordering': {'$first': '$task_index'},
-            }},
-        ])
-        ret = {}
-        ordering = {}
-        async for row in cursor:
-            denom = row['total_hrs'] + row['total_err_hrs']
-            row['efficiency'] = row['total_hrs']/denom if denom > 0 else 0.0
-            name = row.pop('_id')
-            ordering[name] = row.pop('ordering')
-            ret[name] = row
-        ret2 = {}
-        for k in sorted(ordering, key=lambda n:ordering[n]):
-            ret2[k] = ret[k]
-        self.write(ret2)
-        self.finish()
+        filter_query = {'task_id': task_id, 'status': {'$ne': 'complete'}}
+        update_query = {
+            '$set': {
+                'status': 'reset',
+                'status_changed': nowstr(),
+            },
+            '$inc': {
+                'failures': 1,
+            },
+        }
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if 'time_used' in data:
+                update_query['$inc']['walltime_err_n'] = 1
+                update_query['$inc']['walltime_err'] = data['time_used']/3600.
+        ret = await self.db.tasks.find_one_and_update(filter_query,
+                update_query,
+                projection={'_id':False})
+        if not ret:
+            logger.info('filter_query: %r', filter_query)
+            self.send_error(404, reason="Task not found")
+        else:
+            self.write(ret)
+            self.finish()
+
+class TasksActionsCompleteHandler(BaseHandler):
+    """
+    Handle task action on processing -> complete.
+    """
+    @authorization(roles=['admin','pilot'])
+    async def post(self, task_id):
+        """
+        Take one task, set its status to complete.
+
+        Args:
+            task_id (str): task id
+
+        Body args (json):
+            time_used (int): (optional) time used to run task, in seconds
+
+        Returns:
+            dict: {}  empty dict
+        """
+        filter_query = {'task_id': task_id, 'status': 'processing'}
+        update_query = {
+            '$set': {
+                'status': 'complete',
+                'status_changed': nowstr(),
+            },
+        }
+        if self.request.body:
+            data = json.loads(self.request.body)
+            if 'time_used' in data:
+                update_query['$set']['walltime'] = data['time_used']/3600.
+        ret = await self.db.tasks.find_one_and_update(filter_query,
+                update_query,
+                projection={'_id':False})
+        if not ret:
+            logger.info('filter_query: %r', filter_query)
+            self.send_error(404, reason="Task not found or not processing")
+        else:
+            self.write(ret)
+            self.finish()
