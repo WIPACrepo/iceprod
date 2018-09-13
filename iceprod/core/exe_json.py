@@ -194,7 +194,7 @@ class ServerComms:
                 'hostname': hostname,
                 'domain': domain,
                 'time_used': t,
-                'task_stats': stats,
+                'task_stats': json.dumps(stats),
                 'time': datetime.utcnow().isoformat(),
                 'error_summary': reason if reason else '',
             }

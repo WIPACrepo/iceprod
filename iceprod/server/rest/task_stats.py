@@ -60,7 +60,7 @@ class MultiTaskStatsHandler(BaseHandler):
         """
         Create a task_stat entry.
 
-        Body should contain the task_stat data.
+        Body should contain the task stat data.
 
         Args:
             task_id (str): the task id for this task_stat
