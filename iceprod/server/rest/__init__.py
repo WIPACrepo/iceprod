@@ -119,6 +119,8 @@ def catch_error(method):
             return await method(self, *args, **kwargs)
         except tornado.web.HTTPError:
             raise # tornado can handle this
+        except tornado.httpclient.HTTPClientError:
+            raise # tornado can handle this
         except Exception as e:
             logger.warning('Error in website handler', exc_info=True)
             try:
@@ -187,7 +189,7 @@ def authorization(**_auth):
                         authorized = True
                 except Exception:
                     logger.info('/auths failure', exc_info=True)
-                    raise
+                    raise #tornado.web.HTTPError(403, reason="authorization failed")
 
             if authorized:
                 return await method(self, *args, **kwargs)
