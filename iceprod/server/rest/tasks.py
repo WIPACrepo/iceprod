@@ -360,7 +360,6 @@ class DatasetTaskCountsStatusHandler(BaseHandler):
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
             {'$group':{'_id':'$status', 'total': {'$sum':1}}},
-            {'$sort':{'task_index':1}},
         ])
         ret = {}
         async for row in cursor:
@@ -385,13 +384,17 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
         """
         cursor = self.db.tasks.aggregate([
             {'$match':{'dataset_id':dataset_id}},
-            {'$group':{'_id':{'name':'$name','status':'$status'}, 'total': {'$sum':1}}},
-            {'$sort':{'task_index':1}},
+            {'$group':{'_id':{'name':'$name','status':'$status','task_index':'$task_index'}, 'total': {'$sum':1}}},
         ])
         ret = defaultdict(dict)
+        ordering = {}
         async for row in cursor:
             ret[row['_id']['name']][row['_id']['status']] = row['total']
-        self.write(ret)
+            ordering[row['_id']['name']] = row['task_index']
+        ret2 = {}
+        for k in sorted(ordering, key=lambda n:ordering[n]):
+            ret2[k] = ret[k]
+        self.write(ret2)
         self.finish()
 
 class TasksActionsQueueHandler(BaseHandler):

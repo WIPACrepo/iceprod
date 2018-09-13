@@ -119,7 +119,7 @@ def catch_error(method):
             return await method(self, *args, **kwargs)
         except tornado.web.HTTPError:
             raise # tornado can handle this
-        except tornado.httpclient.HTTPClientError:
+        except tornado.httpclient.HTTPError:
             raise # tornado can handle this
         except Exception as e:
             logger.warning('Error in website handler', exc_info=True)
