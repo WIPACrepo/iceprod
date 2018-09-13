@@ -386,7 +386,7 @@ class DatasetTaskCountsNameStatusHandler(BaseHandler):
             {'$match':{'dataset_id':dataset_id}},
             {'$group':{
                 '_id':{'name':'$name','status':'$status'},
-                'ordering':{'$first':'task_index'},
+                'ordering':{'$first':'$task_index'},
                 'total': {'$sum':1}
             }},
         ])
@@ -534,7 +534,7 @@ class DatasetTaskStatsHandler(BaseHandler):
                 'stddev_hrs': {'$stdDevSamp': '$walltime'},
                 'min_hrs': {'$min': '$walltime'},
                 'max_hrs': {'$max': '$walltime'},
-                'ordering': {'$first': 'task_index'},
+                'ordering': {'$first': '$task_index'},
             }},
         ])
         ret = {}
