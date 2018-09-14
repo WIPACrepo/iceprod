@@ -411,8 +411,8 @@ class Dataset(PublicHandler):
             logger.info('task_info[%s] = %r', t, task_info[t])
             for s in ('waiting','queued','processing','complete'):
                 if s not in task_info[t]:
-                    task_info[t][s] = 0.
-            error = 0.
+                    task_info[t][s] = 0
+            error = 0
             for s in ('reset','resume','failed'):
                 if s in task_info[t]:
                     error += task_info[t][s]
