@@ -1,15 +1,62 @@
 import logging
 import json
 import uuid
+import io
+from functools import partial
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 import tornado.web
 import pymongo
 import motor
 
+try:
+    import boto3
+    import botocore.client
+except ImportError:
+    boto3 = None
+
 from iceprod.server.util import nowstr
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, catch_error
 
 logger = logging.getLogger('rest.logs')
+
+
+class S3:
+    """S3 wrapper for uploading and downloading objects"""
+    def __init__(self, config):
+        self.s3 = None
+        self.bucket = 'iceprod2-logs'
+        if (boto3 and 's3' in config and 'access_key' in config['s3'] and
+            'secret_key' in config['s3']):
+            try:
+                self.s3 = boto3.client('s3','us-east-1',
+                    aws_access_key_id=config['s3']['access_key'],
+                    aws_secret_access_key=config['s3']['secret_key'],
+                    config=botocore.client.Config(max_pool_connections=101))
+            except Exception:
+                logger.warning('failed to connect to s3: %r',
+                            config['s3'], exc_info=True)
+        self.executor = ThreadPoolExecutor(max_workers=20)
+
+    async def get(self, key):
+        """Download object from S3"""
+        ret = ''
+        with io.BytesIO() as f:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(self.executor,
+                    partial(self.s3.download_fileobj, Bucket=self.bucket,
+                            Key=key, Fileobj=f))
+            ret = f.getvalue()
+        return ret.decode('utf-8')
+
+    async def put(self, key, data):
+        """Upload object to S3"""
+        with io.BytesIO(data.encode('utf-8')) as f:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(self.executor,
+                    partial(self.s3.upload_fileobj, f, self.bucket, key))
+
 
 def setup(config):
     """
@@ -31,9 +78,13 @@ def setup(config):
     if 'log_id_index' not in db.logs.index_information():
         db.logs.create_index('log_id', name='log_id_index', unique=True)
 
+    # S3
+    s3 = S3(config) if boto3 and 's3' in config else None
+
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).logs,
+        's3': s3,
     })
 
     return [
@@ -44,10 +95,12 @@ def setup(config):
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/logs', DatasetTaskLogsHandler, handler_cfg),
     ]
 
+
 class BaseHandler(RESTHandler):
-    def initialize(self, database=None, **kwargs):
+    def initialize(self, database=None, s3=None, **kwargs):
         super(BaseHandler, self).initialize(**kwargs)
         self.db = database
+        self.s3 = s3
 
 class MultiLogsHandler(BaseHandler):
     """
@@ -76,6 +129,9 @@ class MultiLogsHandler(BaseHandler):
             data['name'] = 'log'
         data['log_id'] = uuid.uuid1().hex
         data['timestamp'] = nowstr()
+        if self.s3 and len(data['data']) > 1000000:
+            await self.s3.put(data['log_id'], data['data'])
+            del data['data']
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': data['log_id']})
@@ -97,10 +153,15 @@ class LogsHandler(BaseHandler):
             dict: all body fields
         """
         ret = await self.db.logs.find_one({'log_id':log_id},
-                projection={'_id':False, 'data':True})
+                projection={'_id':False})
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
+            if 'data' not in ret:
+                if self.s3:
+                    ret['data'] = await self.s3.get(ret['log_id'])
+                else:
+                    raise Exception('no data field and s3 disabled')
             self.write(ret)
             self.finish()
 
@@ -131,6 +192,10 @@ class DatasetMultiLogsHandler(BaseHandler):
             raise tornado.web.HTTPError(400, reason='data field not in body')
         data['log_id'] = uuid.uuid1().hex
         data['dataset_id'] = dataset_id
+        data['timestamp'] = nowstr()
+        if self.s3 and len(data['data']) > 1000000:
+            await self.s3.put(data['log_id'], data['data'])
+            del data['data']
         ret = await self.db.logs.insert_one(data)
         self.set_status(201)
         self.write({'result': data['log_id']})
@@ -157,6 +222,11 @@ class DatasetLogsHandler(BaseHandler):
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
+            if 'data' not in ret:
+                if self.s3:
+                    ret['data'] = await self.s3.get(ret['log_id'])
+                else:
+                    raise Exception('no data field and s3 disabled')
             self.write(ret)
             self.finish()
 
@@ -184,5 +254,11 @@ class DatasetTaskLogsHandler(BaseHandler):
         if not ret:
             self.send_error(404, reason="Log not found")
         else:
+            for log in ret:
+                if 'data' not in log:
+                    if self.s3:
+                        log['data'] = await self.s3.get(log['log_id'])
+                    else:
+                        raise Exception('no data field and s3 disabled')
             self.write({'logs':ret})
             self.finish()
