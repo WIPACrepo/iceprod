@@ -77,6 +77,10 @@ def setup(config):
     db = pymongo.MongoClient(**db_cfg).logs
     if 'log_id_index' not in db.logs.index_information():
         db.logs.create_index('log_id', name='log_id_index', unique=True)
+    if 'task_id_index' not in db.logs.index_information():
+        db.logs.create_index('task_id', name='task_id_index', unique=False)
+    if 'dataset_id_index' not in db.logs.index_information():
+        db.logs.create_index('dataset_id', name='dataset_id_index', unique=False)
 
     # S3
     s3 = S3(config) if boto3 and 's3' in config else None
