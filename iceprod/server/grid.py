@@ -243,7 +243,7 @@ class BaseGrid(object):
                             logger.warning('bad reqs value for task %r', t)
                     elif k == 'os' and t['reqs'][k]:
                         logger.debug('OS req: %s', t['reqs'][k])
-                        values['os'] = t['reqs'][k]
+                        values['os'] = ','.join(t['reqs'][k]) if isinstance(t['reqs'][k], list) else t['reqs'][k]
             except TypeError:
                 logger.warning('t[reqs]: %r',t['reqs'])
                 raise

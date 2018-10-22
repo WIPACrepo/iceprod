@@ -28,7 +28,7 @@ logger = logging.getLogger('condor')
 
 def condor_os_reqs(os_arch):
     """Convert from OS_ARCH to Condor OS requirements"""
-    os_arch = os_arch.rsplit('_',1)[0].rsplit('.',1)[0]
+    os_arch = os_arch.rsplit('_',2)[0].rsplit('.',1)[0]
     reqs = 'OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','CentOS').replace('_',''))
     reqs = reqs + '|| OpSysAndVer =?= "{}"'.format(os_arch.replace('RHEL','SL').replace('_',''))
     reqs = reqs + ' || OSGVO_OS_STRING =?= "{}"'.format(os_arch.replace('_',' '))
