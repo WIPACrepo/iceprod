@@ -180,16 +180,17 @@ class condor(grid.BaseGrid):
     @run_on_executor
     def submit(self,task):
         """Submit task to queueing system."""
-        cmd = ['condor_submit','condor.submit']
+        cmd = ['condor_submit','-terse','condor.submit']
         out = subprocess.check_output(cmd, cwd=task['submit_dir'], universal_newlines=True)
         grid_queue_id = []
         for line in out.split('\n'):
-            line = line.strip()
-            if 'cluster' in line:
-                qid = line.split()[-1]
-                if qid.endswith('.'):
-                    qid += '0'
-                grid_queue_id.append(qid)
+            # look for range
+            parts = [p.strip() for p in line.split('-') if p.strip()]
+            major = parts[0].split('.')[0]
+            minor_1 = int(parts[0].split('.')[1])
+            minor_2 = int(parts[1].split('.')[1])
+            for i in range(minor_1, minor_2+1):
+                grid_queue_id.append('{}.{}'.format(major,i))
         task['grid_queue_id'] = ','.join(grid_queue_id)
 
     @run_on_executor
