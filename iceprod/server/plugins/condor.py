@@ -186,6 +186,8 @@ class condor(grid.BaseGrid):
         for line in out.split('\n'):
             # look for range
             parts = [p.strip() for p in line.split('-') if p.strip()]
+            if len(parts) != 2:
+                continue
             major = parts[0].split('.')[0]
             minor_1 = int(parts[0].split('.')[1])
             minor_2 = int(parts[1].split('.')[1])
