@@ -368,7 +368,7 @@ class DatasetBrowse(PublicHandler):
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
         ret = await self.rest_client.request('GET','/datasets')
-        datasets = ret.values()
+        datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
         logger.info('datasets: %r', datasets)
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
