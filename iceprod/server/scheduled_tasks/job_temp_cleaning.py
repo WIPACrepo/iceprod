@@ -55,7 +55,8 @@ async def run(rest_client, cfg, executor, debug=False):
         dataset_dirs = await wrap_future(executor.submit(partial(GridFTP.list, temp_dir)))
         logger.info('dataset_dirs: %r', dataset_dirs)
         for d in dataset_dirs:
-            job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d))))
+            job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d),
+                                                                 request_timeout=7200)))
             logger.info('job_dirs: %r', job_dirs)
             jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(d))
             logger.info('jobs: %r', jobs)
