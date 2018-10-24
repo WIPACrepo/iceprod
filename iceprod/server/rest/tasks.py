@@ -33,6 +33,10 @@ def setup(config):
         db.tasks.create_index('task_id', name='task_id_index', unique=True)
     if 'dataset_id_index' not in db.tasks.index_information():
         db.tasks.create_index('dataset_id', name='dataset_id_index', unique=False)
+    if 'job_id_index' not in db.tasks.index_information():
+        db.tasks.create_index('job_id', name='job_id_index', unique=False)
+    if 'status_index' not in db.tasks.index_information():
+        db.tasks.create_index('status', name='status_index', unique=False)
 
     handler_cfg = RESTHandlerSetup(config)
     handler_cfg.update({
