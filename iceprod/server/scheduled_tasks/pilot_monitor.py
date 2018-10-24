@@ -10,6 +10,7 @@ Periodic delay: 5 minutes
 import logging
 import random
 import time
+from collections import defaultdict,Counter
 
 from tornado.ioloop import IOLoop
 
@@ -40,20 +41,26 @@ async def run(rest_client, statsd, debug=False):
     start_time = time.time()
     try:
         pilots = await rest_client.request('GET', '/pilots')
+        res = defaultdict(Counter)
+        count = 0
         for pilot in pilots.values():
-            avail = {}
-            claimed = {}
-            for n in ('available','claimed'):
-                for t in Resources.defaults:
-                    val = pilot[n][t] if t in pilot[n] and pilot[n][t] > 0 else 0
-                    statsd.gauge('pilot_resources.{}.{}'.format(n,t), val)
-            statsd.gauge('pilot_count', len(pilot['tasks']))
+            try:
+                for n in ('available','claimed'):
+                    for t in Resources.defaults:
+                        res[n][t] += int(pilot[n][t]) if t in pilot[n] and pilot[n][t] > 0 else 0
+                count += len(pilot['tasks'])
+            except Exception:
+                logger.warning('error getting pilot resources', exc_info=True)
+        for n in res:
+            for t in res[n]:
+                statsd.gauge('pilot_resources.{}.{}'.format(n,t), res[n][t])
+        statsd.gauge('pilot_count', count)
     except Exception:
         logger.error('error monitoring pilots', exc_info=True)
         if debug:
             raise
 
-    # run again after 60 minute delay
+    # run again after 5 minute delay
     stop_time = time.time()
     delay = max(60*5 - (stop_time-start_time), 60)
     IOLoop.current().call_later(delay, run, rest_client, statsd)
