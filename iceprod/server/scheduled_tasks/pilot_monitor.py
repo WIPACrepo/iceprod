@@ -44,16 +44,14 @@ async def run(rest_client, statsd, debug=False):
         res = defaultdict(Counter)
         count = 0
         for pilot in pilots.values():
-            try:
-                for n in ('available','claimed'):
-                    for t in Resources.defaults:
-                        res[n][t] += int(pilot[n][t]) if t in pilot[n] and pilot[n][t] > 0 else 0
-                count += len(pilot['tasks'])
-            except Exception:
-                logger.warning('error getting pilot resources', exc_info=True)
+            for n in ('available','claimed'):
+                n2 = 'resources_'+n
+                for t in Resources.defaults:
+                    res[n][t] += pilot[n2][t] if t in pilot[n2] and pilot[n2][t] > 0 else 0
+            count += len(pilot['tasks'])
         for n in res:
             for t in res[n]:
-                statsd.gauge('pilot_resources.{}.{}'.format(n,t), res[n][t])
+                statsd.gauge('pilot_resources.{}.{}'.format(n,t), int(res[n][t]))
                 logger.info('pilot_resources.{}.{} = {}'.format(n,t,res[n][t]))
         statsd.gauge('pilot_count', count)
     except Exception:
