@@ -54,6 +54,7 @@ async def run(rest_client, statsd, debug=False):
         for n in res:
             for t in res[n]:
                 statsd.gauge('pilot_resources.{}.{}'.format(n,t), res[n][t])
+                logger.info('pilot_resources.{}.{} = {}'.format(n,t,res[n][t]))
         statsd.gauge('pilot_count', count)
     except Exception:
         logger.error('error monitoring pilots', exc_info=True)
