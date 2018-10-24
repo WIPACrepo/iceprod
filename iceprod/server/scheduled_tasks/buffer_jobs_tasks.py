@@ -44,10 +44,10 @@ async def run(rest_client, debug=False):
             try:
                 dataset = await rest_client.request('GET', '/datasets/{}'.format(dataset_id))
                 tasks = await rest_client.request('GET', '/datasets/{}/task_counts/status'.format(dataset_id))
-                if 'waiting' not in tasks or tasks['waiting'] < 1000:
+                if 'waiting' not in tasks or tasks['waiting'] < 10000:
                     # buffer for this dataset
                     jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(dataset_id))
-                    jobs_to_buffer = min(1000, dataset['jobs_submitted'] - len(jobs))
+                    jobs_to_buffer = min(10000, dataset['jobs_submitted'] - len(jobs))
                     if jobs_to_buffer > 0:
                         config = await rest_client.request('GET', '/config/{}'.format(dataset_id))
                         task_names = [task['name'] if task['name'] else str(i) for i,task in enumerate(config['tasks'])]
