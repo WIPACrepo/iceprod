@@ -315,6 +315,7 @@ class Resources:
                 logging.debug('%s is using %r', task_id, usage)
             except psutil.NoSuchProcess:
                 logging.warning('process has exited for %r', task_id)
+                continue
             except Exception:
                 logging.warning('error getting usage for %r', task_id,
                             exc_info=True)
