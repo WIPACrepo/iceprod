@@ -59,8 +59,11 @@ async def run(rest_client, cfg, executor, debug=False):
                 continue
             d = entry.name
             logger.info('temp cleaning for dataset %r', d)
-            job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d),
-                                                                 request_timeout=7200)))
+            try:
+                job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d))))
+            except Exception:
+                logger.error('failed to get job dirs for dataset %r', d, exc_info=True)
+                continue
             logger.info('job_dirs: %r', job_dirs)
             jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(d))
             logger.info('jobs: %r', jobs)
