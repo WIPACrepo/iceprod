@@ -22,7 +22,8 @@ async function fetch_json(method, url, json, passkey) {
         var response = await fetch(rest_api + url, payload);
         return await response.json();
     } catch(err) {
-        alert(err);
+        alert('fetch_json(): '+err);
+        return {};
     }
 }
 
@@ -38,7 +39,7 @@ async function set_dataset_status(dataset_id, stat, passkey, task_status_filters
         }
         let job_ids = Object.keys(jobs);
         if (job_ids.length > 0) {
-            let ret = await set_jobs_status(job_ids, job_stat, passkey, task_status_filters);
+            let ret = await set_jobs_status(dataset_id, job_ids, job_stat, passkey, task_status_filters);
             if ('error' in ret) {
                 alert('error - '+ret['error']);
                 return;
@@ -57,8 +58,8 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
         task_status = 'waiting';
     for (var i=0;i<job_ids.length;i++) {
         let jid = job_ids[i];
-        for (status_filter in task_status_filters) {
-            let filter = status_filter ? '&task_status=' + status_filter : '';
+        for (var j=0;j<task_status_filters.length;j++) {
+            let filter = task_status_filters[j] ? '&task_status=' + task_status_filters[j] : '';
             let tasks = await fetch_json('GET',
                             '/datasets/' + dataset_id + '/tasks?job_id=' + jid + filter,
                             null, passkey);

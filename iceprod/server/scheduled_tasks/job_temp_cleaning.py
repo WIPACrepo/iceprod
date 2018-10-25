@@ -52,9 +52,13 @@ async def run(rest_client, cfg, executor, debug=False):
     try:
         # get all the job_indexes currently in tmp
         temp_dir = cfg['queue']['site_temp']
-        dataset_dirs = await wrap_future(executor.submit(partial(GridFTP.list, temp_dir)))
+        dataset_dirs = await wrap_future(executor.submit(partial(GridFTP.list, temp_dir, details=True)))
         logger.info('dataset_dirs: %r', dataset_dirs)
-        for d in dataset_dirs:
+        for entry in dataset_dirs:
+            if not entry.directory:
+                continue
+            d = entry.name
+            logger.info('temp cleaning for dataset %r', d)
             job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d),
                                                                  request_timeout=7200)))
             logger.info('job_dirs: %r', job_dirs)
