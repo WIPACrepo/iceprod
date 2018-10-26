@@ -62,11 +62,11 @@ class RESTHandler(tornado.web.RequestHandler):
 
     def prepare(self):
         if self.module and self.module.statsd:
-            self.statsd.incr('prepare.{}.{}'.format(self.request.path.replace('.','_'), self.request.method))
+            self.module.statsd.incr('prepare.{}.{}'.format(self.request.path.replace('.','_'), self.request.method))
 
     def on_finish(self):
         if self.module and self.module.statsd:
-            self.statsd.incr('finish.{}.{}.{}'.format(self.request.path.replace('.','_'),
+            self.module.statsd.incr('finish.{}.{}.{}'.format(self.request.path.replace('.','_'),
                              self.request.method, self.get_status()))
 
     def set_default_headers(self):
