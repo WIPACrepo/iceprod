@@ -11,7 +11,7 @@ from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.task_stats')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for TaskStats REST API.
 
@@ -35,7 +35,7 @@ def setup(config):
     if 'dataset_id_index' not in db.task_stats.index_information():
         db.task_stats.create_index('dataset_id', name='dataset_id_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).task_stats,
     })

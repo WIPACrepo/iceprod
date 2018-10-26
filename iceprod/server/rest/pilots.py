@@ -11,7 +11,7 @@ from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.pilots')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Pilots REST API.
 
@@ -31,7 +31,7 @@ def setup(config):
     if 'pilot_id_index' not in db.pilots.index_information():
         db.pilots.create_index('pilot_id', name='pilot_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).pilots,
     })

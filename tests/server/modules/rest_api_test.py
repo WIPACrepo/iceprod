@@ -9,6 +9,7 @@ import os
 import sys
 from datetime import datetime,timedelta
 import unittest
+import random
 from unittest.mock import patch, MagicMock
 
 import iceprod.server
@@ -29,7 +30,7 @@ class rest_api_test(module_test):
                         },
                         'rest_api':{
                             'address': 'localhost',
-                            'port': 12345,
+                            'port': random.randint(10000,50000),
                         },
                         'site_id':'abcd',
                        }

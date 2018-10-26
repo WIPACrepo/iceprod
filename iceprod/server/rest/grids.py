@@ -11,7 +11,7 @@ from iceprod.server.util import nowstr
 
 logger = logging.getLogger('rest.grids')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Grids REST API.
 
@@ -31,7 +31,7 @@ def setup(config):
     if 'grid_id_index' not in db.grids.index_information():
         db.grids.create_index('grid_id', name='grid_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).grids,
     })

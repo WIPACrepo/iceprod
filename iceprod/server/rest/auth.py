@@ -12,7 +12,7 @@ from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, au
 
 logger = logging.getLogger('rest.auth')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Auth REST API.
 
@@ -40,7 +40,7 @@ def setup(config):
     if 'dataset_id_index' not in db.auths_dataset.index_information():
         db.auths_dataset.create_index('dataset_id', name='dataset_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).auth,
     })

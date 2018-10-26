@@ -10,7 +10,7 @@ from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization, ca
 
 logger = logging.getLogger('rest.config')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Config REST API.
 
@@ -30,7 +30,7 @@ def setup(config):
     if 'dataset_id_index' not in db.config.index_information():
         db.config.create_index('dataset_id', name='dataset_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).config,
     })

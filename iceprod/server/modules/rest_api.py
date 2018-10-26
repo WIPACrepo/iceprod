@@ -20,7 +20,7 @@ class rest_api(module.module):
         super(rest_api,self).__init__(*args,**kwargs)
 
         # set up the REST API
-        app = setup_rest(self.cfg)
+        app = setup_rest(self.cfg, module=self)
 
         kwargs = {}
         if 'rest_api' in self.cfg:

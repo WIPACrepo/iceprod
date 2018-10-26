@@ -29,7 +29,7 @@ def tornado_logger(handler):
     log_method("%d %s %.2fms", handler.get_status(),
             handler._request_summary(), request_time)
 
-def setup_rest(config):
+def setup_rest(config, module=None):
     """
     Setup a REST Tornado server according to the config.
 
@@ -48,7 +48,7 @@ def setup_rest(config):
     for key in rest:
         logger.warn('setting up tornado for REST.%s', key)
         mod = importlib.import_module('iceprod.server.rest.'+key)
-        routes.extend(mod.setup(config))
+        routes.extend(mod.setup(config, module=module))
     logger.info('REST routes being served:')
     for r in routes:
         logger.info('  %r', r)

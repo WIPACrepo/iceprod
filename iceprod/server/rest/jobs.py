@@ -12,7 +12,7 @@ from iceprod.server.util import nowstr, status_sort
 
 logger = logging.getLogger('rest.jobs')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Jobs REST API.
 
@@ -34,7 +34,7 @@ def setup(config):
     if 'dataset_id_index' not in db.jobs.index_information():
         db.jobs.create_index('dataset_id', name='dataset_id_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).jobs,
     })

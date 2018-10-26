@@ -12,12 +12,13 @@ from iceprod.server.auth import Auth
 
 logger = logging.getLogger('rest')
 
-def RESTHandlerSetup(config):
+def RESTHandlerSetup(config, module=None):
     """
     Default RESTHandler setup.
 
     Args:
         config (dict): config dict
+        module (:py:class:`iceprod.server.module.Module`): (optional) module object
 
     Returns:
         dict: handler config
@@ -44,11 +45,12 @@ def RESTHandlerSetup(config):
         'auth': auth,
         'auth_url': auth_url,
         'module_auth_key': module_auth_key,
+        'module': module,
     }
 
 class RESTHandler(tornado.web.RequestHandler):
     """Default REST handler"""
-    def initialize(self, debug=False, auth=None, auth_url=None, module_auth_key='', **kwargs):
+    def initialize(self, debug=False, auth=None, auth_url=None, module_auth_key='', module=None, **kwargs):
         super(RESTHandler, self).initialize(**kwargs)
         self.debug = debug
         self.auth = auth
@@ -56,6 +58,16 @@ class RESTHandler(tornado.web.RequestHandler):
         self.auth_data = {}
         self.auth_key = None
         self.module_auth_key = module_auth_key
+        self.module = module
+
+    def prepare(self):
+        if self.module and self.module.statsd:
+            self.statsd.incr('prepare.{}.{}'.format(self.request.path.replace('.','_'), self.request.method))
+
+    def on_finish(self):
+        if self.module and self.module.statsd:
+            self.statsd.incr('finish.{}.{}.{}'.format(self.request.path.replace('.','_'),
+                             self.request.method, self.get_status()))
 
     def set_default_headers(self):
         self._headers['Server'] = 'IceProd/' + iceprod.__version__

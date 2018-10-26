@@ -14,7 +14,7 @@ from iceprod.server.util import nowstr, status_sort
 
 logger = logging.getLogger('rest.datasets')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Dataset REST API.
 
@@ -34,7 +34,7 @@ def setup(config):
     if 'dataset_id_index' not in db.datasets.index_information():
         db.datasets.create_index('dataset_id', name='dataset_id_index', unique=True)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).datasets,
     })

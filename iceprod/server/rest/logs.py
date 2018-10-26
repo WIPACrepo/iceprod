@@ -58,7 +58,7 @@ class S3:
                     partial(self.s3.upload_fileobj, f, self.bucket, key))
 
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Logs REST API.
 
@@ -85,7 +85,7 @@ def setup(config):
     # S3
     s3 = S3(config) if boto3 and 's3' in config else None
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).logs,
         's3': s3,

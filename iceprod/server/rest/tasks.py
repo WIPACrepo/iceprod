@@ -12,7 +12,7 @@ from iceprod.server.util import nowstr, status_sort
 
 logger = logging.getLogger('rest.tasks')
 
-def setup(config):
+def setup(config, *args, **kwargs):
     """
     Setup method for Tasks REST API.
 
@@ -38,7 +38,7 @@ def setup(config):
     if 'status_index' not in db.tasks.index_information():
         db.tasks.create_index('status', name='status_index', unique=False)
 
-    handler_cfg = RESTHandlerSetup(config)
+    handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).tasks,
     })
