@@ -114,6 +114,7 @@ class website(module.module):
                 'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
                 'rest_api':rest_address,
+                'debug':False,
             }
             login_handler_args = handler_args.copy()
             login_handler_args['module_rest_client'] = self.rest_client
@@ -151,7 +152,7 @@ class website(module.module):
                 xsrf_cookies=True,
                 cookie_secret=binascii.unhexlify(cookie_secret),
                 login_url='/login',
-                debug=True
+                debug=handler_args['debug'],
             )
 
             # start tornado
