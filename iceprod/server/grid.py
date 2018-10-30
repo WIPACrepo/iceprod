@@ -169,8 +169,11 @@ class BaseGrid(object):
         if reset_pilots:
             logger.info('reset %r',reset_pilots)
             for grid_queue_id in reset_pilots:
-                pilot_id = pilots[grid_queue_id]['pilot_id']
-                await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
+                try:
+                    pilot_id = pilots[grid_queue_id]['pilot_id']
+                    await self.rest_client.request('DELETE', '/pilots/{}'.format(pilot_id))
+                except KeyError:
+                    pass
 
         # remove grid tasks
         if remove_grid_jobs:
