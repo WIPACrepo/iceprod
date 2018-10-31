@@ -283,7 +283,7 @@ class DatasetTaskLogsHandler(BaseHandler):
         ]
         if group:
             if not keys:
-                keys = 'name|task_id|dataset_id|data|timestamp'
+                keys = 'log_id|name|task_id|dataset_id|data|timestamp'
             grouping = {x:{'$first':'$'+x} for x in keys.split('|') if x}
             grouping['_id'] = '$name'
             if 'timestamp' not in grouping:
