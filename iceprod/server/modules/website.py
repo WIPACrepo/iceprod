@@ -456,11 +456,11 @@ class Task(PublicHandler):
         dataset = await self.rest_client.request('GET', '/datasets/{}'.format(dataset_id))
         task_details = await self.rest_client.request('GET','/datasets/{}/tasks/{}'.format(dataset_id, task_id))
         try:
-            ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs'.format(dataset_id, task_id))
+            ret = await self.rest_client.request('GET','/datasets/{}/tasks/{}/logs?group=true'.format(dataset_id, task_id))
             logs = ret['logs']
             try:
                 names = {}
-                for log in sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
+                for log in logs:#sorted(logs,key=lambda l:l['timestamp'] if 'timestamp' in l else '',reverse=True):
                     if log['name'] in names:
                         continue
                     names[log['name']] = log

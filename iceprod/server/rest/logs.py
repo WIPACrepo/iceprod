@@ -165,7 +165,7 @@ class LogsHandler(BaseHandler):
                 if self.s3:
                     ret['data'] = await self.s3.get(ret['log_id'])
                 else:
-                    raise Exception('no data field and s3 disabled')
+                    raise tornado.web.HTTPError(500, reason='no data field and s3 disabled')
             self.write(ret)
             self.finish()
 
@@ -230,7 +230,7 @@ class DatasetLogsHandler(BaseHandler):
                 if self.s3:
                     ret['data'] = await self.s3.get(ret['log_id'])
                 else:
-                    raise Exception('no data field and s3 disabled')
+                    raise tornado.web.HTTPError(500, reason='no data field and s3 disabled')
             self.write(ret)
             self.finish()
 
@@ -241,7 +241,15 @@ class DatasetTaskLogsHandler(BaseHandler):
     @authorization(roles=['admin'], attrs=['dataset_id:read'])
     async def get(self, dataset_id, task_id):
         """
-        Get a log.
+        Get logs for a dataset and task.
+
+        Note: "num" and "group" are generally not used together.
+
+        Params (optional):
+            num (int): number of logs, or groups of logs, to return
+            group {true, false}: group by log name
+            order {asc, desc}: order by time
+            keys: | separated list of keys to return for each log
 
         Args:
             dataset_id (str): the dataset id
@@ -250,8 +258,46 @@ class DatasetTaskLogsHandler(BaseHandler):
         Returns:
             dict: {'logs': [log entry dict, log entry dict]}
         """
-        cur = self.db.logs.find({'dataset_id':dataset_id, 'task_id':task_id},
-                projection={'_id':False})
+        filters = {'dataset_id': dataset_id, 'task_id': task_id}
+
+        num = self.get_argument('num', None)
+        if num:
+            try:
+                num = int(num)
+            except Exception:
+                raise tornado.web.HTTPError(400, reason='bad num param. must be int')
+
+        group = self.get_argument('group', 'false').lower() == 'true'
+        order = self.get_argument('order', 'desc').lower()
+        if order not in ('asc', 'desc'):
+            raise tornado.web.HTTPError(400, reason='bad order param. should be "asc" or "desc".')
+        
+        projection = {'_id': False}
+        keys = self.get_argument('keys', None)
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+        
+        steps = [
+            {'$match': filters},
+            {'$sort': {'timestamp': -1 if order == 'desc' else 1}},
+        ]
+        if group:
+            if not keys:
+                keys = 'name|task_id|dataset_id|data|timestamp'
+            grouping = {x:{'$first':'$'+x} for x in keys.split('|') if x}
+            grouping['_id'] = '$name'
+            if 'timestamp' not in grouping:
+                grouping['timestamp'] = {'$first': '$timestamp'}
+            steps.extend([
+                {'$group': grouping},
+                {'$sort': {'timestamp': -1 if order == 'desc' else 1}},
+            ])
+        steps.append({'$project': projection})
+        if num:
+            steps.append({'$limit': num})
+        logger.debug('steps: %r', steps)
+
+        cur = self.db.logs.aggregate(steps, allowDiskUse=True)
         ret = []
         async for entry in cur:
             ret.append(entry)

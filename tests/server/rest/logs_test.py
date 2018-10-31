@@ -142,7 +142,7 @@ class rest_logs_test(AsyncTestCase):
         iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
-        data = {'data':'foo bar baz', 'dataset_id': 'foo', 'task_id': 'bar'}
+        data = {'data':'foo', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
                 method='POST', body=json.dumps(data),
                 headers={'Authorization': b'bearer '+self.token})
@@ -158,6 +158,41 @@ class rest_logs_test(AsyncTestCase):
         self.assertEqual(len(ret['logs']), 1)
         self.assertEqual(ret['logs'][0]['log_id'], log_id)
         self.assertEqual(data['data'], ret['logs'][0]['data'])
+
+        # now try for groupings
+        data = {'data':'bar', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stderr'}
+        r = yield client.fetch('http://localhost:%d/logs'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        
+        data = {'data':'baz', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
+        r = yield client.fetch('http://localhost:%d/logs'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?group=true'%(self.port,),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('logs', ret)
+        logging.debug('logs: %r', ret['logs'])
+        self.assertEqual(len(ret['logs']), 2)
+        self.assertEqual('baz', ret['logs'][0]['data'])
+        self.assertEqual('bar', ret['logs'][1]['data'])
+
+        # now check order, num, and keys
+        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc&num=1&keys=log_id|data'%(self.port,),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('logs', ret)
+        logging.debug('logs: %r', ret['logs'])
+        self.assertEqual(len(ret['logs']), 1)
+        self.assertEqual(ret['logs'][0]['log_id'], log_id)
+        self.assertEqual('foo', ret['logs'][0]['data'])
+        self.assertCountEqual(['log_id','data'], list(ret['logs'][0].keys()))
 
 class rest_logs_test2(AsyncTestCase):
     def setUp(self):
