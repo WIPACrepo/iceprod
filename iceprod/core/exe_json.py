@@ -86,6 +86,8 @@ class ServerComms:
         config['options']['job_id'] = task['job_id']
         config['options']['dataset_id'] = task['dataset_id']
         config['options']['task'] = task['task_index']
+        if 'requirements' in task:
+            config['options']['resources'] = task['requirements']
         try:
             job = await self.rest.request('GET', '/jobs/{}'.format(task['job_id']))
             config['options']['job'] = job['job_index']
