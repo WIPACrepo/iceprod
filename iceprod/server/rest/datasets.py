@@ -59,7 +59,7 @@ class MultiDatasetHandler(BaseHandler):
     """
     Handle multi-group requests.
     """
-    @authorization(roles=['admin','user']) #TODO: figure out how to do auth for each dataset in the list
+    @authorization(roles=['admin','client','system','user']) #TODO: figure out how to do auth for each dataset in the list
     async def get(self):
         """
         Get a dict of datasets.
