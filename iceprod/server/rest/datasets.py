@@ -64,11 +64,19 @@ class MultiDatasetHandler(BaseHandler):
         """
         Get a dict of datasets.
 
+        Params (optional):
+            keys: | separated list of keys to return for each dataset
+
         Returns:
             dict: {<dataset_id>: metadata}
         """
+        projection = {'_id': False}
+        keys = self.get_argument('keys', None)
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+
         ret = {}
-        async for row in self.db.datasets.find(projection={'_id':False}):
+        async for row in self.db.datasets.find(projection=projection):
             k = row['dataset_id']
             ret[k] = row
         self.write(ret)

@@ -23,6 +23,11 @@ from iceprod.core import rest_client
 from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import job_temp_cleaning
 
+class FakeFile:
+    def __init__(self, d):
+        self.directory = True
+        self.name = d
+
 class job_temp_cleaning_test(AsyncTestCase):
     def setUp(self):
         super(job_temp_cleaning_test,self).setUp()
@@ -57,7 +62,9 @@ class job_temp_cleaning_test(AsyncTestCase):
         jobs = {}
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
-            if url.startswith('/datasets/0/jobs'):
+            if url.startswith('/datasets?'):
+                return [{'dataset_id':'0', 'dataset':0}]
+            elif url.startswith('/datasets/0/jobs'):
                 client.called = True
                 return jobs
             else:
@@ -72,7 +79,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertFalse(client.called)
 
-        gridftp.list.side_effect = [['0'], ['1']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
         self.assertFalse(gridftp.rmtree.called)
@@ -80,7 +87,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         logger.info('try deleting completed job')
         client.called = False
         jobs['bar'] = {'job_index':1,'status':'complete'}
-        gridftp.list.side_effect = [['0'], ['1']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
         self.assertTrue(gridftp.rmtree.called)
@@ -89,7 +96,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         logger.info('skip suspended job')
         client.called = False
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')}
-        gridftp.list.side_effect = [['0'], ['1']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         gridftp.rmtree.reset_mock()
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
@@ -99,7 +106,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         client.called = False
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':
                        (datetime.utcnow()-timedelta(days=100)).strftime('%Y-%m-%dT%H:%M:%S')}
-        gridftp.list.side_effect = [['0'], ['1']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         gridftp.rmtree.reset_mock()
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
@@ -113,21 +120,23 @@ class job_temp_cleaning_test(AsyncTestCase):
         jobs = {}
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
-            if url.startswith('/datasets/0/jobs'):
+            if url.startswith('/datasets?'):
+                return [{'dataset_id':'0', 'dataset':0}]
+            elif url.startswith('/datasets/0/jobs'):
                 client.called = True
                 return jobs
             else:
                 raise Exception()
         rc.request = client
 
-        gridftp.list.side_effect = [['0'], ['foobar']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('foobar')]]
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':
                        (datetime.utcnow()-timedelta(days=100)).isoformat()}
         await job_temp_cleaning.run(rc, self.cfg, self.executor, debug=True)
         self.assertTrue(client.called)
         self.assertFalse(gridftp.rmtree.called)
 
-        gridftp.list.side_effect = [['0'], ['1']]
+        gridftp.list.side_effect = [[FakeFile('0')], [FakeFile('1')]]
         jobs['bar'] = {'job_index':1,'status':'suspended','status_changed':
                        (datetime.utcnow()-timedelta(days=100)).isoformat()}
         gridftp.rmtree.side_effect = Exception()

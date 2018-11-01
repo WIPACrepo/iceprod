@@ -54,6 +54,10 @@ async def run(rest_client, cfg, executor, debug=False):
         temp_dir = cfg['queue']['site_temp']
         dataset_dirs = await wrap_future(executor.submit(partial(GridFTP.list, temp_dir, details=True)))
         logger.info('dataset_dirs: %r', dataset_dirs)
+        ret = await rest_client.request('GET', '/datasets?keys=dataset_id|dataset')
+        datasets = {}
+        for d in ret:
+            datasets[str(d['dataset'])] = d['dataset_id']
         for entry in dataset_dirs:
             if not entry.directory:
                 continue
@@ -65,7 +69,7 @@ async def run(rest_client, cfg, executor, debug=False):
                 logger.error('failed to get job dirs for dataset %r', d, exc_info=True)
                 continue
             logger.info('job_dirs: %r', job_dirs)
-            jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(d))
+            jobs = await rest_client.request('GET', '/datasets/{}/jobs'.format(datasets[d]))
             logger.info('jobs: %r', jobs)
             job_indexes = set()
             for job in jobs.values():
@@ -73,7 +77,8 @@ async def run(rest_client, cfg, executor, debug=False):
                     and now - get_date(job['status_changed']) > suspend_time):
                     job_indexes.add(job['job_index'])
             logger.info('job_indexes: %r', job_indexes)
-            for j in job_dirs:
+            for job in job_dirs:
+                j = job.name
                 if not j.isnumeric():
                     continue
                 if int(j) in job_indexes:

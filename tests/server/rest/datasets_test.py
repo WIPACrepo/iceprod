@@ -121,6 +121,13 @@ class rest_datasets_test(AsyncTestCase):
         for k in data:
             self.assertIn(k, ret[dataset_id])
             self.assertEqual(data[k], ret[dataset_id][k])
+        
+        r = yield client.fetch('http://localhost:%d/datasets?keys=dataset_id|dataset'%self.port,
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn(dataset_id, ret)
+        self.assertCountEqual(['dataset_id','dataset'], ret[dataset_id])
 
         r = yield client.fetch('http://localhost:%d/datasets/%s'%(self.port,dataset_id),
                 headers={'Authorization': b'bearer '+self.token})
