@@ -57,7 +57,7 @@ async def run(rest_client, cfg, executor, debug=False):
         ret = await rest_client.request('GET', '/datasets?keys=dataset_id|dataset')
         datasets = {}
         for d in ret:
-            datasets[str(d['dataset'])] = d['dataset_id']
+            datasets[str(ret[d]['dataset'])] = ret[d]['dataset_id']
         for entry in dataset_dirs:
             if not entry.directory:
                 continue
