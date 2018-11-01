@@ -18,32 +18,16 @@ import subprocess
 logger = logging.getLogger('gridftp')
 
 def _cmd(cmd, timeout=1200):
-    p = subprocess.Popen(cmd)
-    i = 0
-    while True:
-        time.sleep(0.01)
-        i += 0.01
-        ret = p.poll()
-        if ret is not None:
-            if ret:
-                raise Exception('Request failed')
-            return
-        if i >= timeout:
-            p.kill()
-            raise Exception('Request timed out')
+    subprocess.run(cmd, timeout=timeout, check=True)
 
 def _cmd_output(cmd, timeout=1200):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    i = 0
-    while True:
-        time.sleep(0.01)
-        i += 0.01
-        ret = p.poll()
-        if ret is not None:
-            return (p.returncode, p.communicate()[0].decode('utf-8'))
-        if i >= timeout:
-            p.kill()
-            raise Exception('Request timed out')
+    try:
+        output = p.communicate(timeout=timeout)[0].decode('utf-8')
+        return (p.returncode, output)
+    except subprocess.TimeoutExpired:
+        p.kill()
+        raise Exception('Request timed out')
 
 
 def listify(lines,details=False,dotfiles=False):
