@@ -64,7 +64,7 @@ async def run(rest_client, cfg, executor, debug=False):
             d = entry.name
             logger.info('temp cleaning for dataset %r', d)
             try:
-                job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d))))
+                job_dirs = await wrap_future(executor.submit(partial(GridFTP.list, os.path.join(temp_dir, d), details=True)))
             except Exception:
                 logger.error('failed to get job dirs for dataset %r', d, exc_info=True)
                 continue
@@ -82,6 +82,8 @@ async def run(rest_client, cfg, executor, debug=False):
                     job_indexes.add(job['job_index'])
             logger.info('job_indexes: %r', job_indexes)
             for job in job_dirs:
+                if not job.directory:
+                    continue
                 j = job.name
                 if not j.isnumeric():
                     continue
