@@ -57,6 +57,7 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
     ]
 
@@ -643,4 +644,47 @@ class TasksActionsCompleteHandler(BaseHandler):
             self.send_error(404, reason="Task not found or not processing")
         else:
             self.write(ret)
+            self.finish()
+
+
+class DatasetTaskBulkStatusHandler(BaseHandler):
+    """
+    Update the status of multiple tasks at once.
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    async def post(self, dataset_id, status):
+        """
+        Set multiple tasks' status.
+
+        Body should have {'tasks': [<task_id>, <task_id>, ...]}
+
+        Args:
+            dataset_id (str): dataset id
+            status (str): the status
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data) or 'tasks' not in data or not data['tasks']:
+            raise tornado.web.HTTPError(400, reason='Missing tasks in body')
+        tasks = list(data['tasks'])
+        if len(tasks) > 100000:
+            raise tornado.web.HTTPError(400, reason='Too many tasks specified (limit: 100k)')
+        if status not in ('idle','waiting','queued','processing','reset','failed','suspended','complete'):
+            raise tornado.web.HTTPError(400, reason='Bad status')
+        query = {
+            'dataset_id': dataset_id,
+            'task_id': {'$in': tasks},
+        }
+        update_data = {
+            'status': status,
+            'status_changed': nowstr(),
+        }
+
+        ret = await self.db.tasks.update_many(query, {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Tasks not found")
+        else:
+            self.write({})
             self.finish()

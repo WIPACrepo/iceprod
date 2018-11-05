@@ -783,7 +783,87 @@ class rest_tasks_test(AsyncTestCase):
             r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/complete'%(self.port,task_id),
                     method='POST', body=json.dumps({}),
                     headers={'Authorization': b'bearer '+self.token})
-        
+
+
+
+    @unittest_reporter(name='REST POST   /datasets/<dataset_id>/task_actions/bulk_status/<status>')
+    def test_800_tasks(self):
+        iceprod.server.tornado.startup(self.app, port=self.port)
+
+        client = AsyncHTTPClient()
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        data2 = {'tasks':[task_id]}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'failed'),
+                method='POST', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('status', ret)
+        self.assertEqual(ret['status'], 'failed')
+
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo2',
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id2 = ret['result']
+
+        data2 = {'tasks':[task_id, task_id2]}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'reset'),
+                method='POST', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('status', ret)
+        self.assertEqual(ret['status'], 'reset')
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('status', ret)
+        self.assertEqual(ret['status'], 'reset')
+
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'blah'),
+                    method='POST', body=json.dumps(data2),
+                    headers={'Authorization': b'bearer '+self.token})
+
+        with self.assertRaises(Exception):
+            yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_status/%s'%(self.port,data['dataset_id'],'failed'),
+                    method='POST', body=json.dumps({}),
+                    headers={'Authorization': b'bearer '+self.token})
+
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
