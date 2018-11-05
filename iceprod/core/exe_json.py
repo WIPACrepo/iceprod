@@ -160,6 +160,8 @@ class ServerComms:
                               iceprod_stats)
 
         data = {}
+        if t:
+            data['time_used'] =  t/3600.
         await self.rest.request('POST', '/tasks/{}/task_actions/complete'.format(task_id), data)
 
     async def still_running(self, task_id):
@@ -216,6 +218,8 @@ class ServerComms:
             logging.warning('failed to post task_stats for %r', task_id, exc_info=True)
 
         data = {}
+        if t:
+            data['time_used'] =  t/3600.
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
     async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
@@ -258,7 +262,7 @@ class ServerComms:
 
         data = {}
         if resources and 'time' in resources and resources['time']:
-            data['time_used'] =  resources['time']*3600.
+            data['time_used'] =  resources['time']
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}
@@ -363,7 +367,7 @@ class ServerComms:
 
         data = {}
         if resources and 'time' in resources and resources['time']:
-            data['time_used'] =  resources['time']*3600.
+            data['time_used'] =  resources['time']
         self.rest.request_seq('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}
