@@ -77,14 +77,11 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
 }
 
 async function set_tasks_status(dataset_id, task_ids, stat, passkey) {
-    for (var i=0;i<task_ids.length;i++) {
-        let tid = task_ids[i];
-        let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/tasks/' + tid + '/status',
-                        {'status':stat}, passkey);
-        if ('error' in ret) {
-            alert('error - '+ret['error']);
-            return;
-        }
+    let ret = await fetch_json('POST', '/datasets/' + dataset_id + '/task_actions/bulk_status/'+stat,
+                    {'tasks':task_ids}, passkey);
+    if ('error' in ret) {
+        alert('error - '+ret['error']);
+        return;
     }
 }
 
