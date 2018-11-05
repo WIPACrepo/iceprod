@@ -13,20 +13,24 @@ from tornado.concurrent import Future
 from tornado.ioloop import IOLoop
 from tornado.testing import gen_test
 
-def printer(input,passed=True,skipped=False):
+def printer(in_str,passed=True,skipped=False):
     numcols = 60
+    firstpos = 0
     padding = 3 if skipped else 4
-    while len(input) > numcols:
+    while len(in_str) > numcols:
         # wrap longer strings
-        pos = input.rfind(' ',0,numcols)
-        if pos < 0:
-            break
-        tmp_str = input[0:pos]
-        input = '     '+input[pos+1:]
+        pos = in_str.rfind(' ',firstpos,numcols)
+        if pos <= firstpos or pos >= numcols:
+            pos = in_str.rfind('/',firstpos,numcols)
+            if pos <= firstpos or pos >= numcols:
+                break
+        tmp_str = in_str[0:pos+1]
+        in_str = '     '+in_str[pos+1:]
+        firstpos = 4
         print(tmp_str)
     # print string aligned left, and passed or failed
-    final_str = input
-    for i in range(len(input),numcols+padding):
+    final_str = in_str
+    for i in range(len(in_str),numcols+padding):
         final_str += ' '
 
     if skipped:
