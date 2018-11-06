@@ -373,7 +373,7 @@ class DatasetBrowse(PublicHandler):
             val = filter_results[name]
             if any(v not in filter_options[name] for v in val):
                 raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
-            args.append('name='+('|'.join(val)))
+            args.append(name+'='+('|'.join(val)))
 
         url = '/datasets'
         if args:
@@ -381,7 +381,7 @@ class DatasetBrowse(PublicHandler):
 
         ret = await self.rest_client.request('GET', url)
         datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
-        logger.info('datasets: %r', datasets)
+        #logger.info('datasets: %r', datasets)
         self.render('dataset_browse.html',datasets=datasets,
                     filter_options=filter_options,
                     filter_results=filter_results)
