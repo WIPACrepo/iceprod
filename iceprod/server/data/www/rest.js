@@ -86,20 +86,18 @@ async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_f
     for (var i=0;i<job_ids.length;i++) {
         let jid = job_ids[i];
         if (propagate) {
-            for (var j=0;j<task_status_filters.length;j++) {
-                let url = '/datasets/' + dataset_id + '/tasks?job_id='+jid;
-                if (task_status_filters.length > 0) {
-                    url += '&status='+task_status_filters[0];
-                    for (var i=1;i<task_status_filters.length;i++) {
-                        url += '|'+task_status_filters[i];
-                    }
+            let url = '/datasets/' + dataset_id + '/tasks?job_id='+jid;
+            if (task_status_filters.length > 0) {
+                url += '&status='+task_status_filters[0];
+                for (var i=1;i<task_status_filters.length;i++) {
+                    url += '|'+task_status_filters[i];
                 }
-                url += '&keys=task_id';
-                let tasks = await fetch_json('GET', url, null, passkey);
-                var task_ids = Object.keys(tasks);
-                if (task_ids.length > 0) {
-                    set_tasks_status(dataset_id, task_ids, task_status, passkey);
-                }
+            }
+            url += '&keys=task_id';
+            let tasks = await fetch_json('GET', url, null, passkey);
+            var task_ids = Object.keys(tasks);
+            if (task_ids.length > 0) {
+                set_tasks_status(dataset_id, task_ids, task_status, passkey);
             }
         }
         let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/jobs/' + jid + '/status', {'status':stat}, passkey);
