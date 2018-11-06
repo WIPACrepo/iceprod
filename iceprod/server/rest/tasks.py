@@ -684,6 +684,8 @@ class DatasetTaskBulkStatusHandler(BaseHandler):
             'status': status,
             'status_changed': nowstr(),
         }
+        if status == 'reset':
+            update_data['failures'] = 0
 
         ret = await self.db.tasks.update_many(query, {'$set':update_data})
         if (not ret) or ret.modified_count < 1:
