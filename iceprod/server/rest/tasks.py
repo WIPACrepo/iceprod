@@ -237,7 +237,7 @@ class DatasetMultiTasksHandler(BaseHandler):
         Get task entries.
 
         Params (optional):
-            status: task status to filter by
+            status: | separated list of task status to filter by
             job_id: job_id to filter by
             job_index: job_index to filter by
             keys: | separated list of keys to return for each task
@@ -250,7 +250,10 @@ class DatasetMultiTasksHandler(BaseHandler):
         """
         filters = {'dataset_id':dataset_id}
 
-        for k in ('status','job_id','job_index'):
+        status = self.get_argument('status', None)
+        if status:
+            filters['status'] = {'$in': status.split('|')}
+        for k in ('job_id','job_index'):
             tmp = self.get_argument(k, None)
             if tmp:
                 filters[k] = tmp

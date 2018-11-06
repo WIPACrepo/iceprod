@@ -154,14 +154,28 @@ class DatasetMultiJobsHandler(BaseHandler):
         """
         Get all jobs for a dataset.
 
+        Params (optional):
+            status: | separated list of task status to filter by
+            keys: | separated list of keys to return for each task
+
         Args:
             dataset_id (str): dataset id
 
         Returns:
-            dict: {'uuid': {pilot_data}}
+            dict: {'job_id':{job_data}}
         """
-        cursor = self.db.jobs.find({'dataset_id':dataset_id},
-                projection={'_id':False})
+        filters = {'dataset_id':dataset_id}
+        status = self.get_argument('status', None)
+        if status:
+            filters['status'] = {'$in': status.split('|')}
+            
+        projection = {'_id': False}
+        keys = self.get_argument('keys','')
+        if keys:
+            projection.update({x:True for x in keys.split('|') if x})
+            projection['job_id'] = True
+
+        cursor = self.db.jobs.find(filters, projection=projection)
         ret = {}
         async for row in cursor:
             ret[row['job_id']] = row

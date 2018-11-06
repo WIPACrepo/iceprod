@@ -27,45 +27,72 @@ async function fetch_json(method, url, json, passkey) {
     }
 }
 
-async function set_dataset_status(dataset_id, stat, passkey, task_status_filters=[''], propagate=true) {
+async function set_dataset_status(dataset_id, stat, passkey, task_status_filters=[], propagate=true) {
     if (propagate) {
-        let job_stat = 'reset';
-        if (stat == 'suspended' || stat == 'truncated')
+        let job_stat = 'processing';
+        let task_stat = 'reset';
+        if (stat == 'suspended') {
             job_stat = 'suspended';
+            task_stat = 'suspended';
+        }
+        let url = '/datasets/' + dataset_id + '/jobs?';
+        if (task_status_filters.length > 0) {
+            url += 'status='+task_status_filters[0];
+            for (var i=1;i<task_status_filters.length;i++) {
+                url += '|'+task_status_filters[i];
+            }
+        }
+        url += '&keys=job_id';
         let jobs = await fetch_json('GET', '/datasets/' + dataset_id + '/jobs', null, passkey);
         if ('error' in jobs) {
-            alert('error - '+jobs['error']);
+            alert('jobs error - '+jobs['error']);
             return;
         }
         let job_ids = Object.keys(jobs);
         if (job_ids.length > 0) {
-            let ret = await set_jobs_status(dataset_id, job_ids, job_stat, passkey, task_status_filters);
+            let ret = await set_jobs_status(dataset_id, job_ids, job_stat, passkey, [''], false);
             if ('error' in ret) {
-                alert('error - '+ret['error']);
+                alert('jobs error - '+ret['error']);
                 return;
+            }
+            let url = '/datasets/' + dataset_id + '/tasks?';
+            if (task_status_filters.length > 0) {
+                url += 'status='+task_status_filters[0];
+                for (var i=1;i<task_status_filters.length;i++) {
+                    url += '|'+task_status_filters[i];
+                }
+            }
+            url += '&keys=task_id';
+            
+            let tasks = await fetch_json('GET', url, null, passkey);
+            let task_ids = Object.keys(tasks);
+            if (task_ids.length > 0) {
+                set_tasks_status(dataset_id, task_ids, task_stat, passkey);
             }
         }
     }
     let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/status', {'status':stat}, passkey);
     if ('error' in ret) {
-        alert('error - '+ret['error']);
+        alert('datasets error - '+ret['error']);
     }
 }
 
-async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=['']) {
+async function set_jobs_status(dataset_id, job_ids, stat, passkey, task_status_filters=[''], propagate=true) {
     var task_status = stat;
     if (stat == 'processing')
         task_status = 'waiting';
     for (var i=0;i<job_ids.length;i++) {
         let jid = job_ids[i];
-        for (var j=0;j<task_status_filters.length;j++) {
-            let filter = task_status_filters[j] ? '&task_status=' + task_status_filters[j] : '';
-            let tasks = await fetch_json('GET',
-                            '/datasets/' + dataset_id + '/tasks?job_id=' + jid + filter,
-                            null, passkey);
-            var task_ids = Object.keys(tasks);
-            if (task_ids.length > 0) {
-                set_tasks_status(dataset_id, task_ids, task_status, passkey);
+        if (propagate) {
+            for (var j=0;j<task_status_filters.length;j++) {
+                let filter = task_status_filters[j] ? '&task_status=' + task_status_filters[j] : '';
+                let tasks = await fetch_json('GET',
+                                '/datasets/' + dataset_id + '/tasks?job_id=' + jid + filter,
+                                null, passkey);
+                var task_ids = Object.keys(tasks);
+                if (task_ids.length > 0) {
+                    set_tasks_status(dataset_id, task_ids, task_status, passkey);
+                }
             }
         }
         let ret = await fetch_json('PUT', '/datasets/' + dataset_id + '/jobs/' + jid + '/status', {'status':stat}, passkey);
