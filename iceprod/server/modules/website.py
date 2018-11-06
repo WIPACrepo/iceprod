@@ -364,11 +364,22 @@ class DatasetBrowse(PublicHandler):
     @catch_error
     @tornado.web.authenticated
     async def get(self):
-        self.statsd.incr('dataset')
+        self.statsd.incr('dataset_browse')
         filter_options = {'status':['processing','suspended','errors']}
         filter_results = {n:self.get_arguments(n) for n in filter_options}
 
-        ret = await self.rest_client.request('GET','/datasets')
+        args = []
+        for name in filter_results:
+            val = filter_results[name]
+            if any(v not in filter_options[name] for v in val):
+                raise tornado.web.HTTPError(400, reason='Bad filter '+name+' value')
+            args.append('name='+('|'.join(val)))
+
+        url = '/datasets'
+        if args:
+            url += '?'+('&'.join(args))
+
+        ret = await self.rest_client.request('GET', url)
         datasets = sorted(ret.values(), key=lambda x:x['dataset'], reverse=True)
         logger.info('datasets: %r', datasets)
         self.render('dataset_browse.html',datasets=datasets,
@@ -381,8 +392,6 @@ class Dataset(PublicHandler):
     @tornado.web.authenticated
     async def get(self, dataset_id):
         self.statsd.incr('dataset')
-        filter_options = {'status':['processing','suspended','errors']}
-        filter_results = {n:self.get_arguments(n) for n in filter_options}
 
         if dataset_id.isdigit():
             try:
@@ -427,7 +436,7 @@ class TaskBrowse(PublicHandler):
     @catch_error
     @tornado.web.authenticated
     async def get(self, dataset_id):
-        self.statsd.incr('task')
+        self.statsd.incr('task_browse')
         status = self.get_argument('status',default=None)
 
         if status:

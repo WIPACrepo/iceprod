@@ -65,18 +65,24 @@ class MultiDatasetHandler(BaseHandler):
         Get a dict of datasets.
 
         Params (optional):
+            status: | separated list of status filters
             keys: | separated list of keys to return for each dataset
 
         Returns:
             dict: {<dataset_id>: metadata}
         """
+        query = {}
+        status = self.get_argument('status', None)
+        if status:
+            query['status'] = {'$in': status.split('|')}
+
         projection = {'_id': False}
         keys = self.get_argument('keys', None)
         if keys:
             projection.update({x:True for x in keys.split('|') if x})
 
         ret = {}
-        async for row in self.db.datasets.find(projection=projection):
+        async for row in self.db.datasets.find(query, projection=projection):
             k = row['dataset_id']
             ret[k] = row
         self.write(ret)
