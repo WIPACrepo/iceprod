@@ -25,9 +25,9 @@
 
 {% if (current_user) %}
 <div class="action">
-    <button onclick='set_jobs_status(dataset_id, ["{{ job["job_id"] }}"], "processing", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset", "failed", "suspended"]);'>Reset</button>
+    <button onclick='set_jobs_status(dataset_id, ["{{ job["job_id"] }}"], "processing", "{{ passkey }}", ["queued", "processing", "failed", "suspended"]);'>Reset</button>
     <button onclick='set_jobs_status(dataset_id, ["{{ job["job_id"] }}"], "processing", "{{ passkey }}");'>Hard Reset</button>
-    <button onclick='set_jobs_status(dataset_id, ["{{ job["job_id"] }}"], "suspended", "{{ passkey }}");'>Suspend</button>
+    <button onclick='set_jobs_status(dataset_id, ["{{ job["job_id"] }}"], "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"]);'>Suspend</button>
 </div>
 {% end %}
 

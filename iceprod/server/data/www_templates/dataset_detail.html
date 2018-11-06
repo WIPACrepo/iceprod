@@ -31,9 +31,9 @@
 
 {% if (current_user) %}
 <div class="action">
-    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset", "failed", "suspended"]);'>Reset</button>
-    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}");'>Hard Reset</button>
-    <button onclick='set_dataset_status("{{ dataset_id }}", "suspended", "{{ passkey }}");'>Suspend</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", ["queued", "processing", "reset", "failed", "suspended"], ["errors","suspended","failed"]);'>Reset</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "processing", "{{ passkey }}", [], ["errors","suspended","failed","complete"]);'>Hard Reset</button>
+    <button onclick='set_dataset_status("{{ dataset_id }}", "suspended", "{{ passkey }}", ["idle", "waiting", "queued", "processing", "reset"], ["processing","errors"]);'>Suspend</button>
     <button onclick='set_dataset_status("{{ dataset_id }}", "truncated", "{{ passkey }}", propagate=false);'>Truncate</button>
 </div>
 {% end %}
