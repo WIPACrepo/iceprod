@@ -15,6 +15,7 @@ import logging
 from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core import dataclasses
+from iceprod.core import resources
 from .serialization import dict_to_dataclasses
 from .jsonUtil import json_compressor,json_decode
 from .rest_client import Client
@@ -87,7 +88,7 @@ class ServerComms:
         config['options']['dataset_id'] = task['dataset_id']
         config['options']['task'] = task['task_index']
         if 'requirements' in task:
-            config['options']['resources'] = task['requirements']
+            config['options']['resources'] = {k:task['requirements'][k] for k in resources.Resources.defaults}
         try:
             job = await self.rest.request('GET', '/jobs/{}'.format(task['job_id']))
             config['options']['job'] = job['job_index']
