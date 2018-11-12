@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+import math
 import time
 import logging
 import tempfile
@@ -59,9 +60,10 @@ class Pilot:
         rpc (:py:class:`iceprod.core.exe_json.ServerComms`): RPC to server
         debug (bool): debug mode (default False)
         run_timeout (int): how often to check if a task is running
+        backoff_delay (int): what starting delay to use for exponential backoff
     """
     def __init__(self, config, runner, pilot_id, rpc=None, debug=False,
-                 run_timeout=180):
+                 run_timeout=180, backoff_delay=1):
         self.config = config
         self.runner = runner
         self.pilot_id = pilot_id
@@ -69,6 +71,7 @@ class Pilot:
         self.rpc = rpc
         self.debug = debug
         self.run_timeout = run_timeout
+        self.backoff_delay = backoff_delay
         self.errors = 10
         self.resource_interval = 1.0 # seconds between resouce measurements
 
@@ -227,9 +230,15 @@ class Pilot:
 
     async def run(self):
         """Run the pilot"""
-        self.errors = max_errors = int(self.resources.total['cpu'])*10
+        self.errors = max_errors = int(10**math.log10(10+self.resources.total['cpu']))
+        logger.info('max_errors: %d', max_errors)
         tasks_running = 0
-        backoff_time = 1
+        async def backoff():
+            """Backoff for rate limiting"""
+            delay = self.backoff_delay*(1+random.random())
+            logger.info('backoff %d', delay)
+            await asyncio.sleep(delay)
+            self.backoff_delay *= 2
         while self.running or self.tasks:
             while self.running:
                 # retrieve new task(s)
@@ -247,6 +256,7 @@ class Pilot:
                         logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
                                  max_errors-self.errors, exc_info=True)
+                    await backoff()
                     continue
                 logger.info('task configs: %r', task_configs)
 
@@ -324,11 +334,8 @@ class Pilot:
                     or (self.resources.total['gpu'] and not self.resources.available['gpu'])):
                     logger.info('no resources left, so wait for tasks to finish')
                     break
-
-                # backoff request for rate limiting
-                logger.info('backoff %d', backoff_time)
-                await asyncio.sleep(backoff_time+backoff_time*random.random())
-                backoff_time *= 2
+                # otherwise, backoff
+                await backoff()
 
             # wait until we can queue more tasks
             while self.running or self.tasks:

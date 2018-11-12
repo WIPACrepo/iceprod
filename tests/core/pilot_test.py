@@ -60,6 +60,11 @@ class TestBase(AsyncTestCase):
         # mock hostname
         pilot.gethostname = lambda: 'foo.bar'
 
+        self.pilot_args = {
+            'run_timeout': 0.001,
+            'backoff_delay': 0.000001,
+        }
+
 class pilot_test(TestBase):
     def setUp(self):
         super(pilot_test,self).setUp()
@@ -100,7 +105,7 @@ class pilot_test(TestBase):
             logging.debug('runner - after')
             runner.called = True
         runner.called = False
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             await p.run()
         self.assertTrue(runner.called)
         self.assertEqual(update_args[0][0], ('a',))
@@ -135,7 +140,7 @@ class pilot_test(TestBase):
             logging.debug('runner - after')
             runner.called = True
         runner.called = False
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             await p.run()
         self.assertTrue(runner.called)
         for call in update_args:
@@ -171,7 +176,7 @@ class pilot_test(TestBase):
             logging.debug('runner - after')
             runner.called = True
         runner.called = False
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             with self.assertRaises(Exception):
                 await p.run()
         self.assertTrue(runner.called)
@@ -203,7 +208,7 @@ class pilot_test(TestBase):
             update_args.append((args,kwargs))
         rpc.update_pilot.side_effect = update_pilot
         runner = None
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.001) as p:
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             await p.run()
 
 class pilot_multi_test(TestBase):
@@ -306,7 +311,7 @@ class pilot_multi_test(TestBase):
             runner.called = True
         runner.called = False
         start_time = time.time()
-        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, run_timeout=0.01) as p:
+        async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
             await p.run()
         self.assertTrue(runner.called)
         self.assertGreater(time.time()-start_time, 1.0)
