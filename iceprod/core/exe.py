@@ -929,10 +929,11 @@ class ForkModule:
             else:
                 prefix = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             for k in os.environ:
-                if k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL','OPENCL_VENDOR_PATH','http_proxy'):
+                if k in ('OPENCL_VENDOR_PATH','http_proxy'):
                     # pass through unchanged
                     env[k] = os.environ[k]
-                elif 'sroot' in k.lower() or 'iceprod' in k.lower():
+                elif ('sroot' in k.lower() or 'iceprod' in k.lower() or
+                      k in ('CUDA_VISIBLE_DEVICES','COMPUTE','GPU_DEVICE_ORDINAL')):
                     # don't pass these at all
                     pass
                 else:
@@ -940,6 +941,11 @@ class ForkModule:
                     ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
                     if ret:
                         env[k] = ':'.join(ret)
+            # handle GPU
+            if ('resources' in self.cfg.config['options'] and
+                'gpu' in self.cfg.config['options']['resources'] and
+                self.cfg.config['options']['resources']['gpu']):
+                env['CUDA_VISIBLE_DEVICES'] = ','.join(self.cfg.config['options']['resources']['gpu'])
             self.logger.warning('env = %r', env)
             kwargs['env'] = env
 
