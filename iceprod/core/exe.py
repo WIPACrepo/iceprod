@@ -57,6 +57,7 @@ from iceprod.core import util
 from iceprod.core import dataclasses
 from iceprod.core import util
 from iceprod.core import functions
+from iceprod.core.resources import Resources
 import iceprod.core.parser
 from iceprod.core.jsonUtil import json_encode,json_decode
 
@@ -941,11 +942,9 @@ class ForkModule:
                     ret = [x for x in os.environ[k].split(':') if x.strip() and (not x.startswith(prefix)) and not 'iceprod' in x.lower()]
                     if ret:
                         env[k] = ':'.join(ret)
-            # handle GPU
-            if ('resources' in self.cfg.config['options'] and
-                'gpu' in self.cfg.config['options']['resources'] and
-                self.cfg.config['options']['resources']['gpu']):
-                env['CUDA_VISIBLE_DEVICES'] = ','.join(self.cfg.config['options']['resources']['gpu'])
+            # handle resource environment
+            if 'resources' in self.cfg.config['options']:
+                Resources.set_env(self.cfg.config['options']['resources'], env)
             self.logger.warning('env = %r', env)
             kwargs['env'] = env
 

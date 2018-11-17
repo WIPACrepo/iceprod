@@ -492,21 +492,22 @@ class Resources:
         return ret
 
     @classmethod
-    def set_env(cls, resources):
+    def set_env(cls, resources, env=os.environ):
         """Set the environment for any resources that need it.
 
         Args:
             resources (dict): Resources to set
+            env (dict): Environ to update (default: os.environ)
         """
         if 'gpu' in resources and resources['gpu']:
             # strip all non-numbers:
             val = ','.join(set(resources['gpu']))
             val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
-            os.environ['CUDA_VISIBLE_DEVICES'] = val
-            os.environ['GPU_DEVICE_ORDINAL'] = val
+            env['CUDA_VISIBLE_DEVICES'] = val
+            env['GPU_DEVICE_ORDINAL'] = val
         else:
-            os.environ['CUDA_VISIBLE_DEVICES'] = '9999'
-            os.environ['GPU_DEVICE_ORDINAL'] = '9999'
+            env['CUDA_VISIBLE_DEVICES'] = '9999'
+            env['GPU_DEVICE_ORDINAL'] = '9999'
 
 def get_cpus():
     """Detect the number of available (allocated) cpus."""
