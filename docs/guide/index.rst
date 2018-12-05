@@ -20,5 +20,5 @@ Topics
     submission
     datasets
     tasks
-    jsonrpc
+    restapi
     manually
