@@ -77,8 +77,7 @@ class resources_test(unittest.TestCase):
         r2 = iceprod.core.resources.Resources(raw=raw, debug=True)
         for t in ('cpu','gpu','memory','disk'):
             self.assertEqual(r2.total[t],raw[t])
-        self.assertAlmostEqual(r2.total['time'],
-                               (time.time())/3600+raw['time'], delta=.2)
+        self.assertAlmostEqual(r2.total['time'], raw['time'], delta=1)
         self.assertNotIn('blah', r2.total)
 
     @unittest_reporter(name='Resources.claim()')
@@ -97,7 +96,7 @@ class resources_test(unittest.TestCase):
 
         for k in ('cpu','memory','disk'):
             self.assertEquals(r.available[k], r.total[k]-c[k])
-        self.assertEquals(r.available['time'], r.total['time'])
+        self.assertAlmostEqual(r.available['time'], r.total['time'], delta=0.01)
         self.assertEquals(r.available['gpu'], r.total['gpu'][1:])
 
         task_id2 = 'bar'
@@ -106,7 +105,7 @@ class resources_test(unittest.TestCase):
         self.assertEquals(c2['gpu'], r.total['gpu'][1:2])
         for k in ('cpu','memory','disk'):
             self.assertEquals(r.available[k], r.total[k]-c[k]-c2[k])
-        self.assertEquals(r.available['time'], r.total['time'])
+        self.assertAlmostEqual(r.available['time'], r.total['time'], delta=0.01)
         self.assertEquals(r.available['gpu'], r.total['gpu'][2:])
 
         with self.assertRaisesRegexp(Exception, "resources available"):
@@ -143,10 +142,10 @@ class resources_test(unittest.TestCase):
         reqs = {'cpu':1, 'gpu':1, 'memory':2.1, 'disk':3.4, 'time': 9}
         c = r.claim(task_id, reqs)
         r.release(task_id)
-        self.assertCountEqualRecursive(r.total, r.available)
+        self.assertCountEqualRecursive(r.total, r.available, skip=['time'])
 
         r.release('baz')
-        self.assertCountEqualRecursive(r.total, r.available)
+        self.assertCountEqualRecursive(r.total, r.available, skip=['time'])
 
     @unittest_reporter(name='Resources.register_process()')
     def test_030_Resources_register_process(self):
@@ -270,16 +269,17 @@ class resources_test(unittest.TestCase):
         self.assertEqual(ret, {})
 
         # test managable overusage
-        time.sleep(.1)
+        time.sleep(0.1)
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
         self.assertEqual(ret, {})
 
         # test overusage above total
-        time.sleep(.4)
+        time.sleep(0.4)
         ret = r.check_claims(force=True)
         logger.info('check_claims ret: %r',ret)
-        logger.info('%r',r.available)
+        logger.info('avail: %r',r.available)
+        logger.info('used: %r',r.used)
         self.assertIn(task_id, ret)
 
     @unittest_reporter(name='Resources.check_claims() - memory overuse')

@@ -123,13 +123,14 @@ def listmodules(package_name=''):
 # standardize unittest
 if sys.version_info[0] == 2:
     unittest.TestCase.assertCountEqual = unittest.TestCase.assertItemsEqual
-def assertCountEqualRecursive(self, a, b):
+def assertCountEqualRecursive(self, a, b, skip=[]):
     self.assertEqual(type(a), type(b))
     if isinstance(a, dict):
-        if set(a).symmetric_difference(b):
+        if set(a).symmetric_difference(b)-set(skip):
             raise AssertionError('different keys')
         for k in a:
-            self.assertCountEqualRecursive(a[k], b[k])
+            if k not in skip:
+                self.assertCountEqualRecursive(a[k], b[k])
     elif isinstance(a, Iterable):
         self.assertCountEqual(a, b)
     else:

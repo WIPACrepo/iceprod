@@ -99,7 +99,7 @@ class Resources:
             }
 
         #: start time for resource tracking
-        self.start_time = time.time()/3600
+        self.start_time = time.time()
 
         #: total resources controlled by the pilot
         self.total = {
@@ -127,7 +127,7 @@ class Resources:
                     elif isinstance(self.defaults[r], list):
                         v = deepcopy(v)
                     if r == 'time':
-                        v = time.time()/3600+v-0.1
+                        v -= 0.1
                     logging.info('setting %s to %r', r, v)
                     self.total[r] = v
         logging.warning('total resources: %r', self.total)
@@ -149,11 +149,13 @@ class Resources:
         Returns:
             dict: resources
         """
+        # update available time
+        self.available['time'] = self.total['time'] - (time.time()-self.start_time)/3600
+
         ret = deepcopy(self.available)
         for r in ret:
             if isinstance(ret[r], list):
                 ret[r] = len(ret[r])
-        ret['time'] -= time.time()/3600
         return ret
 
     def get_claimed(self):
@@ -179,8 +181,6 @@ class Resources:
                     ret[r] += len(claim_resources[r])
                 else:
                     ret[r] += claim_resources[r]
-        if ret['time'] > 1:
-            ret['time'] -= time.time()/3600
         return ret
 
     def claim(self, task_id, resources=None):
@@ -197,13 +197,14 @@ class Resources:
         Returns:
             dict: claimed resources
         """
-        now = time.time()/3600
+        # update available time
+        self.available['time'] = self.total['time'] - (time.time()-self.start_time)/3600
         claim = {
             'cpu':0,
             'gpu':[],
             'memory':0.,
             'disk':0.,
-            'time':self.total['time'],
+            'time':self.available['time'],
         }
         if not resources:
             logging.info('claiming all avaialble resources for %s', task_id)
@@ -218,9 +219,6 @@ class Resources:
                     val = int(val)
                 elif isinstance(self.defaults[r], float):
                     val = float(val)
-
-                if r == 'time':
-                    val = now + val
 
                 if isinstance(self.available[r], (int,float)):
                     if val > self.available[r]:
@@ -252,7 +250,6 @@ class Resources:
         }
 
         # now send back to user
-        claim['time'] -= now
         logging.info('granted %r', claim)
         return claim
 
@@ -307,6 +304,8 @@ class Resources:
         Returns:
             dict: dict of task_ids:reasons that go over usage
         """
+        # update available time
+        self.available['time'] = self.total['time'] - (time.time()-self.start_time)/3600
         ret = {}
         for task_id in self.claimed:
             claim = self.claimed[task_id]
@@ -320,7 +319,6 @@ class Resources:
                 logging.warning('error getting usage for %r', task_id,
                             exc_info=True)
                 continue
-            usage_time = usage['time'] - self.history[task_id]['create_time']
             for r in usage:
                 if r == 'gpu':
                     claim_r = 100*len(claim['resources'][r])
@@ -334,20 +332,17 @@ class Resources:
                     limit = self.overusage_limits[r]
                     if overusage_percent < limit['ignore']:
                         logging.info('ignoring overusage of %s for %s', r, task_id)
-                    elif (r == 'time' and usage[r] < avail_r):
+                    elif (r == 'time' and avail_r > 0):
                         logging.info('managable overusage of time for %s', task_id)
                     elif (r != 'time' and overusage < avail_r
                           and overusage_percent < limit['allowed']):
                         logging.info('managable overusage of %s for %s', r, task_id)
                     else:
-                        ret[task_id] = 'Resource overusage for {}: {}'.format(r,
-                                usage_time if r == 'time' else usage[r])
+                        ret[task_id] = 'Resource overusage for {}: {}'.format(r, usage[r])
                         break
             for r in usage:
                 v = usage[r]
                 u = self.used[task_id][r]
-                if r == 'time':
-                    v = usage_time
                 u['avg'] = (v + u['cnt'] * u['avg'])/(u['cnt']+1)
                 u['cnt'] += 1
                 if v > u['max']:
@@ -395,7 +390,7 @@ class Resources:
                 'disk_last_lookup': now-100000,
                 'gpu': 0,
                 'gpu_last_lookup': now-100000,
-                'create_time':process.create_time()/3600,
+                'create_time':process.create_time(),
                 'time': 0,
             }
         task = self.history[task_id]
@@ -439,7 +434,7 @@ class Resources:
             'memory': mem/1000000000.0 if mem else None,
             'disk': du(tmpdir)/1000000000.0 if lookups['disk'] else None,
             'gpu':  gpu/100.0 if lookups['gpu'] else None,
-            'time': now/3600,
+            'time': (now-task['create_time'])/3600,
         }
         logging.debug('used_resources: %r', used_resources)
 
