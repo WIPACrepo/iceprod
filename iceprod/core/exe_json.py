@@ -221,6 +221,8 @@ class ServerComms:
         data = {}
         if t:
             data['time_used'] =  t
+        if resources:
+            data['resources'] = resources
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
     async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):

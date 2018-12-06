@@ -581,12 +581,13 @@ class TasksActionsErrorHandler(BaseHandler):
 
         Body args (json):
             time_used (int): (optional) time used to run task, in seconds
+            resources (dict): (optional) resources used by task
 
         Returns:
             dict: {}  empty dict
         """
         filter_query = {'task_id': task_id, 'status': {'$ne': 'complete'}}
-        update_query = {
+        update_query = defaultdict(dict,{
             '$set': {
                 'status': 'reset',
                 'status_changed': nowstr(),
@@ -594,12 +595,18 @@ class TasksActionsErrorHandler(BaseHandler):
             '$inc': {
                 'failures': 1,
             },
-        }
+        })
         if self.request.body:
             data = json.loads(self.request.body)
             if 'time_used' in data:
                 update_query['$inc']['walltime_err_n'] = 1
                 update_query['$inc']['walltime_err'] = data['time_used']/3600.
+            elif 'resources' in data and 'time' in data['resources']:
+                update_query['$inc']['walltime_err_n'] = 1
+                update_query['$inc']['walltime_err'] = data['resources']['time']
+            for k in ('memory','disk','time'):
+                if 'resources' in data and k in data['resources']:
+                    update_query['$max']['requirements.'+k] = data['resources'][k]
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})

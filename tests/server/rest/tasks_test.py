@@ -658,7 +658,7 @@ class rest_tasks_test(AsyncTestCase):
             'task_index': 0,
             'name': 'bar',
             'depends': [],
-            'requirements': {},
+            'requirements': {'memory':5.6, 'gpu':1},
         }
         r = yield client.fetch('http://localhost:%d/tasks'%self.port,
                 method='POST', body=json.dumps(data),
@@ -703,6 +703,30 @@ class rest_tasks_test(AsyncTestCase):
         self.assertEqual(ret['status'], 'reset')
         self.assertEqual(ret['walltime_err_n'], 1)
         self.assertEqual(ret['walltime_err'], 2.0)
+
+        # now try with resources
+        data2 = {'status':'queued'}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/status'%(self.port,data['dataset_id'],task_id),
+                method='PUT', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/tasks/%s/task_actions/reset'%(self.port,task_id),
+                method='POST', body=json.dumps({'resources':{'time':2.5, 'memory':3.5, 'disk': 20.3, 'gpu': 23}}),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret['status'], 'reset')
+        self.assertEqual(ret['walltime_err_n'], 2)
+        self.assertEqual(ret['walltime_err'], 4.5)
+        self.assertEqual(ret['requirements']['memory'], data['requirements']['memory'])
+        self.assertEqual(ret['requirements']['time'], 2.5)
+        self.assertEqual(ret['requirements']['disk'], 20.3)
+        self.assertNotEqual(ret['requirements']['gpu'], 23)
 
         # now try with a bad status
         data2 = {'status':'complete'}
