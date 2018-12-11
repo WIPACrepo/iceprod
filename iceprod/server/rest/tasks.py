@@ -559,6 +559,7 @@ class TasksActionsProcessingHandler(BaseHandler):
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 {'$set':{'status':'processing'}},
                 projection={'_id':False},
+                sort=[('status_changed',1)],
                 return_document=pymongo.ReturnDocument.AFTER)
         if not ret:
             logger.info('filter_query: %r', filter_query)
