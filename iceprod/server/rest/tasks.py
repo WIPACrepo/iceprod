@@ -543,6 +543,7 @@ class TasksActionsProcessingHandler(BaseHandler):
             dict: <task dict>
         """
         filter_query = {'status':'queued'}
+        sort_by = [('status_changed',1)]
         if self.request.body:
             data = json.loads(self.request.body)
             reqs = data.get('requirements', {})
@@ -552,14 +553,20 @@ class TasksActionsProcessingHandler(BaseHandler):
                         {'requirements.os': {'$exists': False}},
                         {'requirements.os': reqs[k]},
                     ]
+                elif k == 'gpu' and reqs[k] > 0:
+                    filter_query['requirements.'+k] = {'$lte': reqs[k], '$gte': 1}
                 elif isinstance(reqs[k], (int,float)):
                     filter_query['requirements.'+k] = {'$lte': reqs[k]}
                 else:
                     filter_query['requirements.'+k] = reqs[k]
+            if 'gpu' in reqs and reqs['gpu'] > 0:
+                sort_by.append(('requirements.gpu',-1))
+            elif 'memory' in reqs:
+                sort_by.append(('requirements.memory',-1))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 {'$set':{'status':'processing'}},
                 projection={'_id':False},
-                sort=[('status_changed',1)],
+                sort=sort_by,
                 return_document=pymongo.ReturnDocument.AFTER)
         if not ret:
             logger.info('filter_query: %r', filter_query)
