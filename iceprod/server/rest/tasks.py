@@ -502,9 +502,6 @@ class TasksActionsQueueHandler(BaseHandler):
                 {'$addFields':{'weight': weights}},
                 {'$sort': {'weight': -1}},
             ])
-        steps.extend([
-            {'$limit': num_tasks*10},
-        ])
 
         cursor = self.db.tasks.aggregate(steps, allowDiskUse=True)
         ret = {}
