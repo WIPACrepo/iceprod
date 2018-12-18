@@ -612,6 +612,25 @@ class TasksActionsErrorHandler(BaseHandler):
             for k in ('memory','disk','time'):
                 if 'resources' in data and k in data['resources']:
                     update_query['$max']['requirements.'+k] = data['resources'][k]
+            if self.module and self.module.statsd and 'reason' in data and data['reason']:
+                reason = 'other'
+                reasons = [
+                    ('Exception: failed to download', 'download_failure'),
+                    ('Exception: failed to upload', 'upload_failure'),
+                    ('Exception: module failed', 'module_failure'),
+                    ('Resource overusage for cpu', 'cpu_overuse'),
+                    ('Resource overusage for gpu', 'gpu_overuse'),
+                    ('Resource overusage for memory', 'memory_overuse'),
+                    ('Resource overusage for disk', 'disk_overuse'),
+                    ('Resource overusage for time', 'time_overuse'),
+                    ('pilot SIGTERM', 'sigterm'),
+                    ('killed', 'killed'),
+                ]
+                for text,r in reasons:
+                    if text in data['reason']:
+                        reason = r
+                        break
+                self.module.statsd.incr('task_reset_reason.{}'.format(reason))
         ret = await self.db.tasks.find_one_and_update(filter_query,
                 update_query,
                 projection={'_id':False})
