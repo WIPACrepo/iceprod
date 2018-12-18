@@ -223,6 +223,8 @@ class ServerComms:
             data['time_used'] =  t
         if resources:
             data['resources'] = resources
+        if reason:
+            data['reason'] = reason
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
     async def task_kill(self, task_id, dataset_id=None, resources=None, reason=None, message=None):
@@ -266,6 +268,12 @@ class ServerComms:
         data = {}
         if resources and 'time' in resources and resources['time']:
             data['time_used'] =  resources['time']*3600.
+        if resources:
+            data['resources'] = resources
+        if reason:
+            data['reason'] = reason
+        else:
+            data['data'] = 'task killed'
         await self.rest.request('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}
@@ -371,6 +379,12 @@ class ServerComms:
         data = {}
         if resources and 'time' in resources and resources['time']:
             data['time_used'] =  resources['time']*3600.
+        if resources:
+            data['resources'] = resources
+        if reason:
+            data['reason'] = reason
+        else:
+            data['data'] = 'task killed'
         self.rest.request_seq('POST', '/tasks/{}/task_actions/reset'.format(task_id), data)
 
         data = {'name': 'stdlog', 'task_id': task_id}

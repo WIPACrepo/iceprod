@@ -354,8 +354,8 @@ async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=
                     raise Exception('upload config is not a valid type')
                 errfile = constants['stderr']
                 outfile = constants['stdout']
-                if 'subprocess_dir' in cfg.config['options'] and cfg.config['options']['subprocess_dir']:
-                    subdir = cfg.config['options']['subprocess_dir']
+                if 'subprocess_dir' in config['options'] and config['options']['subprocess_dir']:
+                    subdir = config['options']['subprocess_dir']
                     errfile = os.path.join(subdir, errfile)
                     outfile = os.path.join(subdir, outfile)
                 for up in upload:
