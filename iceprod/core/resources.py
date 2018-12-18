@@ -629,13 +629,19 @@ def get_time():
         try:
             for line in open('.machine.ad'):
                 line = line.strip()
-                if line and line.split('=')[0].strip().lower() == 'timetolive':
+                if (not ret) and line and line.split('=')[0].strip().lower() == 'timetolive':
                     ret = float(line.split('=')[1])/3600
-                    logging.info('got time from machine ad: %r',ret)
+                    logging.info('got timetolive from machine ad: %r',ret)
+                elif line and line.split('=')[0].strip().lower() == 'glidein_max_walltime':
+                    ret = float(line.split('=')[1])/3600
+                    logging.info('got glidein_max_walltime from machine ad: %r',ret)
+                elif line and line.split('=')[0].strip().lower() == 'pyglidein_time_to_live':
+                    ret = float(line.split('=')[1])/3600
+                    logging.info('got pyglidein_time_to_live from machine ad: %r',ret)
                     break
         except Exception:
             pass
-    if (not ret)and 'NUM_TIME' in os.environ:
+    if (not ret) and 'NUM_TIME' in os.environ:
         try:
             ret = float(os.environ['NUM_TIME'])
             logging.info('got time from NUM_TIME: %r',ret)
