@@ -277,10 +277,10 @@ class ExpParser:
         :returns: expanded string
         """
         if depth < 1:
-            logging.warning("recursion depth of parse exceeded")
+            logger.warning("recursion depth of parse exceeded")
             return input
 
-        logging.warning("parse: %s",input)
+        logger.info("parse: %s",input)
         if not isinstance(input,dataclasses.String) or not input:
             return input
 
@@ -368,7 +368,7 @@ class ExpParser:
             break
 
         # return parsed output
-        logger.warning('parser out: %r',output)
+        logger.info('parser out: %r',output)
         return output
 
     def process_phrase(self,keyword,param=None):
