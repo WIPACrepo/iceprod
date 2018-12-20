@@ -177,8 +177,7 @@ class pilot_test(TestBase):
             runner.called = True
         runner.called = False
         async with pilot.Pilot(cfg, runner, pilot_id='a', rpc=rpc, **self.pilot_args) as p:
-            with self.assertRaises(Exception):
-                await p.run()
+            await p.run()
         self.assertTrue(runner.called)
         self.assertGreaterEqual(len(update_args), 3)
         for call in update_args:

@@ -72,7 +72,6 @@ class Pilot:
         self.debug = debug
         self.run_timeout = run_timeout
         self.backoff_delay = backoff_delay
-        self.errors = 10
         self.resource_interval = 1.0 # seconds between resouce measurements
 
         self.running = True
@@ -230,8 +229,10 @@ class Pilot:
 
     async def run(self):
         """Run the pilot"""
-        self.errors = max_errors = int(10**math.log10(10+self.resources.total['cpu']))
-        logger.info('max_errors: %d', max_errors)
+        download_errors = max_download_errors = 5
+        iceprod_errors = max_iceprod_errors = 10
+        task_errors = max_task_errors = int(10**math.log10(10+self.resources.total['cpu']))
+        logger.info('max_errors: %d, %d', max_download_errors, max_task_errors)
         tasks_running = 0
         async def backoff():
             """Backoff for rate limiting"""
@@ -250,12 +251,12 @@ class Pilot:
                             self.config['options']['gridspec'],
                             resources=self.resources.get_available())
                 except Exception:
-                    self.errors -= 1
-                    if self.errors < 1:
+                    download_errors -= 1
+                    if download_errors < 1:
                         self.running = False
                         logger.warning('errors over limit, draining')
                     logger.error('cannot download task. current error count is %d',
-                                 max_errors-self.errors, exc_info=True)
+                                 max_download_errors-download_errors, exc_info=True)
                     await backoff()
                     continue
                 logger.info('task configs: %r', task_configs)
@@ -272,8 +273,8 @@ class Pilot:
                         try:
                             task_id = task_config['options']['task_id']
                         except Exception:
-                            self.errors -= 1
-                            if self.errors < 1:
+                            iceprod_errors -= 1
+                            if iceprod_errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.error('error getting task_id from config')
@@ -284,8 +285,8 @@ class Pilot:
                             task_resources = self.resources.claim(task_id, task_config['options']['resources'])
                             task_config['options']['resources'] = task_resources
                         except Exception:
-                            self.errors -= 1
-                            if self.errors < 1:
+                            iceprod_errors -= 1
+                            if iceprod_errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error claiming resources %s', task_id,
@@ -306,8 +307,8 @@ class Pilot:
                             task['iter'] = f
                             self.tasks[task_id] = task
                         except Exception:
-                            self.errors -= 1
-                            if self.errors < 1:
+                            iceprod_errors -= 1
+                            if iceprod_errors < 1:
                                 self.running = False
                                 logger.warning('errors over limit, draining')
                             logger.warning('error creating task %s', task_id,
@@ -357,7 +358,7 @@ class Pilot:
                         if proc.returncode != 0:
                             logger.info('task %s exited with bad code: %r',
                                         task_id, proc.returncode)
-                            self.errors -= 1
+                            task_errors -= 1
                             clean = True
                         else:
                             try:
@@ -389,7 +390,7 @@ class Pilot:
                             clean = True
                     if clean:
                         self.clean_task(task_id)
-                if self.errors < 1:
+                if task_errors < 1:
                     self.running = False
                     logger.warning('errors over limit, draining')
 
@@ -413,7 +414,7 @@ class Pilot:
                               resources_available=self.resources.get_available(),
                               resources_claimed=self.resources.get_claimed())
 
-        if self.errors < 1:
+        if task_errors < 1:
             logger.critical('too many errors when running tasks')
             raise RuntimeError('too many errors')
         else:
