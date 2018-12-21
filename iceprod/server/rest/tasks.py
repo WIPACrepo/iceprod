@@ -60,6 +60,7 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>\w+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
     ]
 
@@ -766,6 +767,56 @@ class DatasetTaskBulkStatusHandler(BaseHandler):
             update_data['failures'] = 0
 
         ret = await self.db.tasks.update_many(query, {'$set':update_data})
+        if (not ret) or ret.modified_count < 1:
+            self.send_error(404, reason="Tasks not found")
+        else:
+            self.write({})
+            self.finish()
+
+class DatasetTaskBulkRequirementsHandler(BaseHandler):
+    """
+    Update the requirements of multiple tasks at once.
+    """
+    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
+    async def patch(self, dataset_id, name):
+        """
+        Set multiple tasks' requirements. Sets for all tasks in a dataset
+        with the specified name.
+
+        Body should have {<resource>: <requirement>}.
+
+        Args:
+            dataset_id (str): dataset id
+            name (str): the task name
+
+        Returns:
+            dict: empty dict
+        """
+        data = json.loads(self.request.body)
+        if (not data):
+            raise tornado.web.HTTPError(400, reason='Missing body')
+        elif set(data) - set(Resources.defaults):
+            raise tornado.web.HTTPError(400, reason='Invalid resource types')
+
+        reqs = {}
+        for key in set(Resources.defaults).intersection(data):
+            val = data[key]
+            if isinstance(Resources.defaults[key], (int, list)):
+                if not isinstance(val, int):
+                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
+            elif isinstance(Resources.defaults[key], float):
+                if not isinstance(val, (int,float)):
+                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be float'.format(key))
+            else:
+                val = str(val)
+            reqs['requirements.'+key] = val
+
+        query = {
+            'dataset_id': dataset_id,
+            'name': name,
+        }
+        ret = await self.db.tasks.update_many(query,
+                {'$set':reqs})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Tasks not found")
         else:
