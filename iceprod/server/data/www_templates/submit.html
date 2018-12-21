@@ -162,7 +162,7 @@ async function update() {
     for (var i=0;i<submit_data['tasks'].length;i++){
         name = submit_data['tasks'][i]['name'];
         reqs = submit_data['tasks'][i]['requirements']
-        response = await fetch_json('PUT', '/datasets/' + dataset_id + '/task_actions/bulk_requirements/' + name,
+        response = await fetch_json('PATCH', '/datasets/' + dataset_id + '/task_actions/bulk_requirements/' + name,
             reqs, passkey
         );
         if ('error' in response) {
