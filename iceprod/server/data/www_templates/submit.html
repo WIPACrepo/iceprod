@@ -77,6 +77,7 @@
 <script type="text/javascript" src="/static/jsonlint.js"></script>-->
 <script type="text/javascript">
 var passkey = '{{ passkey }}';
+var orig_config = {{ config }};
 var edit = {{ json_encode(edit) }};
 var dataset_id = '{{ dataset_id }}';
 function parse_json(config){
@@ -162,6 +163,8 @@ async function update() {
     for (var i=0;i<submit_data['tasks'].length;i++){
         name = submit_data['tasks'][i]['name'];
         reqs = submit_data['tasks'][i]['requirements']
+        if (name == orig_config['tasks'][i]['name'] && reqs == orig_config['tasks'][i]['requirements'])
+            continue;
         response = await fetch_json('PATCH', '/datasets/' + dataset_id + '/task_actions/bulk_requirements/' + name,
             reqs, passkey
         );
