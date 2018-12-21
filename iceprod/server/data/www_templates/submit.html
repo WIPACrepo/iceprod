@@ -159,12 +159,22 @@ async function update() {
         $('#error').text('error uploading config: '+response['error']);
         return;
     }
-    var name, reqs;
+    var name, reqs, orig_reqs, r, match;
     for (var i=0;i<submit_data['tasks'].length;i++){
         name = submit_data['tasks'][i]['name'];
         reqs = submit_data['tasks'][i]['requirements']
-        if (name == orig_config['tasks'][i]['name'] && reqs == orig_config['tasks'][i]['requirements'])
-            continue;
+        if (name == orig_config['tasks'][i]['name']) {
+            orig_reqs = orig_config['tasks'][i]['requirements'];
+            match = true;
+            for(r in reqs){
+                if ((!(r in orig_reqs)) || reqs[r] != orig_reqs[r]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+                continue;
+        }
         response = await fetch_json('PATCH', '/datasets/' + dataset_id + '/task_actions/bulk_requirements/' + name,
             reqs, passkey
         );
