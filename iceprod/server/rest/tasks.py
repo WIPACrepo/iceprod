@@ -776,7 +776,7 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
             'name': name,
         }
         ret = await self.db.tasks.update_many(query,
-                {'$set':reqs})
+                {'$max':reqs})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Tasks not found")
         else:
