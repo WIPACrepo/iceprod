@@ -55,7 +55,6 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)/tasks', DatasetMultiTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)', DatasetTasksHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/status', DatasetTasksStatusHandler, handler_cfg),
-        (r'/datasets/(?P<dataset_id>\w+)/tasks/(?P<task_id>\w+)/requirements', DatasetTasksRequirementsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_summaries/status', DatasetTaskSummaryStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/status', DatasetTaskCountsStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_counts/name_status', DatasetTaskCountsNameStatusHandler, handler_cfg),
@@ -326,51 +325,6 @@ class DatasetTasksStatusHandler(BaseHandler):
 
         ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
                 {'$set':update_data})
-        if (not ret) or ret.modified_count < 1:
-            self.send_error(404, reason="Task not found")
-        else:
-            self.write({})
-            self.finish()
-
-class DatasetTasksRequirementsHandler(BaseHandler):
-    """
-    Handle single task requests for updating requirements.
-    """
-    @authorization(roles=['admin','client','system'], attrs=['dataset_id:write'])
-    async def patch(self, dataset_id, task_id):
-        """
-        Update a task's requirements.
-
-        Body should have {<resource>: <new_requirement>}
-
-        Args:
-            dataset_id (str): dataset id
-            task_id (str): the task id
-
-        Returns:
-            dict: empty dict
-        """
-        data = json.loads(self.request.body)
-        if (not data):
-            raise tornado.web.HTTPError(400, reason='Missing body')
-        elif set(data) - set(Resources.defaults):
-            raise tornado.web.HTTPError(400, reason='Invalid resource types')
-
-        reqs = {}
-        for key in set(Resources.defaults).intersection(data):
-            val = data[key]
-            if isinstance(Resources.defaults[key], (int, list)):
-                if not isinstance(val, int):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
-            elif isinstance(Resources.defaults[key], float):
-                if not isinstance(val, (int,float)):
-                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be float'.format(key))
-            else:
-                val = str(val)
-            reqs['requirements.'+key] = val
-
-        ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
-                {'$set':reqs})
         if (not ret) or ret.modified_count < 1:
             self.send_error(404, reason="Task not found")
         else:
@@ -792,16 +746,22 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
         Returns:
             dict: empty dict
         """
+        valid_req_keys = set(Resources.defaults)
+        valid_req_keys.add('os')
+        
         data = json.loads(self.request.body)
         if (not data):
             raise tornado.web.HTTPError(400, reason='Missing body')
-        elif set(data) - set(Resources.defaults):
+        elif set(data) - valid_req_keys:
             raise tornado.web.HTTPError(400, reason='Invalid resource types')
 
         reqs = {}
-        for key in set(Resources.defaults).intersection(data):
+        for key in valid_req_keys.intersection(data):
             val = data[key]
-            if isinstance(Resources.defaults[key], (int, list)):
+            if key == 'os':
+                if not isinstance(val, list):
+                    raise tornado.web.HTTPError(400, reason='Bad type for {}, should be list'.format(key))
+            elif isinstance(Resources.defaults[key], (int, list)):
                 if not isinstance(val, int):
                     raise tornado.web.HTTPError(400, reason='Bad type for {}, should be int'.format(key))
             elif isinstance(Resources.defaults[key], float):

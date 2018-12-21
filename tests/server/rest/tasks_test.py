@@ -338,72 +338,6 @@ class rest_tasks_test(AsyncTestCase):
         self.assertIn('status', ret)
         self.assertEqual(ret['status'], 'failed')
 
-    @unittest_reporter(name='REST PATCH  /datasets/<dataset_id>/tasks/<task_id>/requirements')
-    def test_230_tasks(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
-        client = AsyncHTTPClient()
-        data = {
-            'dataset_id': 'foo',
-            'job_id': 'foo1',
-            'task_index': 0,
-            'name': 'bar',
-            'depends': [],
-            'requirements': {},
-        }
-        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
-                method='POST', body=json.dumps(data),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 201)
-        ret = json.loads(r.body)
-        task_id = ret['result']
-
-        data2 = {'cpu':2}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/requirements'%(self.port,data['dataset_id'],task_id),
-                method='PATCH', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('requirements', ret)
-        self.assertIn('cpu', ret['requirements'])
-        self.assertEqual(ret['requirements']['cpu'], 2)
-
-        data2 = {'gpu':4}
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/requirements'%(self.port,data['dataset_id'],task_id),
-                method='PATCH', body=json.dumps(data2),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-
-        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id),
-                headers={'Authorization': b'bearer '+self.token})
-        self.assertEqual(r.code, 200)
-        ret = json.loads(r.body)
-        self.assertIn('requirements', ret)
-        self.assertIn('gpu', ret['requirements'])
-        self.assertEqual(ret['requirements']['gpu'], 4)
-
-        data2 = {'blah':4}
-        with self.assertRaises(Exception):
-            r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/requirements'%(self.port,data['dataset_id'],task_id),
-                    method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
-
-        data2 = {'memory':'ten'}
-        with self.assertRaises(Exception):
-            r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/requirements'%(self.port,data['dataset_id'],task_id),
-                    method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
-
-        data2 = {'gpu':3.5}
-        with self.assertRaises(Exception):
-            r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s/requirements'%(self.port,data['dataset_id'],task_id),
-                    method='PATCH', body=json.dumps(data2),
-                    headers={'Authorization': b'bearer '+self.token})
-
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/task_summaries/status')
     def test_300_tasks(self):
         iceprod.server.tornado.startup(self.app, port=self.port)
@@ -1024,6 +958,20 @@ class rest_tasks_test(AsyncTestCase):
         self.assertIn('requirements', ret)
         self.assertIn('gpu', ret['requirements'])
         self.assertEqual(ret['requirements']['gpu'], 4)
+
+        data2 = {'os':['foo','bar']}
+        r = yield client.fetch('http://localhost:%d/datasets/%s/task_actions/bulk_requirements/%s'%(self.port,data['dataset_id'],'baz'),
+                method='PATCH', body=json.dumps(data2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/tasks/%s'%(self.port,data['dataset_id'],task_id2),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('requirements', ret)
+        self.assertIn('os', ret['requirements'])
+        self.assertEqual(ret['requirements']['os'], ['foo','bar'])
 
         data2 = {'blah':4}
         with self.assertRaises(Exception):
