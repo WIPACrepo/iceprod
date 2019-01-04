@@ -103,7 +103,7 @@ async def run(rest_client, cfg, executor, debug=False):
     # run again after 60 minute delay
     stop_time = time.time()
     delay = max(60*60 - (stop_time-start_time), 60*10)
-    IOLoop.current().call_later(delay, run, rest_client)
+    IOLoop.current().call_later(delay, run, rest_client, cfg, executor, debug)
 
 def get_date(strdate):
     if '.' in strdate:
