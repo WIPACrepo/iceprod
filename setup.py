@@ -58,6 +58,7 @@ if setuptools is not None:
                         'cachetools>=2.0.0', 'sphinx>=1.4',
                         'coverage>=4.4.2', 'flexmock', 'requests-mock','boto3',
                         'pymongo','PyJWT','motor','ldap3',
+                        'rest_tools @ git+http://github.com/WIPACrepo/rest-tools',
                        ]
     kwargs['install_requires'] = install_requires
     kwargs['zip_safe'] = False

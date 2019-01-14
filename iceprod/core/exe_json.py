@@ -12,13 +12,14 @@ from datetime import datetime
 
 import logging
 
+from rest_tools.client import RestClient
+
 from iceprod.core import constants
 from iceprod.core import functions
 from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
 from .serialization import dict_to_dataclasses
 from .jsonUtil import json_compressor,json_decode
-from .rest_client import Client
 
 
 class ServerComms:
@@ -34,7 +35,7 @@ class ServerComms:
     def __init__(self, url, passkey, config, **kwargs):
         self.url = url
         self.cfg = config
-        self.rest = Client(address=url,auth_key=passkey,**kwargs)
+        self.rest = RestClient(address=url,token=passkey,**kwargs)
 
     async def download_task(self, gridspec, resources={}):
         """

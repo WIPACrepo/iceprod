@@ -54,7 +54,7 @@ class exe_json_test(AsyncTestCase):
         self.config = iceprod.core.exe.Config()
         self.config.config['options']['offline'] = True
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     def test_01_ServerComms(self, Client):
         """Test ServerComms"""
@@ -65,7 +65,7 @@ class exe_json_test(AsyncTestCase):
         iceprod.core.exe_json.ServerComms(address, passkey, config=self.config)
         self.assertTrue(Client.called)
         logger.info('%r',Client.call_args[1])
-        self.assertEqual({'address':address,'auth_key':passkey}, Client.call_args[1])
+        self.assertEqual({'address':address,'token':passkey}, Client.call_args[1])
 
         Client.reset_mock()
         kwargs = {'ssl_cert':'cert','ssl_key':'key','cacert':'ca'}
@@ -76,7 +76,7 @@ class exe_json_test(AsyncTestCase):
         expected.update(kwargs)
         self.assertTrue(cmp_dict(expected, Client.call_args[1]))
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_10_download_task(self, Client):
         """Test download_task"""
@@ -101,7 +101,7 @@ class exe_json_test(AsyncTestCase):
         self.assertIn('jobs_submitted', ret['options'])
         self.assertEqual(ret['options']['jobs_submitted'], 10)
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_15_processing(self, Client):
         """Test processing"""
@@ -120,7 +120,7 @@ class exe_json_test(AsyncTestCase):
         self.assertTrue({'status'}.issubset(
                         c.request.call_args[0][-1]))
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_20_finish_task(self, Client):
         """Test finish_task"""
@@ -139,7 +139,7 @@ class exe_json_test(AsyncTestCase):
         logger.info(c.request.call_args_list[0][0])
         self.assertIn('task_stats', c.request.call_args_list[0][0][-1])
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_30_still_running(self, Client):
         """Test still_running"""
@@ -164,7 +164,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             await rpc.still_running('task')
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_40_task_error(self, Client):
         """Test task_error"""
@@ -198,7 +198,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             await rpc.task_error('task')
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_41_task_kill(self, Client):
         """Test task_kill"""
@@ -242,7 +242,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             await rpc.task_kill(task_id)
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_42_task_kill_sync(self, Client):
         """Test task_kill"""
@@ -282,7 +282,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             rpc.task_kill_sync(task_id)
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_50_uploadLogging(self, Client):
         """Test uploading logfiles"""
@@ -361,7 +361,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             await rpc.uploadOut()
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     async def test_60_update_pilot(self, Client):
         """Test update_pilot"""
@@ -384,7 +384,7 @@ class exe_json_test(AsyncTestCase):
         with self.assertRaises(Exception):
             await rpc.update_pilot(pilot_id, **args)
 
-    @patch('iceprod.core.exe_json.Client')
+    @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
     def test_61_update_pilot_sync(self, Client):
         """Test update_pilot"""

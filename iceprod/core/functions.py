@@ -34,11 +34,11 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.multipart.encoder import MultipartEncoder
+from rest_tools.client import Session, AsyncSession
 
 from iceprod.core import util
 from iceprod.core.gridftp import GridFTP
-from iceprod.core.jsonUtil import json_encode,json_decode
-from iceprod.core.session import Session, AsyncSession
+from iceprod.core.jsonUtil import json_encode, json_decode
 
 
 ### Compression Functions ###
