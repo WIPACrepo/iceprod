@@ -25,9 +25,9 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-import iceprod.server.tornado
-import iceprod.server.rest.config
-from iceprod.server.auth import Auth
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 
 class rest_grids_test(AsyncTestCase):
     def setUp(self):
@@ -61,15 +61,17 @@ class rest_grids_test(AsyncTestCase):
                     }
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
 
     @unittest_reporter(name='REST GET    /grids')
     def test_100_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/grids'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
@@ -79,8 +81,6 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /grids')
     def test_105_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
@@ -105,8 +105,6 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /grids/<grid_id>')
     def test_110_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',
@@ -130,8 +128,6 @@ class rest_grids_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PATCH  /grids/<grid_id>')
     def test_120_grids(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'host': 'foo.bar.baz',

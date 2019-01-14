@@ -12,9 +12,10 @@ import unittest
 import random
 from unittest.mock import patch, MagicMock
 
+from rest_tools.client import RestClient
+
 import iceprod.server
 from iceprod.server.modules.rest_api import rest_api
-from iceprod.core import rest_client
 
 from tests.util import unittest_reporter, glob_tests, services_mock
 from ..module_test import module_test
@@ -38,7 +39,7 @@ class rest_api_test(module_test):
             self.modules = services_mock()
             
             self.mod = rest_api(self.cfg, self.io_loop, self.executor, self.modules)
-            self.mod.rest_client = MagicMock(spec=rest_client.Client)
+            self.mod.rest_client = MagicMock(spec=RestClient)
         except:
             logger.warn('error setting up modules_schedule', exc_info=True)
             raise

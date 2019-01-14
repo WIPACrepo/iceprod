@@ -15,7 +15,7 @@ try:
 except ImportError:
     boto3 = None
 
-from iceprod.core import rest_client
+from rest_tools.client import RestClient
 
 logger = logging.getLogger('module')
 
@@ -129,8 +129,8 @@ class module(object):
         if ('rest_api' in self.cfg and 'url' in self.cfg['rest_api']
             and 'auth_key' in self.cfg['rest_api']):
             try:
-                self.rest_client = rest_client.Client(self.cfg['rest_api']['url'],
-                                                      self.cfg['rest_api']['auth_key'])
+                self.rest_client = RestClient(self.cfg['rest_api']['url'],
+                                              self.cfg['rest_api']['auth_key'])
             except Exception:
                 logger.warning('failed to connect to rest api: %r',
                                self.cfg['rest_api'], exc_info=True)

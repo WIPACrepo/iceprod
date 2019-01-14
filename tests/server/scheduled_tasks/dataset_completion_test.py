@@ -14,10 +14,10 @@ from functools import partial
 from unittest.mock import patch, MagicMock
 
 from tornado.testing import AsyncTestCase
+from rest_tools.client import RestClient
 
 from tests.util import unittest_reporter, glob_tests
 
-from iceprod.core import rest_client
 from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import dataset_completion
 
@@ -48,7 +48,7 @@ class dataset_completion_test(AsyncTestCase):
 
     @unittest_reporter
     async def test_200_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_counts = {}
         dataset_summaries = {'processing':['foo']}
         async def client(method, url, args=None):
@@ -122,7 +122,7 @@ class dataset_completion_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - error')
     async def test_201_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
             if url.startswith('/dataset_summaries'):

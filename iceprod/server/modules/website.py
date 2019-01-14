@@ -36,6 +36,8 @@ import tornado.gen
 
 import tornado.concurrent
 import concurrent.futures
+from rest_tools.client import RestClient
+from rest_tools.server import RestServer
 
 import iceprod
 from iceprod.server import GlobalID, get_pkgdata_filename
@@ -44,9 +46,6 @@ from iceprod.server.ssl_cert import create_cert, verify_cert
 from iceprod.server.file_io import AsyncFileIO
 import iceprod.core.functions
 from iceprod.server import documentation
-from iceprod.server.tornado import tornado_logger, startup
-
-from iceprod.core import rest_client
 
 logger = logging.getLogger('website')
 
@@ -144,19 +143,18 @@ class website(module.module):
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
             ]
-            self.application = tornado.web.Application(
-                routes,
+            self.http_server = RestServer(
                 static_path=static_path,
                 template_path=template_path,
-                log_function=tornado_logger,
-                xsrf_cookies=True,
-                cookie_secret=binascii.unhexlify(cookie_secret),
+                cookie_secret=cookie_secret,
                 login_url='/login',
                 debug=handler_args['debug'],
             )
+            for r in routes:
+                self.http_server.add_route(*r)
 
             # start tornado
-            self.http_server = startup(self.application,
+            self.http_server.startup(
                 port=self.cfg['webserver']['port'],
                 address='0.0.0.0', # bind to all
             )
@@ -266,8 +264,7 @@ class PublicHandler(tornado.web.RequestHandler):
             self.current_user = data['username']
             self.current_user_data = data
             self.current_user_secure = (user_secure is not None)
-            self.rest_client = rest_client.Client(self.rest_api, data['token'],
-                                                  timeout=10)
+            self.rest_client = RestClient(self.rest_api, data['token'], timeout=10)
         except Exception:
             logger.info('error getting current user', exc_info=True)
             self.clear_cookie("user")

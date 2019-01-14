@@ -29,12 +29,12 @@ import asyncio
 import unittest
 
 from unittest.mock import patch,MagicMock
+from rest_tools.client import RestClient
 
 import iceprod.server
 from iceprod.server import module
 from iceprod.server.plugins.condor import condor
 from iceprod.core import dataclasses
-from iceprod.core import rest_client
 
 from tests.server import grid_test
 
@@ -57,7 +57,7 @@ class condor_test(grid_test.grid_test):
                'rest_api':'foo'}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -166,7 +166,7 @@ class condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -224,7 +224,7 @@ class condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -354,7 +354,7 @@ class condor_test(grid_test.grid_test):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = condor(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)

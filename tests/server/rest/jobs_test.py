@@ -25,9 +25,9 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-import iceprod.server.tornado
-import iceprod.server.rest.config
-from iceprod.server.auth import Auth
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 
 class rest_jobs_test(AsyncTestCase):
     def setUp(self):
@@ -61,15 +61,17 @@ class rest_jobs_test(AsyncTestCase):
                     }
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
 
     @unittest_reporter(name='REST POST   /jobs')
     def test_105_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -84,8 +86,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /jobs/<job_id>')
     def test_110_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -111,8 +111,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PATCH  /jobs/<job_id>')
     def test_120_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -139,8 +137,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/jobs')
     def test_200_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -164,8 +160,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/jobs/<job_id>')
     def test_210_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -191,8 +185,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/jobs/<job_id>/status')
     def test_220_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -220,8 +212,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_summaries/status')
     def test_300_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -242,8 +232,6 @@ class rest_jobs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/job_counts/status')
     def test_400_jobs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',

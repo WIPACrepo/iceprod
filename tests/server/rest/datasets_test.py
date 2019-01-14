@@ -26,9 +26,10 @@ import tornado.gen
 from tornado.httpclient import AsyncHTTPClient, HTTPError, HTTPRequest, HTTPResponse
 from tornado.testing import AsyncTestCase
 
-import iceprod.server.tornado
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.datasets
-from iceprod.server.auth import Auth
 
 orig_fetch = tornado.httpclient.AsyncHTTPClient.fetch
 
@@ -68,7 +69,11 @@ class rest_datasets_test(AsyncTestCase):
                     'auth_key': self.module_auth_token.decode('utf-8'),
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
@@ -76,8 +81,6 @@ class rest_datasets_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets')
     def test_100_datasets(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         r = yield client.fetch('http://localhost:%d/datasets'%self.port,
                 headers={'Authorization': b'bearer '+self.token})
@@ -88,8 +91,6 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST POST   /datasets')
     def test_110_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
             if 'auth' in url:
@@ -145,8 +146,6 @@ class rest_datasets_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>')
     def test_120_datasets(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         with self.assertRaises(HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/datasets/bar'%self.port,
@@ -156,8 +155,6 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/description')
     def test_200_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
             if 'auth' in url:
@@ -198,8 +195,6 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST PUT    /datasets/<dataset_id>/status')
     def test_210_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
             if 'auth' in url:
@@ -240,8 +235,6 @@ class rest_datasets_test(AsyncTestCase):
     @patch('tornado.httpclient.AsyncHTTPClient.fetch', autospec=True)
     @unittest_reporter(name='REST GET    /dataset_summaries/status')
     def test_300_datasets(self, fetch):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         # need to mock the REST auth interface
         def mocked(self, url, *args, **kwargs):
             if 'auth' in url:

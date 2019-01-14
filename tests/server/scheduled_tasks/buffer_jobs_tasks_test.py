@@ -14,10 +14,10 @@ from functools import partial
 from unittest.mock import patch, MagicMock
 
 from tornado.testing import AsyncTestCase
+from rest_tools.client import RestClient
 
 from tests.util import unittest_reporter, glob_tests
 
-from iceprod.core import rest_client
 from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import buffer_jobs_tasks
 
@@ -48,7 +48,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter
     async def test_200_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2))
         task_ids = list(range(4))
         jobs = []
@@ -159,7 +159,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - ext dep')
     async def test_201_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2,4))
         task_ids = list(range(4,8))
         jobs = []
@@ -247,7 +247,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - dep err')
     async def test_202_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2))
         task_ids = list(range(4))
         jobs = []
@@ -389,7 +389,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - req uses config')
     async def test_205_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2,4))
         task_ids = list(range(4,8))
         jobs = []
@@ -439,7 +439,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - no buffer')
     async def test_210_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2))
         task_ids = list(range(4))
         jobs = []
@@ -495,7 +495,7 @@ class buffer_jobs_tasks_test(AsyncTestCase):
 
     @unittest_reporter(name='run() - error')
     async def test_300_run(self):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         job_ids = list(range(2))
         task_ids = list(range(4))
         jobs = []

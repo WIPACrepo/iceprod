@@ -34,7 +34,6 @@ from bs4 import BeautifulSoup
 
 import iceprod.core.logger
 from iceprod.core import to_log
-import iceprod.core.jsonRPCclient
 from iceprod.core.jsonUtil import json_encode,json_decode
 import iceprod.server
 from iceprod.server.modules.website import website

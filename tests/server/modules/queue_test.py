@@ -21,12 +21,13 @@ try:
 except ImportError:
     from mock import patch, MagicMock
 
+from rest_tools.client import RestClient
+
 from tornado.concurrent import Future
 import tornado.gen
 
 import iceprod.server
 import iceprod.core.logger
-from iceprod.core import rest_client
 from iceprod.server import module
 from iceprod.server.modules.queue import queue
 
@@ -69,7 +70,7 @@ class queue_test(module_test):
     @unittest_reporter
     def test_10_start(self):
         self.mock_listmodules.return_value = ['iceprod.server.plugins.Test1']
-        self.queue.rest_client = MagicMock(spec=rest_client.Client)
+        self.queue.rest_client = MagicMock(spec=RestClient)
         self.queue.rest_client.request_seq.return_value = {'result':'foo'}
 
         self.queue.start()

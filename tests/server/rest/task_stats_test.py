@@ -25,9 +25,9 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-import iceprod.server.tornado
-import iceprod.server.rest.config
-from iceprod.server.auth import Auth
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 
 class rest_task_stats_test(AsyncTestCase):
     def setUp(self):
@@ -61,7 +61,11 @@ class rest_task_stats_test(AsyncTestCase):
                     }
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin','username':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
@@ -69,8 +73,6 @@ class rest_task_stats_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /tasks/<task_id>/task_stats')
     def test_100_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -86,8 +88,6 @@ class rest_task_stats_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats')
     def test_200_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',
@@ -115,8 +115,6 @@ class rest_task_stats_test(AsyncTestCase):
     # note: the name is so long it needs a break to wrap correctly
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/task_stats/<task_stat_id>')
     def test_210_task_stats(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'dataset_id': 'foo',

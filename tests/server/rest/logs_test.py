@@ -27,10 +27,10 @@ from tornado.testing import AsyncTestCase
 import boto3
 from moto import mock_s3
 
-import iceprod.server.tornado
-import iceprod.server.rest.config
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.logs
-from iceprod.server.auth import Auth
 
 
 def fake_data(N):
@@ -68,15 +68,17 @@ class rest_logs_test(AsyncTestCase):
                     }
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
 
     @unittest_reporter(name='REST POST   /logs')
     def test_100_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
@@ -88,8 +90,6 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /logs/<log_id>')
     def test_110_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
@@ -107,8 +107,6 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST POST   /datasets/<dataset_id>/logs')
     def test_120_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
@@ -120,8 +118,6 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/logs/<log_id>')
     def test_130_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'dataset_id':'12345','data':'foo bar baz'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
@@ -139,8 +135,6 @@ class rest_logs_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /datasets/<dataset_id>/tasks/<task_id>/logs')
     def test_140_logs(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':'foo', 'dataset_id': 'foo', 'task_id': 'bar', 'name': 'stdout'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
@@ -230,7 +224,11 @@ class rest_logs_test2(AsyncTestCase):
                     'secret_key': 'XXX',
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
@@ -240,8 +238,6 @@ class rest_logs_test2(AsyncTestCase):
     def test_200_logs(self):
         conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
-
-        iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
         data = {'data':fake_data(2000000)}
@@ -271,8 +267,6 @@ class rest_logs_test2(AsyncTestCase):
     def test_210_logs(self):
         conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
-
-        iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
         data = {'data':fake_data(2000000)}
@@ -315,8 +309,6 @@ class rest_logs_test2(AsyncTestCase):
         conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
 
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':fake_data(2000000)}
         r = yield client.fetch('http://localhost:%d/datasets/12345/logs'%self.port,
@@ -345,8 +337,6 @@ class rest_logs_test2(AsyncTestCase):
     def test_230_logs(self):
         conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
-
-        iceprod.server.tornado.startup(self.app, port=self.port)
 
         client = AsyncHTTPClient()
         data = {'dataset_id':'12345','data':fake_data(2000000)}
@@ -389,8 +379,6 @@ class rest_logs_test2(AsyncTestCase):
         conn = boto3.resource('s3', region_name='us-east-1')
         conn.create_bucket(Bucket='iceprod2-logs')
 
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {'data':fake_data(2000000), 'dataset_id': 'foo', 'task_id': 'bar'}
         r = yield client.fetch('http://localhost:%d/logs'%self.port,
@@ -423,7 +411,7 @@ class rest_logs_test2(AsyncTestCase):
         with self.assertRaises(Exception):
             conn.Object('iceprod2-logs', log_id).get()
 
-        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs'%(self.port,),
+        r = yield client.fetch('http://localhost:%d/datasets/foo/tasks/bar/logs?order=asc'%(self.port,),
                 headers={'Authorization': b'bearer '+self.token})
         self.assertEqual(r.code, 200)
         ret = json.loads(r.body)

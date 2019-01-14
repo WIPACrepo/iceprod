@@ -56,6 +56,7 @@ def check_dependencies():
     check_module('tornado', required=True)
     check_module('jsonschema')
     check_module('concurrent.futures', required=True)
+    check_module('rest_tools', required=True)
 
 check_dependencies()
 

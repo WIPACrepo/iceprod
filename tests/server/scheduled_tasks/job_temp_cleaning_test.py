@@ -16,10 +16,10 @@ from unittest.mock import patch, MagicMock
 from concurrent.futures import ThreadPoolExecutor
 
 from tornado.testing import AsyncTestCase
+from rest_tools.client import RestClient
 
 from tests.util import unittest_reporter, glob_tests
 
-from iceprod.core import rest_client
 from iceprod.server.modules.schedule import schedule
 from iceprod.server.scheduled_tasks import job_temp_cleaning
 
@@ -58,7 +58,7 @@ class job_temp_cleaning_test(AsyncTestCase):
     @patch('iceprod.server.scheduled_tasks.job_temp_cleaning.GridFTP')
     @unittest_reporter
     async def test_200_run(self, gridftp):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         jobs = {}
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
@@ -116,7 +116,7 @@ class job_temp_cleaning_test(AsyncTestCase):
     @patch('iceprod.server.scheduled_tasks.job_temp_cleaning.GridFTP')
     @unittest_reporter(name='run() - error')
     async def test_201_run(self, gridftp):
-        rc = MagicMock(spec=rest_client.Client)
+        rc = MagicMock(spec=RestClient)
         jobs = {}
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)

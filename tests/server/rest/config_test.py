@@ -25,9 +25,10 @@ import tornado.ioloop
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 from tornado.testing import AsyncTestCase
 
-import iceprod.server.tornado
+from rest_tools.server import Auth, RestServer
+
+from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.config
-from iceprod.server.auth import Auth
 
 class rest_config_test(AsyncTestCase):
     def setUp(self):
@@ -61,7 +62,11 @@ class rest_config_test(AsyncTestCase):
                     }
                 },
             }
-            self.app = iceprod.server.tornado.setup_rest(config)
+            routes, args = setup_rest(config)
+            self.server = RestServer(**args)
+            for r in routes:
+                self.server.add_route(*r)
+            self.server.startup(port=self.port)
             self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin'})
         except Exception:
             logger.info('failed setup', exc_info=True)
@@ -69,8 +74,6 @@ class rest_config_test(AsyncTestCase):
 
     @unittest_reporter(name='REST GET    /config/<dataset_id>')
     def test_100_config(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         with self.assertRaises(HTTPError) as e:
             r = yield client.fetch('http://localhost:%d/config/bar'%self.port,
@@ -79,8 +82,6 @@ class rest_config_test(AsyncTestCase):
 
     @unittest_reporter(name='REST PUT    /config/<dataset_id>')
     def test_110_config(self):
-        iceprod.server.tornado.startup(self.app, port=self.port)
-
         client = AsyncHTTPClient()
         data = {
             'name': 'foo'
