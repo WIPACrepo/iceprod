@@ -33,8 +33,8 @@ PUT     /datasets/<dataset_id>/description              update dataset descripti
 ======  ==============================================  ==================================================================
 Method  Path                                            Description
 ======  ==============================================  ==================================================================
-GET     /datasets/<dataset_id>/config                   get a config
-PUT     /datasets/<dataset_id>/config                   create/update a config
+GET     /config/<dataset_id>                            get a config
+PUT     /config/<dataset_id>                            create/update a config
 ======  ==============================================  ==================================================================
 
 :doc:`Jobs <jobs>`
