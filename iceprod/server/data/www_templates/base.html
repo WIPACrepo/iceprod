@@ -29,6 +29,9 @@
                 <li{% if section == 'util' %} class="current"{% end %}><a href="/help">Help</a></li>
                 {% if (not master) and master_url %}<li class="master"><a href="{{ master_url }}">Master</a></li>{% end %}
                 -->
+                {% if current_user %}
+                  <li{% if section == 'profile' %} class="current"{% end %}><a href="/profile">Profile</a></li>
+                {% end %}
                 <li>
                     {% if (not current_user) %} <a href='/login'>Login </a>
                     {% else %} <a href='/logout'>Logout </a> 

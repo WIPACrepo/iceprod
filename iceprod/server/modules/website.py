@@ -139,6 +139,7 @@ class website(module.module):
                 (r"/docs/(.*)", Documentation, handler_args),
                 (r"/dataset/(\w+)/log/(\w+)", Log, handler_args),
                 #(r"/groups", GroupsHandler, handler_args),
+                (r'/profile', Profile, handler_args),
                 (r"/login", Login, login_handler_args),
                 (r"/logout", Logout, handler_args),
                 (r"/.*", Other, handler_args),
@@ -558,6 +559,22 @@ class Other(PublicHandler):
         path = self.request.path
         self.set_status(404)
         self.render('404.html',path=path)
+
+class Profile(PublicHandler):
+    """Handle user profile page"""
+    @catch_error
+    @tornado.web.authenticated
+    async def get(self):
+        self.statsd.incr('profile')
+        ret = await self.rest_client.request('POST','/create_token')
+        token = ret['result']
+        groups = []
+        logger.info('user_data: %r', self.current_user_data)
+        logger.info('token: %r', token)
+        if self.current_user_data and 'groups' in self.current_user_data:
+            groups = self.current_user_data['groups']
+        self.render('profile.html', username=self.current_user, groups=groups,
+                    token=token)
 
 class Login(PublicHandler):
     """Handle the login url"""

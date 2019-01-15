@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% autoescape None %}
+
+{% block title %}Profile - IceProd{% end %}
+
+{% block head_scripts %}
+<link rel="stylesheet" href="/static/documentation.css" media="all" type="text/css" />
+<style>
+ul.groups {
+    list-style-type: none;
+}
+ul.groups li {
+    display: inline-block;
+}
+ul.groups li+li:before {
+    content: ', ';
+}
+#token {
+    word-wrap: break-word;
+}
+div.section>:not(h4) {
+    margin: 0 .5em;
+}
+div.section>h4 {
+    margin: .5em 0;
+}
+</style>
+{% end %}
+
+{% block page_title %}My Profile{% end %}
+
+{% block body %}
+<div class="section">
+    <h4>Username</h4>
+    <p>{{ username }}</p>
+    <h4>Groups</h4>
+    <ul class="groups">{% for g in groups %}<li>{{ g }}</li>{% end %}</ul>
+    <h4>API Token</h4>
+    <p id="token">{{ token }}</textarea>
+</div>
+<div id="error"></div>
+{% end %}
+
