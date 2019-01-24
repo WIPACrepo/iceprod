@@ -372,6 +372,13 @@ class resources_test(unittest.TestCase):
         os.environ['NUM_CPUS'] = 'blah'
         ret = iceprod.core.resources.get_cpus()
         self.assertEqual(ret, iceprod.core.resources.Resources.defaults['cpu'])
+        
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                totalcpus = 12
+            """)
+        ret = iceprod.core.resources.get_cpus()
+        self.assertEqual(ret, 12)
 
     @unittest_reporter
     def test_110_get_gpus(self):
@@ -404,6 +411,13 @@ class resources_test(unittest.TestCase):
         os.environ['_CONDOR_AssignedGPUs'] = '1,2'
         ret = iceprod.core.resources.get_gpus()
         self.assertEqual(ret, ['1','2'])
+        
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                assignedgpus = "foo,bar"
+            """)
+        ret = iceprod.core.resources.get_gpus()
+        self.assertEqual(ret, ['foo','bar'])
 
     @unittest_reporter
     def test_120_get_memory(self):
@@ -421,6 +435,13 @@ class resources_test(unittest.TestCase):
         os.environ['NUM_MEMORY'] = 'blah'
         ret = iceprod.core.resources.get_memory()
         self.assertEqual(ret, iceprod.core.resources.Resources.defaults['memory'])
+        
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                totalmemory = 123000
+            """)
+        ret = iceprod.core.resources.get_memory()
+        self.assertAlmostEqual(ret, 123.0)
 
     @unittest_reporter
     def test_130_get_disk(self):
@@ -438,6 +459,13 @@ class resources_test(unittest.TestCase):
         os.environ['NUM_DISK'] = 'blah'
         ret = iceprod.core.resources.get_disk()
         self.assertEqual(ret, iceprod.core.resources.Resources.defaults['disk'])
+        
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                totaldisk = 123000000
+            """)
+        ret = iceprod.core.resources.get_disk()
+        self.assertAlmostEqual(ret, 123.0)
 
     @unittest_reporter
     def test_140_get_time(self):
@@ -455,6 +483,33 @@ class resources_test(unittest.TestCase):
         os.environ['NUM_TIME'] = 'blah'
         ret = iceprod.core.resources.get_time()
         self.assertEqual(ret, iceprod.core.resources.Resources.defaults['time'])
+
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                TimeToLive = 10800
+            """)
+        ret = iceprod.core.resources.get_time()
+        self.assertAlmostEqual(ret, 3.0)
+
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                Glidein_max_walltime = 14400
+            """)
+        ret = iceprod.core.resources.get_time()
+        self.assertAlmostEqual(ret, 4.0)
+
+        with open('.machine.ad', 'w') as f:
+            f.write("""
+                pyglidein_time_to_live = 14400 - claim_time
+                claim_time = 3600
+            """)
+        ret = iceprod.core.resources.get_time()
+        try:
+            import classad
+        except ImportError:
+            self.assertAlmostEqual(ret, 1.0)
+        else:
+            self.assertAlmostEqual(ret, 3.0)
         
     @unittest_reporter
     def test_230_du(self):

@@ -21,6 +21,28 @@ try:
 except ImportError:
     psutil = None
 
+try:
+    import classad
+except ImportError:
+    def classad_to_dict(text):
+        ret = {}
+        for line in text.split('\n'):
+            if (not line) or '=' not in line:
+                continue
+            parts = line.split('=',1)
+            ret[parts[0].strip().lower()] = parts[1].strip()
+        return ret
+else:
+    def classad_to_dict(text):
+        ret = {}
+        c = classad.parseOne(text)
+        for k in c.keys():
+            try:
+                ret[k.lower()] = c.eval(k)
+            except TypeError:
+                ret[k.lower()] = c[k]
+        return ret
+
 class Resources:
     """
     Task (and node) resource definition and tracking.
@@ -509,14 +531,16 @@ def get_cpus():
     ret = None
     if os.path.exists('.machine.ad'):
         try:
-            for line in open('.machine.ad'):
-                line = line.strip()
-                if line and line.split('=')[0].strip().lower() == 'totalcpus':
-                    ret = int(float(line.split('=')[1]))
-                    logging.info('got cpus from machine ad: %r',ret)
-                    break
+            ads = classad_to_dict(open('.machine.ad').read())
         except Exception:
             pass
+        else:
+            if 'totalcpus' in ads:
+                try:
+                    ret = int(float(ads['totalcpus']))
+                    logging.info('got cpus from machine ad: %r',ret)
+                except Exception:
+                    pass
     if (not ret) and 'NUM_CPUS' in os.environ:
         try:
             ret = int(float(os.environ['NUM_CPUS']))
@@ -537,14 +561,16 @@ def get_gpus():
     ret = None
     if os.path.exists('.machine.ad'):
         try:
-            for line in open('.machine.ad'):
-                line = line.strip()
-                if line and line.split('=')[0].strip().lower() == 'assignedgpus':
-                    ret = line.split('=')[1].strip(' "').split(',')
-                    logging.info('got gpus from machine ad: %r',ret)
-                    break
+            ads = classad_to_dict(open('.machine.ad').read())
         except Exception:
             pass
+        else:
+            if 'assignedgpus' in ads:
+                try:
+                    ret = ads['assignedgpus'].strip(' "').split(',')
+                    logging.info('got gpus from machine ad: %r',ret)
+                except Exception:
+                    pass
     if (not ret) and 'CUDA_VISIBLE_DEVICES' in os.environ:
         try:
             ret = [x.strip() for x in os.environ['CUDA_VISIBLE_DEVICES'].split(',') if x.strip()]
@@ -579,14 +605,16 @@ def get_memory():
     ret = None
     if os.path.exists('.machine.ad'):
         try:
-            for line in open('.machine.ad'):
-                line = line.strip()
-                if line and line.split('=')[0].strip().lower() == 'totalmemory':
-                    ret = float(line.split('=')[1])/1000.
-                    logging.info('got memory from machine ad: %r',ret)
-                    break
+            ads = classad_to_dict(open('.machine.ad').read())
         except Exception:
             pass
+        else:
+            if 'totalmemory' in ads:
+                try:
+                    ret = float(ads['totalmemory'])/1000.
+                    logging.info('got memory from machine ad: %r',ret)
+                except Exception:
+                    pass
     if (not ret) and 'NUM_MEMORY' in os.environ:
         try:
             ret = float(os.environ['NUM_MEMORY'])
@@ -603,14 +631,16 @@ def get_disk():
     ret = None
     if os.path.exists('.machine.ad'):
         try:
-            for line in open('.machine.ad'):
-                line = line.strip()
-                if line and line.split('=')[0].strip().lower() == 'totaldisk':
-                    ret = float(line.split('=')[1])/1000000.
-                    logging.info('got disk from machine ad: %r',ret)
-                    break
+            ads = classad_to_dict(open('.machine.ad').read())
         except Exception:
             pass
+        else:
+            if 'totaldisk' in ads:
+                try:
+                    ret = float(ads['totaldisk'])/1000000.
+                    logging.info('got disk from machine ad: %r',ret)
+                except Exception:
+                    pass
     if (not ret) and 'NUM_DISK' in os.environ:
         try:
             ret = float(os.environ['NUM_DISK'])
@@ -627,20 +657,28 @@ def get_time():
     ret = None
     if os.path.exists('.machine.ad'):
         try:
-            for line in open('.machine.ad'):
-                line = line.strip()
-                if (not ret) and line and line.split('=')[0].strip().lower() == 'timetolive':
-                    ret = float(line.split('=')[1])/3600
-                    logging.info('got timetolive from machine ad: %r',ret)
-                elif line and line.split('=')[0].strip().lower() == 'glidein_max_walltime':
-                    ret = float(line.split('=')[1])/3600
-                    logging.info('got glidein_max_walltime from machine ad: %r',ret)
-                elif line and line.split('=')[0].strip().lower() == 'pyglidein_time_to_live':
-                    ret = float(line.split('=')[1])/3600
-                    logging.info('got pyglidein_time_to_live from machine ad: %r',ret)
-                    break
+            ads = classad_to_dict(open('.machine.ad').read())
         except Exception:
-            pass
+            logging.debug('failed to get classads from .machine.ad', exc_info=True)
+        else:
+            if 'pyglidein_time_to_live' in ads:
+                try:
+                    ret = float(ads['pyglidein_time_to_live'])/3600
+                    logging.info('got pyglidein_time_to_live from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get pyglidein_time_to_live', exc_info=True)
+            if (not ret) and 'glidein_max_walltime' in ads:
+                try:
+                    ret = float(ads['glidein_max_walltime'])/3600
+                    logging.info('got glidein_max_walltime from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get glidein_max_walltime', exc_info=True)
+            if (not ret) and 'timetolive' in ads:
+                try:
+                    ret = float(ads['timetolive'])/3600
+                    logging.info('got timetolive from machine ad: %r',ret)
+                except Exception:
+                    logging.info('failed to get timetolive', exc_info=True)
     if (not ret) and 'NUM_TIME' in os.environ:
         try:
             ret = float(os.environ['NUM_TIME'])
