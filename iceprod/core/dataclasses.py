@@ -290,6 +290,7 @@ class Task(_TaskCommon):
     :ivar batchsys: None
     :ivar trays: []
     :ivar requirements: {} -- a dict of requirements
+    :ivar task_files: False -- whether to use the task files API
     """
     plural = 'Tasks'
     def __init__(self,*args,**kwargs):
@@ -297,6 +298,7 @@ class Task(_TaskCommon):
         self['batchsys'] = None
         self['trays']    = []
         self['requirements'] = Requirement()
+        self['task_files'] = False
         super(Task,self).__init__(*args,**kwargs)
 
     def output(self):
@@ -346,7 +348,8 @@ class Task(_TaskCommon):
                     isinstance(self['trays'],list) and
                     all(isinstance(t,Tray) and t.valid() for t in self['trays']) and
                     isinstance(self['requirements'],Requirement) and
-                    self['requirements'].valid()
+                    self['requirements'].valid() and
+                    isinstance(self['task_files'],bool)
                    )
         except Exception:
             return False

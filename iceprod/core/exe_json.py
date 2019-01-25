@@ -111,6 +111,26 @@ class ServerComms:
             raise
         return [config]
 
+    async def task_files(self, dataset_id, task_id):
+        """
+        Get the task files for a dataset and task.
+
+        Args:
+            dataset_id (str): dataset_id
+            task_id (str): task_id
+
+        Returns:
+            list: list of :py:class:`iceprod.core.dataclasses.Data` objects
+        """
+        ret = await self.rest.request('GET', '/datasets/{}/task_files/{}'.format(dataset_id, task_id))
+        data = []
+        for r in ret['files']:
+            d = dataclasses.Data(r)
+            if not d.valid():
+                raise Exception('returned Data not valid')
+            data.append(d)
+        return data
+
     async def processing(self, task_id):
         """
         Tell the server that we are processing this task.

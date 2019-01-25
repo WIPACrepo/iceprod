@@ -24,7 +24,7 @@ try:
 except:
     import pickle
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from tornado.testing import AsyncTestCase
 
@@ -64,6 +64,9 @@ class DownloadTestCase(AsyncTestCase):
             path,ext = os.path.splitext(path)
             while ext:
                 path,ext = os.path.splitext(path)
+        dirname = os.path.dirname(path)
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
         if isinstance(data,dict):
             # make directory of things
             if not os.path.exists(path):
@@ -1868,6 +1871,110 @@ def Test():
             except:
                 logger.error('running the tray failed')
                 raise
+
+    @patch('iceprod.core.exe.functions.download')
+    @unittest_reporter(name='runtask - task_files')
+    async def test_401_runtask(self, download):
+        # create the task object
+        task = iceprod.core.dataclasses.Task()
+        task['name'] = 'task'
+
+        # create the tray object
+        tray = iceprod.core.dataclasses.Tray()
+        tray['name'] = 'tray'
+
+        # create the module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module'
+        module['running_class'] = 'test.Test'
+        module['env_clear'] = False
+
+        c = iceprod.core.dataclasses.Class()
+        c['name'] = 'test'
+        c['src'] = 'test.tar.gz'
+        module['classes'].append(c)
+        tray['modules'].append(module)
+
+        # create another module object
+        module = iceprod.core.dataclasses.Module()
+        module['name'] = 'module2'
+        module['running_class'] = 'Test'
+        module['src'] = 'test.py'
+        tray['modules'].append(module)
+
+        # add tray to task
+        task['trays'].append(tray)
+
+        # make .so file
+        so = self.make_shared_lib()
+
+        # check that validate, resource_url, debug are in options
+        options = {}
+        if 'validate' not in options:
+            options['validate'] = True
+        if 'resource_url' not in options:
+            options['resource_url'] = 'http://foo/'
+        if 'debug' not in options:
+            options['debug'] = False
+
+        # make sure some basic options are set
+        if 'data_url' not in options:
+            options['data_url'] = 'gsiftp://gridftp/'
+        if 'svn_repository' not in options:
+            options['svn_repository'] = 'http://svn/'
+        if 'job_temp' not in options:
+            options['job_temp'] = os.path.join(self.test_dir,'job_temp')
+        if 'local_temp' not in options:
+            options['local_temp'] = os.path.join(self.test_dir,'local_temp')
+        if 'subprocess_dir' not in options:
+            options['subprocess_dir'] = os.path.join(self.test_dir,'subprocess_dir')
+
+        async def create(url, *args, **kwargs):
+            logger.info('create: %s', url)
+            if url.endswith('foobar'):
+                path = os.path.join(options['subprocess_dir'], 'foobar')
+                self.mk_files(path, """foobar""", ext=True)
+            elif url.endswith(c['src']):
+                path = os.path.join(options['local_temp'], c['src'])
+                self.mk_files(path, {'test.py':"""
+import hello
+def Test():
+    return hello.say_hello('Tester')
+""", 'hello.so':so}, compress='gz')
+            else:
+                path = os.path.join(options['local_temp'], module['src'])
+                self.mk_files(path, """
+def Test():
+    return 'Tester2'
+""", ext=True)
+            return path
+        download.side_effect = create
+
+        # set env
+        env = {'options': options,'stats':{'tasks':[]}}
+
+        # enable files api
+        task['task_files'] = True
+        self.config.config['options']['dataset_id'] = 'd'
+        self.config.config['options']['task_id'] = 't'
+        self.config.config['options']['offline_transfer'] = True
+        self.config.rpc = MagicMock()
+        async def files(dataset_id, task_id):
+            d = iceprod.core.dataclasses.Data()
+            d['remote'] = 'http://test/foobar'
+            d['movement'] = 'input'
+            return [d]
+        self.config.rpc.task_files.side_effect = files
+
+        # run the tray
+        with to_log(sys.stdout,'stdout'),to_log(sys.stderr,'stderr'):
+            try:
+                async for mod in iceprod.core.exe.runtask(self.config, env, task):
+                    await mod.wait()
+            except:
+                logger.error('running the tray failed')
+                raise
+        self.config.rpc.task_files.assert_called_once()
 
     @patch('iceprod.core.exe.functions.download')
     @unittest_reporter(name='runtask - multiple trays')

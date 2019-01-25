@@ -345,6 +345,8 @@ async def downloadResource(env, resource, remote_base=None,
                 if not failed:
                     stats['size'] = os.path.getsize(local)
                     stats['rate_MBps'] = stats['size']/1000/1000/stats['duration']
+                if 'download' not in env['stats']:
+                    env['stats']['download'] = []
                 env['stats']['download'].append(stats)
 
     # check compression
@@ -662,6 +664,12 @@ async def runtask(cfg, globalenv, task, logger=None):
 
     # set up stats
     stats = {}
+
+    # check if we have any files in the task_files API
+    if task['task_files'] and ((not cfg.config['options']['offline']) or cfg.config['options']['offline_transfer']):
+        files = await cfg.rpc.task_files(cfg.config['options']['dataset_id'],
+                                         cfg.config['options']['task_id'])
+        task['data'].extend(files)
 
     try:
         # set up local env

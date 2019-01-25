@@ -30,6 +30,7 @@ from unittest.mock import patch
 from tornado.testing import AsyncTestCase
 
 from iceprod.core import to_log,constants
+import iceprod.core.dataclasses
 import iceprod.core.functions
 import iceprod.core.exe
 import iceprod.core.exe_json
@@ -100,6 +101,35 @@ class exe_json_test(AsyncTestCase):
         self.assertEqual(ret['options']['task'], 1)
         self.assertIn('jobs_submitted', ret['options'])
         self.assertEqual(ret['options']['jobs_submitted'], 10)
+
+    @patch('iceprod.core.exe_json.RestClient')
+    @unittest_reporter
+    async def test_12_task_files(self, Client):
+        """Test task_files"""
+        c = Client.return_value
+        async def req(*args,**kwargs):
+            d = iceprod.core.dataclasses.Data()
+            d['remote'] = 'foo'
+            return {'files': [d]}
+        c.request.side_effect = req
+
+        self.config.config['options']['dataset_id'] = 'd'
+        self.config.config['options']['task_id'] = 't'
+
+        rpc = iceprod.core.exe_json.ServerComms('a', 'p', config=self.config)
+        files = await rpc.task_files('d','t')
+
+        self.assertTrue(c.request.called)
+        logger.info(c.request.call_args[0])
+        logger.info('files: %r', files)
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0]['remote'], 'foo')
+
+        async def req(*args,**kwargs):
+            return {'files': [{'movement':'blah'}]}
+        c.request.side_effect = req
+        with self.assertRaises(Exception):
+            await rpc.task_files('d','t')
 
     @patch('iceprod.core.exe_json.RestClient')
     @unittest_reporter
