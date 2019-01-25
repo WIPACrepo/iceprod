@@ -959,6 +959,175 @@ class rest_tasks_test(AsyncTestCase):
                     method='PATCH', body=json.dumps(data2),
                     headers={'Authorization': b'bearer '+self.token})
 
+    @unittest_reporter(name='REST GET     /datasets/<dataset_id>/files')
+    def test_900_tasks(self):
+        client = AsyncHTTPClient()
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertEqual(ret, {'files':[]})
+
+    @unittest_reporter(name='REST POST    /datasets/<dataset_id>/files')
+    def test_910_tasks(self):
+        client = AsyncHTTPClient()
+
+        # create a task
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'job_index': 0,
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+
+        file_data = {
+            'job_index': 0,
+            'task_name': 'bar',
+            'filename': 'blah',
+            'movement': 'input',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
+                method='POST', body=json.dumps(file_data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('files', ret)
+        self.assertEqual(len(ret['files']), 1)
+        self.assertEqual(ret['files'][0]['remote'], file_data['filename'])
+
+    @unittest_reporter(name='REST GET     /datasets/<dataset_id>/files/<task_id>')
+    def test_920_tasks(self):
+        client = AsyncHTTPClient()
+
+        # create a task
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'job_index': 0,
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        file_data = {
+            'job_index': 0,
+            'task_name': 'bar',
+            'filename': 'blah',
+            'movement': 'input',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files'%(self.port, 'foo'),
+                method='POST', body=json.dumps(file_data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('files', ret)
+        self.assertEqual(len(ret['files']), 1)
+        self.assertEqual(ret['files'][0]['remote'], file_data['filename'])
+
+    @unittest_reporter(name='REST POST    /datasets/<dataset_id>/files/<task_id>')
+    def test_930_tasks(self):
+        client = AsyncHTTPClient()
+
+        # create a task
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'job_index': 0,
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        file_data = {
+            'filename': 'blah',
+            'movement': 'input',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                method='POST', body=json.dumps(file_data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('files', ret)
+        self.assertEqual(len(ret['files']), 1)
+        self.assertEqual(ret['files'][0]['remote'], file_data['filename'])
+
+    @unittest_reporter(name='REST DELETE  /datasets/<dataset_id>/files/<task_id>')
+    def test_940_tasks(self):
+        client = AsyncHTTPClient()
+
+        # create a task
+        data = {
+            'dataset_id': 'foo',
+            'job_id': 'foo1',
+            'job_index': 0,
+            'task_index': 0,
+            'name': 'bar',
+            'depends': [],
+            'requirements': {},
+        }
+        r = yield client.fetch('http://localhost:%d/tasks'%self.port,
+                method='POST', body=json.dumps(data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+        ret = json.loads(r.body)
+        task_id = ret['result']
+
+        file_data = {
+            'filename': 'blah',
+            'movement': 'input',
+        }
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                method='POST', body=json.dumps(file_data),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 201)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                method='DELETE',
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+
+        r = yield client.fetch('http://localhost:%d/datasets/%s/files/%s'%(self.port, 'foo', task_id),
+                headers={'Authorization': b'bearer '+self.token})
+        self.assertEqual(r.code, 200)
+        ret = json.loads(r.body)
+        self.assertIn('files', ret)
+        self.assertEqual(ret['files'], [])
+
+
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()

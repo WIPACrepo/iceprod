@@ -7,6 +7,7 @@ import tornado.web
 import pymongo
 import motor
 
+from iceprod.core import dataclasses
 from iceprod.core.resources import Resources
 from iceprod.server.rest import RESTHandler, RESTHandlerSetup, authorization
 from iceprod.server.util import nowstr, status_sort
@@ -39,6 +40,11 @@ def setup(config, *args, **kwargs):
     if 'status_index' not in db.tasks.index_information():
         db.tasks.create_index('status', name='status_index', unique=False)
 
+    if 'dataset_id_index' not in db.dataset_files.index_information():
+        db.dataset_files.create_index('dataset_id', name='dataset_id_index', unique=False)
+    if 'task_id_index' not in db.dataset_files.index_information():
+        db.dataset_files.create_index('task_id', name='task_id_index', unique=True)
+
     handler_cfg = RESTHandlerSetup(config, *args, **kwargs)
     handler_cfg.update({
         'database': motor.motor_tornado.MotorClient(**db_cfg).tasks,
@@ -61,6 +67,8 @@ def setup(config, *args, **kwargs):
         (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_status/(?P<status>\w+)', DatasetTaskBulkStatusHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_actions/bulk_requirements/(?P<name>\w+)', DatasetTaskBulkRequirementsHandler, handler_cfg),
         (r'/datasets/(?P<dataset_id>\w+)/task_stats', DatasetTaskStatsHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/files', DatasetMultiFilesHandler, handler_cfg),
+        (r'/datasets/(?P<dataset_id>\w+)/files/(?P<task_id>\w+)', DatasetTaskFilesHandler, handler_cfg),
     ]
 
 class BaseHandler(RESTHandler):
@@ -782,3 +790,166 @@ class DatasetTaskBulkRequirementsHandler(BaseHandler):
         else:
             self.write({})
             self.finish()
+
+class DatasetMultiFilesHandler(BaseHandler):
+    """
+    Handle multi files requests, by dataset.
+    """
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id):
+        """
+        Get dataset_files entries.
+
+        Args:
+            dataset_id (str): dataset id
+
+        Returns:
+            dict: {'files': [<file>]}
+        """
+        filters = {'dataset_id': dataset_id}
+        projection = {'_id':False, 'dataset_id':False, 'task_id':False}
+        ret = []
+        async for row in self.db.dataset_files.find(filters, projection=projection):
+            ret.append(row)
+        self.write({'files': ret})
+
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    async def post(self, dataset_id):
+        """
+        Create a dataset_files entry.
+
+        Body should contain the file data.
+
+        Parameters:
+            filename (str): the full url filename
+            movement (str): [input | output | both]
+            job_index (int): the job index to add to
+            task_name (str): the name of the task
+
+        Returns:
+            dict: {'result': <task_id>}
+        """
+        data = json.loads(self.request.body)
+
+        # validate first
+        req_fields = {
+            'filename': str,
+            'movement': str,
+            'job_index': int,
+            'task_name': str,
+        }
+        for k in req_fields:
+            if k not in data:
+                raise tornado.web.HTTPError(400, reason='missing key: '+k)
+            if not isinstance(data[k], req_fields[k]):
+                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                raise tornado.web.HTTPError(400, reason=r)
+
+        # find the task referred to
+        filters = {
+            'dataset_id': dataset_id,
+            'job_index': data['job_index'],
+            'name': data['task_name'],
+        }
+        ret = await self.db.tasks.find_one(filters)
+        if not ret:
+            raise tornado.web.HTTPError(400, reason='task referred to not found')
+
+        # set some fields
+        file_data = dataclasses.Data()
+        file_data.update({
+            'task_id': ret['task_id'],
+            'dataset_id': dataset_id,
+            'remote': data['filename'],
+            'movement': data['movement'],
+        })
+        if not file_data.valid():
+            raise tornado.web.HTTPError(400, reason='bad file data')
+
+        ret = await self.db.dataset_files.insert_one(dict(file_data))
+        self.set_status(201)
+        self.write({'result': file_data['task_id']})
+        self.finish()
+
+class DatasetTaskFilesHandler(BaseHandler):
+    """
+    Handle multi files requests, by task.
+    """
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:read'])
+    async def get(self, dataset_id, task_id):
+        """
+        Get dataset_files entries.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): task_id
+
+        Returns:
+            dict: {'files': [<file>]}
+        """
+        filters = {'dataset_id': dataset_id, 'task_id': task_id}
+        projection = {'_id':False, 'dataset_id':False, 'task_id':False}
+        ret = []
+        async for row in self.db.dataset_files.find(filters, projection=projection):
+            ret.append(row)
+        self.write({'files': ret})
+
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    async def post(self, dataset_id, task_id):
+        """
+        Create a dataset_files entry.
+
+        Body should contain the file data.
+
+        Parameters:
+            filename (str): the full url filename
+            movement (str): [input | output | both]
+
+        Returns:
+            dict: {}
+        """
+        data = json.loads(self.request.body)
+
+        # validate first
+        req_fields = {
+            'filename': str,
+            'movement': str,
+        }
+        for k in req_fields:
+            if k not in data:
+                raise tornado.web.HTTPError(400, reason='missing key: '+k)
+            if not isinstance(data[k], req_fields[k]):
+                r = 'key {} should be of type {}'.format(k, req_fields[k])
+                raise tornado.web.HTTPError(400, reason=r)
+
+        # set some fields
+        file_data = dataclasses.Data()
+        file_data.update({
+            'task_id': task_id,
+            'dataset_id': dataset_id,
+            'remote': data['filename'],
+            'movement': data['movement'],
+        })
+        if not file_data.valid():
+            raise tornado.web.HTTPError(400, reason='bad file data')
+
+        ret = await self.db.dataset_files.insert_one(dict(file_data))
+        self.set_status(201)
+        self.write({})
+        self.finish()
+
+    @authorization(roles=['admin','system','client'], attrs=['dataset_id:write'])
+    async def delete(self, dataset_id, task_id):
+        """
+        Delete dataset_files entries.
+
+        Args:
+            dataset_id (str): dataset id
+            task_id (str): task_id
+
+        Returns:
+            dict: {}
+        """
+        filters = {'dataset_id': dataset_id, 'task_id': task_id}
+        await self.db.dataset_files.delete_many(filters)
+        self.write({})
