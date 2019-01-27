@@ -517,10 +517,9 @@ class Resources:
             env (dict): Environ to update (default: os.environ)
         """
         if 'gpu' in resources and resources['gpu']:
-            # strip all non-numbers:
             val = ','.join(set(resources['gpu']))
-            val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
-            env['CUDA_VISIBLE_DEVICES'] = resources['gpu']
+            #val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
+            env['CUDA_VISIBLE_DEVICES'] = val
             env['GPU_DEVICE_ORDINAL'] = val
         else:
             env['CUDA_VISIBLE_DEVICES'] = '9999'
