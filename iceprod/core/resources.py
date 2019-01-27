@@ -520,7 +520,7 @@ class Resources:
             # strip all non-numbers:
             val = ','.join(set(resources['gpu']))
             val = ''.join(filter(lambda x: x.isdigit() or x==',', val))
-            env['CUDA_VISIBLE_DEVICES'] = val
+            env['CUDA_VISIBLE_DEVICES'] = resources['gpu']
             env['GPU_DEVICE_ORDINAL'] = val
         else:
             env['CUDA_VISIBLE_DEVICES'] = '9999'
