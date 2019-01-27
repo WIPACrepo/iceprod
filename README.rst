@@ -7,6 +7,8 @@ and can pool together resources from different batch systems.
 The primary purpose is to coordinate and administer many large sets of
 jobs at once, keeping a history of the entire job lifecycle.
 
+See also: Aartsen, Mark G., et al. "The IceProd framework: Distributed data processing for the IceCube neutrino observatory." Journal of parallel and distributed computing 75 (2015): 198-211.
+
 **Note:**
 
 For IceCube users with CVMFS access, IceProd is already installed.
