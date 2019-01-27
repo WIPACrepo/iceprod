@@ -307,6 +307,7 @@ class BaseGrid(object):
                     queue_num -= 1
                     if queue_num < 1:
                         break
+        logger.debug('groups_to_queue: %r', groups_to_queue)
 
         for r in groups_to_queue:
             try:
