@@ -54,7 +54,8 @@ class condor_test(grid_test.grid_test):
                               }},
                'download':{'http_username':None,'http_password':None},
                'db':{'address':None,'ssl':False},
-               'rest_api':'foo'}
+               'rest_api':{'url':'foo'},
+               }
 
         # init
         client = MagicMock(spec=RestClient)

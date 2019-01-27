@@ -25,6 +25,17 @@ from iceprod.server import grid
 
 logger = logging.getLogger('condor')
 
+def check_call_clean_env(*args, **kwargs):
+    env = os.environ.copy()
+    del env['LD_LIBRARY_PATH']
+    kwargs['env'] = env
+    return subprocess.check_call(*args, **kwargs)
+
+def check_output_clean_env(*args, **kwargs):
+    env = os.environ.copy()
+    del env['LD_LIBRARY_PATH']
+    kwargs['env'] = env
+    return subprocess.check_output(*args, **kwargs)
 
 def condor_os_reqs(os_arch):
     """Convert from OS_ARCH to Condor OS requirements"""
@@ -181,7 +192,7 @@ class condor(grid.BaseGrid):
     def submit(self,task):
         """Submit task to queueing system."""
         cmd = ['condor_submit','-terse','condor.submit']
-        out = subprocess.check_output(cmd, cwd=task['submit_dir'], universal_newlines=True)
+        out = check_output_clean_env(cmd, cwd=task['submit_dir'], universal_newlines=True)
         grid_queue_id = []
         for line in out.split('\n'):
             # look for range
@@ -202,7 +213,7 @@ class condor(grid.BaseGrid):
         """
         ret = {}
         cmd = ['condor_q',getpass.getuser(),'-af:j','jobstatus','cmd']
-        out = subprocess.check_output(cmd, universal_newlines=True)
+        out = check_output_clean_env(cmd, universal_newlines=True)
         print('get_grid_status():',out)
         for line in out.split('\n'):
             if not line.strip():
@@ -227,4 +238,4 @@ class condor(grid.BaseGrid):
     def remove(self,tasks):
         """Remove tasks from queueing system."""
         if tasks:
-            subprocess.check_call(['condor_rm']+list(tasks))
+            check_call_clean_env(['condor_rm']+list(tasks))

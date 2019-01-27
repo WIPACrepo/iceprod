@@ -36,7 +36,7 @@ import iceprod.server
 from iceprod.server import module
 from iceprod.server.grid import BaseGrid
 from iceprod.core.resources import Resources
-from iceprod.core import rest_client
+from rest_tools.client import RestClient
 
 from .module_test import module_test, TestExecutor
 
@@ -103,7 +103,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -172,7 +172,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -235,7 +235,7 @@ class grid_test(AsyncTestCase):
                'db':{'address':None,'ssl':False}}
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -300,7 +300,7 @@ class grid_test(AsyncTestCase):
               }
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
@@ -348,7 +348,7 @@ class grid_test(AsyncTestCase):
               }
 
         # init
-        client = MagicMock(spec=rest_client.Client)
+        client = MagicMock(spec=RestClient)
         g = BaseGrid(gridspec, cfg['queue'][name], cfg, self.services,
                  self.io_loop, self.executor, module.FakeStatsClient(),
                  client)
