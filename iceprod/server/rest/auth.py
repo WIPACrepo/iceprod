@@ -450,7 +450,7 @@ class LDAPHandler(AuthHandler):
                 ret = {
                     'user_id': uuid.uuid1().hex,
                     'username': username,
-                    'groups': [],
+                    'groups': ['users'],
                     'roles': ['user'],
                 }
                 await self.db.users.insert_one(ret)

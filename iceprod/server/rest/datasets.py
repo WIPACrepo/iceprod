@@ -138,7 +138,7 @@ class MultiDatasetHandler(BaseHandler):
         url = self.auth_url+'/auths/'+data['dataset_id']
         http_client = tornado.httpclient.AsyncHTTPClient()
         auth_data = {
-            'read_groups':[data['group']],
+            'read_groups':[data['group'],'users'],
             'write_groups':[data['group']],
         }
         logger.info('Authorization header: %s', 'bearer '+self.module_auth_key)
