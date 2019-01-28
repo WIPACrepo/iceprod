@@ -182,7 +182,7 @@ class Resources:
 
     def get_claimed(self):
         """
-        Get claimed resoruces for reporting purposes.
+        Get claimed resources for reporting purposes.
 
         Returns:
             dict: resources

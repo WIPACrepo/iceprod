@@ -156,7 +156,8 @@ def main(cfgfile=None, logfile=None, url=None, debug=False,
 
     logging.warning('finished running normally; exiting...')
 
-async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=False):
+async def runner(config, rpc=None, debug=False, offline=False,
+                 offline_transfer=False, resources=None):
     """Run a config.
 
     #. Set some default options if not set in configuration.
@@ -180,6 +181,7 @@ async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=
         debug (bool): (optional) turn on debug logging
         offline (bool): (optional) enable offline mode
         offline_transfer (bool): (optional) enable/disable offline data transfers
+        resources (:py:class:`iceprod.core.resources.Resources`): (optional) Resources object
     """
     # set logging
     if offline:
@@ -305,7 +307,8 @@ async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=
                     if not offline:
                         await rpc.finish_task(config['options']['task_id'],
                                 dataset_id=config['options']['dataset_id'],
-                                stats=env['stats'], start_time=start_time)
+                                stats=env['stats'], start_time=start_time,
+                                resources=resources.get_final(config['options']['task_id']))
                 elif offline:
                     # run all tasks in order
                     for task in config['tasks']:
@@ -323,7 +326,8 @@ async def runner(config, rpc=None, debug=False, offline=False, offline_transfer=
                     await rpc.task_error(config['options']['task_id'],
                             dataset_id=config['options']['dataset_id'],
                             stats=env['stats'], start_time=start_time,
-                            reason=str(e))
+                            reason=str(e),
+                            resources=resources.get_final(config['options']['task_id']))
                 except Exception as e:
                     logger.error(e)
                 # forcibly turn on logging, so we can see the error

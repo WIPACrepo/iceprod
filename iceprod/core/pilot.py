@@ -441,7 +441,7 @@ class Pilot:
 
         # start the task
         r = config['options']['resources']
-        async for proc in self.runner(config):
+        async for proc in self.runner(config, resources=self.resources):
             ps = psutil.Process(proc.pid) if psutil else None
             self.resources.register_process(task_id, ps, tmpdir)
             data = {
