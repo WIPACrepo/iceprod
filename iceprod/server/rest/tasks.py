@@ -330,6 +330,8 @@ class DatasetTasksStatusHandler(BaseHandler):
             'status': data['status'],
             'status_changed': nowstr(),
         }
+        if data['status'] == 'reset':
+            update_data['failures'] = 0
 
         ret = await self.db.tasks.update_one({'task_id':task_id,'dataset_id':dataset_id},
                 {'$set':update_data})
