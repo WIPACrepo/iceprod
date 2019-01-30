@@ -367,9 +367,11 @@ async def runner(config, rpc=None, debug=False, offline=False,
                         # upload err,log,out files
                         await rpc.uploadLog(task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
-                        await rpc.uploadErr(task_id=config['options']['task_id'],
+                        await rpc.uploadErr(filename=errfile,
+                                            task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
-                        await rpc.uploadOut(task_id=config['options']['task_id'],
+                        await rpc.uploadOut(filename=outfile,
+                                            task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
                         break
                     elif up.startswith('log'):
@@ -378,11 +380,13 @@ async def runner(config, rpc=None, debug=False, offline=False,
                                             dataset_id=config['options']['dataset_id'])
                     elif up.startswith('err'):
                         # upload err files
-                        await rpc.uploadErr(task_id=config['options']['task_id'],
+                        await rpc.uploadErr(filename=errfile,
+                                            task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
                     elif up.startswith('out'):
                         # upload out files
-                        await rpc.uploadOut(task_id=config['options']['task_id'],
+                        await rpc.uploadOut(filename=outfile,
+                                            task_id=config['options']['task_id'],
                                             dataset_id=config['options']['dataset_id'])
         except Exception as e:
             logger.error('failed when uploading logging info',exc_info=True)

@@ -333,15 +333,15 @@ class ServerComms:
 
     async def uploadErr(self, filename=None, **kwargs):
         """Upload stderr file"""
-        sys.stderr.flush()
         if not filename:
+            sys.stderr.flush()
             filename = os.path.abspath(constants['stderr'])
         await self._upload_logfile('stderr', filename, **kwargs)
 
     async def uploadOut(self, filename=None, **kwargs):
         """Upload stdout file"""
-        sys.stdout.flush()
         if not filename:
+            sys.stdout.flush()
             filename = os.path.abspath(constants['stdout'])
         await self._upload_logfile('stdout', filename, **kwargs)
 

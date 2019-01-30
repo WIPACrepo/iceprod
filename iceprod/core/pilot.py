@@ -509,6 +509,13 @@ class Pilot:
             except Exception:
                 logger.warning('error deleting process', exc_info=True)
 
+            # copy stdout/stderr
+            try:
+                os.rename(os.path.join(task['tmpdir'],constants['stderr']), constants['stderr'])
+                os.rename(os.path.join(task['tmpdir'],constants['stdout']), constants['stdout'])
+            except Exception:
+                logger.warning('error copying std[out,err] files', exc_info=True)
+
             # clean tmpdir
             try:
                 if not self.debug:
