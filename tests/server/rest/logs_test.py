@@ -32,50 +32,16 @@ from rest_tools.server import Auth, RestServer
 from iceprod.server.modules.rest_api import setup_rest
 import iceprod.server.rest.logs
 
+from . import RestTestCase
+
 
 def fake_data(N):
     return ''.join(random.choices(string.printable, k=N))
 
-class rest_logs_test(AsyncTestCase):
+class rest_logs_test(RestTestCase):
     def setUp(self):
-        super(rest_logs_test,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        def cleanup():
-            shutil.rmtree(self.test_dir)
-        self.addCleanup(cleanup)
-
-        try:
-            self.port = random.randint(10000,50000)
-            self.mongo_port = random.randint(10000,50000)
-            dbpath = os.path.join(self.test_dir,'db')
-            os.mkdir(dbpath)
-            dblog = os.path.join(dbpath,'logfile')
-
-            m = subprocess.Popen(['mongod', '--port', str(self.mongo_port),
-                                  '--dbpath', dbpath, '--smallfiles',
-                                  '--quiet', '--nounixsocket',
-                                  '--logpath', dblog])
-            self.addCleanup(partial(time.sleep, 0.05))
-            self.addCleanup(m.terminate)
-
-            config = {
-                'auth': {
-                    'secret': 'secret'
-                },
-                'rest': {
-                    'logs': {
-                        'database': {'port':self.mongo_port},
-                    }
-                },
-            }
-            routes, args = setup_rest(config)
-            self.server = RestServer(**args)
-            for r in routes:
-                self.server.add_route(*r)
-            self.server.startup(port=self.port)
-            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin'})
-        except Exception:
-            logger.info('failed setup', exc_info=True)
+        config = {'rest':{'logs':{}}}
+        super(rest_logs_test,self).setUp(config=config)
 
     @unittest_reporter(name='REST POST   /logs')
     def test_100_logs(self):
@@ -188,50 +154,18 @@ class rest_logs_test(AsyncTestCase):
         self.assertEqual('foo', ret['logs'][0]['data'])
         self.assertCountEqual(['log_id','data'], list(ret['logs'][0].keys()))
 
-class rest_logs_test2(AsyncTestCase):
+class rest_logs_test2(RestTestCase):
     def setUp(self):
-        super(rest_logs_test2,self).setUp()
-        self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
-        def cleanup():
-            shutil.rmtree(self.test_dir)
-        self.addCleanup(cleanup)
-
-        try:
-            self.port = random.randint(10000,50000)
-            self.mongo_port = random.randint(10000,50000)
-            dbpath = os.path.join(self.test_dir,'db')
-            os.mkdir(dbpath)
-            dblog = os.path.join(dbpath,'logfile')
-
-            m = subprocess.Popen(['mongod', '--port', str(self.mongo_port),
-                                  '--dbpath', dbpath, '--smallfiles',
-                                  '--quiet', '--nounixsocket',
-                                  '--logpath', dblog])
-            self.addCleanup(partial(time.sleep, 0.05))
-            self.addCleanup(m.terminate)
-
-            config = {
-                'auth': {
-                    'secret': 'secret'
-                },
-                'rest': {
-                    'logs': {
-                        'database': {'port':self.mongo_port},
-                    }
-                },
-                's3': {
-                    'access_key': 'XXX',
-                    'secret_key': 'XXX',
-                },
-            }
-            routes, args = setup_rest(config)
-            self.server = RestServer(**args)
-            for r in routes:
-                self.server.add_route(*r)
-            self.server.startup(port=self.port)
-            self.token = Auth('secret').create_token('foo', type='user', payload={'role':'admin'})
-        except Exception:
-            logger.info('failed setup', exc_info=True)
+        config = {
+            'rest':{
+                'logs':{},
+            },
+            's3': {
+                'access_key': 'XXX',
+                'secret_key': 'XXX',
+            },
+        }
+        super(rest_logs_test2,self).setUp(config=config)
 
     @mock_s3
     @unittest_reporter(name='REST POST   /logs - S3')
