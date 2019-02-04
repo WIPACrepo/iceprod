@@ -43,7 +43,6 @@ import iceprod
 from iceprod.server import GlobalID, get_pkgdata_filename
 from iceprod.server import module
 from iceprod.server.ssl_cert import create_cert, verify_cert
-from iceprod.server.file_io import AsyncFileIO
 import iceprod.core.functions
 from iceprod.server import documentation
 
@@ -110,7 +109,6 @@ class website(module.module):
             handler_args = {
                 'cfg':self.cfg,
                 'modules':self.modules,
-                'fileio':AsyncFileIO(executor=self.executor),
                 'statsd':self.statsd,
                 'rest_api':rest_address,
                 'debug':False,
@@ -212,20 +210,18 @@ def authenticated_secure(method):
 
 class PublicHandler(tornado.web.RequestHandler):
     """Default Handler"""
-    def initialize(self, cfg, modules, fileio, debug=False, statsd=None,
+    def initialize(self, cfg, modules, debug=False, statsd=None,
                    rest_api=None):
         """
         Get some params from the website module
 
         :param cfg: the global config
         :param modules: modules handle
-        :param fileio: AsyncFileIO object
         :param debug: debug flag (optional)
         :param rest_api: the rest api url
         """
         self.cfg = cfg
         self.modules = modules
-        self.fileio = fileio
         self.debug = debug
         self.statsd = statsd
         self.rest_api = rest_api
