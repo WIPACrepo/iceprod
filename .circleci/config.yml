@@ -52,6 +52,8 @@ jobs:
                 key: coverage-server-{{ .Environment.CIRCLE_SHA1 }}
                 paths:
                     - ~/iceprod/.coverage-server
+            - store_artifacts:
+                path: tests.log
 
     test_core:
         docker:

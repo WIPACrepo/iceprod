@@ -55,7 +55,7 @@ class iceprod_server_test(unittest.TestCase):
             f.write('{"modules":{"queue":false},"logging":{"level":"debug"}}')
         subprocess.check_call(['../bin/iceprod_server.py','--pidfile','pid','start'])
         try:
-            time.sleep(2)
+            time.sleep(4)
             self.assertTrue(os.path.exists('pid'))
             alive_children = get_children()
             logger.info('children: %r', alive_children)
