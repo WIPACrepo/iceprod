@@ -64,6 +64,8 @@ class dataset_monitor_test(AsyncTestCase):
             elif url.startswith('/datasets/foo/task_counts/name_status'):
                 client.called = True
                 return tasks
+            if url.startswith('/datasets/foo'):
+                return {'dataset':123}
             else:
                 raise Exception()
         client.called = False

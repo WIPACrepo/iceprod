@@ -56,7 +56,7 @@ class dataset_completion_test(AsyncTestCase):
             if url.startswith('/dataset_summaries'):
                 return dataset_summaries
             elif url == '/datasets/foo':
-                return {'jobs_to_queue':2, 'tasks_to_queue':2}
+                return {'jobs_submitted':2, 'tasks_submitted':2}
             elif url.startswith('/datasets/foo/job_counts'):
                 return job_counts
             elif url == '/datasets/foo/status' and method == 'PUT':

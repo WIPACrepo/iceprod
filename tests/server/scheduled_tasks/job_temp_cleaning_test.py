@@ -63,7 +63,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
             if url.startswith('/datasets?'):
-                return [{'dataset_id':'0', 'dataset':0}]
+                return {'0':{'dataset_id':'0', 'dataset':0}}
             elif url.startswith('/datasets/0/jobs'):
                 client.called = True
                 return jobs
@@ -121,7 +121,7 @@ class job_temp_cleaning_test(AsyncTestCase):
         async def client(method, url, args=None):
             logger.info('REST: %s, %s', method, url)
             if url.startswith('/datasets?'):
-                return [{'dataset_id':'0', 'dataset':0}]
+                return {'0':{'dataset_id':'0', 'dataset':0}}
             elif url.startswith('/datasets/0/jobs'):
                 client.called = True
                 return jobs
