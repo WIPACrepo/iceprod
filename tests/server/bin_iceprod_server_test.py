@@ -48,7 +48,7 @@ class iceprod_server_test(unittest.TestCase):
             shutil.rmtree(self.test_dir)
         self.addCleanup(cleanup)
 
-    @unittest_reporter
+    @unittest_reporter(skip=True)
     def test_01_run(self):
         # make sure we don't try running the grid
         with open('iceprod_config.json','w') as f:
