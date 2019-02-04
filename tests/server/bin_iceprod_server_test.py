@@ -66,10 +66,11 @@ class iceprod_server_test(unittest.TestCase):
             if dead_children:
                 raise Exception('did not kill all children')
         finally:
-            for f in os.listdir('var/log'):
-                p = os.path.join('var/log',f)
-                if os.path.isfile(p):
-                    logger.info('log for %s:\n\n%s\n\n', f, open(p).read())
+            if os.path.exists('var/log'):
+                for f in os.listdir('var/log'):
+                    p = os.path.join('var/log',f)
+                    if os.path.isfile(p):
+                        logger.info('log for %s:\n\n%s\n\n', f, open(p).read())
             if os.path.exists('pid'):
                 subprocess.check_call(['../bin/iceprod_server.py','--pidfile','pid','kill'])
 
