@@ -54,7 +54,7 @@ try:
     with to_log(sys.stdout):
         subprocess.check_call(['which','phantomjs'])
     testjs = True
-except ImportError:
+except (ImportError, subprocess.CalledProcessError):
     logger.info('skipping javascript tests', exc_info=True)
     testjs = False
 
