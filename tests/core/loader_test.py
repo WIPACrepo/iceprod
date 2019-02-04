@@ -27,28 +27,33 @@ class loader_test(unittest.TestCase):
     def setUp(self):
         super(loader_test,self).setUp()
 
-        self.orig_dir = os.path.abspath(os.path.expandvars(os.getcwd()))
-
         self.test_dir = tempfile.mkdtemp(dir=os.getcwd())
+        self.curdir = os.getcwd()
+        os.symlink(os.path.join(self.curdir, 'iceprod'),
+                   os.path.join(self.test_dir, 'iceprod'))
+        os.chdir(self.test_dir)
+        def cleanup():
+            os.chdir(self.curdir)
+            shutil.rmtree(self.test_dir)
+        self.addCleanup(cleanup)
 
-        self.real_loader = os.path.join(self.orig_dir,'bin','loader.sh')
+        # clean up environment
+        base_env = dict(os.environ)
+        def reset_env():
+            for k in set(os.environ).difference(base_env):
+                del os.environ[k]
+            for k in base_env:
+                os.environ[k] = base_env[k]
+        self.addCleanup(reset_env)
 
-        self.chdir = os.path.join(self.test_dir,'ch')
-        if not os.path.exists(self.chdir):
-            os.mkdir(self.chdir)
-        os.chdir(self.chdir)
-
-    def tearDown(self):
-        os.chdir(self.orig_dir)
-        shutil.rmtree(self.test_dir)
-        super(loader_test,self).tearDown()
+        self.real_loader = os.path.join(self.curdir,'bin','loader.sh')
 
     @unittest_reporter(name=' ')
     def test_01(self):
         """Test basic loader functionality"""
         # replace the exec call in the loader, so it doesn't do anything
         loader_lines = open(self.real_loader).readlines()
-        test_loader = os.path.join(self.chdir,'loader.sh')
+        test_loader = os.path.join(self.test_dir,'loader.sh')
         with open(test_loader,'w') as f:
             for line in loader_lines:
                 line = line.strip('\n')
@@ -70,8 +75,8 @@ class loader_test(unittest.TestCase):
         # call main
         cmd = '/bin/sh %s'%test_loader
         proc = subprocess.Popen(cmd,shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
         out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
@@ -81,33 +86,38 @@ class loader_test(unittest.TestCase):
             raise Exception('main: did not echo cmd')
 
         # test cvmfs
-        cvmfs_dir = os.path.join(self.test_dir,'cvmfs')
-        os.mkdir(cvmfs_dir)
-        with open(os.path.join(cvmfs_dir,'setup.sh'),'w') as f:
-            f.write('#!/bin/sh\necho "export PYTHOPATH=$PWD/lib/python2.7/site-pacakges"\n')
+        os.remove('iceprod')
+        try:
+            cvmfs_dir = os.path.join(self.test_dir,'cvmfs')
+            os.mkdir(cvmfs_dir)
+            with open(os.path.join(cvmfs_dir,'setup.sh'),'w') as f:
+                f.write('#!/bin/sh\necho "export PYTHOPATH=$PWD/lib/python2.7/site-pacakges"\n')
 
-        cmd = '/bin/sh %s -s %s'%(test_loader,cvmfs_dir)
-        proc = subprocess.Popen(cmd,shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-        out = proc.communicate()[0].decode('utf-8')
-        if proc.returncode:
-            logger.info(out)
-            raise Exception('main: error raised')
-        if 'cvmfs' not in out:
-            logger.info(out)
-            raise Exception('main: did not echo CVMFS')
-        if 'i3exec' not in out:
-            logger.info(out)
-            raise Exception('env cache: did not echo cmd')
+            cmd = '/bin/sh %s -s %s'%(test_loader,cvmfs_dir)
+            proc = subprocess.Popen(cmd,shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            out = proc.communicate()[0].decode('utf-8')
+            if proc.returncode:
+                logger.info(out)
+                raise Exception('main: error raised')
+            if 'cvmfs' not in out:
+                logger.info('%s', out)
+                raise Exception('main: did not echo CVMFS')
+            if 'i3exec' not in out:
+                logger.info(out)
+                raise Exception('env cache: did not echo cmd')
+        finally:
+            os.symlink(os.path.join(self.curdir, 'iceprod'),
+                       os.path.join(self.test_dir, 'iceprod'))
 
         # explicitly set env dir
-        env_name = self.chdir
+        env_name = self.test_dir
         cmd = '/bin/sh %s -e %s'
         cmd = cmd%(test_loader,env_name)
         proc = subprocess.Popen(cmd,shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
         out = proc.communicate()[0].decode('utf-8')
         if proc.returncode:
             logger.info(out)
