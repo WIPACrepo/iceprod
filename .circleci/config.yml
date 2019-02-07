@@ -106,6 +106,7 @@ jobs:
             - SOURCE_BRANCH: master
             - TARGET_BRANCH: gh-pages
         steps:
+            - checkout
             - add_ssh_keys:
                 fingerprints:
                     - "ae:b2:cc:f6:26:21:35:d6:9d:2e:03:cd:ed:a3:5c:3d"
